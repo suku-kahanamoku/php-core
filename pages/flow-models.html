@@ -27,7 +27,7 @@
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-blue-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
     <span class="text-sm font-semibold text-slate-800 flex-1">Auth + filtrov&#225;n&#237;</span>
-    <span class="text-xs text-slate-400 font-mono shrink-0">UserController::index()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">UserController</span></span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
   <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
@@ -41,7 +41,7 @@
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
     <span class="text-sm font-semibold text-slate-800 flex-1">Auth + opr&#225;vn&#283;n&#237;</span>
-    <span class="text-xs text-slate-400 font-mono shrink-0">UserController::show()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">UserController::get()</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
   <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
@@ -66,7 +66,7 @@
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-emerald-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#2</span>
     <span class="text-sm font-semibold text-slate-800 flex-1">Validace + unik&#225;tnost emailu</span>
-    <span class="text-xs text-slate-400 font-mono shrink-0">UserController::store()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">UserController::create()</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
   <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
@@ -77,12 +77,12 @@
 <li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>INSERT INTO user (first_name, last_name, email, phone, password, role, status, created_at)</span></li>
 <li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 201 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ id }}</code></span></li>
 </ul></div>
-</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>PUT /users/:id &ndash; &#250;prava u&#382;ivatele</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>PATCH / PUT /users/:id &ndash; &#269;&#225;ste&#269;n&#225; &#250;prava / &#250;pln&#225; n&#225;hrada u&#382;ivatele</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-amber-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
     <span class="text-sm font-semibold text-slate-800 flex-1">Auth + opr&#225;vn&#283;n&#237;</span>
-    <span class="text-xs text-slate-400 font-mono shrink-0">UserController::update()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">update() [PATCH] / replace() [PUT]</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
   <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
@@ -96,7 +96,7 @@
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-red-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">UserController::destroy()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">UserController::delete()</span>
     <span class="text-xs text-slate-400 font-mono shrink-0">soft delete</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -113,7 +113,7 @@
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">AddressController::index()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">AddressController</span></span>
     <span class="text-xs text-slate-400 font-mono shrink-0">AddressController.php</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -126,7 +126,7 @@
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">AddressController::show()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">AddressController::get()</span>
     <span class="text-xs text-slate-400 font-mono shrink-0">AddressController.php</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -151,7 +151,7 @@
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-emerald-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#2</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">AddressController::store()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">AddressController::create()</span>
     <span class="text-xs text-slate-400 font-mono shrink-0">AddressController.php</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -162,11 +162,11 @@
 <li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>INSERT INTO address (user_id, type, company, first_name, last_name, street, city, zip, country, is_default, created_at)</span></li>
 <li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 201 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ id }}</code></span></li>
 </ul></div>
-</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>PUT /addresses/:id &ndash; &#250;prava adresy</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>PATCH / PUT /addresses/:id &ndash; &#269;&#225;ste&#269;n&#225; &#250;prava / &#250;pln&#225; n&#225;hrada adresy</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-amber-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">AddressController::update()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">update() [PATCH] / replace() [PUT]</span>
     <span class="text-xs text-slate-400 font-mono shrink-0">AddressController.php</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -181,7 +181,7 @@
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-red-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">AddressController::destroy()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">AddressController::delete()</span>
     <span class="text-xs text-slate-400 font-mono shrink-0">AddressController.php</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -198,13 +198,12 @@
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">CategoryController::index()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">CategoryController::list()</span>
     <span class="text-xs text-slate-400 font-mono shrink-0">CategoryController.php</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
   <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
-<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">Auth::require()</code></span></li>
-<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT id, name, slug, parent_id, description, sort_order, created_at FROM category ORDER BY sort_order, name</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&#128275;</span><span><strong>Veřejný endpoint</strong> – auth nevyžadován</span></li>
 <li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>buildTree() v PHP: p&#345;i&#345;azuje children[] podle parent_id &rarr; vno&#345;en&#225; JSON struktura</span></li>
 <li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; strom kategori&#237;</span></li>
 </ul></div>
@@ -212,7 +211,7 @@
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">CategoryController::show()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">CategoryController::get()</span>
     <span class="text-xs text-slate-400 font-mono shrink-0">CategoryController.php</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -237,7 +236,7 @@
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-emerald-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#2</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">CategoryController::store()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">CategoryController::create()</span>
     <span class="text-xs text-slate-400 font-mono shrink-0">CategoryController.php</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -247,11 +246,11 @@
 <li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>INSERT INTO category (name, slug, description, parent_id, sort_order, created_at)</span></li>
 <li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 201 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ id }}</code></span></li>
 </ul></div>
-</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>PUT /categories/:id &ndash; &#250;prava kategorie (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>PATCH / PUT /categories/:id &ndash; &#269;&#225;ste&#269;n&#225; &#250;prava / &#250;pln&#225; n&#225;hrada kategorie (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-amber-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">CategoryController::update()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">update() [PATCH] / replace() [PUT]</span>
     <span class="text-xs text-slate-400 font-mono shrink-0">CategoryController.php</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -266,7 +265,7 @@
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-red-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">CategoryController::destroy()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">CategoryController::delete()</span>
     <span class="text-xs text-slate-400 font-mono shrink-0">CategoryController.php</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -283,7 +282,7 @@
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">ProductController::index()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">ProductController</span></span>
     <span class="text-xs text-slate-400 font-mono shrink-0">ProductController.php</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -296,7 +295,7 @@
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">ProductController::show()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">ProductController::get()</span>
     <span class="text-xs text-slate-400 font-mono shrink-0">ProductController.php</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -320,7 +319,7 @@
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-emerald-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#2</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">ProductController::store()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">ProductController::create()</span>
     <span class="text-xs text-slate-400 font-mono shrink-0">ProductController.php</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -331,11 +330,11 @@
 <li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>INSERT INTO product (category_id, sku, name, description, price, vat_rate, stock_quantity, status, created_at)</span></li>
 <li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 201 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ id }}</code></span></li>
 </ul></div>
-</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>PUT /products/:id &ndash; &#250;prava produktu (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>PATCH / PUT /products/:id &ndash; &#269;&#225;ste&#269;n&#225; &#250;prava / &#250;pln&#225; n&#225;hrada produktu (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-amber-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">ProductController::update()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">update() [PATCH] / replace() [PUT]</span>
     <span class="text-xs text-slate-400 font-mono shrink-0">ProductController.php</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -350,7 +349,7 @@
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-red-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">ProductController::destroy()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">ProductController::delete()</span>
     <span class="text-xs text-slate-400 font-mono shrink-0">soft delete</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -383,7 +382,7 @@
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">OrderController::index()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">OrderController</span></span>
     <span class="text-xs text-slate-400 font-mono shrink-0">OrderController.php</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -397,7 +396,7 @@
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">OrderController::show()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">OrderController::get()</span>
     <span class="text-xs text-slate-400 font-mono shrink-0">OrderController.php</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -424,7 +423,7 @@
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-red-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#2</span>
     <span class="text-sm font-semibold text-slate-800 flex-1">Auth + validace polo&#382;ek</span>
-    <span class="text-xs text-slate-400 font-mono shrink-0">OrderController::store()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">OrderController::create()</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
   <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
@@ -478,7 +477,7 @@
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-red-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">OrderController::destroy()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">OrderController::delete()</span>
     <span class="text-xs text-slate-400 font-mono shrink-0">soft delete</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -495,7 +494,7 @@
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">InvoiceController::index()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">InvoiceController</span></span>
     <span class="text-xs text-slate-400 font-mono shrink-0">InvoiceController.php</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -509,7 +508,7 @@
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">InvoiceController::show()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">InvoiceController::get()</span>
     <span class="text-xs text-slate-400 font-mono shrink-0">InvoiceController.php</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -536,7 +535,7 @@
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-red-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#2</span>
     <span class="text-sm font-semibold text-slate-800 flex-1">Validace + duplikace</span>
-    <span class="text-xs text-slate-400 font-mono shrink-0">InvoiceController::store()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">InvoiceController::create()</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
   <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
@@ -578,7 +577,7 @@
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-red-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">InvoiceController::destroy()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">InvoiceController::delete()</span>
     <span class="text-xs text-slate-400 font-mono shrink-0">soft delete</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -595,7 +594,7 @@
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">TextController::index()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">TextController</span></span>
     <span class="text-xs text-slate-400 font-mono shrink-0">TextController.php</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -608,7 +607,7 @@
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">TextController::show()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">TextController::get()</span>
     <span class="text-xs text-slate-400 font-mono shrink-0">TextController.php</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -621,7 +620,7 @@
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">TextController::showByKey()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">TextController::getByKey()</span>
     <span class="text-xs text-slate-400 font-mono shrink-0">TextController.php</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -645,7 +644,7 @@
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-emerald-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#2</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">TextController::store()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">TextController::create()</span>
     <span class="text-xs text-slate-400 font-mono shrink-0">TextController.php</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -657,11 +656,11 @@
 <li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>INSERT INTO text (`key`, title, content, language, is_active, created_by, created_at)</span></li>
 <li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 201 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ id }}</code></span></li>
 </ul></div>
-</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>PUT /texts/:id &ndash; &#250;prava CMS bloku (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>PATCH / PUT /texts/:id &ndash; &#269;&#225;ste&#269;n&#225; &#250;prava / &#250;pln&#225; n&#225;hrada CMS bloku (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-amber-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">TextController::update()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">update() [PATCH] / replace() [PUT]</span>
     <span class="text-xs text-slate-400 font-mono shrink-0">TextController.php</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -676,7 +675,7 @@
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-red-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">TextController::destroy()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">TextController::delete()</span>
     <span class="text-xs text-slate-400 font-mono shrink-0">TextController.php</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -693,7 +692,7 @@
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">EnumerationController::index()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">EnumerationController</span></span>
     <span class="text-xs text-slate-400 font-mono shrink-0">EnumerationController.php</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -720,7 +719,7 @@
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">EnumerationController::show()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">EnumerationController::get()</span>
     <span class="text-xs text-slate-400 font-mono shrink-0">EnumerationController.php</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -744,7 +743,7 @@
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-emerald-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#2</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">EnumerationController::store()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">EnumerationController::create()</span>
     <span class="text-xs text-slate-400 font-mono shrink-0">EnumerationController.php</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -755,11 +754,11 @@
 <li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>INSERT INTO enumeration (type, code, label, value, sort_order, is_active, created_at)</span></li>
 <li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 201 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ id, type, code, label }}</code></span></li>
 </ul></div>
-</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>PUT /enumerations/:id &ndash; &#250;prava polo&#382;ky (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>PATCH / PUT /enumerations/:id &ndash; &#269;&#225;ste&#269;n&#225; &#250;prava / &#250;pln&#225; n&#225;hrada polo&#382;ky (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-amber-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">EnumerationController::update()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">update() [PATCH] / replace() [PUT]</span>
     <span class="text-xs text-slate-400 font-mono shrink-0">EnumerationController.php</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>
@@ -774,7 +773,7 @@
   <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
     <div class="w-1.5 self-stretch rounded-full shrink-0 bg-red-500"></div>
     <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
-    <span class="text-sm font-semibold text-slate-800 flex-1">EnumerationController::destroy()</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">EnumerationController::delete()</span>
     <span class="text-xs text-slate-400 font-mono shrink-0">EnumerationController.php</span>
     <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
   </summary>

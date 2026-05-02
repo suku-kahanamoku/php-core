@@ -96,7 +96,7 @@ php-core/
 │   ├── flow-order-cancel.html  # Flow – storno objednávky
 │   └── flow-models.html   # Flow – všechny modely
 ├── tests/
-│   └── api_test.php       # CLI test runner (57 tests)
+│   └── api_test.php       # CLI test runner (131 tests)
 └── src/
     ├── Core/
     │   ├── Auth.php        # Bearer token auth (login/logout/check/require)
@@ -145,28 +145,31 @@ php tests/api_test.php http://myserver.com/api
 | GET    | `/users` | List users |
 | POST   | `/users` | Create user |
 | GET    | `/users/:id` | Get user |
-| PUT    | `/users/:id` | Update user |
+| PATCH  | `/users/:id` | Partial update |
+| PUT    | `/users/:id` | Full replace (first_name, last_name required) |
 | DELETE | `/users/:id` | Soft-delete user |
 | GET    | `/users/:userId/addresses` | User's addresses |
 
 ### Products
-| Method | Path | Description |
-|--------|------|-------------|
-| GET    | `/products` | List products |
-| POST   | `/products` | Create *(admin)* |
-| GET    | `/products/:id` | Get product |
-| PUT    | `/products/:id` | Update *(admin)* |
-| DELETE | `/products/:id` | Soft-delete *(admin)* |
-| PATCH  | `/products/:id/stock` | Adjust stock *(admin)* |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET    | `/products` | public | List products |
+| POST   | `/products` | admin | Create |
+| GET    | `/products/:id` | public | Get product |
+| PATCH  | `/products/:id` | admin | Partial update |
+| PUT    | `/products/:id` | admin | Full replace (name, sku, price required) |
+| DELETE | `/products/:id` | admin | Soft-delete |
+| PATCH  | `/products/:id/stock` | admin | Adjust stock quantity |
 
 ### Categories
-| Method | Path | Description |
-|--------|------|-------------|
-| GET    | `/categories` | List as tree |
-| POST   | `/categories` | Create *(admin)* |
-| GET    | `/categories/:id` | Get with products |
-| PUT    | `/categories/:id` | Update *(admin)* |
-| DELETE | `/categories/:id` | Delete *(admin)* |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET    | `/categories` | public | List as tree |
+| POST   | `/categories` | admin | Create |
+| GET    | `/categories/:id` | public | Get with products |
+| PATCH  | `/categories/:id` | admin | Partial update |
+| PUT    | `/categories/:id` | admin | Full replace (name required) |
+| DELETE | `/categories/:id` | admin | Delete (fails if has active products) |
 
 ### Orders
 | Method | Path | Description |
@@ -187,32 +190,36 @@ php tests/api_test.php http://myserver.com/api
 | DELETE | `/invoices/:id` | Soft-delete *(admin)* |
 
 ### Texts (CMS)
-| Method | Path | Description |
-|--------|------|-------------|
-| GET    | `/texts` | List texts |
-| POST   | `/texts` | Create *(admin)* |
-| GET    | `/texts/:id` | Get by ID |
-| GET    | `/texts/by-key/:key` | Get by key |
-| PUT    | `/texts/:id` | Update *(admin)* |
-| DELETE | `/texts/:id` | Delete *(admin)* |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET    | `/texts` | public | List texts |
+| POST   | `/texts` | admin | Create |
+| GET    | `/texts/:id` | public | Get by ID |
+| GET    | `/texts/by-key/:key` | public | Get by key + language |
+| PATCH  | `/texts/:id` | admin | Partial update |
+| PUT    | `/texts/:id` | admin | Full replace (key, title required) |
+| DELETE | `/texts/:id` | admin | Delete |
 
 ### Enumerations (Ciselnik)
-| Method | Path | Description |
-|--------|------|-------------|
-| GET    | `/enumerations` | List (grouped by type) |
-| GET    | `/enumerations/types` | List all types |
-| POST   | `/enumerations` | Create *(admin)* |
-| GET    | `/enumerations/:id` | Get by ID |
-| PUT    | `/enumerations/:id` | Update *(admin)* |
-| DELETE | `/enumerations/:id` | Delete *(admin)* |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET    | `/enumerations` | public | List (grouped by type) |
+| GET    | `/enumerations/types` | public | List all types |
+| POST   | `/enumerations` | admin | Create |
+| GET    | `/enumerations/:id` | public | Get by ID |
+| PATCH  | `/enumerations/:id` | admin | Partial update |
+| PUT    | `/enumerations/:id` | admin | Full replace (type, code, label required) |
+| DELETE | `/enumerations/:id` | admin | Delete |
 
 ### Addresses
-| Method | Path | Description |
-|--------|------|-------------|
-| POST   | `/addresses` | Create address |
-| GET    | `/addresses/:id` | Get address |
-| PUT    | `/addresses/:id` | Update address |
-| DELETE | `/addresses/:id` | Delete address |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET    | `/users/:userId/addresses` | required | User's addresses |
+| POST   | `/addresses` | required | Create address |
+| GET    | `/addresses/:id` | required | Get address |
+| PATCH  | `/addresses/:id` | required | Partial update |
+| PUT    | `/addresses/:id` | required | Full replace (street, city, zip, country required) |
+| DELETE | `/addresses/:id` | required | Delete address |
 
 ## Database schema
 
