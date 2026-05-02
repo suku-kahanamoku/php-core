@@ -1,0 +1,15 @@
+{
+    "intelephense.format.enable": true,
+    "intelephense.format.braces": "psr2",
+    "[php]": {
+        "editor.defaultFormatter": "junstyle.php-cs-fixer",
+        "editor.formatOnSave": true,
+        "editor.wordWrapColumn": 90,
+        "editor.rulers": [90]
+    },
+    "php-cs-fixer.executablePath": "/home/suku/.config/composer/vendor/bin/php-cs-fixer",
+    "php-cs-fixer.config": ".php-cs-fixer.php",
+    "php-cs-fixer.onsave": true,
+    "php-cs-fixer.rules": "",
+    "php-cs-fixer.allowRisky": false
+}

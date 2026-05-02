@@ -68,17 +68,21 @@ class ProductService
         }
 
         $set = [];
-        foreach (['sku', 'name', 'description', 'status'] as $f) {
+        $textFields  = ['sku', 'name', 'description', 'status'];
+        $floatFields = ['price', 'vat_rate'];
+        $intFields   = ['stock_quantity', 'category_id'];
+
+        foreach ($textFields as $f) {
             if (array_key_exists($f, $input) && $input[$f] !== null) {
                 $set[$f] = trim((string) $input[$f]);
             }
         }
-        foreach (['price', 'vat_rate'] as $f) {
+        foreach ($floatFields as $f) {
             if (array_key_exists($f, $input) && $input[$f] !== null) {
                 $set[$f] = (float) $input[$f];
             }
         }
-        foreach (['stock_quantity', 'category_id'] as $f) {
+        foreach ($intFields as $f) {
             if (array_key_exists($f, $input) && $input[$f] !== null) {
                 $set[$f] = (int) $input[$f];
             }

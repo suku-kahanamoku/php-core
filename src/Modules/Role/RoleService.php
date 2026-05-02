@@ -121,7 +121,9 @@ class RoleService
             Response::notFound('Role not found');
         }
 
-        if (in_array($role['name'], ['admin', 'user'], true)) {
+        $builtInRoles = ['admin', 'user'];
+
+        if (in_array($role['name'], $builtInRoles, true)) {
             Response::error("Built-in role '{$role['name']}' cannot be deleted", 409);
         }
 

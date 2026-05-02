@@ -73,7 +73,9 @@ class TextService
         }
 
         $set = [];
-        foreach (['key', 'title', 'content', 'language'] as $f) {
+        $textFields = ['key', 'title', 'content', 'language'];
+
+        foreach ($textFields as $f) {
             if (array_key_exists($f, $input) && $input[$f] !== null) {
                 $set[$f] = trim((string) $input[$f]);
             }

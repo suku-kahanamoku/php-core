@@ -49,8 +49,10 @@ class RoleApi
     /** PATCH /roles/:id */
     public function update(Request $request, array $params): void
     {
-        $fields = [];
-        foreach (['name', 'label', 'sort_order', 'is_active'] as $f) {
+        $fields    = [];
+        $roleFields = ['name', 'label', 'sort_order', 'is_active'];
+
+        foreach ($roleFields as $f) {
             if ($request->get($f) !== null) $fields[$f] = $request->get($f);
         }
         $this->service->update((int) $params['id'], $fields);

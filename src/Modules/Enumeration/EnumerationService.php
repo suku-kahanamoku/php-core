@@ -79,12 +79,15 @@ class EnumerationService
         }
 
         $set = [];
-        foreach (['type', 'code', 'label', 'value'] as $f) {
+        $textFields = ['type', 'code', 'label', 'value'];
+        $intFields  = ['sort_order', 'is_active'];
+
+        foreach ($textFields as $f) {
             if (array_key_exists($f, $input) && $input[$f] !== null) {
                 $set[$f] = trim((string) $input[$f]);
             }
         }
-        foreach (['sort_order', 'is_active'] as $f) {
+        foreach ($intFields as $f) {
             if (array_key_exists($f, $input) && $input[$f] !== null) {
                 $set[$f] = (int) $input[$f];
             }

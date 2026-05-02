@@ -92,8 +92,9 @@ class UserService
         }
 
         $set = [];
+        $textFields = ['first_name', 'last_name', 'phone'];
 
-        foreach (['first_name', 'last_name', 'phone'] as $f) {
+        foreach ($textFields as $f) {
             if (array_key_exists($f, $input) && $input[$f] !== null) {
                 $set[$f] = trim((string) $input[$f]);
             }

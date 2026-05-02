@@ -91,7 +91,9 @@ class AddressService
         }
 
         $set = [];
-        foreach (['type', 'company', 'first_name', 'last_name', 'street', 'city', 'zip', 'country'] as $f) {
+        $textFields = ['type', 'company', 'first_name', 'last_name', 'street', 'city', 'zip', 'country'];
+
+        foreach ($textFields as $f) {
             if (array_key_exists($f, $input) && $input[$f] !== null) {
                 $set[$f] = trim((string) $input[$f]);
             }
