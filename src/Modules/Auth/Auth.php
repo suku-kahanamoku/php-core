@@ -13,12 +13,12 @@ class Auth
     private const TOKEN_BYTES    = 32;
     private const TOKEN_LIFETIME = 86400; // 24 hours default
 
-    private UserToken $userToken;
+    private UserTokenRepository $userToken;
     private ?array    $currentUser = null;
 
     public function __construct(Database $db)
     {
-        $this->userToken = new UserToken($db);
+        $this->userToken = new UserTokenRepository($db);
     }
 
     /** Create a Bearer token for the given user, persist it, and return it. */

@@ -11,12 +11,12 @@ use App\Modules\Validator\Validator;
 
 class UserService
 {
-    private User $user;
+    private UserRepository $user;
     private Auth $auth;
 
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->user = new User($db, $franchiseCode);
+        $this->user = new UserRepository($db, $franchiseCode);
         $this->auth = $auth;
     }
 

@@ -11,12 +11,12 @@ use App\Modules\Validator\Validator;
 
 class OrderService
 {
-    private Order $order;
+    private OrderRepository $order;
     private Auth $auth;
 
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->order = new Order($db, $franchiseCode);
+        $this->order = new OrderRepository($db, $franchiseCode);
         $this->auth  = $auth;
     }
 

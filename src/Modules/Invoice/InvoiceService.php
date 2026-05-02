@@ -10,12 +10,12 @@ use App\Modules\Router\Response;
 
 class InvoiceService
 {
-    private Invoice $invoice;
+    private InvoiceRepository $invoice;
     private Auth $auth;
 
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->invoice = new Invoice($db, $franchiseCode);
+        $this->invoice = new InvoiceRepository($db, $franchiseCode);
         $this->auth = $auth;
     }
 

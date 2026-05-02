@@ -9,7 +9,7 @@ use App\Modules\Database\Database;
 /**
  * Order – DB entity layer.
  */
-class Order
+class OrderRepository
 {
     private Database $db;
     private string   $code;

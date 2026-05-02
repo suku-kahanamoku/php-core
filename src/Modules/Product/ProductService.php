@@ -11,12 +11,12 @@ use App\Modules\Validator\Validator;
 
 class ProductService
 {
-    private Product $product;
+    private ProductRepository $product;
     private Auth $auth;
 
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->product = new Product($db, $franchiseCode);
+        $this->product = new ProductRepository($db, $franchiseCode);
         $this->auth = $auth;
     }
 

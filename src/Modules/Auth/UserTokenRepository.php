@@ -6,7 +6,7 @@ namespace App\Modules\Auth;
 
 use App\Modules\Database\Database;
 
-class UserToken
+class UserTokenRepository
 {
     private Database $db;
 

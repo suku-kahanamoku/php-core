@@ -10,12 +10,12 @@ use App\Modules\Router\Response;
 
 class CategoryService
 {
-    private Category $category;
+    private CategoryRepository $category;
     private Auth $auth;
 
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->category = new Category($db, $franchiseCode);
+        $this->category = new CategoryRepository($db, $franchiseCode);
         $this->auth = $auth;
     }
 

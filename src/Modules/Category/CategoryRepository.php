@@ -9,7 +9,7 @@ use App\Modules\Database\Database;
 /**
  * Category – DB entity layer.
  */
-class Category
+class CategoryRepository
 {
     private Database $db;
     private string   $code;

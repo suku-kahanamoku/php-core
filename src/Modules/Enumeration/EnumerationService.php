@@ -11,12 +11,12 @@ use App\Modules\Validator\Validator;
 
 class EnumerationService
 {
-    private Enumeration $enum;
+    private EnumerationRepository $enum;
     private Auth $auth;
 
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->enum = new Enumeration($db, $franchiseCode);
+        $this->enum = new EnumerationRepository($db, $franchiseCode);
         $this->auth = $auth;
     }
 

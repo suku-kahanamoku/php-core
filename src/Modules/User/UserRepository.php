@@ -9,7 +9,7 @@ use App\Modules\Database\Database;
 /**
  * User – DB entity layer.
  */
-class User
+class UserRepository
 {
     private Database $db;
     private string   $code;

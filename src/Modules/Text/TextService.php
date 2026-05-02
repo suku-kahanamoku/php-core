@@ -11,12 +11,12 @@ use App\Modules\Validator\Validator;
 
 class TextService
 {
-    private Text $text;
+    private TextRepository $text;
     private Auth $auth;
 
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->text = new Text($db, $franchiseCode);
+        $this->text = new TextRepository($db, $franchiseCode);
         $this->auth = $auth;
     }
 

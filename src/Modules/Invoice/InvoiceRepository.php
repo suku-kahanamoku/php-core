@@ -9,7 +9,7 @@ use App\Modules\Database\Database;
 /**
  * Invoice – DB entity layer.
  */
-class Invoice
+class InvoiceRepository
 {
     private Database $db;
     private string   $code;

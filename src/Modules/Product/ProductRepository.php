@@ -9,7 +9,7 @@ use App\Modules\Database\Database;
 /**
  * Product – DB entity layer.
  */
-class Product
+class ProductRepository
 {
     private Database $db;
     private string   $code;

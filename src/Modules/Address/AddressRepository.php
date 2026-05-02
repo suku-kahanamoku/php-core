@@ -9,7 +9,7 @@ use App\Modules\Database\Database;
 /**
  * Address – DB entity layer.
  */
-class Address
+class AddressRepository
 {
     private Database $db;
     private string   $code;

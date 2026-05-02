@@ -11,12 +11,12 @@ use App\Modules\Validator\Validator;
 
 class RoleService
 {
-    private Role $role;
+    private RoleRepository $role;
     private Auth $auth;
 
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->role = new Role($db, $franchiseCode);
+        $this->role = new RoleRepository($db, $franchiseCode);
         $this->auth = $auth;
     }
 

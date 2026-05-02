@@ -10,7 +10,7 @@ use App\Modules\Database\Database;
  * Role – DB entity layer.
  * Handles all direct database operations for the `role` table.
  */
-class Role
+class RoleRepository
 {
     private Database $db;
     private string   $code;

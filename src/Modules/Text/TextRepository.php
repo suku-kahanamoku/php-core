@@ -9,7 +9,7 @@ use App\Modules\Database\Database;
 /**
  * Text (CMS) – DB entity layer.
  */
-class Text
+class TextRepository
 {
     private Database $db;
     private string   $code;

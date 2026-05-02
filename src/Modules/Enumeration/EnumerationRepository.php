@@ -9,7 +9,7 @@ use App\Modules\Database\Database;
 /**
  * Enumeration (codebook) – DB entity layer.
  */
-class Enumeration
+class EnumerationRepository
 {
     private Database $db;
     private string   $code;

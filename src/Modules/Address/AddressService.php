@@ -11,12 +11,12 @@ use App\Modules\Validator\Validator;
 
 class AddressService
 {
-    private Address $address;
+    private AddressRepository $address;
     private Auth $auth;
 
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->address = new Address($db, $franchiseCode);
+        $this->address = new AddressRepository($db, $franchiseCode);
         $this->auth = $auth;
     }
 
