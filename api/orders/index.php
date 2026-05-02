@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../bootstrap.php';
 
-use App\Middleware\CorsMiddleware;
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Order\OrderApi;
@@ -17,7 +16,6 @@ $db      = Database::getInstance();
 $code    = $request->franchiseCode;
 $auth    = new Auth($db);
 
-$router->addGlobalMiddleware(new CorsMiddleware());
 
 $order = new OrderApi($db, $code, $auth);
 

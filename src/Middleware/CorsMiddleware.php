@@ -16,7 +16,7 @@ class CorsMiddleware
         $this->allowedOrigins = $origins === '*' ? ['*'] : explode(',', $origins);
     }
 
-    public function __invoke(Request $request): void
+    public function __invoke(?Request $request = null): void
     {
         $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 

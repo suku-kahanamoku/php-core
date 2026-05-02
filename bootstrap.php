@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Middleware\CorsMiddleware;
 use Dotenv\Dotenv;
 
 // ── Autoload ────────────────────────────────────────────────────────────────
@@ -10,6 +11,9 @@ require_once __DIR__ . '/vendor/autoload.php';
 // ── Environment ─────────────────────────────────────────────────────────────
 $dotenv = Dotenv::createImmutable(__DIR__);
 $dotenv->safeLoad();
+
+// ── CORS ─────────────────────────────────────────────────────────────────────
+(new CorsMiddleware())();
 
 // ── Error handling ──────────────────────────────────────────────────────────
 $appEnv = $_ENV['APP_ENV'] ?? 'production';

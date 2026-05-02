@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../bootstrap.php';
 
-use App\Middleware\CorsMiddleware;
 use App\Modules\Router\Request;
 use App\Modules\Router\Response;
 use App\Modules\Router\Router;
@@ -12,7 +11,6 @@ use App\Modules\Router\Router;
 $request = new Request();
 $router  = new Router();
 
-$router->addGlobalMiddleware(new CorsMiddleware());
 
 $router->get('/', function (Request $request) {
     $endpoints = [
