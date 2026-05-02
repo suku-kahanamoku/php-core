@@ -142,9 +142,9 @@ assert_test('returns user email',          $r['data']['data']['email'] === $test
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-section('GET /products  –  requires auth');
+section('GET /products  –  public');
 $r = request('GET', "{$base}/products", [], false);  // no token
-assert_test('returns 401 without token', $r['status'] === 401, dump_on_fail($r));
+assert_test('returns 200 without token', $r['status'] === 200, dump_on_fail($r));
 
 $r = request('GET', "{$base}/products");  // with Bearer token
 assert_test('returns 200 with token',    $r['status'] === 200, dump_on_fail($r));

@@ -25,8 +25,6 @@ class TextController
     /** GET /texts */
     public function index(Request $request): void
     {
-        Auth::require();
-
         $lang     = $request->get('language', 'cs');
         $isActive = $request->get('is_active');
         $search   = $request->get('search');
@@ -57,7 +55,6 @@ class TextController
     /** GET /texts/:id */
     public function show(Request $request, array $params): void
     {
-        Auth::require();
         $id = (int) $params['id'];
 
         $text = $this->db->fetchOne('SELECT * FROM text WHERE id = ?', [$id]);
@@ -71,7 +68,6 @@ class TextController
     /** GET /texts/by-key/:key */
     public function showByKey(Request $request, array $params): void
     {
-        Auth::require();
         $key  = $params['key'];
         $lang = $request->get('language', 'cs');
 

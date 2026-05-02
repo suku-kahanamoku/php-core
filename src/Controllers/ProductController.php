@@ -21,8 +21,6 @@ class ProductController
     /** GET /products */
     public function index(Request $request): void
     {
-        Auth::require();
-
         $page       = max(1, (int) $request->get('page', 1));
         $limit      = min(100, max(1, (int) $request->get('limit', 20)));
         $offset     = ($page - 1) * $limit;
@@ -76,7 +74,6 @@ class ProductController
     /** GET /products/:id */
     public function show(Request $request, array $params): void
     {
-        Auth::require();
         $id = (int) $params['id'];
 
         $product = $this->db->fetchOne(

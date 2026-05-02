@@ -27,8 +27,6 @@ class EnumerationController
     /** GET /enumerations */
     public function index(Request $request): void
     {
-        Auth::require();
-
         $type     = $request->get('type');
         $isActive = $request->get('is_active');
 
@@ -65,8 +63,6 @@ class EnumerationController
     /** GET /enumerations/types */
     public function types(Request $request): void
     {
-        Auth::require();
-
         $types = $this->db->fetchAll(
             'SELECT DISTINCT type FROM enumeration ORDER BY type ASC'
         );
@@ -77,7 +73,6 @@ class EnumerationController
     /** GET /enumerations/:id */
     public function show(Request $request, array $params): void
     {
-        Auth::require();
         $id = (int) $params['id'];
 
         $item = $this->db->fetchOne('SELECT * FROM enumeration WHERE id = ?', [$id]);
