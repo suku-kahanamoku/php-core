@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Middleware;
 
-use App\Core\Auth;
-use App\Core\Request;
+use App\Modules\Auth\Auth;
+use App\Modules\Router\Request;
 
 class AuthMiddleware
 {

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Text;
 
-use App\Core\Database;
+use App\Modules\Database\Database;
 
 /**
  * Text (CMS) – DB entity layer.

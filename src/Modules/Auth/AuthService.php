@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Auth;
 
-use App\Core\Auth;
-use App\Core\Database;
+use App\Modules\Database\Database;
 use App\Core\Franchise;
-use App\Core\Response;
+use App\Modules\Router\Response;
 
 class AuthService
 {

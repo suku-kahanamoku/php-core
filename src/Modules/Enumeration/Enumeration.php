@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Enumeration;
 
-use App\Core\Database;
+use App\Modules\Database\Database;
 
 /**
  * Enumeration (codebook) – DB entity layer.

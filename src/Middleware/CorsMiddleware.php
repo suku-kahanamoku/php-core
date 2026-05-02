@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Middleware;
 
-use App\Core\Request;
+use App\Modules\Router\Request;
 
 class CorsMiddleware
 {

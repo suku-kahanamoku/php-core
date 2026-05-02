@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Address;
 
-use App\Core\Database;
+use App\Modules\Database\Database;
 
 /**
  * Address – DB entity layer.

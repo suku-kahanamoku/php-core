@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Role;
 
-use App\Core\Database;
+use App\Modules\Database\Database;
 
 /**
  * Role – DB entity layer.

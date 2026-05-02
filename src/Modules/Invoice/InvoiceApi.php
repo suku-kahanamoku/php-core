@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Invoice;
 
-use App\Core\Request;
-use App\Core\Response;
+use App\Modules\Router\Request;
+use App\Modules\Router\Response;
 
 class InvoiceApi
 {

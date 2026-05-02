@@ -2,7 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Core;
+namespace App\Modules\Auth;
+
+use App\Modules\Database\Database;
+use App\Core\Franchise;
+use App\Modules\Router\Response;
 
 class Auth
 {

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Category;
 
-use App\Core\Database;
+use App\Modules\Database\Database;
 
 /**
  * Category – DB entity layer.

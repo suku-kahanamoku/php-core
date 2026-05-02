@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\User;
 
-use App\Core\Database;
+use App\Modules\Database\Database;
 
 /**
  * User – DB entity layer.

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Address;
 
-use App\Core\Auth;
-use App\Core\Database;
+use App\Modules\Auth\Auth;
+use App\Modules\Database\Database;
 use App\Core\Franchise;
-use App\Core\Response;
+use App\Modules\Router\Response;
 
 class AddressService
 {

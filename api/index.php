@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../bootstrap.php';
 
-use App\Core\Request;
-use App\Core\Response;
-use App\Core\Router;
+use App\Modules\Router\Request;
+use App\Modules\Router\Response;
+use App\Modules\Router\Router;
 use App\Middleware\CorsMiddleware;
 use App\Modules\Auth\AuthApi;
 use App\Modules\User\UserApi;

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Product;
 
-use App\Core\Database;
+use App\Modules\Database\Database;
 
 /**
  * Product – DB entity layer.
