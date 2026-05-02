@@ -3,8 +3,14 @@
 
 declare(strict_types=1);
 
+/**
+ * API endpoint tests for App\Modules\Category\CategoryApi
+ *
+ * Tests all /categories/* routes
+ */
+
 if (!function_exists('assert_test')) {
-    require_once __DIR__ . '/bootstrap.php';
+    require_once __DIR__ . '/../../../../tests/bootstrap.php';
 }
 if (!isset($base)) {
     $base = rtrim($argv[1] ?? 'http://localhost/php/php-core/api', '/');
@@ -19,14 +25,14 @@ $token = null;
 
 section('Categories – public list');
 $r = request('GET', "{$base}/categories", [], false);
-assert_test('GET /categories 200',              $r['status'] === 200, dump_on_fail($r));
-assert_test('data is array',                    is_array($r['data']['data']));
+assert_test('GET /categories 200', $r['status'] === 200, dump_on_fail($r));
+assert_test('data is array', is_array($r['data']['data']));
 
 // ── Admin login ───────────────────────────────────────────────────────────────
 
 section('Categories – admin login');
 $r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
-assert_test('admin login 200',                  $r['status'] === 200, dump_on_fail($r));
+assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
 // ── Non-admin protection ──────────────────────────────────────────────────────
@@ -34,24 +40,23 @@ $token = $r['data']['data']['token'] ?? null;
 section('Categories – non-admin protection');
 $tmpToken = $token;
 $token    = null;
-$r = request('POST', "{$base}/categories", ['name' => 'x']);
+$r        = request('POST', "{$base}/categories", ['name' => 'x']);
 assert_test('POST /categories → 401 without token', $r['status'] === 401, dump_on_fail($r));
 $token = $tmpToken;
 
-// Log in as regular user to test 403
 $catRegEmail = 'cat_reg_' . time() . '@example.com';
-$r = request('POST', "{$base}/users", [
+$r           = request('POST', "{$base}/users", [
     'first_name' => 'Reg', 'last_name' => 'User',
-    'email' => $catRegEmail, 'password' => 'Password123',
+    'email'      => $catRegEmail, 'password' => 'Password123',
 ]);
 $catRegId = $r['data']['data']['id'] ?? null;
-$r = request('POST', "{$base}/auth/login", ['email' => $catRegEmail, 'password' => 'Password123'], false);
-$token = $r['data']['data']['token'] ?? null;
+$r        = request('POST', "{$base}/auth/login", ['email' => $catRegEmail, 'password' => 'Password123'], false);
+$token    = $r['data']['data']['token'] ?? null;
 
 $r = request('POST', "{$base}/categories", ['name' => 'x']);
 assert_test('POST /categories → 403 for non-admin', $r['status'] === 403, dump_on_fail($r));
 
-$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
+$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 $token = $r['data']['data']['token'] ?? null;
 if ($catRegId) {
     request('DELETE', "{$base}/users/{$catRegId}");
@@ -60,15 +65,15 @@ if ($catRegId) {
 // ── Create ────────────────────────────────────────────────────────────────────
 
 section('Categories – create');
-$catSlug    = 'test-cat-' . time();
+$catSlug      = 'test-cat-' . time();
 $emptyCatSlug = 'empty-cat-' . time();
 
 $r = request('POST', "{$base}/categories", ['name' => 'Test Category', 'slug' => $catSlug]);
-assert_test('POST /categories 201',             $r['status'] === 201, dump_on_fail($r));
+assert_test('POST /categories 201', $r['status'] === 201, dump_on_fail($r));
 $catId = $r['data']['data']['id'] ?? null;
 
 $r = request('POST', "{$base}/categories", ['name' => 'Empty Category', 'slug' => $emptyCatSlug]);
-assert_test('POST /categories 201 (empty)',      $r['status'] === 201, dump_on_fail($r));
+assert_test('POST /categories 201 (empty)', $r['status'] === 201, dump_on_fail($r));
 $emptyCatId = $r['data']['data']['id'] ?? null;
 
 // ── Public: get by id ─────────────────────────────────────────────────────────
@@ -76,8 +81,8 @@ $emptyCatId = $r['data']['data']['id'] ?? null;
 section('Categories – public get by id');
 if ($catId) {
     $r = request('GET', "{$base}/categories/{$catId}", [], false);
-    assert_test('GET /categories/:id 200',      $r['status'] === 200, dump_on_fail($r));
-    assert_test('has products array',           isset($r['data']['data']['products']));
+    assert_test('GET /categories/:id 200', $r['status'] === 200, dump_on_fail($r));
+    assert_test('has products array', isset($r['data']['data']['products']));
 }
 
 // ── Update ────────────────────────────────────────────────────────────────────
@@ -85,10 +90,10 @@ if ($catId) {
 section('Categories – update');
 if ($catId) {
     $r = request('PATCH', "{$base}/categories/{$catId}", ['description' => 'Updated desc']);
-    assert_test('PATCH /categories/:id 200',    $r['status'] === 200, dump_on_fail($r));
+    assert_test('PATCH /categories/:id 200', $r['status'] === 200, dump_on_fail($r));
 
     $r = request('PUT', "{$base}/categories/{$catId}", ['name' => 'Test Category Updated']);
-    assert_test('PUT /categories/:id 200',      $r['status'] === 200, dump_on_fail($r));
+    assert_test('PUT /categories/:id 200', $r['status'] === 200, dump_on_fail($r));
 
     $r = request('PUT', "{$base}/categories/{$catId}", ['name' => '']);
     assert_test('PUT /categories/:id 422 empty name', $r['status'] === 422, dump_on_fail($r));
@@ -98,10 +103,9 @@ if ($catId) {
 
 section('Categories – delete with product → 409');
 if ($catId) {
-    // Create a product in this category to trigger 409
     $catProdSku = 'CAT-PROD-' . time();
-    $r = request('POST', "{$base}/products", [
-        'name' => 'Cat Test Product', 'sku' => $catProdSku,
+    $r          = request('POST', "{$base}/products", [
+        'name'  => 'Cat Test Product', 'sku' => $catProdSku,
         'price' => 10.0, 'category_id' => $catId, 'stock_quantity' => 1,
     ]);
     $catProdId = $r['data']['data']['id'] ?? null;
@@ -109,7 +113,6 @@ if ($catId) {
     $r = request('DELETE', "{$base}/categories/{$catId}");
     assert_test('DELETE /categories/:id 409 (has product)', $r['status'] === 409, dump_on_fail($r));
 
-    // Cleanup product then category
     if ($catProdId) {
         request('DELETE', "{$base}/products/{$catProdId}");
     }
@@ -119,7 +122,7 @@ if ($catId) {
 
 if ($emptyCatId) {
     $r = request('DELETE', "{$base}/categories/{$emptyCatId}");
-    assert_test('DELETE /categories/:id 200 (empty)',  $r['status'] === 200, dump_on_fail($r));
+    assert_test('DELETE /categories/:id 200 (empty)', $r['status'] === 200, dump_on_fail($r));
 }
 
 $token = null;
