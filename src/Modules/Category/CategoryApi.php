@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Category;
 
+use App\Modules\Database\Database;
 use App\Modules\Router\Request;
 use App\Modules\Router\Response;
 
@@ -11,9 +12,9 @@ class CategoryApi
 {
     private CategoryService $service;
 
-    public function __construct()
+    public function __construct(Database $db, string $franchiseCode)
     {
-        $this->service = new CategoryService();
+        $this->service = new CategoryService($db, $franchiseCode);
     }
 
     /** GET /categories */

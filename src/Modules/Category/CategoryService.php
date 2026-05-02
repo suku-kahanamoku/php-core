@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Category;
 
-use App\Core\Franchise;
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
@@ -13,9 +12,9 @@ class CategoryService
 {
     private Category $category;
 
-    public function __construct()
+    public function __construct(Database $db, string $franchiseCode)
     {
-        $this->category = new Category(Database::getInstance(), Franchise::code());
+        $this->category = new Category($db, $franchiseCode);
     }
 
     public function list(string $sortBy, string $sortDir, bool $flat = false): array

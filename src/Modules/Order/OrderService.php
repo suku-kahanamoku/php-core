@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Order;
 
-use App\Core\Franchise;
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
@@ -14,9 +13,9 @@ class OrderService
 {
     private Order $order;
 
-    public function __construct()
+    public function __construct(Database $db, string $franchiseCode)
     {
-        $this->order = new Order(Database::getInstance(), Franchise::code());
+        $this->order = new Order($db, $franchiseCode);
     }
 
     public function list(

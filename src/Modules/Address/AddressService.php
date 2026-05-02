@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Address;
 
-use App\Core\Franchise;
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
@@ -14,9 +13,9 @@ class AddressService
 {
     private Address $address;
 
-    public function __construct()
+    public function __construct(Database $db, string $franchiseCode)
     {
-        $this->address = new Address(Database::getInstance(), Franchise::code());
+        $this->address = new Address($db, $franchiseCode);
     }
 
     public function listByUser(

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Product;
 
-use App\Core\Franchise;
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
@@ -14,9 +13,9 @@ class ProductService
 {
     private Product $product;
 
-    public function __construct()
+    public function __construct(Database $db, string $franchiseCode)
     {
-        $this->product = new Product(Database::getInstance(), Franchise::code());
+        $this->product = new Product($db, $franchiseCode);
     }
 
     public function list(

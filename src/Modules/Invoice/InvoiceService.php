@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Invoice;
 
-use App\Core\Franchise;
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
@@ -13,9 +12,9 @@ class InvoiceService
 {
     private Invoice $invoice;
 
-    public function __construct()
+    public function __construct(Database $db, string $franchiseCode)
     {
-        $this->invoice = new Invoice(Database::getInstance(), Franchise::code());
+        $this->invoice = new Invoice($db, $franchiseCode);
     }
 
     public function list(

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Auth;
 
-use App\Core\Franchise;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
 use App\Modules\Validator\Validator;
@@ -14,10 +13,10 @@ class AuthService
     private Database $db;
     private string   $code;
 
-    public function __construct()
+    public function __construct(Database $db, string $franchiseCode)
     {
-        $this->db   = Database::getInstance();
-        $this->code = Franchise::code();
+        $this->db   = $db;
+        $this->code = $franchiseCode;
     }
 
     public function login(string $email, string $password): array

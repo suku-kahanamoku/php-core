@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Enumeration;
 
-use App\Core\Franchise;
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
@@ -14,9 +13,9 @@ class EnumerationService
 {
     private Enumeration $enum;
 
-    public function __construct()
+    public function __construct(Database $db, string $franchiseCode)
     {
-        $this->enum = new Enumeration(Database::getInstance(), Franchise::code());
+        $this->enum = new Enumeration($db, $franchiseCode);
     }
 
     public function list(

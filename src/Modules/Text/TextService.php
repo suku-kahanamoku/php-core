@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Text;
 
-use App\Core\Franchise;
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
@@ -14,9 +13,9 @@ class TextService
 {
     private Text $text;
 
-    public function __construct()
+    public function __construct(Database $db, string $franchiseCode)
     {
-        $this->text = new Text(Database::getInstance(), Franchise::code());
+        $this->text = new Text($db, $franchiseCode);
     }
 
     public function list(

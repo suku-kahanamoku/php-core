@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Enumeration;
 
+use App\Modules\Database\Database;
 use App\Modules\Router\Request;
 use App\Modules\Router\Response;
 
@@ -11,9 +12,9 @@ class EnumerationApi
 {
     private EnumerationService $service;
 
-    public function __construct()
+    public function __construct(Database $db, string $franchiseCode)
     {
-        $this->service = new EnumerationService();
+        $this->service = new EnumerationService($db, $franchiseCode);
     }
 
     /** GET /enumerations */

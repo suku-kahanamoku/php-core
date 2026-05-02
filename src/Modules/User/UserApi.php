@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\User;
 
+use App\Modules\Database\Database;
 use App\Modules\Router\Request;
 use App\Modules\Router\Response;
 
@@ -11,9 +12,9 @@ class UserApi
 {
     private UserService $service;
 
-    public function __construct()
+    public function __construct(Database $db, string $franchiseCode)
     {
-        $this->service = new UserService();
+        $this->service = new UserService($db, $franchiseCode);
     }
 
     /** GET /users */

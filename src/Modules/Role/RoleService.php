@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Role;
 
-use App\Core\Franchise;
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
@@ -14,9 +13,9 @@ class RoleService
 {
     private Role $role;
 
-    public function __construct()
+    public function __construct(Database $db, string $franchiseCode)
     {
-        $this->role = new Role(Database::getInstance(), Franchise::code());
+        $this->role = new Role($db, $franchiseCode);
     }
 
     public function list(?bool $isActive, string $sortBy, string $sortDir): array

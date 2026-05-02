@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\User;
 
-use App\Core\Franchise;
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
@@ -14,9 +13,9 @@ class UserService
 {
     private User $user;
 
-    public function __construct()
+    public function __construct(Database $db, string $franchiseCode)
     {
-        $this->user = new User(Database::getInstance(), Franchise::code());
+        $this->user = new User($db, $franchiseCode);
     }
 
     public function list(

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Invoice;
 
+use App\Modules\Database\Database;
 use App\Modules\Router\Request;
 use App\Modules\Router\Response;
 
@@ -11,9 +12,9 @@ class InvoiceApi
 {
     private InvoiceService $service;
 
-    public function __construct()
+    public function __construct(Database $db, string $franchiseCode)
     {
-        $this->service = new InvoiceService();
+        $this->service = new InvoiceService($db, $franchiseCode);
     }
 
     /** GET /invoices */

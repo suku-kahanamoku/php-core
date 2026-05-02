@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../bootstrap.php';
 
+use App\Core\Franchise;
 use App\Middleware\CorsMiddleware;
 use App\Modules\Address\AddressApi;
 use App\Modules\Auth\AuthApi;
 use App\Modules\Category\CategoryApi;
+use App\Modules\Database\Database;
 use App\Modules\Enumeration\EnumerationApi;
 use App\Modules\Invoice\InvoiceApi;
 use App\Modules\Order\OrderApi;
@@ -21,6 +23,8 @@ use App\Modules\User\UserApi;
 
 $request = new Request();
 $router  = new Router();
+$db      = Database::getInstance();
+$code    = Franchise::code();
 
 // ── Global middleware ────────────────────────────────────────────────────────
 $router->addGlobalMiddleware(new CorsMiddleware());
@@ -28,7 +32,7 @@ $router->addGlobalMiddleware(new CorsMiddleware());
 // ────────────────────────────────────────────────────────────────────────────
 // AUTH ENDPOINTS
 // ────────────────────────────────────────────────────────────────────────────
-$auth = new AuthApi();
+$auth = new AuthApi($db, $code);
 
 $router->post('/auth/login', [$auth, 'login']);
 $router->post('/auth/logout', [$auth, 'logout']);
@@ -39,7 +43,7 @@ $router->post('/auth/change-password', [$auth, 'changePassword']);
 // ────────────────────────────────────────────────────────────────────────────
 // ROLE ENDPOINTS
 // ────────────────────────────────────────────────────────────────────────────
-$roles = new RoleApi();
+$roles = new RoleApi($db, $code);
 
 $router->get('/roles', [$roles, 'list']);
 $router->post('/roles', [$roles, 'create']);
@@ -51,7 +55,7 @@ $router->delete('/roles/:id', [$roles, 'delete']);
 // ────────────────────────────────────────────────────────────────────────────
 // USER ENDPOINTS
 // ────────────────────────────────────────────────────────────────────────────
-$users = new UserApi();
+$users = new UserApi($db, $code);
 
 $router->get('/users', [$users, 'list']);
 $router->post('/users', [$users, 'create']);
@@ -63,7 +67,7 @@ $router->delete('/users/:id', [$users, 'delete']);
 // ────────────────────────────────────────────────────────────────────────────
 // ADDRESS ENDPOINTS
 // ────────────────────────────────────────────────────────────────────────────
-$addresses = new AddressApi();
+$addresses = new AddressApi($db, $code);
 
 $router->get('/users/:userId/addresses', [$addresses, 'list']);
 $router->post('/addresses', [$addresses, 'create']);
@@ -75,7 +79,7 @@ $router->delete('/addresses/:id', [$addresses, 'delete']);
 // ────────────────────────────────────────────────────────────────────────────
 // CATEGORY ENDPOINTS
 // ────────────────────────────────────────────────────────────────────────────
-$categories = new CategoryApi();
+$categories = new CategoryApi($db, $code);
 
 $router->get('/categories', [$categories, 'list']);
 $router->post('/categories', [$categories, 'create']);
@@ -87,7 +91,7 @@ $router->delete('/categories/:id', [$categories, 'delete']);
 // ────────────────────────────────────────────────────────────────────────────
 // PRODUCT ENDPOINTS
 // ────────────────────────────────────────────────────────────────────────────
-$products = new ProductApi();
+$products = new ProductApi($db, $code);
 
 $router->get('/products', [$products, 'list']);
 $router->post('/products', [$products, 'create']);
@@ -100,7 +104,7 @@ $router->patch('/products/:id/stock', [$products, 'adjustStock']);
 // ────────────────────────────────────────────────────────────────────────────
 // TEXT / CMS ENDPOINTS
 // ────────────────────────────────────────────────────────────────────────────
-$texts = new TextApi();
+$texts = new TextApi($db, $code);
 
 $router->get('/texts', [$texts, 'list']);
 $router->post('/texts', [$texts, 'create']);
@@ -113,7 +117,7 @@ $router->delete('/texts/:id', [$texts, 'delete']);
 // ────────────────────────────────────────────────────────────────────────────
 // ENUMERATION / CODEBOOK ENDPOINTS
 // ────────────────────────────────────────────────────────────────────────────
-$enums = new EnumerationApi();
+$enums = new EnumerationApi($db, $code);
 
 $router->get('/enumerations', [$enums, 'list']);
 $router->get('/enumerations/types', [$enums, 'types']);
@@ -126,7 +130,7 @@ $router->delete('/enumerations/:id', [$enums, 'delete']);
 // ────────────────────────────────────────────────────────────────────────────
 // ORDER ENDPOINTS
 // ────────────────────────────────────────────────────────────────────────────
-$orders = new OrderApi();
+$orders = new OrderApi($db, $code);
 
 $router->get('/orders', [$orders, 'list']);
 $router->post('/orders', [$orders, 'create']);
@@ -137,7 +141,7 @@ $router->delete('/orders/:id', [$orders, 'delete']);
 // ────────────────────────────────────────────────────────────────────────────
 // INVOICE ENDPOINTS
 // ────────────────────────────────────────────────────────────────────────────
-$invoices = new InvoiceApi();
+$invoices = new InvoiceApi($db, $code);
 
 $router->get('/invoices', [$invoices, 'list']);
 $router->post('/invoices', [$invoices, 'create']);
