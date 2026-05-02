@@ -13,12 +13,12 @@ class Auth
     private const TOKEN_BYTES    = 32;
     private const TOKEN_LIFETIME = 86400; // 24 hours default
 
-    private Database $db;
-    private ?array   $currentUser = null;
+    private UserToken $userToken;
+    private ?array    $currentUser = null;
 
     public function __construct(Database $db)
     {
-        $this->db = $db;
+        $this->userToken = new UserToken($db);
     }
 
     /** Create a Bearer token for the given user, persist it, and return it. */
@@ -28,12 +28,7 @@ class Auth
         $lifetime  = (int) ($_ENV['TOKEN_LIFETIME'] ?? self::TOKEN_LIFETIME);
         $expiresAt = date('Y-m-d H:i:s', time() + $lifetime);
 
-        $this->db->insert('user_token', [
-            'user_id'    => $user['id'],
-            'token'      => $token,
-            'expires_at' => $expiresAt,
-            'created_at' => date('Y-m-d H:i:s'),
-        ]);
+        $this->userToken->create($user['id'], $token, $expiresAt);
 
         return $token;
     }
@@ -43,7 +38,7 @@ class Auth
     {
         $token = $this->extractToken();
         if ($token !== null) {
-            $this->db->query('DELETE FROM user_token WHERE token = ?', [$token]);
+            $this->userToken->delete($token);
         }
         $this->currentUser = null;
     }
@@ -60,16 +55,7 @@ class Auth
             return false;
         }
 
-        $row = $this->db->fetchOne(
-            'SELECT u.id, u.email, r.name AS role, u.first_name, u.last_name
-             FROM user_token t
-             JOIN `user` u ON u.id = t.user_id
-             JOIN `role` r ON r.id = u.role_id
-             WHERE t.token = ? AND t.expires_at > NOW()
-               AND u.status = "active" AND u.franchise_code = ?
-             LIMIT 1',
-            [$token, Request::resolveCode()],
-        );
+        $row = $this->userToken->findUserByToken($token, Request::resolveCode());
 
         if (!$row) {
             return false;
