@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>php-core – Storno objednávky</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 min-h-screen font-sans text-slate-800 flex flex-col">
+<header class="bg-slate-900 text-white">
+  <div class="flex items-center gap-3 px-8 py-3">
+    <a href="../index.php" class="font-extrabold tracking-tight text-white hover:text-blue-400 transition-colors no-underline">&#9889; php-core</a>
+    <span class="text-slate-600">/</span>
+    <span class="text-slate-300 text-sm">Storno objednávky</span>
+  </div>
+</header>
+<nav class="bg-white border-b border-slate-200 px-8 py-2 flex gap-2 flex-wrap items-center">
+  <a href="../index.php" class="px-3 py-1.5 rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50 no-underline text-xs transition-colors">&#127968; Rozceštník</a>
+  <a href="flow-login.html" class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128273; Login flow</a>
+  <a href="flow-order-cancel.html" class="px-3 py-1.5 rounded-md border bg-slate-900 text-white border-slate-900 no-underline text-xs">&#128230; Storno</a>
+  <a href="flow-models.html" class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128218; Model flows</a>
+  <a href="db-schema.html" class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128194; ER diagram</a>
+  <a href="db-table.html" class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128203; DB tabulky</a>
+</nav>
+<div class="px-6 py-6 max-w-4xl mx-auto w-full">
+<div class="flex flex-wrap gap-2 mb-6">
+  <span class="text-xs px-3 py-1 rounded-full border-2 border-blue-400 bg-blue-50 text-blue-700">→ request / akce</span>
+  <span class="text-xs px-3 py-1 rounded-full border-2 border-amber-400 bg-amber-50 text-amber-700">⚙ zpracování</span>
+  <span class="text-xs px-3 py-1 rounded-full border-2 border-violet-400 bg-violet-50 text-violet-700">&#128388; SQL</span>
+  <span class="text-xs px-3 py-1 rounded-full border-2 border-red-400 bg-red-50 text-red-700">&#128274; auth</span>
+  <span class="text-xs px-3 py-1 rounded-full border-2 border-emerald-400 bg-emerald-50 text-emerald-700">← response</span>
+</div>
+<div class="flex flex-col gap-1.5">
+<div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+  <div class="h-1 bg-blue-500"></div>
+  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
+    <div class="w-6 h-6 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center shrink-0">1</div>
+    <div class="text-sm font-bold text-slate-900 flex-1">HTTP Request</div>
+    <div class="text-xs text-slate-400 font-mono hidden sm:block">klient → Apache</div>
+    <div class="text-xs text-slate-400 ml-2">▼</div>
+  </div>
+  <div class="px-4 pb-4">
+<ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-blue-400 bg-blue-50 text-blue-700"><span class="shrink-0">→</span><span><code class="font-mono bg-black/10 px-1 rounded">PATCH /orders/42/status</code><br>Header: <code class="font-mono bg-black/10 px-1 rounded">Authorization: Bearer a3f9c2…</code><br>Body: <code class="font-mono bg-black/10 px-1 rounded">{{ "status": "cancelled" }}</code></span></li>
+</ul>
+  </div>
+</div>
+<div class="text-center text-slate-300 text-lg leading-none my-0.5">↓</div>
+<div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+  <div class="h-1 bg-amber-500"></div>
+  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
+    <div class="w-6 h-6 rounded-full bg-amber-500 text-white text-xs font-bold flex items-center justify-center shrink-0">2</div>
+    <div class="text-sm font-bold text-slate-900 flex-1">Apache + .htaccess</div>
+    <div class="text-xs text-slate-400 font-mono hidden sm:block">.htaccess</div>
+    <div class="text-xs text-slate-400 ml-2">▼</div>
+  </div>
+  <div class="px-4 pb-4">
+<ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span><code class="font-mono bg-black/10 px-1 rounded">RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]</code><br>přepíše Authorization header do <code class="font-mono bg-black/10 px-1 rounded">$_SERVER</code>, jinak by PHP Bearer nedostalo</span></li>
+<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span><code class="font-mono bg-black/10 px-1 rounded">RewriteRule ^ index.php [L,QSA]</code><br>vše routuje na jeden vstupní bod</span></li>
+</ul>
+  </div>
+</div>
+<div class="text-center text-slate-300 text-lg leading-none my-0.5">↓</div>
+<div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+  <div class="h-1 bg-slate-400"></div>
+  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
+    <div class="w-6 h-6 rounded-full bg-slate-400 text-white text-xs font-bold flex items-center justify-center shrink-0">3</div>
+    <div class="text-sm font-bold text-slate-900 flex-1">bootstrap.php</div>
+    <div class="text-xs text-slate-400 font-mono hidden sm:block">bootstrap.php</div>
+    <div class="text-xs text-slate-400 ml-2">▼</div>
+  </div>
+  <div class="px-4 pb-4">
+<ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>Composer autoload – PSR-4 mapa <code class="font-mono bg-black/10 px-1 rounded">App\ → src/</code></span></li>
+<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span><code class="font-mono bg-black/10 px-1 rounded">Dotenv::safeLoad()</code> – načte <code class="font-mono bg-black/10 px-1 rounded">.env</code> → <code class="font-mono bg-black/10 px-1 rounded">$_ENV[DB_USER, DB_PASSWORD, …]</code></span></li>
+<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span><code class="font-mono bg-black/10 px-1 rounded">set_exception_handler()</code> – všechny neošetřené výjimky → JSON 500</span></li>
+</ul>
+  </div>
+</div>
+<div class="text-center text-slate-300 text-lg leading-none my-0.5">↓</div>
+<div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+  <div class="h-1 bg-blue-500"></div>
+  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
+    <div class="w-6 h-6 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center shrink-0">4</div>
+    <div class="text-sm font-bold text-slate-900 flex-1">Request parsing</div>
+    <div class="text-xs text-slate-400 font-mono hidden sm:block">src/Core/Request.php</div>
+    <div class="text-xs text-slate-400 ml-2">▼</div>
+  </div>
+  <div class="px-4 pb-4">
+<ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span><code class="font-mono bg-black/10 px-1 rounded">method = "PATCH"</code></span></li>
+<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span><code class="font-mono bg-black/10 px-1 rounded">parsePath()</code> – stripne prefix <code class="font-mono bg-black/10 px-1 rounded">/php/php-core</code> → uri = <code class="font-mono bg-black/10 px-1 rounded">/orders/42/status</code></span></li>
+<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span><code class="font-mono bg-black/10 px-1 rounded">parseBody()</code> – json_decode(php://input) → <code class="font-mono bg-black/10 px-1 rounded">["status" =&gt; "cancelled"]</code></span></li>
+<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span><code class="font-mono bg-black/10 px-1 rounded">parseHeaders()</code> – přemapuje HTTP_* z $_SERVER, včetně authorization</span></li>
+</ul>
+  </div>
+</div>
+<div class="text-center text-slate-300 text-lg leading-none my-0.5">↓</div>
+<div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+  <div class="h-1 bg-amber-500"></div>
+  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
+    <div class="w-6 h-6 rounded-full bg-amber-500 text-white text-xs font-bold flex items-center justify-center shrink-0">5</div>
+    <div class="text-sm font-bold text-slate-900 flex-1">Router dispatch</div>
+    <div class="text-xs text-slate-400 font-mono hidden sm:block">src/Core/Router.php</div>
+    <div class="text-xs text-slate-400 ml-2">▼</div>
+  </div>
+  <div class="px-4 pb-4">
+<ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>Prochází registrované routy</span></li>
+<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>Pattern <code class="font-mono bg-black/10 px-1 rounded">PATCH /orders/:id/status</code> → match!<br>Extrahuje parametry: <code class="font-mono bg-black/10 px-1 rounded">["id" =&gt; "42"]</code></span></li>
+<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>Spustí middleware chain: CorsMiddleware → AuthMiddleware</span></li>
+</ul>
+  </div>
+</div>
+<div class="text-center text-slate-300 text-lg leading-none my-0.5">↓</div>
+<div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+  <div class="h-1 bg-slate-400"></div>
+  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
+    <div class="w-6 h-6 rounded-full bg-slate-400 text-white text-xs font-bold flex items-center justify-center shrink-0">6</div>
+    <div class="text-sm font-bold text-slate-900 flex-1">CorsMiddleware</div>
+    <div class="text-xs text-slate-400 font-mono hidden sm:block">src/Middleware/CorsMiddleware.php</div>
+    <div class="text-xs text-slate-400 ml-2">▶</div>
+  </div>
+  <div class="px-4 pb-4 hidden">
+<ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>Přidá hlavičky: Access-Control-Allow-Origin, Access-Control-Allow-Headers…</span></li>
+<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>OPTIONS preflight → HTTP 204 a exit; jinak pokračuje dál</span></li>
+</ul>
+  </div>
+</div>
+<div class="text-center text-slate-300 text-lg leading-none my-0.5">↓</div>
+<div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+  <div class="h-1 bg-red-500"></div>
+  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
+    <div class="w-6 h-6 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center shrink-0">7</div>
+    <div class="text-sm font-bold text-slate-900 flex-1">AuthMiddleware → Auth::check()</div>
+    <div class="text-xs text-slate-400 font-mono hidden sm:block">src/Middleware/AuthMiddleware.php · src/Core/Auth.php</div>
+    <div class="text-xs text-slate-400 ml-2">▼</div>
+  </div>
+  <div class="px-4 pb-4">
+<ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-red-400 bg-red-50 text-red-700"><span class="shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">extractToken()</code> – čte <code class="font-mono bg-black/10 px-1 rounded">$_SERVER['HTTP_AUTHORIZATION']</code><br>regex: <code class="font-mono bg-black/10 px-1 rounded">/^Bearer\s+(\S+)$/i</code> → token = "a3f9c2…"</span></li>
+<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span>SELECT u.id, u.email, u.role, u.first_name, u.last_name<br>FROM user_token t JOIN user u ON u.id = t.user_id<br>WHERE t.token = ? AND t.expires_at &gt; NOW() AND u.status = "active"</span></li>
+<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-red-400 bg-red-50 text-red-700"><span class="shrink-0">&#128274;</span><span>Záznam nalezen → Auth::$currentUser = [id:1, role:'admin', …] uložen do statické cache</span></li>
+<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>Token platný → pokračuje k controlleru</span></li>
+</ul>
+  </div>
+</div>
+<div class="text-center text-slate-300 text-lg leading-none my-0.5">↓</div>
+<div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+  <div class="h-1 bg-emerald-500"></div>
+  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
+    <div class="w-6 h-6 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center justify-center shrink-0">8</div>
+    <div class="text-sm font-bold text-slate-900 flex-1">OrderController::updateStatus()</div>
+    <div class="text-xs text-slate-400 font-mono hidden sm:block">src/Controllers/OrderController.php</div>
+    <div class="text-xs text-slate-400 ml-2">▼</div>
+  </div>
+  <div class="px-4 pb-4">
+<ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-red-400 bg-red-50 text-red-700"><span class="shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">Auth::requireRole('admin')</code> – z cache, role = admin ✓</span></li>
+<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span><code class="font-mono bg-black/10 px-1 rounded">$id = 42</code>, <code class="font-mono bg-black/10 px-1 rounded">$newStatus = "cancelled"</code></span></li>
+<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>Validace: "cancelled" ∈ povolených stavů ✓</span></li>
+<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span>SELECT id, status FROM `order` WHERE id = 42<br>→ status = "confirmed", záznam existuje ✓</span></li>
+<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>Business rule: přechod confirmed → cancelled povolen ✓</span></li>
+<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span>UPDATE `order`<br>SET `status` = 'cancelled', `updated_at` = NOW()<br>WHERE id = 42</span></li>
+<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span>SELECT * FROM `order` WHERE id = 42 – načti aktuální stav pro response</span></li>
+</ul>
+  </div>
+</div>
+<div class="text-center text-slate-300 text-lg leading-none my-0.5">↓</div>
+<div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+  <div class="h-1 bg-emerald-500"></div>
+  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
+    <div class="w-6 h-6 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center justify-center shrink-0">9</div>
+    <div class="text-sm font-bold text-slate-900 flex-1">Response::success()</div>
+    <div class="text-xs text-slate-400 font-mono hidden sm:block">src/Core/Response.php</div>
+    <div class="text-xs text-slate-400 ml-2">▼</div>
+  </div>
+  <div class="px-4 pb-4">
+<ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-emerald-400 bg-emerald-50 text-emerald-700"><span class="shrink-0">←</span><span><code class="font-mono bg-black/10 px-1 rounded">http_response_code(200)</code><br><code class="font-mono bg-black/10 px-1 rounded">Content-Type: application/json; charset=utf-8</code></span></li>
+<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-emerald-400 bg-emerald-50 text-emerald-700"><span class="shrink-0">←</span><span><pre class="bg-slate-900 text-slate-200 rounded-lg p-3 text-xs leading-relaxed mt-1 overflow-x-auto font-mono">{
+  "success": true,
+  "message": "Order status updated",
+  "data": { "id": 42, "status": "cancelled", ... }
+}</pre></span></li>
+</ul>
+  </div>
+</div>
+</div>
+<div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>Celková cesta každého requestu</span><span class="flex-1 h-px bg-slate-200 block"></span></div>
+<pre class="bg-slate-900 text-slate-200 rounded-xl p-4 text-xs leading-relaxed overflow-x-auto font-mono mt-3">HTTP request
+  &#8594; Apache (.htaccess: mod_rewrite + Authorization passthrough)
+  &#8594; bootstrap.php  (autoload + .env)
+  &#8594; Request        (parse method / uri / body / headers)
+  &#8594; Router         (match route + params)
+  &#8594; CorsMiddleware (CORS hlavi&#269;ky)
+  &#8594; AuthMiddleware (ov&#283;&#345;en&#237; Bearer tokenu v DB)
+  &#8594; Controller     (business logika + SQL)
+  &#8594; Response       (json_encode + exit)</pre>
+</div>
+<script>
+function tog(el){
+  const body=el.nextElementSibling;
+  const arrow=el.querySelector('div:last-child');
+  const open=body.classList.toggle('hidden');
+  arrow.textContent=open?'▶':'▼';
+}
+</script>
+</body>
+</html>

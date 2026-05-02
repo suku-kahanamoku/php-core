@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>php-core – ER Diagram</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+</head>
+<body class="bg-slate-100 min-h-screen font-sans text-slate-800 flex flex-col">
+<header class="bg-slate-900 text-white">
+  <div class="flex items-center gap-3 px-8 py-3">
+    <a href="../index.php" class="font-extrabold tracking-tight text-white hover:text-blue-400 transition-colors no-underline">&#9889; php-core</a>
+    <span class="text-slate-600">/</span>
+    <span class="text-slate-300 text-sm">ER Diagram</span>
+  </div>
+</header>
+<nav class="bg-white border-b border-slate-200 px-8 py-2 flex gap-2 flex-wrap items-center">
+  <a href="../index.php" class="px-3 py-1.5 rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50 no-underline text-xs transition-colors">&#127968; Rozceštník</a>
+  <a href="flow-login.html" class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128273; Login flow</a>
+  <a href="flow-order-cancel.html" class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128230; Storno</a>
+  <a href="flow-models.html" class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128218; Model flows</a>
+  <a href="db-schema.html" class="px-3 py-1.5 rounded-md border bg-slate-900 text-white border-slate-900 no-underline text-xs">&#128194; ER diagram</a>
+  <a href="db-table.html" class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128203; DB tabulky</a>
+</nav>
+<div class="bg-white border-b border-slate-200 px-8 py-2 flex items-center justify-between flex-wrap gap-2">
+  <span class="text-sm text-slate-500">11 tabulek &middot; Entity-Relationship Diagram</span>
+  <div class="flex gap-2">
+    <button onclick="exportSvg()" class="text-xs px-3 py-1.5 rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors">&#8595; Export SVG</button>
+    <button onclick="zoomIn()"    class="text-xs px-3 py-1.5 rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors">&#65291; Zoom in</button>
+    <button onclick="zoomOut()"   class="text-xs px-3 py-1.5 rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors">&#65293; Zoom out</button>
+    <button onclick="resetZoom()" class="text-xs px-3 py-1.5 rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors">&#8635; Reset</button>
+  </div>
+</div>
+<div id="diagram-container" class="flex-1 overflow-auto flex justify-center items-start p-8 min-h-[500px]">
+  <p id="loading" class="text-slate-400 text-sm mt-16">Načítám diagram…</p>
+  <div class="mermaid" id="mermaid-src" style="display:none">
+erDiagram
+    user { int id PK
+        varchar first_name
+        varchar last_name
+        varchar email
+        varchar phone
+        varchar password
+        varchar role
+        varchar status
+        int address_id FK
+        datetime last_login_at
+        datetime created_at
+        datetime deleted_at }
+    user_token { int id PK
+        int user_id FK
+        varchar token
+        datetime expires_at
+        datetime created_at }
+    address { int id PK
+        int user_id FK
+        varchar type
+        varchar company
+        varchar first_name
+        varchar last_name
+        varchar street
+        varchar city
+        varchar zip
+        varchar country
+        tinyint is_default
+        datetime created_at }
+    category { int id PK
+        int parent_id FK
+        varchar name
+        varchar slug
+        text description
+        smallint sort_order
+        datetime created_at }
+    product { int id PK
+        int category_id FK
+        varchar sku
+        varchar name
+        text description
+        decimal price
+        decimal vat_rate
+        int stock_quantity
+        varchar status
+        datetime created_at
+        datetime deleted_at }
+    text { int id PK
+        varchar key
+        varchar title
+        longtext content
+        varchar language
+        tinyint is_active
+        int created_by FK
+        datetime created_at }
+    enumeration { int id PK
+        varchar type
+        varchar code
+        varchar label
+        varchar value
+        smallint sort_order
+        tinyint is_active
+        datetime created_at }
+    order { int id PK
+        varchar order_number
+        int user_id FK
+        varchar status
+        decimal total_amount
+        varchar currency
+        varchar payment_method
+        int shipping_address_id FK
+        int billing_address_id FK
+        text note
+        datetime created_at
+        datetime deleted_at }
+    order_item { int id PK
+        int order_id FK
+        int product_id FK
+        int quantity
+        decimal unit_price
+        decimal total_price
+        datetime created_at }
+    invoice { int id PK
+        varchar invoice_number
+        int order_id FK
+        int user_id FK
+        varchar status
+        decimal total_amount
+        varchar currency
+        int billing_address_id FK
+        text note
+        datetime issued_at
+        date due_at
+        datetime paid_at
+        datetime deleted_at }
+    invoice_item { int id PK
+        int invoice_id FK
+        int product_id FK
+        varchar description
+        int quantity
+        decimal unit_price
+        decimal total_price
+        datetime created_at }
+    user ||--o{ user_token : "has tokens"
+    user ||--o{ address : "has addresses"
+    user ||--o| address : "default billing"
+    user ||--o{ order : "places"
+    user ||--o{ invoice : "owns"
+    user ||--o{ text : "created_by"
+    address ||--o{ order : "shipping_address"
+    address ||--o{ order : "billing_address"
+    address ||--o{ invoice : "billing_address"
+    category ||--o{ category : "subcategory"
+    category ||--o{ product : "contains"
+    product ||--o{ order_item : "ordered as"
+    product ||--o{ invoice_item : "invoiced as"
+    order ||--o{ order_item : "has items"
+    order ||--o| invoice : "generates"
+    invoice ||--o{ invoice_item : "has items"
+  </div>
+</div>
+<script>
+  let scale = 1;
+  mermaid.initialize({startOnLoad:false,theme:'default',er:{diagramPadding:30,useMaxWidth:false},themeVariables:{background:'#ffffff',mainBkg:'#dbeafe',nodeBorder:'#3b82f6',clusterBkg:'#f8fafc',titleColor:'#0f172a',edgeLabelBackground:'#f1f5f9',fontFamily:'Segoe UI,system-ui,sans-serif',lineColor:'#64748b',textColor:'#1e293b'}});
+  (async()=>{
+    const src=document.getElementById('mermaid-src').textContent.trim();
+    const container=document.getElementById('diagram-container');
+    const loading=document.getElementById('loading');
+    try{
+      const {svg}=await mermaid.render('er-diagram',src);
+      loading.remove();
+      const w=document.createElement('div');
+      w.id='svg-wrapper';w.innerHTML=svg;
+      const s=w.querySelector('svg');
+      s.style.borderRadius='12px';s.style.background='#fff';s.style.padding='1.5rem';s.style.boxShadow='0 2px 16px rgba(0,0,0,.08)';
+      container.appendChild(w);applyScale();
+    }catch(e){loading.textContent='Chyba: '+e.message;}
+  })();
+  function getSvg(){return document.querySelector('#svg-wrapper svg');}
+  function applyScale(){const s=getSvg();if(s)s.style.transform=`scale(${scale})`;}
+  function zoomIn(){scale=Math.min(scale+0.15,4);applyScale();}
+  function zoomOut(){scale=Math.max(scale-0.15,0.2);applyScale();}
+  function resetZoom(){scale=1;applyScale();}
+  function exportSvg(){
+    const s=getSvg();if(!s)return;
+    const b=new Blob([s.outerHTML],{type:'image/svg+xml'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='php-core-db-schema.svg';a.click();URL.revokeObjectURL(a.href);
+  }
+</script>
+</body>
+</html>

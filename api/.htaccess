@@ -1,0 +1,12 @@
+Options -Indexes
+RewriteEngine On
+
+# Pass Authorization header to PHP (needed for Bearer token auth)
+RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+# Allow direct access to existing files/dirs
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Route everything to api/index.php
+RewriteRule ^ index.php [L,QSA]

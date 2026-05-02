@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>php-core – DB Tabulky</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 min-h-screen font-sans text-slate-800 flex flex-col">
+<header class="bg-slate-900 text-white">
+  <div class="flex items-center gap-3 px-8 py-3">
+    <a href="../index.php" class="font-extrabold tracking-tight text-white hover:text-blue-400 transition-colors no-underline">&#9889; php-core</a>
+    <span class="text-slate-600">/</span>
+    <span class="text-slate-300 text-sm">DB Tabulky</span>
+  </div>
+</header>
+<nav class="bg-white border-b border-slate-200 px-8 py-2 flex gap-2 flex-wrap items-center">
+  <a href="../index.php" class="px-3 py-1.5 rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50 no-underline text-xs transition-colors">&#127968; Rozceštník</a>
+  <a href="flow-login.html" class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128273; Login flow</a>
+  <a href="flow-order-cancel.html" class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128230; Storno</a>
+  <a href="flow-models.html" class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128218; Model flows</a>
+  <a href="db-schema.html" class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128194; ER diagram</a>
+  <a href="db-table.html" class="px-3 py-1.5 rounded-md border bg-slate-900 text-white border-slate-900 no-underline text-xs">&#128203; DB tabulky</a>
+</nav>
+<div class="p-6 max-w-[1200px] mx-auto">
+  <p class="text-sm text-slate-500 mb-4">11 tabulek &middot; klikni na název tabulky pro zobrazení sloupců</p>
+  <div class="flex flex-wrap gap-4 mb-4">
+<div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm min-w-[220px] flex-1 basis-[220px] max-w-xs">
+  <div class="px-4 py-2 text-xs font-bold uppercase tracking-wider text-white bg-blue-500">Auth / Uživatelé</div>
+<div class="border-b border-slate-100 last:border-0">
+  <button onclick="toggle(this)" class="w-full flex justify-between items-center px-4 py-2 text-sm font-semibold text-slate-800 bg-slate-50 hover:bg-slate-100 transition-colors text-left cursor-pointer">
+    <span>user</span><span class="text-slate-400 text-xs">&#9654;</span>
+  </button>
+  <div class="hidden">
+<div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-800 font-semibold">id</span>
+  <div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">PK</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">first_name</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">last_name</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">email</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">phone</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">password</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">role</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">status</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">address_id</span>
+  <div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">FK→address</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">last_login_at</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">DATETIME</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">created_at</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">DATETIME</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">deleted_at</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">DATETIME</span></div>
+</div>
+  </div>
+</div><div class="border-b border-slate-100 last:border-0">
+  <button onclick="toggle(this)" class="w-full flex justify-between items-center px-4 py-2 text-sm font-semibold text-slate-800 bg-slate-50 hover:bg-slate-100 transition-colors text-left cursor-pointer">
+    <span>user_token</span><span class="text-slate-400 text-xs">&#9654;</span>
+  </button>
+  <div class="hidden">
+<div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-800 font-semibold">id</span>
+  <div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">PK</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">user_id</span>
+  <div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">FK→user</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">token</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">expires_at</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">DATETIME</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">created_at</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">DATETIME</span></div>
+</div>
+  </div>
+</div><div class="border-b border-slate-100 last:border-0">
+  <button onclick="toggle(this)" class="w-full flex justify-between items-center px-4 py-2 text-sm font-semibold text-slate-800 bg-slate-50 hover:bg-slate-100 transition-colors text-left cursor-pointer">
+    <span>address</span><span class="text-slate-400 text-xs">&#9654;</span>
+  </button>
+  <div class="hidden">
+<div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-800 font-semibold">id</span>
+  <div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">PK</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">user_id</span>
+  <div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">FK→user</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">type</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">company</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">first_name</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">last_name</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">street</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">city</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">zip</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">country</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">is_default</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">TINYINT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">created_at</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">DATETIME</span></div>
+</div>
+  </div>
+</div>
+</div>
+<div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm min-w-[220px] flex-1 basis-[220px] max-w-xs">
+  <div class="px-4 py-2 text-xs font-bold uppercase tracking-wider text-white bg-emerald-500">Produkty / Katalog</div>
+<div class="border-b border-slate-100 last:border-0">
+  <button onclick="toggle(this)" class="w-full flex justify-between items-center px-4 py-2 text-sm font-semibold text-slate-800 bg-slate-50 hover:bg-slate-100 transition-colors text-left cursor-pointer">
+    <span>category</span><span class="text-slate-400 text-xs">&#9654;</span>
+  </button>
+  <div class="hidden">
+<div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-800 font-semibold">id</span>
+  <div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">PK</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">parent_id</span>
+  <div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">FK→category</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">name</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">slug</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">description</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">TEXT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">sort_order</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">SMALLINT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">created_at</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">DATETIME</span></div>
+</div>
+  </div>
+</div><div class="border-b border-slate-100 last:border-0">
+  <button onclick="toggle(this)" class="w-full flex justify-between items-center px-4 py-2 text-sm font-semibold text-slate-800 bg-slate-50 hover:bg-slate-100 transition-colors text-left cursor-pointer">
+    <span>product</span><span class="text-slate-400 text-xs">&#9654;</span>
+  </button>
+  <div class="hidden">
+<div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-800 font-semibold">id</span>
+  <div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">PK</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">category_id</span>
+  <div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">FK→category</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">sku</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">name</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">description</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">TEXT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">price</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">DECIMAL</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">vat_rate</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">DECIMAL</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">stock_quantity</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">status</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">created_at</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">DATETIME</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">deleted_at</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">DATETIME</span></div>
+</div>
+  </div>
+</div>
+</div>
+<div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm min-w-[220px] flex-1 basis-[220px] max-w-xs">
+  <div class="px-4 py-2 text-xs font-bold uppercase tracking-wider text-white bg-amber-500">Objednávky</div>
+<div class="border-b border-slate-100 last:border-0">
+  <button onclick="toggle(this)" class="w-full flex justify-between items-center px-4 py-2 text-sm font-semibold text-slate-800 bg-slate-50 hover:bg-slate-100 transition-colors text-left cursor-pointer">
+    <span>order</span><span class="text-slate-400 text-xs">&#9654;</span>
+  </button>
+  <div class="hidden">
+<div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-800 font-semibold">id</span>
+  <div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">PK</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">order_number</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">user_id</span>
+  <div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">FK→user</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">status</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">total_amount</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">DECIMAL</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">currency</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">payment_method</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">shipping_address_id</span>
+  <div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">FK→address</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">billing_address_id</span>
+  <div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">FK→address</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">note</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">TEXT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">created_at</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">DATETIME</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">deleted_at</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">DATETIME</span></div>
+</div>
+  </div>
+</div><div class="border-b border-slate-100 last:border-0">
+  <button onclick="toggle(this)" class="w-full flex justify-between items-center px-4 py-2 text-sm font-semibold text-slate-800 bg-slate-50 hover:bg-slate-100 transition-colors text-left cursor-pointer">
+    <span>order_item</span><span class="text-slate-400 text-xs">&#9654;</span>
+  </button>
+  <div class="hidden">
+<div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-800 font-semibold">id</span>
+  <div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">PK</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">order_id</span>
+  <div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">FK→order</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">product_id</span>
+  <div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">FK→product</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">quantity</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">unit_price</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">DECIMAL</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">total_price</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">DECIMAL</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">created_at</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">DATETIME</span></div>
+</div>
+  </div>
+</div>
+</div>
+<div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm min-w-[220px] flex-1 basis-[220px] max-w-xs">
+  <div class="px-4 py-2 text-xs font-bold uppercase tracking-wider text-white bg-violet-500">Faktury</div>
+<div class="border-b border-slate-100 last:border-0">
+  <button onclick="toggle(this)" class="w-full flex justify-between items-center px-4 py-2 text-sm font-semibold text-slate-800 bg-slate-50 hover:bg-slate-100 transition-colors text-left cursor-pointer">
+    <span>invoice</span><span class="text-slate-400 text-xs">&#9654;</span>
+  </button>
+  <div class="hidden">
+<div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-800 font-semibold">id</span>
+  <div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">PK</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">invoice_number</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">order_id</span>
+  <div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">FK→order</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">user_id</span>
+  <div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">FK→user</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">status</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">total_amount</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">DECIMAL</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">currency</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">billing_address_id</span>
+  <div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">FK→address</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">note</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">TEXT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">issued_at</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">DATETIME</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">due_at</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">DATE</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">paid_at</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">DATETIME</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">deleted_at</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">DATETIME</span></div>
+</div>
+  </div>
+</div><div class="border-b border-slate-100 last:border-0">
+  <button onclick="toggle(this)" class="w-full flex justify-between items-center px-4 py-2 text-sm font-semibold text-slate-800 bg-slate-50 hover:bg-slate-100 transition-colors text-left cursor-pointer">
+    <span>invoice_item</span><span class="text-slate-400 text-xs">&#9654;</span>
+  </button>
+  <div class="hidden">
+<div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-800 font-semibold">id</span>
+  <div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">PK</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">invoice_id</span>
+  <div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">FK→invoice</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">product_id</span>
+  <div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">FK→product</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">description</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">quantity</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">unit_price</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">DECIMAL</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">total_price</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">DECIMAL</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">created_at</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">DATETIME</span></div>
+</div>
+  </div>
+</div>
+</div>
+<div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm min-w-[220px] flex-1 basis-[220px] max-w-xs">
+  <div class="px-4 py-2 text-xs font-bold uppercase tracking-wider text-white bg-slate-500">Číselníky / CMS</div>
+<div class="border-b border-slate-100 last:border-0">
+  <button onclick="toggle(this)" class="w-full flex justify-between items-center px-4 py-2 text-sm font-semibold text-slate-800 bg-slate-50 hover:bg-slate-100 transition-colors text-left cursor-pointer">
+    <span>enumeration</span><span class="text-slate-400 text-xs">&#9654;</span>
+  </button>
+  <div class="hidden">
+<div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-800 font-semibold">id</span>
+  <div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">PK</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">type</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">code</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">label</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">value</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">sort_order</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">SMALLINT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">is_active</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">TINYINT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">created_at</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">DATETIME</span></div>
+</div>
+  </div>
+</div><div class="border-b border-slate-100 last:border-0">
+  <button onclick="toggle(this)" class="w-full flex justify-between items-center px-4 py-2 text-sm font-semibold text-slate-800 bg-slate-50 hover:bg-slate-100 transition-colors text-left cursor-pointer">
+    <span>text</span><span class="text-slate-400 text-xs">&#9654;</span>
+  </button>
+  <div class="hidden">
+<div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-800 font-semibold">id</span>
+  <div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">PK</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">key</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">title</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">content</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">LONGTEXT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">language</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">is_active</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">TINYINT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">created_by</span>
+  <div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">FK→user</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+</div><div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+  <span class="text-xs text-slate-600">created_at</span>
+  <div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">DATETIME</span></div>
+</div>
+  </div>
+</div>
+</div>
+  </div>
+<div class="w-full bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+  <div class="px-4 py-2 text-xs font-bold uppercase tracking-wider text-white bg-slate-700">Vazby (Foreign Keys)</div>
+  <div class="overflow-x-auto">
+  <table class="w-full text-xs border-collapse">
+    <thead><tr class="bg-slate-50 border-b border-slate-200">
+      <th class="text-left px-4 py-2 text-slate-500 font-semibold">Tabulka</th>
+      <th class="text-left px-4 py-2 text-slate-500 font-semibold">Sloupec</th>
+      <th class="text-left px-4 py-2 text-slate-500 font-semibold">Cíl</th>
+      <th class="text-left px-4 py-2 text-slate-500 font-semibold">ON DELETE</th>
+      <th class="text-left px-4 py-2 text-slate-500 font-semibold">Popis</th>
+    </tr></thead>
+    <tbody class="divide-y divide-slate-100">
+      <tr class="hover:bg-slate-50"><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">user</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">address_id</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">address.id</code></td><td class="px-4 py-1.5 text-slate-500">SET NULL</td><td class="px-4 py-1.5 text-slate-600">výchozí fakturační adresa</td></tr>
+      <tr class="hover:bg-slate-50"><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">address</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">user_id</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">user.id</code></td><td class="px-4 py-1.5 text-slate-500">CASCADE</td><td class="px-4 py-1.5 text-slate-600">adresa patří uživateli</td></tr>
+      <tr class="hover:bg-slate-50"><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">category</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">parent_id</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">category.id</code></td><td class="px-4 py-1.5 text-slate-500">SET NULL</td><td class="px-4 py-1.5 text-slate-600">nadřízená kategorie (strom)</td></tr>
+      <tr class="hover:bg-slate-50"><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">product</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">category_id</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">category.id</code></td><td class="px-4 py-1.5 text-slate-500">SET NULL</td><td class="px-4 py-1.5 text-slate-600">produkt v kategorii</td></tr>
+      <tr class="hover:bg-slate-50"><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">order</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">user_id</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">user.id</code></td><td class="px-4 py-1.5 text-slate-500">SET NULL</td><td class="px-4 py-1.5 text-slate-600">objednávka patří uživateli</td></tr>
+      <tr class="hover:bg-slate-50"><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">order</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">shipping_address_id</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">address.id</code></td><td class="px-4 py-1.5 text-slate-500">SET NULL</td><td class="px-4 py-1.5 text-slate-600">doručovací adresa</td></tr>
+      <tr class="hover:bg-slate-50"><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">order</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">billing_address_id</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">address.id</code></td><td class="px-4 py-1.5 text-slate-500">SET NULL</td><td class="px-4 py-1.5 text-slate-600">fakturační adresa objednávky</td></tr>
+      <tr class="hover:bg-slate-50"><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">order_item</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">order_id</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">order.id</code></td><td class="px-4 py-1.5 text-slate-500">CASCADE</td><td class="px-4 py-1.5 text-slate-600">položka patří k objednávce</td></tr>
+      <tr class="hover:bg-slate-50"><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">order_item</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">product_id</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">product.id</code></td><td class="px-4 py-1.5 text-slate-500">SET NULL</td><td class="px-4 py-1.5 text-slate-600">objednaný produkt</td></tr>
+      <tr class="hover:bg-slate-50"><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">invoice</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">order_id</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">order.id</code></td><td class="px-4 py-1.5 text-slate-500">SET NULL</td><td class="px-4 py-1.5 text-slate-600">faktura vznikla z objednávky</td></tr>
+      <tr class="hover:bg-slate-50"><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">invoice</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">user_id</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">user.id</code></td><td class="px-4 py-1.5 text-slate-500">SET NULL</td><td class="px-4 py-1.5 text-slate-600">faktura patří uživateli</td></tr>
+      <tr class="hover:bg-slate-50"><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">invoice</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">billing_address_id</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">address.id</code></td><td class="px-4 py-1.5 text-slate-500">SET NULL</td><td class="px-4 py-1.5 text-slate-600">fakturační adresa faktury</td></tr>
+      <tr class="hover:bg-slate-50"><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">invoice_item</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">invoice_id</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">invoice.id</code></td><td class="px-4 py-1.5 text-slate-500">CASCADE</td><td class="px-4 py-1.5 text-slate-600">položka patří k faktuře</td></tr>
+      <tr class="hover:bg-slate-50"><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">invoice_item</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">product_id</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">product.id</code></td><td class="px-4 py-1.5 text-slate-500">SET NULL</td><td class="px-4 py-1.5 text-slate-600">fakturovaný produkt</td></tr>
+      <tr class="hover:bg-slate-50"><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">text</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">created_by</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">user.id</code></td><td class="px-4 py-1.5 text-slate-500">SET NULL</td><td class="px-4 py-1.5 text-slate-600">autor textového bloku</td></tr>
+      <tr class="hover:bg-slate-50"><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">user_token</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">user_id</code></td><td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">user.id</code></td><td class="px-4 py-1.5 text-slate-500">CASCADE</td><td class="px-4 py-1.5 text-slate-600">Bearer token patří uživateli</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+</div>
+<script>
+function toggle(btn){
+  const body=btn.nextElementSibling;
+  const arrow=btn.querySelector('span:last-child');
+  const open=body.classList.toggle('hidden');
+  body.classList.toggle('block',!open);
+  arrow.textContent=open?'▶':'▼';
+}
+</script>
+</body>
+</html>
