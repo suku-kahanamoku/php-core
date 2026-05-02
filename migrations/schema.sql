@@ -96,6 +96,7 @@ CREATE TABLE IF NOT EXISTS `user_token` (
     `token`      VARCHAR(64)  NOT NULL,
     `expires_at` DATETIME     NOT NULL,
     `created_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME              DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_token`      (`token`),
     KEY        `idx_token_user` (`user_id`),
@@ -199,6 +200,7 @@ CREATE TABLE IF NOT EXISTS `order_item` (
     `unit_price`  DECIMAL(12, 2) NOT NULL,
     `total_price` DECIMAL(12, 2) NOT NULL,
     `created_at`  DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`  DATETIME                DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     KEY `idx_oi_order`   (`order_id`),
     KEY `idx_oi_product` (`product_id`),
@@ -246,6 +248,7 @@ CREATE TABLE IF NOT EXISTS `invoice_item` (
     `unit_price`  DECIMAL(12, 2) NOT NULL,
     `total_price` DECIMAL(12, 2) NOT NULL,
     `created_at`  DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`  DATETIME                DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     KEY `idx_ii_invoice` (`invoice_id`),
     KEY `idx_ii_product` (`product_id`),
@@ -299,3 +302,31 @@ INSERT INTO `user` (`franchise_code`, `first_name`, `last_name`, `email`, `passw
    '$2y$12$ubNeYmIWTWs4hXG6OQWQdO5rRStAzqrHM1C/xxU9H7vZx0LvMKI5q',
    (SELECT id FROM role WHERE franchise_code = 'default' AND name = 'admin'),
    'active');
+
+-- ── Migrations: add updated_at to tables that were missing it ─────────
+-- Run these on existing databases (safe to re-run via information_schema check)
+SET @db = DATABASE();
+
+SET @s1 = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS
+   WHERE TABLE_SCHEMA=@db AND TABLE_NAME='user_token' AND COLUMN_NAME='updated_at') = 0,
+  'ALTER TABLE `user_token` ADD COLUMN `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP AFTER `created_at`',
+  'SELECT 1'
+);
+PREPARE stmt FROM @s1; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @s2 = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS
+   WHERE TABLE_SCHEMA=@db AND TABLE_NAME='order_item' AND COLUMN_NAME='updated_at') = 0,
+  'ALTER TABLE `order_item` ADD COLUMN `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP AFTER `created_at`',
+  'SELECT 1'
+);
+PREPARE stmt FROM @s2; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @s3 = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS
+   WHERE TABLE_SCHEMA=@db AND TABLE_NAME='invoice_item' AND COLUMN_NAME='updated_at') = 0,
+  'ALTER TABLE `invoice_item` ADD COLUMN `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP AFTER `created_at`',
+  'SELECT 1'
+);
+PREPARE stmt FROM @s3; EXECUTE stmt; DEALLOCATE PREPARE stmt;

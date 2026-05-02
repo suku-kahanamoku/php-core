@@ -57,7 +57,7 @@ class InvoiceRepository
         $items = $this->db->fetchAll(
             "SELECT i.id, i.invoice_number, i.status, i.total_amount, i.currency,
                     i.issued_at, i.due_at, i.paid_at,
-                    i.order_id, i.user_id,
+                    i.order_id, i.user_id, i.created_at, i.updated_at,
                     u.first_name, u.last_name, u.email
              FROM invoice i
              LEFT JOIN user u ON u.id = i.user_id
