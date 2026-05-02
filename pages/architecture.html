@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>php-core – Architektura</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  pre code { font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace; }
+  .mermaid-wrap svg { max-width: 100%; border-radius: 12px; background: #fff; padding: 1.5rem;
+    box-shadow: 0 2px 16px rgba(0,0,0,.07); }
+</style>
+</head>
+<body class="bg-slate-100 min-h-screen font-sans text-slate-800 flex flex-col">
+<header class="bg-slate-900 text-white">
+  <div class="flex items-center gap-3 px-8 py-3">
+    <a href="index.html" class="font-extrabold tracking-tight text-white hover:text-blue-400 transition-colors no-underline">&#9889; php-core</a>
+    <span class="text-slate-600">/</span>
+    <span class="text-slate-300 text-sm">Architektura</span>
+  </div>
+</header>
+<nav class="bg-white border-b border-slate-200 px-8 py-2 flex gap-2 flex-wrap items-center">
+  <a href="index.html"         class="px-3 py-1.5 rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50 no-underline text-xs transition-colors">&#127968; Developer Hub</a>
+  <a href="architecture.html"  class="px-3 py-1.5 rounded-md border bg-slate-900 text-white border-slate-900 no-underline text-xs">&#127959; Architektura</a>
+  <a href="api-reference.html" class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128196; API Reference</a>
+  <a href="flows.html"         class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128257; Flows</a>
+  <a href="db-schema.html"     class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128194; ER Diagram</a>
+  <a href="db-table.html"      class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128203; DB Tabulky</a>
+</nav>
+
+<div class="max-w-5xl mx-auto w-full px-6 py-8 flex-1">
+
+  <!-- Tabs -->
+  <div class="flex flex-wrap gap-2 mb-6">
+    <button class="tab-btn px-4 py-2 rounded-lg border text-xs font-semibold cursor-pointer bg-slate-900 text-white border-slate-900" data-tab="overview">&#128269; Přehled</button>
+    <button class="tab-btn px-4 py-2 rounded-lg border text-xs font-semibold cursor-pointer border-slate-200 bg-white text-slate-500 hover:border-slate-400" data-tab="lifecycle">&#128257; Request Lifecycle</button>
+    <button class="tab-btn px-4 py-2 rounded-lg border text-xs font-semibold cursor-pointer border-slate-200 bg-white text-slate-500 hover:border-slate-400" data-tab="module">&#129520; Modul Anatomie</button>
+    <button class="tab-btn px-4 py-2 rounded-lg border text-xs font-semibold cursor-pointer border-slate-200 bg-white text-slate-500 hover:border-slate-400" data-tab="multitenancy">&#127970; Multi-tenancy</button>
+    <button class="tab-btn px-4 py-2 rounded-lg border text-xs font-semibold cursor-pointer border-slate-200 bg-white text-slate-500 hover:border-slate-400" data-tab="auth">&#128273; Auth Flow</button>
+    <button class="tab-btn px-4 py-2 rounded-lg border text-xs font-semibold cursor-pointer border-slate-200 bg-white text-slate-500 hover:border-slate-400" data-tab="conventions">&#128221; Konvence</button>
+  </div>
+
+  <!-- ───── TAB: Přehled ───── -->
+  <div class="tab-panel active" id="tab-overview">
+    <h2 class="text-base font-bold text-slate-700 mb-1">Komponentní přehled</h2>
+    <p class="text-sm text-slate-500 mb-4">Jak jsou jednotlivé vrstvy propojeny a kdo koho volá.</p>
+    <div class="mermaid-wrap bg-white rounded-xl border border-slate-200 p-4 mb-6">
+<div class="mermaid">
+graph TD
+    subgraph CLIENT["&#128187; Klient"]
+        C[curl / frontend]
+    end
+    subgraph APACHE["&#9000; Apache"]
+        HT[".htaccess<br/>RewriteRule"]
+    end
+    subgraph ENTRY["&#128228; Entry Point<br/>api/module/index.php"]
+        BS[bootstrap.php]
+        CORS[CorsMiddleware]
+        REQ[Request]
+        ROU[Router]
+        DB[Database::getInstance]
+        AUTH[new Auth]
+        API[new XxxApi]
+    end
+    subgraph MODULE["&#127981; Modul (src/Modules/Xxx/)"]
+        XAPI[XxxApi<br/>registerRoutes]
+        XSVC[XxxService<br/>business logika]
+        XREP[XxxRepository<br/>SQL dotazy]
+    end
+    subgraph INFRA["&#128736; Infrastruktura"]
+        DBI[Database<br/>PDO singleton]
+        AUTHI[Auth<br/>token + role]
+        UTR[UserTokenRepository]
+    end
+
+    C -->|HTTP request| HT
+    HT -->|RewriteRule| BS
+    BS --> CORS
+    BS --> REQ
+    REQ -->|franchise_code| ROU
+    DB --> DBI
+    AUTH --> AUTHI
+    AUTHI --> UTR
+    UTR --> DBI
+    API --> XAPI
+    XAPI -->|registerRoutes| ROU
+    ROU -->|dispatch| XSVC
+    XSVC --> AUTHI
+    XSVC --> XREP
+    XREP --> DBI
+    DBI -->|result| XREP
+    XREP -->|data| XSVC
+    XSVC -->|response| ROU
+    ROU -->|JSON| C
+
+    style CLIENT fill:#dbeafe,stroke:#3b82f6
+    style APACHE fill:#fef3c7,stroke:#d97706
+    style ENTRY fill:#dcfce7,stroke:#16a34a
+    style MODULE fill:#ede9fe,stroke:#7c3aed
+    style INFRA fill:#fce7f3,stroke:#db2777
+</div>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-4 mb-6">
+      <div class="bg-white rounded-xl border border-slate-200 p-4">
+        <div class="text-xs font-bold text-slate-500 uppercase mb-2">Vrstvy modulu</div>
+        <div class="space-y-2">
+          <div class="flex items-start gap-2"><span class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded font-mono shrink-0">*Api</span><span class="text-xs text-slate-600">HTTP routing, parsování requestu, volání service</span></div>
+          <div class="flex items-start gap-2"><span class="bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded font-mono shrink-0">*Service</span><span class="text-xs text-slate-600">Business logika, validace, auth kontrola</span></div>
+          <div class="flex items-start gap-2"><span class="bg-violet-100 text-violet-700 text-xs px-2 py-0.5 rounded font-mono shrink-0">*Repository</span><span class="text-xs text-slate-600">Veškeré SQL dotazy, filtrování dle franchise_code</span></div>
+        </div>
+      </div>
+      <div class="bg-white rounded-xl border border-slate-200 p-4">
+        <div class="text-xs font-bold text-slate-500 uppercase mb-2">Sdílená infrastruktura</div>
+        <div class="space-y-2">
+          <div class="flex items-start gap-2"><span class="bg-rose-100 text-rose-700 text-xs px-2 py-0.5 rounded font-mono shrink-0">Database</span><span class="text-xs text-slate-600">PDO singleton, query helpery</span></div>
+          <div class="flex items-start gap-2"><span class="bg-rose-100 text-rose-700 text-xs px-2 py-0.5 rounded font-mono shrink-0">Auth</span><span class="text-xs text-slate-600">Instance třída – token, user, role</span></div>
+          <div class="flex items-start gap-2"><span class="bg-rose-100 text-rose-700 text-xs px-2 py-0.5 rounded font-mono shrink-0">Request</span><span class="text-xs text-slate-600">HTTP + franchise_code resolution</span></div>
+          <div class="flex items-start gap-2"><span class="bg-rose-100 text-rose-700 text-xs px-2 py-0.5 rounded font-mono shrink-0">Router</span><span class="text-xs text-slate-600">Regex routing, dispatch</span></div>
+        </div>
+      </div>
+      <div class="bg-white rounded-xl border border-slate-200 p-4">
+        <div class="text-xs font-bold text-slate-500 uppercase mb-2">Moduly (10)</div>
+        <div class="flex flex-wrap gap-1">
+          <span class="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded">Auth</span>
+          <span class="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded">Role</span>
+          <span class="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded">User</span>
+          <span class="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded">Address</span>
+          <span class="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded">Category</span>
+          <span class="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded">Product</span>
+          <span class="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded">Text</span>
+          <span class="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded">Enumeration</span>
+          <span class="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded">Order</span>
+          <span class="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded">Invoice</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───── TAB: Request Lifecycle ───── -->
+  <div class="tab-panel" id="tab-lifecycle">
+    <h2 class="text-base font-bold text-slate-700 mb-1">Request Lifecycle</h2>
+    <p class="text-sm text-slate-500 mb-4">Co se stane od HTTP požadavku po JSON odpověď.</p>
+    <div class="mermaid-wrap bg-white rounded-xl border border-slate-200 p-4 mb-6">
+<div class="mermaid">
+sequenceDiagram
+    participant C as Klient
+    participant A as Apache<br/>.htaccess
+    participant E as api/products/index.php
+    participant B as bootstrap.php
+    participant CORS as CorsMiddleware
+    participant REQ as Request
+    participant DB as Database
+    participant AUTH as Auth
+    participant API as ProductApi
+    participant ROU as Router
+    participant SVC as ProductService
+    participant REP as ProductRepository
+
+    C->>A: GET /api/products<br/>Authorization: Bearer token
+    A->>E: RewriteRule → products/index.php
+    E->>B: require_once bootstrap.php
+    B->>CORS: (new CorsMiddleware())()
+    CORS-->>C: CORS headers (OPTIONS → exit)
+    E->>REQ: new Request()
+    REQ->>REQ: resolveCode() - Host → franchise_code
+    Note over REQ: Validace FRANCHISE_CODES env<br/>Neznámý host → 403
+    E->>DB: Database::getInstance()
+    E->>AUTH: new Auth($db)
+    E->>API: new ProductApi($db, $code, $auth)
+    API->>ROU: registerRoutes($router)
+    E->>ROU: dispatch($request)
+    ROU->>SVC: getAll() / getById() / ...
+    SVC->>AUTH: require() nebo requireRole('admin')
+    Note over AUTH: Čte Authorization header<br/>Validuje token v DB<br/>401 pokud neplatný
+    SVC->>REP: findAll($code, $filters)
+    REP->>DB: fetchAll("SELECT ... WHERE franchise_code=?", [$code])
+    DB-->>REP: array[]
+    REP-->>SVC: array[]
+    SVC-->>ROU: data
+    ROU-->>C: {"success":true,"data":[...]}
+</div>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white rounded-xl border border-slate-200 p-4">
+        <div class="text-xs font-bold text-slate-600 mb-3">&#128228; Entry point (api/products/index.php)</div>
+        <pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed overflow-x-auto"><code>&lt;?php
+require_once __DIR__ . '/../../bootstrap.php';
+
+use App\Modules\Router\{Request, Router};
+use App\Modules\Database\Database;
+use App\Modules\Auth\Auth;
+use App\Modules\Product\ProductApi;
+
+$request = new Request();
+$router  = new Router();
+$db      = Database::getInstance();
+$code    = $request->franchiseCode;
+$auth    = new Auth($db);
+
+$api = new ProductApi($db, $code, $auth);
+$api->registerRoutes($router);
+$router->dispatch($request);</code></pre>
+      </div>
+      <div class="bg-white rounded-xl border border-slate-200 p-4">
+        <div class="text-xs font-bold text-slate-600 mb-3">&#9000; .htaccess routing</div>
+        <pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed overflow-x-auto"><code>Options -Indexes
+DirectorySlash Off
+
+RewriteEngine On
+# Bearer token passthrough
+SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+
+# Routuj moduly do jejich index.php
+RewriteRule ^(auth|roles|users|address|categories|
+  products|texts|enumerations|orders|invoices)
+  ($|/.*) $1/index.php [L,QSA]</code></pre>
+        <div class="mt-3 text-xs text-slate-500">Každý modul má vlastní <code class="bg-slate-100 px-1 rounded">api/&lt;modul&gt;/index.php</code>, kde se inicializují závislosti a registrují routy.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───── TAB: Modul Anatomie ───── -->
+  <div class="tab-panel" id="tab-module">
+    <h2 class="text-base font-bold text-slate-700 mb-1">Modul Anatomie</h2>
+    <p class="text-sm text-slate-500 mb-4">Jak vypadá typický modul a jak přidat nový.</p>
+
+    <div class="mermaid-wrap bg-white rounded-xl border border-slate-200 p-4 mb-6">
+<div class="mermaid">
+classDiagram
+    class Database {
+        +getInstance() Database$
+        +fetchAll(sql, params) array
+        +fetchOne(sql, params) array|null
+        +query(sql, params) PDOStatement
+        +insert(table, data) int
+        +update(table, data, where) int
+        +delete(table, where) int
+    }
+
+    class Auth {
+        -UserTokenRepository userToken
+        -array|null currentUser
+        +__construct(Database db)
+        +login(email, password, code) array
+        +logout(token) void
+        +check() bool
+        +user() array|null
+        +id() int|null
+        +role() string|null
+        +hasRole(role) bool
+        +require() void
+        +requireRole(role) void
+    }
+
+    class UserTokenRepository {
+        -Database db
+        +__construct(Database db)
+        +findUserByToken(token, code) array|null
+        +create(userId, token, expiresAt) void
+        +delete(token) void
+    }
+
+    class ProductRepository {
+        -Database db
+        -string code
+        +__construct(Database db, code)
+        +findAll(filters) array
+        +findById(id) array|null
+        +create(data) int
+        +update(id, data) void
+        +delete(id) void
+        +adjustStock(id, qty) void
+    }
+
+    class ProductService {
+        -Database db
+        -string code
+        -Auth auth
+        -ProductRepository repo
+        +__construct(Database db, code, Auth auth)
+        +getAll(filters) array
+        +getById(id) array
+        +create(data) array
+        +update(id, data) array
+        +delete(id) void
+        +adjustStock(id, qty) void
+    }
+
+    class ProductApi {
+        -Database db
+        -string code
+        -Auth auth
+        +__construct(Database db, code, Auth auth)
+        +registerRoutes(Router router) void
+    }
+
+    Auth --> UserTokenRepository
+    Auth --> Database
+    UserTokenRepository --> Database
+    ProductApi --> ProductService
+    ProductService --> ProductRepository
+    ProductService --> Auth
+    ProductRepository --> Database
+</div>
+    </div>
+
+    <h3 class="text-sm font-bold text-slate-700 mb-3 mt-6">Kód vzory</h3>
+    <div class="grid md:grid-cols-3 gap-4 mb-6">
+      <div class="bg-white rounded-xl border border-slate-200 p-4">
+        <div class="text-xs font-bold text-violet-700 mb-2">*Repository – SQL vrstva</div>
+        <pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed overflow-x-auto"><code>class ProductRepository {
+  public function __construct(
+    private Database $db,
+    private string $code
+  ) {}
+
+  public function findAll(
+    array $filters = []
+  ): array {
+    return $this->db->fetchAll(
+      'SELECT * FROM product
+       WHERE franchise_code = ?
+       AND deleted_at IS NULL',
+      [$this->code]
+    );
+  }
+
+  public function findById(
+    int $id
+  ): ?array {
+    return $this->db->fetchOne(
+      'SELECT * FROM product
+       WHERE id = ?
+       AND franchise_code = ?',
+      [$id, $this->code]
+    );
+  }
+}</code></pre>
+      </div>
+      <div class="bg-white rounded-xl border border-slate-200 p-4">
+        <div class="text-xs font-bold text-amber-700 mb-2">*Service – business logika</div>
+        <pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed overflow-x-auto"><code>class ProductService {
+  private ProductRepository $repo;
+
+  public function __construct(
+    private Database $db,
+    private string $code,
+    private Auth $auth
+  ) {
+    $this->repo =
+      new ProductRepository($db, $code);
+  }
+
+  public function getAll(): array {
+    // veřejný endpoint – bez auth
+    return $this->repo->findAll();
+  }
+
+  public function create(
+    array $data
+  ): array {
+    // pouze admin
+    $this->auth->requireRole('admin');
+    $id = $this->repo->create($data);
+    return $this->repo->findById($id);
+  }
+}</code></pre>
+      </div>
+      <div class="bg-white rounded-xl border border-slate-200 p-4">
+        <div class="text-xs font-bold text-blue-700 mb-2">*Api – routing</div>
+        <pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed overflow-x-auto"><code>class ProductApi {
+  private ProductService $service;
+
+  public function __construct(
+    private Database $db,
+    private string $code,
+    private Auth $auth
+  ) {
+    $this->service =
+      new ProductService($db, $code, $auth);
+  }
+
+  public function registerRoutes(
+    Router $router
+  ): void {
+    $router->get('/products',
+      fn($req) => Response::json(
+        $this->service->getAll()
+      )
+    );
+    $router->post('/products',
+      fn($req) => Response::json(
+        $this->service->create($req->body),
+        201
+      )
+    );
+  }
+}</code></pre>
+      </div>
+    </div>
+
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+      <div class="text-xs font-bold text-blue-700 mb-2">&#128161; Jak přidat nový modul (např. Tag)</div>
+      <ol class="text-xs text-slate-600 space-y-1 list-decimal list-inside">
+        <li>Vytvořte adresář <code class="bg-white px-1 rounded border border-slate-200">src/Modules/Tag/</code></li>
+        <li>Přidejte tabulku do <code class="bg-white px-1 rounded border border-slate-200">migrations/schema.sql</code> se sloupcem <code class="bg-white px-1 rounded border border-slate-200">franchise_code</code></li>
+        <li>Vytvořte <code class="bg-white px-1 rounded border border-slate-200">TagRepository.php</code> – SQL operace</li>
+        <li>Vytvořte <code class="bg-white px-1 rounded border border-slate-200">TagService.php</code> – business logika + auth kontroly</li>
+        <li>Vytvořte <code class="bg-white px-1 rounded border border-slate-200">TagApi.php</code> – registrace rout přes <code class="bg-white px-1 rounded border border-slate-200">registerRoutes()</code></li>
+        <li>Vytvořte <code class="bg-white px-1 rounded border border-slate-200">api/tags/index.php</code> – entry point (zkopírujte vzor z jiného modulu)</li>
+        <li>Přidejte <code class="bg-white px-1 rounded border border-slate-200">tags</code> do RewriteRule v <code class="bg-white px-1 rounded border border-slate-200">api/.htaccess</code></li>
+        <li>Přidejte testy do <code class="bg-white px-1 rounded border border-slate-200">src/Modules/Tag/tests/test_tags.php</code></li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- ───── TAB: Multi-tenancy ───── -->
+  <div class="tab-panel" id="tab-multitenancy">
+    <h2 class="text-base font-bold text-slate-700 mb-1">Multi-tenancy (franchise_code)</h2>
+    <p class="text-sm text-slate-500 mb-4">Jak funguje izolace dat mezi tenants.</p>
+
+    <div class="mermaid-wrap bg-white rounded-xl border border-slate-200 p-4 mb-6">
+<div class="mermaid">
+flowchart TD
+    A["HTTP Request<br/>Host: shop1.example.com"] --> B["Request::resolveCode()"]
+    B --> C{"Host v FRANCHISE_CODES?"}
+    C -->|NE| D["HTTP 403 Forbidden<br/>{'success':false,'message':'Forbidden'}"]
+    C -->|ANO| E["franchise_code = 'shop1'"]
+    E --> F["$request->franchiseCode"]
+    F --> G["předán do Api/Service/Repository<br/>jako konstruktor argument"]
+    G --> H["Každý SQL dotaz filtruje:<br/>WHERE franchise_code = 'shop1'"]
+    H --> I["Data jsou izolována<br/>od ostatních tenants"]
+
+    style D fill:#fecaca,stroke:#ef4444
+    style I fill:#dcfce7,stroke:#16a34a
+</div>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-4 mb-6">
+      <div class="bg-white rounded-xl border border-slate-200 p-4">
+        <div class="text-xs font-bold text-slate-600 mb-2">.env konfigurace</div>
+        <pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code># Povolené franchise kódy
+FRANCHISE_CODES=default,shop1,shop2,demo
+
+# Každý musí mít vlastní
+# Apache VirtualHost nebo
+# být sub-doménou</code></pre>
+        <div class="mt-2 text-xs text-slate-500">Přidání nového tenantu = přidat kód do env + restart server.</div>
+      </div>
+      <div class="bg-white rounded-xl border border-slate-200 p-4">
+        <div class="text-xs font-bold text-slate-600 mb-2">Request::resolveCode()</div>
+        <pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>// Host → franchise_code mapping
+// shop1.example.com → "shop1"
+// localhost → "default"
+// shop2.myapp.io → "shop2"
+
+// Validace:
+$codes = explode(',',
+  $_ENV['FRANCHISE_CODES']
+);
+if (!in_array($code, $codes)) {
+  http_response_code(403);
+  exit;
+}</code></pre>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-slate-200 p-4 mb-4">
+      <div class="text-xs font-bold text-slate-600 mb-3">franchise_code ve schématu DB</div>
+      <div class="text-xs text-slate-600 mb-3">Každá doménová tabulka má sloupec <code class="bg-slate-100 px-1 rounded">franchise_code VARCHAR(64) NOT NULL DEFAULT 'default'</code>. Tabulky bez franchise_code jsou sdílené (cross-tenant):</div>
+      <div class="flex flex-wrap gap-3">
+        <div>
+          <div class="text-xs font-semibold text-slate-500 mb-2">Scoped (s franchise_code)</div>
+          <div class="flex flex-wrap gap-1">
+            <span class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded">role</span>
+            <span class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded">user</span>
+            <span class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded">address</span>
+            <span class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded">category</span>
+            <span class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded">product</span>
+            <span class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded">text</span>
+            <span class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded">enumeration</span>
+            <span class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded">order</span>
+            <span class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded">invoice</span>
+          </div>
+        </div>
+        <div>
+          <div class="text-xs font-semibold text-slate-500 mb-2">Sdílené (bez franchise_code)</div>
+          <div class="flex flex-wrap gap-1">
+            <span class="bg-slate-200 text-slate-600 text-xs px-2 py-0.5 rounded">user_token</span>
+            <span class="bg-slate-200 text-slate-600 text-xs px-2 py-0.5 rounded">order_item</span>
+            <span class="bg-slate-200 text-slate-600 text-xs px-2 py-0.5 rounded">invoice_item</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───── TAB: Auth Flow ───── -->
+  <div class="tab-panel" id="tab-auth">
+    <h2 class="text-base font-bold text-slate-700 mb-1">Auth Flow</h2>
+    <p class="text-sm text-slate-500 mb-4">Jak funguje přihlášení, tokeny a autorizace rolí.</p>
+
+    <div class="grid md:grid-cols-2 gap-4 mb-6">
+      <div>
+        <div class="text-xs font-bold text-slate-600 mb-2">Login flow</div>
+        <div class="mermaid-wrap bg-white rounded-xl border border-slate-200 p-4">
+<div class="mermaid">
+sequenceDiagram
+    participant C as Klient
+    participant S as AuthService
+    participant DB as Database
+    participant UT as UserTokenRepository
+
+    C->>S: POST /auth/login<br/>{email, password, franchise_code}
+    S->>DB: SELECT user WHERE email=? AND franchise_code=?
+    DB-->>S: user row (s password hashem)
+    S->>S: password_verify(plain, hash)
+    alt Neplatné přihlašovací údaje
+        S-->>C: 401 Unauthorized
+    else Platné
+        S->>S: bin2hex(random_bytes(32))
+        S->>UT: create(userId, token, expiresAt)
+        UT->>DB: INSERT INTO user_token
+        S-->>C: 200 {token, id, email, role}
+    end
+</div>
+        </div>
+      </div>
+      <div>
+        <div class="text-xs font-bold text-slate-600 mb-2">Token validace (každý chráněný request)</div>
+        <div class="mermaid-wrap bg-white rounded-xl border border-slate-200 p-4">
+<div class="mermaid">
+sequenceDiagram
+    participant C as Klient
+    participant SVC as *Service
+    participant A as Auth
+    participant UT as UserTokenRepository
+    participant DB as Database
+
+    C->>SVC: request + Authorization: Bearer token
+    SVC->>A: require() nebo requireRole('admin')
+    A->>A: getTokenFromHeader()
+    A->>UT: findUserByToken(token, franchise_code)
+    UT->>DB: SELECT user JOIN user_token<br/>WHERE token=? AND expires_at > NOW()
+    DB-->>UT: user row nebo NULL
+    alt Token neplatný / expirovaný
+        A-->>C: 401 Unauthorized
+    else Správná role
+        A-->>SVC: OK
+    else Špatná role
+        A-->>C: 403 Forbidden
+    end
+</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-slate-200 p-4 mb-4">
+      <div class="text-xs font-bold text-slate-600 mb-3">Auth metody (instance, ne static)</div>
+      <div class="grid md:grid-cols-2 gap-3">
+        <div>
+          <div class="text-xs font-semibold text-slate-500 mb-2">Veřejné metody Auth</div>
+          <table class="w-full text-xs">
+            <thead class="bg-slate-50"><tr><th class="text-left px-2 py-1">Metoda</th><th class="text-left px-2 py-1">Vrací / chování</th></tr></thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr><td class="px-2 py-1 font-mono text-blue-700">check()</td><td class="px-2 py-1 text-slate-600">bool – je token platný?</td></tr>
+              <tr><td class="px-2 py-1 font-mono text-blue-700">user()</td><td class="px-2 py-1 text-slate-600">?array – celý user row</td></tr>
+              <tr><td class="px-2 py-1 font-mono text-blue-700">id()</td><td class="px-2 py-1 text-slate-600">?int – user ID</td></tr>
+              <tr><td class="px-2 py-1 font-mono text-blue-700">role()</td><td class="px-2 py-1 text-slate-600">?string – název role</td></tr>
+              <tr><td class="px-2 py-1 font-mono text-blue-700">hasRole($r)</td><td class="px-2 py-1 text-slate-600">bool</td></tr>
+              <tr><td class="px-2 py-1 font-mono text-blue-700">require()</td><td class="px-2 py-1 text-slate-600">void – 401 pokud nepřihlášen</td></tr>
+              <tr><td class="px-2 py-1 font-mono text-blue-700">requireRole($r)</td><td class="px-2 py-1 text-slate-600">void – 403 pokud špatná role</td></tr>
+              <tr><td class="px-2 py-1 font-mono text-blue-700">login($e,$p,$c)</td><td class="px-2 py-1 text-slate-600">array – token + user data</td></tr>
+              <tr><td class="px-2 py-1 font-mono text-blue-700">logout($token)</td><td class="px-2 py-1 text-slate-600">void – smaže token z DB</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <div class="text-xs font-semibold text-slate-500 mb-2">Použití v Service</div>
+          <pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed h-full"><code>// Vyžaduje přihlášení (any role):
+$this->auth->require();
+
+// Vyžaduje roli admin:
+$this->auth->requireRole('admin');
+
+// Podmíněná logika:
+if ($this->auth->hasRole('admin')) {
+    return $this->repo->findAll();
+} else {
+    $userId = $this->auth->id();
+    return $this->repo->findByUser($userId);
+}
+
+// Získat user ID pro filtrování:
+$userId = $this->auth->id();</code></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───── TAB: Konvence ───── -->
+  <div class="tab-panel" id="tab-conventions">
+    <h2 class="text-base font-bold text-slate-700 mb-1">Kódovací konvence</h2>
+    <p class="text-sm text-slate-500 mb-4">Pravidla a vzory používané v celém projektu.</p>
+
+    <div class="grid md:grid-cols-2 gap-4 mb-6">
+
+      <div class="bg-white rounded-xl border border-slate-200 p-4">
+        <div class="text-xs font-bold text-slate-600 mb-3">Pojmenování souborů a tříd</div>
+        <table class="w-full text-xs">
+          <thead class="bg-slate-50"><tr><th class="text-left px-2 py-1">Vzor</th><th class="text-left px-2 py-1">Příklad</th><th class="text-left px-2 py-1">Účel</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-2 py-1 font-mono text-slate-700">*Repository.php</td><td class="px-2 py-1 font-mono text-blue-600">ProductRepository</td><td class="px-2 py-1 text-slate-600">SQL operace</td></tr>
+            <tr><td class="px-2 py-1 font-mono text-slate-700">*Service.php</td><td class="px-2 py-1 font-mono text-blue-600">ProductService</td><td class="px-2 py-1 text-slate-600">Business logika</td></tr>
+            <tr><td class="px-2 py-1 font-mono text-slate-700">*Api.php</td><td class="px-2 py-1 font-mono text-blue-600">ProductApi</td><td class="px-2 py-1 text-slate-600">HTTP routing</td></tr>
+            <tr><td class="px-2 py-1 font-mono text-slate-700">test_*.php</td><td class="px-2 py-1 font-mono text-blue-600">test_products.php</td><td class="px-2 py-1 text-slate-600">Testy modulu</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 p-4">
+        <div class="text-xs font-bold text-slate-600 mb-3">URL konvence</div>
+        <table class="w-full text-xs">
+          <thead class="bg-slate-50"><tr><th class="text-left px-2 py-1">Vzor</th><th class="text-left px-2 py-1">Příklad</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-2 py-1 font-mono text-slate-600">GET /module</td><td class="px-2 py-1 text-slate-600">seznam položek</td></tr>
+            <tr><td class="px-2 py-1 font-mono text-slate-600">POST /module</td><td class="px-2 py-1 text-slate-600">vytvoření</td></tr>
+            <tr><td class="px-2 py-1 font-mono text-slate-600">GET /module/:id</td><td class="px-2 py-1 text-slate-600">detail</td></tr>
+            <tr><td class="px-2 py-1 font-mono text-slate-600">PATCH /module/:id</td><td class="px-2 py-1 text-slate-600">částečná aktualizace</td></tr>
+            <tr><td class="px-2 py-1 font-mono text-slate-600">PUT /module/:id</td><td class="px-2 py-1 text-slate-600">úplná náhrada</td></tr>
+            <tr><td class="px-2 py-1 font-mono text-slate-600">DELETE /module/:id</td><td class="px-2 py-1 text-slate-600">smazání (soft/hard)</td></tr>
+            <tr><td class="px-2 py-1 font-mono text-slate-600">PATCH /module/:id/action</td><td class="px-2 py-1 text-slate-600">speciální akce (/stock, /status)</td></tr>
+          </tbody>
+        </table>
+        <div class="mt-2 text-xs text-amber-700 bg-amber-50 rounded px-2 py-1">
+          &#9888; Pozor: Address je singulár <code>/address</code> (ne <code>/addresses</code>)
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 p-4">
+        <div class="text-xs font-bold text-slate-600 mb-3">Database helper metody</div>
+        <pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed overflow-x-auto"><code>// Více řádků
+$db->fetchAll(
+  'SELECT * FROM product WHERE franchise_code=?',
+  [$code]
+);
+
+// Jeden řádek
+$db->fetchOne(
+  'SELECT * FROM product WHERE id=?',
+  [$id]
+);
+
+// INSERT – vrátí lastInsertId
+$id = $db->insert('product', [
+  'franchise_code' => $code,
+  'name'           => 'Produkt',
+  'sku'            => 'SKU-001',
+  'price'          => 99.90,
+]);
+
+// UPDATE
+$db->update('product',
+  ['name' => 'Nový název'],
+  ['id'   => $id, 'franchise_code' => $code]
+);
+
+// DELETE
+$db->delete('product',
+  ['id' => $id, 'franchise_code' => $code]
+);</code></pre>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 p-4">
+        <div class="text-xs font-bold text-slate-600 mb-3">Response formát</div>
+        <pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed overflow-x-auto"><code>// Úspěch – data
+Response::json(['key' => 'value']);
+// → {"success":true,"data":{"key":"value"}}
+
+// Úspěch – 201 Created
+Response::json($data, 201);
+
+// Chyba
+Response::error('Zpráva o chybě', 404);
+// → {"success":false,"message":"..."}
+
+// Validační chyba (422)
+Response::error('Chybí pole name', 422);
+
+// Auth chyby (Service vrstva):
+$this->auth->require();     // 401
+$this->auth->requireRole(); // 403</code></pre>
+
+        <div class="text-xs font-bold text-slate-600 mt-3 mb-2">Soft-delete vzor</div>
+        <pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed overflow-x-auto"><code>// Smazání: nastavit deleted_at
+$db->update('product',
+  ['deleted_at' => date('Y-m-d H:i:s')],
+  ['id' => $id]
+);
+
+// Dotazy vždy filtrují:
+WHERE deleted_at IS NULL</code></pre>
+      </div>
+
+    </div>
+
+    <div class="bg-white rounded-xl border border-slate-200 p-4">
+      <div class="text-xs font-bold text-slate-600 mb-3">Namespace struktura</div>
+      <div class="grid md:grid-cols-3 gap-3 text-xs font-mono">
+        <div class="bg-slate-50 rounded p-2"><span class="text-slate-400">App\Modules\Auth\</span><br><span class="text-blue-600">Auth</span><br><span class="text-blue-600">AuthApi</span><br><span class="text-blue-600">AuthService</span><br><span class="text-blue-600">UserTokenRepository</span></div>
+        <div class="bg-slate-50 rounded p-2"><span class="text-slate-400">App\Modules\Product\</span><br><span class="text-blue-600">ProductApi</span><br><span class="text-blue-600">ProductService</span><br><span class="text-blue-600">ProductRepository</span></div>
+        <div class="bg-slate-50 rounded p-2"><span class="text-slate-400">App\Modules\Router\</span><br><span class="text-blue-600">Request</span><br><span class="text-blue-600">Response</span><br><span class="text-blue-600">Router</span><br><br><span class="text-slate-400">App\Modules\Database\</span><br><span class="text-blue-600">Database</span><br><br><span class="text-slate-400">App\Middleware\</span><br><span class="text-blue-600">CorsMiddleware</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer class="bg-white border-t border-slate-200 px-8 py-4 text-center text-xs text-slate-400">
+  php-core &mdash; architektura &amp; vývojářský průvodce
+</footer>
+
+<script>
+  mermaid.initialize({startOnLoad:true, theme:'default', sequence:{diagramMarginX:20,diagramMarginY:10,actorMargin:50,width:150,height:65,boxMargin:10,boxTextMargin:5,noteMargin:10,messageMargin:35,mirrorActors:true},flowchart:{htmlLabels:true,curve:'basis'},themeVariables:{background:'#ffffff',mainBkg:'#dbeafe',nodeBorder:'#3b82f6',clusterBkg:'#f8fafc',fontFamily:'system-ui,sans-serif',lineColor:'#64748b',textColor:'#1e293b'}});
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.className = 'tab-btn px-4 py-2 rounded-lg border text-xs font-semibold cursor-pointer border-slate-200 bg-white text-slate-500 hover:border-slate-400';
+      });
+      btn.className = 'tab-btn px-4 py-2 rounded-lg border text-xs font-semibold cursor-pointer bg-slate-900 text-white border-slate-900';
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>

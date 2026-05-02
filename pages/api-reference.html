@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>php-core – API Reference</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  .ep-detail { display: none; }
+  .ep-detail.open { display: block; }
+  .method-badge { display: inline-block; min-width: 52px; text-align: center; }
+  .ep-row:hover { background: #f8fafc; cursor: pointer; }
+  pre { font-family: 'Fira Code','Cascadia Code','Consolas',monospace; }
+  .hidden-ep { display: none; }
+</style>
+</head>
+<body class="bg-slate-100 min-h-screen font-sans text-slate-800 flex flex-col">
+<header class="bg-slate-900 text-white">
+  <div class="flex items-center gap-3 px-8 py-3">
+    <a href="index.html" class="font-extrabold tracking-tight text-white hover:text-blue-400 transition-colors no-underline">&#9889; php-core</a>
+    <span class="text-slate-600">/</span>
+    <span class="text-slate-300 text-sm">API Reference</span>
+  </div>
+</header>
+<nav class="bg-white border-b border-slate-200 px-8 py-2 flex gap-2 flex-wrap items-center">
+  <a href="index.html"         class="px-3 py-1.5 rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50 no-underline text-xs transition-colors">&#127968; Developer Hub</a>
+  <a href="architecture.html"  class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#127959; Architektura</a>
+  <a href="api-reference.html" class="px-3 py-1.5 rounded-md border bg-slate-900 text-white border-slate-900 no-underline text-xs">&#128196; API Reference</a>
+  <a href="flows.html"         class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128257; Flows</a>
+  <a href="db-schema.html"     class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128194; ER Diagram</a>
+  <a href="db-table.html"      class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128203; DB Tabulky</a>
+</nav>
+
+<!-- Toolbar -->
+<div class="bg-white border-b border-slate-200 px-6 py-3 flex flex-wrap gap-3 items-center sticky top-0 z-20 shadow-sm">
+  <input id="search" type="text" placeholder="&#128269;  Hledej endpoint nebo popis…" class="border border-slate-300 rounded-lg px-3 py-1.5 text-xs w-60 focus:outline-none focus:ring-2 focus:ring-blue-500">
+  <div class="flex gap-1 flex-wrap" id="module-filter">
+    <button class="filter-btn active text-xs px-2.5 py-1 rounded-md border cursor-pointer" data-module="all">Vše</button>
+    <button class="filter-btn text-xs px-2.5 py-1 rounded-md border cursor-pointer" data-module="auth">Auth</button>
+    <button class="filter-btn text-xs px-2.5 py-1 rounded-md border cursor-pointer" data-module="roles">Roles</button>
+    <button class="filter-btn text-xs px-2.5 py-1 rounded-md border cursor-pointer" data-module="users">Users</button>
+    <button class="filter-btn text-xs px-2.5 py-1 rounded-md border cursor-pointer" data-module="address">Address</button>
+    <button class="filter-btn text-xs px-2.5 py-1 rounded-md border cursor-pointer" data-module="categories">Categories</button>
+    <button class="filter-btn text-xs px-2.5 py-1 rounded-md border cursor-pointer" data-module="products">Products</button>
+    <button class="filter-btn text-xs px-2.5 py-1 rounded-md border cursor-pointer" data-module="texts">Texts</button>
+    <button class="filter-btn text-xs px-2.5 py-1 rounded-md border cursor-pointer" data-module="enumerations">Enumerations</button>
+    <button class="filter-btn text-xs px-2.5 py-1 rounded-md border cursor-pointer" data-module="orders">Orders</button>
+    <button class="filter-btn text-xs px-2.5 py-1 rounded-md border cursor-pointer" data-module="invoices">Invoices</button>
+  </div>
+  <div class="ml-auto flex gap-1">
+    <button onclick="expandAll()" class="text-xs px-2.5 py-1 rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50 cursor-pointer">&#8597; Vše rozbalit</button>
+    <button onclick="collapseAll()" class="text-xs px-2.5 py-1 rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50 cursor-pointer">&#8601; Vše sbalit</button>
+  </div>
+</div>
+
+<div class="max-w-5xl mx-auto w-full px-6 py-6 flex-1">
+
+  <!-- Legend -->
+  <div class="flex flex-wrap gap-2 mb-5 text-xs">
+    <span class="flex items-center gap-1"><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span> čtení</span>
+    <span class="flex items-center gap-1"><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span> vytvoření</span>
+    <span class="flex items-center gap-1"><span class="method-badge bg-amber-500 text-white px-2 py-0.5 rounded text-xs font-bold">PATCH</span> částečná aktualizace</span>
+    <span class="flex items-center gap-1"><span class="method-badge bg-orange-600 text-white px-2 py-0.5 rounded text-xs font-bold">PUT</span> úplná náhrada</span>
+    <span class="flex items-center gap-1"><span class="method-badge bg-red-600 text-white px-2 py-0.5 rounded text-xs font-bold">DELETE</span> smazání</span>
+    <span class="flex items-center gap-1 ml-4"><span class="bg-green-100 text-green-700 px-2 py-0.5 rounded font-bold">&#128275; public</span> bez auth</span>
+    <span class="flex items-center gap-1"><span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-bold">&#128274; auth</span> vyžaduje token</span>
+    <span class="flex items-center gap-1"><span class="bg-red-100 text-red-700 px-2 py-0.5 rounded font-bold">&#128737; admin</span> vyžaduje roli admin</span>
+  </div>
+
+  <div id="ep-list">
+
+<!-- ═══════════════════════════════ AUTH ═══════════════════════════════ -->
+<div class="module-section mb-6" data-module="auth">
+  <h2 class="text-sm font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">&#128273; Auth &nbsp;<span class="text-slate-400 font-normal text-xs">/api/auth/…</span></h2>
+
+  <!-- login -->
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="auth" data-search="post auth login přihlášení token">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span>
+      <code class="text-sm font-mono text-slate-700">/auth/login</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2">Přihlášení – vrátí Bearer token</span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div>
+        <div class="text-xs font-bold text-slate-500 mb-1">Request body (JSON)</div>
+        <pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{
+  "email": "admin@example.com",
+  "password": "password"
+}</code></pre>
+      </div>
+      <div>
+        <div class="text-xs font-bold text-slate-500 mb-1">Response 200</div>
+        <pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{
+  "success": true,
+  "data": {
+    "token": "a3f9c2d8...",
+    "id": 1,
+    "email": "admin@example.com",
+    "role": "admin"
+  }
+}</code></pre>
+      </div>
+      <div>
+        <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
+        <pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl -X POST $BASE/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email":"admin@example.com",
+    "password":"password"
+  }'</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- logout -->
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="auth" data-search="post auth logout odhlášení token invalidate">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span>
+      <code class="text-sm font-mono text-slate-700">/auth/logout</code>
+      <span class="bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128274; auth</span>
+      <span class="text-xs text-slate-500 ml-2">Odhlášení – invaliduje token v DB</span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div>
+        <div class="text-xs font-bold text-slate-500 mb-1">Request body</div>
+        <pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>// Prázdné tělo
+// Token čte z Authorization headeru</code></pre>
+      </div>
+      <div>
+        <div class="text-xs font-bold text-slate-500 mb-1">Response 200</div>
+        <pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{
+  "success": true,
+  "data": null
+}</code></pre>
+      </div>
+      <div>
+        <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
+        <pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl -X POST $BASE/auth/logout \
+  -H "Authorization: Bearer $TOKEN"</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- me -->
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="auth" data-search="get auth me current user info profil">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span>
+      <code class="text-sm font-mono text-slate-700">/auth/me</code>
+      <span class="bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128274; auth</span>
+      <span class="text-xs text-slate-500 ml-2">Přihlášený uživatel – info o sobě</span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Bez těla</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>// GET – žádné tělo</code></pre></div>
+      <div>
+        <div class="text-xs font-bold text-slate-500 mb-1">Response 200</div>
+        <pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{
+  "success": true,
+  "data": {
+    "id": 1,
+    "email": "admin@example.com",
+    "first_name": "Admin",
+    "last_name": "User",
+    "role": "admin"
+  }
+}</code></pre>
+      </div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl $BASE/auth/me \
+  -H "Authorization: Bearer $TOKEN"</code></pre></div>
+    </div>
+  </div>
+
+  <!-- register -->
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="auth" data-search="post auth register registrace nový uživatel">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span>
+      <code class="text-sm font-mono text-slate-700">/auth/register</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2">Registrace nového uživatele</span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div>
+        <div class="text-xs font-bold text-slate-500 mb-1">Request body</div>
+        <pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{
+  "first_name": "Jan",
+  "last_name": "Novák",
+  "email": "jan@example.com",
+  "password": "tajne123"
+}</code></pre>
+      </div>
+      <div>
+        <div class="text-xs font-bold text-slate-500 mb-1">Response 201</div>
+        <pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{
+  "success": true,
+  "data": {
+    "id": 5,
+    "email": "jan@example.com",
+    "role": "user"
+  }
+}</code></pre>
+      </div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl -X POST $BASE/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"first_name":"Jan",
+       "last_name":"Novák",
+       "email":"jan@example.com",
+       "password":"tajne123"}'</code></pre></div>
+    </div>
+  </div>
+
+  <!-- change-password -->
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="auth" data-search="post auth change-password heslo změna">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span>
+      <code class="text-sm font-mono text-slate-700">/auth/change-password</code>
+      <span class="bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128274; auth</span>
+      <span class="text-xs text-slate-500 ml-2">Změna hesla přihlášeného uživatele</span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request body</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{
+  "current_password": "stare",
+  "new_password": "nove123"
+}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 200</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{"success": true, "data": null}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl -X POST $BASE/auth/change-password \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"current_password":"stare",
+       "new_password":"nove123"}'</code></pre></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ ROLES ══════════════════════════════ -->
+<div class="module-section mb-6" data-module="roles">
+  <h2 class="text-sm font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">&#128737; Roles &nbsp;<span class="text-slate-400 font-normal text-xs">/api/roles/…</span></h2>
+
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="roles" data-search="get roles seznam list">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span>
+      <code class="text-sm font-mono text-slate-700">/roles</code>
+      <span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128737; admin</span>
+      <span class="text-xs text-slate-500 ml-2">Seznam rolí (seřazeno dle position)</span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Query parametry</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>// žádné</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 200</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{"success":true,"data":[
+  {"id":1,"name":"admin",
+   "label":"Admin","position":10,
+   "is_active":1}
+]}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl $BASE/roles \
+  -H "Authorization: Bearer $TOKEN"</code></pre></div>
+    </div>
+  </div>
+
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="roles" data-search="post roles create vytvoření role">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span>
+      <code class="text-sm font-mono text-slate-700">/roles</code>
+      <span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128737; admin</span>
+      <span class="text-xs text-slate-500 ml-2">Vytvoření nové role</span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request body</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{
+  "name": "editor",
+  "label": "Editor",
+  "position": 25,
+  "is_active": 1
+}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 201</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{"success":true,"data":{
+  "id":4,"name":"editor",
+  "label":"Editor","position":25,
+  "is_active":1
+}}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl -X POST $BASE/roles \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"editor","label":"Editor"}'</code></pre></div>
+    </div>
+  </div>
+
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="roles" data-search="get roles id detail">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span>
+      <code class="text-sm font-mono text-slate-700">/roles/:id</code>
+      <span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128737; admin</span>
+      <span class="text-xs text-slate-500 ml-2">Detail role</span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">URL parametr</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>:id → ID role (integer)</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 200</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{"success":true,"data":{
+  "id":1,"name":"admin",
+  "label":"Admin","position":10
+}}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl $BASE/roles/1 \
+  -H "Authorization: Bearer $TOKEN"</code></pre></div>
+    </div>
+  </div>
+
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="roles" data-search="patch roles id update aktualizace role">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-amber-500 text-white px-2 py-0.5 rounded text-xs font-bold">PATCH</span>
+      <code class="text-sm font-mono text-slate-700">/roles/:id</code>
+      <span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128737; admin</span>
+      <span class="text-xs text-slate-500 ml-2">Částečná aktualizace role</span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request body (libovolná pole)</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>{"label": "Super Admin"}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 200</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>{"success":true,"data":{...}}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl -X PATCH $BASE/roles/1 \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"label":"Super Admin"}'</code></pre></div>
+    </div>
+  </div>
+
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="roles" data-search="put roles id replace celá náhrada">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-orange-600 text-white px-2 py-0.5 rounded text-xs font-bold">PUT</span>
+      <code class="text-sm font-mono text-slate-700">/roles/:id</code>
+      <span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128737; admin</span>
+      <span class="text-xs text-slate-500 ml-2">Úplná náhrada role (name + label povinné)</span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request body</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>{"name":"admin","label":"Admin","position":10,"is_active":1}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 200</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>{"success":true,"data":{...}}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl -X PUT $BASE/roles/1 \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"admin","label":"Admin"}'</code></pre></div>
+    </div>
+  </div>
+
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="roles" data-search="delete roles id smazání role">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-red-600 text-white px-2 py-0.5 rounded text-xs font-bold">DELETE</span>
+      <code class="text-sm font-mono text-slate-700">/roles/:id</code>
+      <span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128737; admin</span>
+      <span class="text-xs text-slate-500 ml-2">Smazání role (selže pokud mají uživatelé tuto roli)</span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Poznámka</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>// 409 Conflict pokud role
+// je přiřazena uživatelům</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 200</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>{"success":true,"data":null}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl -X DELETE $BASE/roles/4 \
+  -H "Authorization: Bearer $TOKEN"</code></pre></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ USERS ══════════════════════════════ -->
+<div class="module-section mb-6" data-module="users">
+  <h2 class="text-sm font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">&#128100; Users &nbsp;<span class="text-slate-400 font-normal text-xs">/api/users/…</span></h2>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="users" data-search="get users seznam list admin">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)"><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span><code class="text-sm font-mono text-slate-700">/users</code><span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128737; admin</span><span class="text-xs text-slate-500 ml-2">Seznam uživatelů</span><span class="ml-auto text-slate-400 text-xs">&#9660;</span></div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Query</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>?status=active
+?role_id=1</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 200</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{"success":true,"data":[
+  {"id":1,"email":"admin@...",
+   "first_name":"Admin",
+   "role":"admin","status":"active"}
+]}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl "$BASE/users?status=active" \
+  -H "Authorization: Bearer $TOKEN"</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="users" data-search="post users create vytvoření uživatel admin">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)"><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span><code class="text-sm font-mono text-slate-700">/users</code><span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128737; admin</span><span class="text-xs text-slate-500 ml-2">Vytvoření uživatele</span><span class="ml-auto text-slate-400 text-xs">&#9660;</span></div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request body</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{
+  "first_name": "Jan",
+  "last_name": "Novák",
+  "email": "jan@example.com",
+  "password": "heslo123",
+  "role_id": 3,
+  "phone": "+420 123 456 789"
+}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 201</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>{"success":true,"data":{
+  "id":5,"email":"jan@example.com",
+  "role":"user","status":"active"
+}}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl -X POST $BASE/users \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"first_name":"Jan",...}'</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="users" data-search="get users id detail admin">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)"><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span><code class="text-sm font-mono text-slate-700">/users/:id</code><span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128737; admin</span><span class="text-xs text-slate-500 ml-2">Detail uživatele</span><span class="ml-auto text-slate-400 text-xs">&#9660;</span></div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">URL</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>:id → user ID</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 200</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{"success":true,"data":{
+  "id":1,"email":"...",
+  "first_name":"Admin",
+  "last_name":"User",
+  "role":"admin",
+  "status":"active"
+}}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl $BASE/users/1 \
+  -H "Authorization: Bearer $TOKEN"</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="users" data-search="patch users id update">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)"><span class="method-badge bg-amber-500 text-white px-2 py-0.5 rounded text-xs font-bold">PATCH</span><code class="text-sm font-mono text-slate-700">/users/:id</code><span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128737; admin</span><span class="text-xs text-slate-500 ml-2">Částečná aktualizace</span><span class="ml-auto text-slate-400 text-xs">&#9660;</span></div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Body (libovolná pole)</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>{"phone": "+420 111 222 333"}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 200</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>{"success":true,"data":{...}}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl -X PATCH $BASE/users/1 \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"phone":"+420 111 222 333"}'</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="users" data-search="delete users id soft-delete smazání">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)"><span class="method-badge bg-red-600 text-white px-2 py-0.5 rounded text-xs font-bold">DELETE</span><code class="text-sm font-mono text-slate-700">/users/:id</code><span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128737; admin</span><span class="text-xs text-slate-500 ml-2">Soft-delete uživatele (nastaví deleted_at)</span><span class="ml-auto text-slate-400 text-xs">&#9660;</span></div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Poznámka</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>// Nastaví status='deleted'
+// a deleted_at=NOW()</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 200</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>{"success":true,"data":null}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl -X DELETE $BASE/users/5 \
+  -H "Authorization: Bearer $TOKEN"</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="users" data-search="get users userId address adresy uživatele">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)"><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span><code class="text-sm font-mono text-slate-700">/users/:userId/address</code><span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128737; admin</span><span class="text-xs text-slate-500 ml-2">Adresy daného uživatele</span><span class="ml-auto text-slate-400 text-xs">&#9660;</span></div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">URL</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>:userId → ID uživatele</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 200</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{"success":true,"data":[
+  {"id":1,"type":"billing",
+   "street":"Hlavní 1",
+   "city":"Praha","zip":"110 00",
+   "country":"CZ","is_default":1}
+]}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl $BASE/users/1/address \
+  -H "Authorization: Bearer $TOKEN"</code></pre></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ ADDRESS ════════════════════════════ -->
+<div class="module-section mb-6" data-module="address">
+  <h2 class="text-sm font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">&#128205; Address &nbsp;<span class="text-slate-400 font-normal text-xs">/api/address/…</span><span class="ml-2 text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded">Pozor: singulár /address</span></h2>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="address" data-search="post address create adresa vytvoření">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)"><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span><code class="text-sm font-mono text-slate-700">/address</code><span class="bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128274; auth</span><span class="text-xs text-slate-500 ml-2">Vytvoření adresy</span><span class="ml-auto text-slate-400 text-xs">&#9660;</span></div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request body</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{
+  "user_id": 1,
+  "type": "billing",
+  "street": "Hlavní 1",
+  "city": "Praha",
+  "zip": "110 00",
+  "country": "CZ",
+  "is_default": 1
+}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 201</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{"success":true,"data":{
+  "id":3,"user_id":1,
+  "type":"billing",
+  "street":"Hlavní 1",
+  "city":"Praha","zip":"110 00",
+  "country":"CZ","is_default":1
+}}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl -X POST $BASE/address \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":1,"type":"billing",
+       "street":"Hlavní 1",
+       "city":"Praha","zip":"110 00",
+       "country":"CZ"}'</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="address" data-search="get address id detail adresa">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)"><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span><code class="text-sm font-mono text-slate-700">/address/:id</code><span class="bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128274; auth</span><span class="text-xs text-slate-500 ml-2">Detail adresy</span><span class="ml-auto text-slate-400 text-xs">&#9660;</span></div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">URL</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>:id → ID adresy</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 200</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>{"success":true,"data":{...}}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl $BASE/address/1 \
+  -H "Authorization: Bearer $TOKEN"</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="address" data-search="patch put address id aktualizace">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)"><span class="method-badge bg-amber-500 text-white px-2 py-0.5 rounded text-xs font-bold">PATCH</span><code class="text-sm font-mono text-slate-700">/address/:id</code> &amp; <span class="method-badge bg-orange-600 text-white px-2 py-0.5 rounded text-xs font-bold">PUT</span><code class="text-sm font-mono text-slate-700">/address/:id</code><span class="bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128274; auth</span><span class="text-xs text-slate-500 ml-2">Aktualizace adresy</span><span class="ml-auto text-slate-400 text-xs">&#9660;</span></div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">PATCH (částečné)</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>{"city": "Brno"}</code></pre><div class="text-xs font-bold text-slate-500 mt-2 mb-1">PUT (celé – street,city,zip,country povinné)</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>{"type":"shipping","street":"Nová 5","city":"Brno","zip":"602 00","country":"CZ"}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 200</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>{"success":true,"data":{...}}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl -X PATCH $BASE/address/1 \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"city":"Brno"}'</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="address" data-search="delete address id smazání">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)"><span class="method-badge bg-red-600 text-white px-2 py-0.5 rounded text-xs font-bold">DELETE</span><code class="text-sm font-mono text-slate-700">/address/:id</code><span class="bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128274; auth</span><span class="text-xs text-slate-500 ml-2">Smazání adresy</span><span class="ml-auto text-slate-400 text-xs">&#9660;</span></div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Poznámka</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>// Tvrdé smazání z DB</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 200</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>{"success":true,"data":null}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl -X DELETE $BASE/address/1 \
+  -H "Authorization: Bearer $TOKEN"</code></pre></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ CATEGORIES ════════════════════════ -->
+<div class="module-section mb-6" data-module="categories">
+  <h2 class="text-sm font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">&#128194; Categories &nbsp;<span class="text-slate-400 font-normal text-xs">/api/categories/…</span></h2>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="categories" data-search="get categories seznam list strom tree public">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)"><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span><code class="text-sm font-mono text-slate-700">/categories</code><span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span><span class="text-xs text-slate-500 ml-2">Seznam kategorií (stromová struktura)</span><span class="ml-auto text-slate-400 text-xs">&#9660;</span></div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Bez auth</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>// Vrátí strom s children[]</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 200</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{"success":true,"data":[
+  {"id":1,"name":"Elektronika",
+   "slug":"elektronika",
+   "position":10,
+   "children":[
+     {"id":2,"name":"Mobily",...}
+   ]}
+]}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl $BASE/categories</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="categories" data-search="post categories create vytvoření kategorie admin">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)"><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span><code class="text-sm font-mono text-slate-700">/categories</code><span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128737; admin</span><span class="text-xs text-slate-500 ml-2">Vytvoření kategorie</span><span class="ml-auto text-slate-400 text-xs">&#9660;</span></div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request body</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{
+  "name": "Elektronika",
+  "slug": "elektronika",
+  "description": "...",
+  "parent_id": null,
+  "position": 10
+}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 201</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{"success":true,"data":{
+  "id":1,"name":"Elektronika",
+  "slug":"elektronika",
+  "position":10
+}}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl -X POST $BASE/categories \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Elektronika","slug":"elektronika"}'</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="categories" data-search="get categories id detail produkty">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)"><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span><code class="text-sm font-mono text-slate-700">/categories/:id</code><span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span><span class="text-xs text-slate-500 ml-2">Detail kategorie s produkty</span><span class="ml-auto text-slate-400 text-xs">&#9660;</span></div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Vrátí</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>// Kategorii + pole products[]</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 200</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{"success":true,"data":{
+  "id":1,"name":"Elektronika",
+  "products":[
+    {"id":1,"name":"iPhone","price":25000}
+  ]
+}}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl $BASE/categories/1</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="categories" data-search="delete categories id smazání admin">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)"><span class="method-badge bg-red-600 text-white px-2 py-0.5 rounded text-xs font-bold">DELETE</span><code class="text-sm font-mono text-slate-700">/categories/:id</code><span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128737; admin</span><span class="text-xs text-slate-500 ml-2">Smazání (selže pokud má aktivní produkty)</span><span class="ml-auto text-slate-400 text-xs">&#9660;</span></div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Poznámka</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>// 409 Conflict pokud kategorie
+// obsahuje aktivní produkty</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 200</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>{"success":true,"data":null}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl -X DELETE $BASE/categories/2 \
+  -H "Authorization: Bearer $TOKEN"</code></pre></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ PRODUCTS ══════════════════════════ -->
+<div class="module-section mb-6" data-module="products">
+  <h2 class="text-sm font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">&#128230; Products &nbsp;<span class="text-slate-400 font-normal text-xs">/api/products/…</span></h2>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="products" data-search="get products seznam list public">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)"><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span><code class="text-sm font-mono text-slate-700">/products</code><span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span><span class="text-xs text-slate-500 ml-2">Seznam produktů</span><span class="ml-auto text-slate-400 text-xs">&#9660;</span></div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Query parametry</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>?category_id=1
+?status=active
+?search=iphone</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 200</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{"success":true,"data":[
+  {"id":1,"name":"iPhone 15",
+   "sku":"IPHONE-15",
+   "price":"25000.00",
+   "vat_rate":"21.00",
+   "stock_quantity":10,
+   "status":"active"}
+]}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl $BASE/products
+curl "$BASE/products?category_id=1"</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="products" data-search="post products create vytvoření admin sku">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)"><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span><code class="text-sm font-mono text-slate-700">/products</code><span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128737; admin</span><span class="text-xs text-slate-500 ml-2">Vytvoření produktu (sku unikátní per franchise)</span><span class="ml-auto text-slate-400 text-xs">&#9660;</span></div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request body</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{
+  "name": "iPhone 15",
+  "sku": "IPHONE-15",
+  "price": 25000,
+  "vat_rate": 21,
+  "category_id": 1,
+  "stock_quantity": 10,
+  "description": "..."
+}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 201</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{"success":true,"data":{
+  "id":1,"name":"iPhone 15",
+  "sku":"IPHONE-15",
+  "price":"25000.00"
+}}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl -X POST $BASE/products \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"iPhone 15","sku":"IPHONE-15","price":25000}'</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="products" data-search="patch products id stock sklad množství">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)"><span class="method-badge bg-amber-500 text-white px-2 py-0.5 rounded text-xs font-bold">PATCH</span><code class="text-sm font-mono text-slate-700">/products/:id/stock</code><span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128737; admin</span><span class="text-xs text-slate-500 ml-2">Úprava skladového množství</span><span class="ml-auto text-slate-400 text-xs">&#9660;</span></div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request body</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{
+  "quantity": 5
+}
+// Kladné = naskladnění
+// Záporné = vyskladnění</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 200</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>{"success":true,"data":{
+  "id":1,"stock_quantity":15
+}}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl -X PATCH $BASE/products/1/stock \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"quantity":5}'</code></pre></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ TEXTS ═════════════════════════════ -->
+<div class="module-section mb-6" data-module="texts">
+  <h2 class="text-sm font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">&#128221; Texts (CMS) &nbsp;<span class="text-slate-400 font-normal text-xs">/api/texts/…</span></h2>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="texts" data-search="get texts seznam list public cms">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)"><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span><code class="text-sm font-mono text-slate-700">/texts</code><span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span><span class="text-xs text-slate-500 ml-2">Seznam CMS textů</span><span class="ml-auto text-slate-400 text-xs">&#9660;</span></div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Query</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>?language=cs
+?is_active=1</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 200</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{"success":true,"data":[
+  {"id":1,"key":"homepage_hero",
+   "title":"Vítejte",
+   "language":"cs",
+   "is_active":1}
+]}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl "$BASE/texts?language=cs"</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="texts" data-search="get texts by-key key jazyk language public">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)"><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span><code class="text-sm font-mono text-slate-700">/texts/by-key/:key</code><span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span><span class="text-xs text-slate-500 ml-2">Text dle klíče + jazyk z query</span><span class="ml-auto text-slate-400 text-xs">&#9660;</span></div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">URL + Query</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>:key → text klíč
+?language=cs   (výchozí: cs)</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 200</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{"success":true,"data":{
+  "id":1,
+  "key":"homepage_hero",
+  "title":"Vítejte",
+  "content":"&lt;h1&gt;Vítejte!&lt;/h1&gt;",
+  "language":"cs"
+}}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl "$BASE/texts/by-key/homepage_hero?language=cs"</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="texts" data-search="post texts create vytvoření admin cms obsah">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)"><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span><code class="text-sm font-mono text-slate-700">/texts</code><span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128737; admin</span><span class="text-xs text-slate-500 ml-2">Vytvoření CMS bloku</span><span class="ml-auto text-slate-400 text-xs">&#9660;</span></div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request body</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{
+  "key": "about_page",
+  "title": "O nás",
+  "content": "&lt;p&gt;Jsme firma...&lt;/p&gt;",
+  "language": "cs",
+  "is_active": 1
+}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 201</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>{"success":true,"data":{
+  "id":5,"key":"about_page",
+  "title":"O nás","language":"cs"
+}}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl -X POST $BASE/texts \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"key":"about_page","title":"O nás","language":"cs"}'</code></pre></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ ENUMERATIONS ══════════════════════ -->
+<div class="module-section mb-6" data-module="enumerations">
+  <h2 class="text-sm font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">&#128290; Enumerations (Číselník) &nbsp;<span class="text-slate-400 font-normal text-xs">/api/enumerations/…</span></h2>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="enumerations" data-search="get enumerations seznam list grouped type public číselník">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)"><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span><code class="text-sm font-mono text-slate-700">/enumerations</code><span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span><span class="text-xs text-slate-500 ml-2">Číselníky (seskupené dle type, nebo filtrované)</span><span class="ml-auto text-slate-400 text-xs">&#9660;</span></div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Query</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>?type=order_status
+// Bez type → vše grouped</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 200</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{"success":true,"data":{
+  "order_status":[
+    {"id":1,"code":"pending",
+     "label":"Pending",
+     "value":"pending",
+     "position":10}
+  ],
+  "invoice_status":[...]
+}}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl $BASE/enumerations
+curl "$BASE/enumerations?type=order_status"</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="enumerations" data-search="get enumerations types list typy číselník">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)"><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span><code class="text-sm font-mono text-slate-700">/enumerations/types</code><span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span><span class="text-xs text-slate-500 ml-2">Unikátní typy číselníků</span><span class="ml-auto text-slate-400 text-xs">&#9660;</span></div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Bez parametrů</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>// Seznam unikátních typů</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 200</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{"success":true,"data":[
+  "order_status",
+  "invoice_status",
+  "payment_method",
+  "currency",
+  "vat_rate"
+]}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl $BASE/enumerations/types</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="enumerations" data-search="post enumerations create vytvoření číselník admin">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)"><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span><code class="text-sm font-mono text-slate-700">/enumerations</code><span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128737; admin</span><span class="text-xs text-slate-500 ml-2">Vytvoření záznamu číselníku</span><span class="ml-auto text-slate-400 text-xs">&#9660;</span></div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request body</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{
+  "type": "order_status",
+  "code": "processing",
+  "label": "Processing",
+  "value": "processing",
+  "position": 30,
+  "is_active": 1
+}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 201</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>{"success":true,"data":{
+  "id":8,"type":"order_status",
+  "code":"processing",
+  "label":"Processing"
+}}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl -X POST $BASE/enumerations \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"type":"order_status","code":"hold","label":"On Hold"}'</code></pre></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ ORDERS ════════════════════════════ -->
+<div class="module-section mb-6" data-module="orders">
+  <h2 class="text-sm font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">&#128722; Orders &nbsp;<span class="text-slate-400 font-normal text-xs">/api/orders/…</span></h2>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="orders" data-search="get orders seznam list auth moje objednávky">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)"><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span><code class="text-sm font-mono text-slate-700">/orders</code><span class="bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128274; auth</span><span class="text-xs text-slate-500 ml-2">Moje objednávky (admin: všechny)</span><span class="ml-auto text-slate-400 text-xs">&#9660;</span></div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Chování</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>// role=user → jen vlastní orders
+// role=admin → všechny orders</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 200</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{"success":true,"data":[
+  {"id":1,
+   "order_number":"ORD-2024-001",
+   "status":"pending",
+   "total_amount":"1299.00",
+   "currency":"CZK"}
+]}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl $BASE/orders \
+  -H "Authorization: Bearer $TOKEN"</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="orders" data-search="post orders create vytvoření objednávka items">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)"><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span><code class="text-sm font-mono text-slate-700">/orders</code><span class="bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128274; auth</span><span class="text-xs text-slate-500 ml-2">Vytvoření objednávky s položkami + odečtení skladu</span><span class="ml-auto text-slate-400 text-xs">&#9660;</span></div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request body</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{
+  "shipping_address_id": 1,
+  "billing_address_id": 1,
+  "payment_method": "bank_transfer",
+  "currency": "CZK",
+  "note": "...",
+  "items": [
+    {"product_id": 1, "quantity": 2},
+    {"product_id": 3, "quantity": 1}
+  ]
+}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 201</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{"success":true,"data":{
+  "id":5,
+  "order_number":"ORD-2024-005",
+  "status":"pending",
+  "total_amount":"51300.00",
+  "items":[...]
+}}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl -X POST $BASE/orders \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"items":[{"product_id":1,"quantity":2}],"shipping_address_id":1}'</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="orders" data-search="patch orders id status změna stavu admin">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)"><span class="method-badge bg-amber-500 text-white px-2 py-0.5 rounded text-xs font-bold">PATCH</span><code class="text-sm font-mono text-slate-700">/orders/:id/status</code><span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128737; admin</span><span class="text-xs text-slate-500 ml-2">Změna stavu objednávky</span><span class="ml-auto text-slate-400 text-xs">&#9660;</span></div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request body</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>{
+  "status": "confirmed"
+}
+// pending|confirmed|processing
+// |shipped|delivered
+// |cancelled|refunded</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 200</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>{"success":true,"data":{
+  "id":5,
+  "status":"confirmed"
+}}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl -X PATCH $BASE/orders/5/status \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"status":"confirmed"}'</code></pre></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ INVOICES ══════════════════════════ -->
+<div class="module-section mb-6" data-module="invoices">
+  <h2 class="text-sm font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">&#129534; Invoices &nbsp;<span class="text-slate-400 font-normal text-xs">/api/invoices/…</span></h2>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="invoices" data-search="get invoices seznam list auth faktury">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)"><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span><code class="text-sm font-mono text-slate-700">/invoices</code><span class="bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128274; auth</span><span class="text-xs text-slate-500 ml-2">Moje faktury (admin: všechny)</span><span class="ml-auto text-slate-400 text-xs">&#9660;</span></div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Query</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>?status=issued</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 200</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{"success":true,"data":[
+  {"id":1,
+   "invoice_number":"INV-2024-001",
+   "status":"issued",
+   "total_amount":"1299.00",
+   "due_at":"2024-02-15"}
+]}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl $BASE/invoices \
+  -H "Authorization: Bearer $TOKEN"</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="invoices" data-search="post invoices create generování faktura z objednávky admin">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)"><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span><code class="text-sm font-mono text-slate-700">/invoices</code><span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128737; admin</span><span class="text-xs text-slate-500 ml-2">Generování faktury z objednávky</span><span class="ml-auto text-slate-400 text-xs">&#9660;</span></div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request body</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{
+  "order_id": 5,
+  "due_at": "2024-02-15",
+  "note": "Splatnost 14 dní"
+}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 201</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>{"success":true,"data":{
+  "id":3,
+  "invoice_number":"INV-2024-003",
+  "order_id":5,
+  "status":"issued",
+  "items":[...]
+}}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl -X POST $BASE/invoices \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"order_id":5,"due_at":"2024-02-15"}'</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="invoices" data-search="patch invoices id status faktura zaplacena admin">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)"><span class="method-badge bg-amber-500 text-white px-2 py-0.5 rounded text-xs font-bold">PATCH</span><code class="text-sm font-mono text-slate-700">/invoices/:id/status</code><span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128737; admin</span><span class="text-xs text-slate-500 ml-2">Změna stavu faktury</span><span class="ml-auto text-slate-400 text-xs">&#9660;</span></div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request body</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>{
+  "status": "paid"
+}
+// draft|issued|paid
+// |overdue|cancelled|refunded</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response 200</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>{"success":true,"data":{
+  "id":3,"status":"paid",
+  "paid_at":"2024-01-20 12:00:00"
+}}</code></pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"><code>curl -X PATCH $BASE/invoices/3/status \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"status":"paid"}'</code></pre></div>
+    </div>
+  </div>
+</div>
+
+  </div><!-- /ep-list -->
+
+  <!-- Chybové kódy -->
+  <div class="bg-white rounded-xl border border-slate-200 p-5 mt-4">
+    <h2 class="text-sm font-bold text-slate-700 mb-3">&#128683; Chybové HTTP kódy</h2>
+    <div class="grid md:grid-cols-3 gap-3">
+      <div class="text-xs space-y-1.5">
+        <div class="flex gap-2"><span class="bg-green-100 text-green-700 px-2 py-0.5 rounded font-bold w-10 text-center">200</span><span class="text-slate-600">OK – úspěch</span></div>
+        <div class="flex gap-2"><span class="bg-green-100 text-green-700 px-2 py-0.5 rounded font-bold w-10 text-center">201</span><span class="text-slate-600">Created – nová entita vytvořena</span></div>
+        <div class="flex gap-2"><span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-bold w-10 text-center">400</span><span class="text-slate-600">Bad Request – chybná data</span></div>
+      </div>
+      <div class="text-xs space-y-1.5">
+        <div class="flex gap-2"><span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-bold w-10 text-center">401</span><span class="text-slate-600">Unauthorized – chybí / expirovaný token</span></div>
+        <div class="flex gap-2"><span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-bold w-10 text-center">403</span><span class="text-slate-600">Forbidden – špatná role / neznámý host</span></div>
+        <div class="flex gap-2"><span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-bold w-10 text-center">404</span><span class="text-slate-600">Not Found – entita neexistuje</span></div>
+      </div>
+      <div class="text-xs space-y-1.5">
+        <div class="flex gap-2"><span class="bg-red-100 text-red-700 px-2 py-0.5 rounded font-bold w-10 text-center">409</span><span class="text-slate-600">Conflict – duplikát / FK constraint</span></div>
+        <div class="flex gap-2"><span class="bg-red-100 text-red-700 px-2 py-0.5 rounded font-bold w-10 text-center">422</span><span class="text-slate-600">Unprocessable – validační chyba</span></div>
+        <div class="flex gap-2"><span class="bg-red-100 text-red-700 px-2 py-0.5 rounded font-bold w-10 text-center">500</span><span class="text-slate-600">Server Error – neočekávaná chyba</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="bg-white border-t border-slate-200 px-8 py-4 text-center text-xs text-slate-400">
+  php-core &mdash; API Reference
+</footer>
+
+<script>
+  // Filter buttons
+  const filterBtns = document.querySelectorAll('.filter-btn');
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterBtns.forEach(b => {
+        b.className = 'filter-btn text-xs px-2.5 py-1 rounded-md border cursor-pointer border-slate-200 bg-white text-slate-500 hover:bg-slate-50';
+      });
+      btn.className = 'filter-btn text-xs px-2.5 py-1 rounded-md border cursor-pointer bg-slate-900 text-white border-slate-900 active';
+      applyFilters();
+    });
+  });
+
+  document.getElementById('search').addEventListener('input', applyFilters);
+
+  function applyFilters() {
+    const search = document.getElementById('search').value.toLowerCase();
+    const activeModule = document.querySelector('.filter-btn.active')?.dataset.module || 'all';
+
+    document.querySelectorAll('.ep-item').forEach(item => {
+      const itemModule = item.dataset.module;
+      const itemSearch = (item.dataset.search || '') + ' ' + item.querySelector('code')?.textContent;
+      const matchModule = activeModule === 'all' || itemModule === activeModule;
+      const matchSearch = !search || itemSearch.toLowerCase().includes(search);
+      item.style.display = matchModule && matchSearch ? '' : 'none';
+    });
+
+    document.querySelectorAll('.module-section').forEach(section => {
+      const visible = [...section.querySelectorAll('.ep-item')].some(i => i.style.display !== 'none');
+      section.style.display = visible ? '' : 'none';
+    });
+  }
+
+  function toggleDetail(row) {
+    const detail = row.nextElementSibling;
+    const arrow = row.querySelector('.ml-auto');
+    detail.classList.toggle('open');
+    arrow.textContent = detail.classList.contains('open') ? '▲' : '▼';
+  }
+
+  function expandAll() {
+    document.querySelectorAll('.ep-detail').forEach(d => d.classList.add('open'));
+    document.querySelectorAll('.ep-row .ml-auto').forEach(a => a.textContent = '▲');
+  }
+
+  function collapseAll() {
+    document.querySelectorAll('.ep-detail').forEach(d => d.classList.remove('open'));
+    document.querySelectorAll('.ep-row .ml-auto').forEach(a => a.textContent = '▼');
+  }
+</script>
+</body>
+</html>
