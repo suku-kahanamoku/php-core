@@ -37,27 +37,27 @@
   <div class="mermaid" id="mermaid-src" style="display:none">
 erDiagram
     role { int id PK
+        varchar franchise_code
         varchar name
         varchar label
-        smallint position
-        datetime created_at }
+        smallint position }
     user { int id PK
+        varchar franchise_code
         varchar first_name
         varchar last_name
         varchar email
         varchar phone
         varchar password
         int role_id FK
-        datetime last_login_at
-        datetime created_at }
+        datetime last_login_at }
     user_token { int id PK
         int user_id FK
         varchar token
-        datetime expires_at
-        datetime created_at }
+        datetime expires_at }
     address { int id PK
+        varchar franchise_code
         int user_id FK
-        varchar type
+        enum type
         varchar company
         varchar first_name
         varchar last_name
@@ -65,40 +65,40 @@ erDiagram
         varchar city
         varchar zip
         varchar country
-        tinyint is_default
-        datetime created_at }
+        tinyint is_default }
     category { int id PK
+        varchar franchise_code
         int parent_id FK
         varchar name
         text description
-        smallint position
-        datetime created_at }
+        smallint position }
     product { int id PK
+        varchar franchise_code
         int category_id FK
         varchar sku
         varchar name
         text description
         decimal price
         decimal vat_rate
-        int stock_quantity
-        datetime created_at }
+        int stock_quantity }
     text { int id PK
+        varchar franchise_code
         varchar syscode
         varchar title
         longtext content
         varchar language
         tinyint is_active
-        int created_by FK
-        datetime created_at }
+        int created_by FK }
     enumeration { int id PK
+        varchar franchise_code
         varchar type
         varchar syscode
         varchar label
         varchar value
         smallint position
-        tinyint is_active
-        datetime created_at }
+        tinyint is_active }
     order { int id PK
+        varchar franchise_code
         varchar order_number
         int user_id FK
         enum status
@@ -107,16 +107,15 @@ erDiagram
         varchar payment_method
         int shipping_address_id FK
         int billing_address_id FK
-        text note
-        datetime created_at }
+        text note }
     order_item { int id PK
         int order_id FK
         int product_id FK
         int quantity
         decimal unit_price
-        decimal total_price
-        datetime created_at }
+        decimal total_price }
     invoice { int id PK
+        varchar franchise_code
         varchar invoice_number
         int order_id FK
         int user_id FK
@@ -127,16 +126,14 @@ erDiagram
         text note
         datetime issued_at
         date due_at
-        datetime paid_at
-        datetime created_at }
+        datetime paid_at }
     invoice_item { int id PK
         int invoice_id FK
         int product_id FK
         varchar description
         int quantity
         decimal unit_price
-        decimal total_price
-        datetime created_at }
+        decimal total_price }
     role ||--o{ user : "assigned to"
     user ||--o{ user_token : "has tokens"
     user ||--o{ address : "has addresses"
