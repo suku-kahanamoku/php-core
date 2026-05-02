@@ -24,7 +24,7 @@ class InvoiceApi
             min(100, max(1, (int) $request->get('limit', 20))),
             $request->get('status'),
             (string) $request->get('sort_by', 'issued_at'),
-            (string) $request->get('sort_dir', 'DESC')
+            (string) $request->get('sort_dir', 'DESC'),
         ));
     }
 
@@ -42,7 +42,7 @@ class InvoiceApi
             [
                 'due_at' => $request->get('due_at'),
                 'note'   => $request->get('note', ''),
-            ]
+            ],
         );
         Response::created(['id' => $id], 'Invoice created');
     }
@@ -52,7 +52,7 @@ class InvoiceApi
     {
         $this->service->updateStatus(
             (int) $params['id'],
-            trim((string) $request->get('status', ''))
+            trim((string) $request->get('status', '')),
         );
         Response::success(null, 'Invoice status updated');
     }

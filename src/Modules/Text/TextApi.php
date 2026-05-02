@@ -25,7 +25,7 @@ class TextApi
             $isActive !== null ? (bool)(int) $isActive : null,
             $request->get('search'),
             (string) $request->get('sort_by', 'key'),
-            (string) $request->get('sort_dir', 'ASC')
+            (string) $request->get('sort_dir', 'ASC'),
         ));
     }
 
@@ -40,7 +40,7 @@ class TextApi
     {
         Response::success($this->service->getByKey(
             $params['key'],
-            (string) $request->get('language', 'cs')
+            (string) $request->get('language', 'cs'),
         ));
     }
 
@@ -48,13 +48,13 @@ class TextApi
     public function create(Request $request): void
     {
         $id = $this->service->create(
-            trim((string) $request->get('key',   '')),
+            trim((string) $request->get('key', '')),
             trim((string) $request->get('title', '')),
             trim((string) $request->get('language', 'cs')),
             [
                 'content'   => $request->get('content'),
                 'is_active' => $request->get('is_active', 1),
-            ]
+            ],
         );
         Response::created(['id' => $id], 'Text created');
     }
@@ -77,13 +77,13 @@ class TextApi
     {
         $this->service->replace(
             (int) $params['id'],
-            trim((string) $request->get('key',   '')),
+            trim((string) $request->get('key', '')),
             trim((string) $request->get('title', '')),
             [
                 'content'   => $request->get('content'),
                 'language'  => $request->get('language', 'cs'),
                 'is_active' => $request->get('is_active', 1),
-            ]
+            ],
         );
         Response::success(null, 'Text replaced');
     }

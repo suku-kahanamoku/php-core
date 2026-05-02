@@ -20,7 +20,7 @@ class Franchise
     public static function code(): string
     {
         if (self::$code === null) {
-            $raw = $_ENV['FRANCHISE_CODE'] ?? 'default';
+            $raw        = $_ENV['FRANCHISE_CODE'] ?? 'default';
             self::$code = trim($raw) !== '' ? trim($raw) : 'default';
         }
         return self::$code;

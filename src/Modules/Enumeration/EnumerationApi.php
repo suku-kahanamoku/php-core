@@ -24,7 +24,7 @@ class EnumerationApi
             $request->get('type'),
             $isActive !== null ? (bool)(int) $isActive : null,
             (string) $request->get('sort_by', 'sort_order'),
-            (string) $request->get('sort_dir', 'ASC')
+            (string) $request->get('sort_dir', 'ASC'),
         ));
     }
 
@@ -44,14 +44,14 @@ class EnumerationApi
     public function create(Request $request): void
     {
         $id = $this->service->create(
-            trim((string) $request->get('type',  '')),
-            trim((string) $request->get('code',  '')),
+            trim((string) $request->get('type', '')),
+            trim((string) $request->get('code', '')),
             trim((string) $request->get('label', '')),
             [
                 'value'      => $request->get('value'),
                 'sort_order' => $request->get('sort_order', 0),
                 'is_active'  => $request->get('is_active', 1),
-            ]
+            ],
         );
         Response::created(['id' => $id], 'Enumeration created');
     }
@@ -75,14 +75,14 @@ class EnumerationApi
     {
         $this->service->replace(
             (int) $params['id'],
-            trim((string) $request->get('type',  '')),
-            trim((string) $request->get('code',  '')),
+            trim((string) $request->get('type', '')),
+            trim((string) $request->get('code', '')),
             trim((string) $request->get('label', '')),
             [
                 'value'      => $request->get('value'),
                 'sort_order' => $request->get('sort_order', 0),
                 'is_active'  => $request->get('is_active', 1),
-            ]
+            ],
         );
         Response::success(null, 'Enumeration replaced');
     }

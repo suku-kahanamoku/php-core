@@ -26,7 +26,7 @@ class Order
         ?int $userId = null,
         ?string $status = null,
         string $sortBy = 'created_at',
-        string $sortDir = 'DESC'
+        string $sortDir = 'DESC',
     ): array {
         $allowed = ['created_at', 'total_amount', 'status', 'order_number'];
         $sortBy  = in_array($sortBy, $allowed, true) ? $sortBy : 'created_at';
@@ -50,7 +50,8 @@ class Order
         $whereStr = implode(' AND ', $where);
 
         $total = (int) $this->db->fetchOne(
-            "SELECT COUNT(*) AS cnt FROM `order` o WHERE {$whereStr}", $params
+            "SELECT COUNT(*) AS cnt FROM `order` o WHERE {$whereStr}",
+            $params,
         )['cnt'];
 
         $items = $this->db->fetchAll(
@@ -63,7 +64,7 @@ class Order
              WHERE {$whereStr}
              ORDER BY o.{$sortBy} {$sortDir}
              LIMIT {$limit} OFFSET {$offset}",
-            $params
+            $params,
         );
 
         return [
@@ -78,13 +79,14 @@ class Order
     public function findById(int $id): ?array
     {
         $order = $this->db->fetchOne(
-            "SELECT o.*, u.first_name, u.last_name, u.email,
-                    a.street AS ship_street, a.city AS ship_city, a.zip AS ship_zip, a.country AS ship_country
+            'SELECT o.*, u.first_name, u.last_name, u.email,
+                    a.street AS ship_street, a.city AS ship_city,
+                    a.zip AS ship_zip, a.country AS ship_country
              FROM `order` o
              LEFT JOIN user u ON u.id = o.user_id
              LEFT JOIN address a ON a.id = o.shipping_address_id
-             WHERE o.id = ? AND o.franchise_code = ? AND o.deleted_at IS NULL",
-            [$id, $this->code]
+             WHERE o.id = ? AND o.franchise_code = ? AND o.deleted_at IS NULL',
+            [$id, $this->code],
         );
 
         if (!$order) {
@@ -92,11 +94,11 @@ class Order
         }
 
         $order['items'] = $this->db->fetchAll(
-            "SELECT oi.*, p.name AS product_name, p.sku
+            'SELECT oi.*, p.name AS product_name, p.sku
              FROM order_item oi
              LEFT JOIN product p ON p.id = oi.product_id
-             WHERE oi.order_id = ?",
-            [$id]
+             WHERE oi.order_id = ?',
+            [$id],
         );
 
         return $order;
@@ -107,7 +109,7 @@ class Order
         return $this->db->fetchOne(
             'SELECT id, name, price, stock_quantity FROM product
              WHERE id = ? AND franchise_code = ? AND status = ? AND deleted_at IS NULL',
-            [$productId, $this->code, 'active']
+            [$productId, $this->code, 'active'],
         ) ?: null;
     }
 
@@ -131,10 +133,11 @@ class Order
         $this->db->update(
             'product',
             ['stock_quantity' => $this->db->fetchOne(
-                'SELECT stock_quantity FROM product WHERE id = ?', [$productId]
+                'SELECT stock_quantity FROM product WHERE id = ?',
+                [$productId],
             )['stock_quantity'] - $qty],
             'id = ?',
-            [$productId]
+            [$productId],
         );
     }
 
@@ -148,8 +151,12 @@ class Order
 
     public function softDelete(int $id): void
     {
-        $this->db->update('order', ['deleted_at' => date('Y-m-d H:i:s')],
-            'id = ? AND franchise_code = ?', [$id, $this->code]);
+        $this->db->update(
+            'order',
+            ['deleted_at' => date('Y-m-d H:i:s')],
+            'id = ? AND franchise_code = ?',
+            [$id, $this->code],
+        );
     }
 
     public function generateNumber(): string

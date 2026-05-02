@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Role;
 
+use App\Core\Franchise;
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
-use App\Core\Franchise;
 use App\Modules\Router\Response;
 use App\Modules\Validator\Validator;
 
@@ -35,13 +35,22 @@ class RoleService
         return $role;
     }
 
-    public function create(string $name, string $label, int $sortOrder, int $isActive): int
+    public function create(
+        string $name,
+        string $label,
+        int $sortOrder,
+        int $isActive,
+    ): int
     {
         Auth::requireRole('admin');
 
         Validator::make(['name' => $name, 'label' => $label])
             ->required(['name', 'label'])
-            ->pattern('name', '/^[a-z0-9_]+$/', 'Only lowercase letters, digits and underscores')
+            ->pattern(
+                'name',
+                '/^[a-z0-9_]+$/',
+                'Only lowercase letters, digits and underscores',
+            )
             ->validate();
 
         if ($this->role->nameExists($name)) {
@@ -70,7 +79,9 @@ class RoleService
         if (array_key_exists('name', $fields)) {
             $newName = trim(strtolower((string) $fields['name']));
             if (!preg_match('/^[a-z0-9_]+$/', $newName)) {
-                Response::validationError(['name' => 'Only lowercase letters, digits and underscores']);
+                Response::validationError([
+                    'name' => 'Only lowercase letters, digits and underscores',
+                ]);
             }
             if ($this->role->nameExists($newName, $id)) {
                 Response::error('Role with this name already exists', 409);
@@ -78,16 +89,28 @@ class RoleService
             $set['name'] = $newName;
         }
 
-        if (array_key_exists('label', $fields))      $set['label']      = trim((string) $fields['label']);
-        if (array_key_exists('sort_order', $fields)) $set['sort_order'] = (int) $fields['sort_order'];
-        if (array_key_exists('is_active', $fields))  $set['is_active']  = (int) $fields['is_active'];
+        if (array_key_exists('label', $fields)) {
+            $set['label'] = trim((string) $fields['label']);
+        }
+        if (array_key_exists('sort_order', $fields)) {
+            $set['sort_order'] = (int) $fields['sort_order'];
+        }
+        if (array_key_exists('is_active', $fields)) {
+            $set['is_active'] = (int) $fields['is_active'];
+        }
 
         if (!empty($set)) {
             $this->role->update($id, $set);
         }
     }
 
-    public function replace(int $id, string $name, string $label, int $sortOrder, int $isActive): void
+    public function replace(
+        int $id,
+        string $name,
+        string $label,
+        int $sortOrder,
+        int $isActive,
+    ): void
     {
         Auth::requireRole('admin');
 
@@ -97,7 +120,11 @@ class RoleService
 
         Validator::make(['name' => $name, 'label' => $label])
             ->required(['name', 'label'])
-            ->pattern('name', '/^[a-z0-9_]+$/', 'Only lowercase letters, digits and underscores')
+            ->pattern(
+                'name',
+                '/^[a-z0-9_]+$/',
+                'Only lowercase letters, digits and underscores',
+            )
             ->validate();
 
         if ($this->role->nameExists($name, $id)) {
@@ -129,7 +156,10 @@ class RoleService
 
         $userCount = $this->role->countUsers($id);
         if ($userCount > 0) {
-            Response::error("Cannot delete role: {$userCount} user(s) are assigned to it", 409);
+            Response::error(
+                "Cannot delete role: {$userCount} user(s) are assigned to it",
+                409,
+            );
         }
 
         $this->role->delete($id);

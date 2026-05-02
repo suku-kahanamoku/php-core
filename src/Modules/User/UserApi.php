@@ -26,7 +26,7 @@ class UserApi
             $request->get('role'),
             $request->get('status'),
             (string) $request->get('sort_by', 'created_at'),
-            (string) $request->get('sort_dir', 'DESC')
+            (string) $request->get('sort_dir', 'DESC'),
         ));
     }
 
@@ -41,8 +41,8 @@ class UserApi
     {
         $id = $this->service->create([
             'first_name' => trim((string) $request->get('first_name', '')),
-            'last_name'  => trim((string) $request->get('last_name',  '')),
-            'email'      => trim((string) $request->get('email',      '')),
+            'last_name'  => trim((string) $request->get('last_name', '')),
+            'email'      => trim((string) $request->get('email', '')),
             'password'   => (string) $request->get('password', ''),
             'phone'      => $request->get('phone'),
             'role'       => $request->get('role'),
@@ -69,7 +69,7 @@ class UserApi
     {
         $this->service->replace((int) $params['id'], [
             'first_name' => trim((string) $request->get('first_name', '')),
-            'last_name'  => trim((string) $request->get('last_name',  '')),
+            'last_name'  => trim((string) $request->get('last_name', '')),
             'phone'      => $request->get('phone'),
             'role'       => $request->get('role'),
             'status'     => $request->get('status'),

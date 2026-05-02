@@ -24,7 +24,7 @@ class OrderApi
             min(100, max(1, (int) $request->get('limit', 20))),
             $request->get('status'),
             (string) $request->get('sort_by', 'created_at'),
-            (string) $request->get('sort_dir', 'DESC')
+            (string) $request->get('sort_dir', 'DESC'),
         ));
     }
 
@@ -45,7 +45,7 @@ class OrderApi
                 'note'                => $request->get('note', ''),
                 'shipping_address_id' => $request->get('shipping_address_id'),
                 'billing_address_id'  => $request->get('billing_address_id'),
-            ]
+            ],
         );
         Response::created($result, 'Order created');
     }
@@ -55,7 +55,7 @@ class OrderApi
     {
         $this->service->updateStatus(
             (int) $params['id'],
-            trim((string) $request->get('status', ''))
+            trim((string) $request->get('status', '')),
         );
         Response::success(null, 'Order status updated');
     }

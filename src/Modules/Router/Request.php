@@ -42,7 +42,7 @@ class Request
         $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
 
         if (str_contains($contentType, 'application/json')) {
-            $raw = file_get_contents('php://input');
+            $raw     = file_get_contents('php://input');
             $decoded = json_decode($raw, true);
             return is_array($decoded) ? $decoded : [];
         }
@@ -55,7 +55,7 @@ class Request
         $headers = [];
         foreach ($_SERVER as $key => $value) {
             if (str_starts_with($key, 'HTTP_')) {
-                $name = str_replace('_', '-', substr($key, 5));
+                $name                       = str_replace('_', '-', substr($key, 5));
                 $headers[strtolower($name)] = $value;
             }
         }

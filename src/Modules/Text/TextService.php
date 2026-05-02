@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Text;
 
+use App\Core\Franchise;
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
-use App\Core\Franchise;
 use App\Modules\Router\Response;
 use App\Modules\Validator\Validator;
 
@@ -19,7 +19,13 @@ class TextService
         $this->text = new Text(Database::getInstance(), Franchise::code());
     }
 
-    public function list(string $language, ?bool $isActive, ?string $search, string $sortBy, string $sortDir): array
+    public function list(
+        string $language,
+        ?bool $isActive,
+        ?string $search,
+        string $sortBy,
+        string $sortDir,
+    ): array
     {
         return $this->text->findAll($language, $isActive, $search, $sortBy, $sortDir);
     }
@@ -42,7 +48,12 @@ class TextService
         return $text;
     }
 
-    public function create(string $key, string $title, string $language, array $input): int
+    public function create(
+        string $key,
+        string $title,
+        string $language,
+        array $input,
+    ): int
     {
         Auth::requireRole('admin');
 
@@ -57,7 +68,7 @@ class TextService
         return $this->text->create([
             'key'        => $key,
             'title'      => $title,
-            'content'    => $input['content']   ?? '',
+            'content'    => $input['content'] ?? '',
             'language'   => $language,
             'is_active'  => (int) ($input['is_active'] ?? 1),
             'created_by' => Auth::id(),
@@ -72,7 +83,7 @@ class TextService
             Response::notFound('Text not found');
         }
 
-        $set = [];
+        $set        = [];
         $textFields = ['key', 'title', 'content', 'language'];
 
         foreach ($textFields as $f) {
@@ -104,7 +115,7 @@ class TextService
         $this->text->update($id, [
             'key'       => $key,
             'title'     => $title,
-            'content'   => (string) ($input['content']  ?? ''),
+            'content'   => (string) ($input['content'] ?? ''),
             'language'  => (string) ($input['language'] ?? 'cs'),
             'is_active' => (int)    ($input['is_active'] ?? 1),
         ]);

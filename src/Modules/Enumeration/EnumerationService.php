@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Enumeration;
 
+use App\Core\Franchise;
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
-use App\Core\Franchise;
 use App\Modules\Router\Response;
 use App\Modules\Validator\Validator;
 
@@ -19,7 +19,12 @@ class EnumerationService
         $this->enum = new Enumeration(Database::getInstance(), Franchise::code());
     }
 
-    public function list(?string $type, ?bool $isActive, string $sortBy, string $sortDir): array
+    public function list(
+        ?string $type,
+        ?bool $isActive,
+        string $sortBy,
+        string $sortDir,
+    ): array
     {
         $items = $this->enum->findAll($type, $isActive, $sortBy, $sortDir);
 
@@ -64,9 +69,9 @@ class EnumerationService
             'type'       => $type,
             'code'       => $code,
             'label'      => $label,
-            'value'      => $input['value']      ?? $code,
+            'value'      => $input['value'] ?? $code,
             'sort_order' => (int) ($input['sort_order'] ?? 0),
-            'is_active'  => (int) ($input['is_active']  ?? 1),
+            'is_active'  => (int) ($input['is_active'] ?? 1),
         ]);
     }
 
@@ -78,7 +83,7 @@ class EnumerationService
             Response::notFound('Enumeration not found');
         }
 
-        $set = [];
+        $set        = [];
         $textFields = ['type', 'code', 'label', 'value'];
         $intFields  = ['sort_order', 'is_active'];
 
@@ -98,7 +103,13 @@ class EnumerationService
         }
     }
 
-    public function replace(int $id, string $type, string $code, string $label, array $input): void
+    public function replace(
+        int $id,
+        string $type,
+        string $code,
+        string $label,
+        array $input,
+    ): void
     {
         Auth::requireRole('admin');
 
@@ -114,9 +125,9 @@ class EnumerationService
             'type'       => $type,
             'code'       => $code,
             'label'      => $label,
-            'value'      => (string) ($input['value']      ?? $code),
+            'value'      => (string) ($input['value'] ?? $code),
             'sort_order' => (int)    ($input['sort_order'] ?? 0),
-            'is_active'  => (int)    ($input['is_active']  ?? 1),
+            'is_active'  => (int)    ($input['is_active'] ?? 1),
         ]);
     }
 

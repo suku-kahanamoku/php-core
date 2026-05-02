@@ -24,7 +24,7 @@ class Enumeration
         ?string $type = null,
         ?bool $isActive = null,
         string $sortBy = 'sort_order',
-        string $sortDir = 'ASC'
+        string $sortDir = 'ASC',
     ): array {
         $allowed = ['sort_order', 'label', 'code', 'type', 'created_at'];
         $sortBy  = in_array($sortBy, $allowed, true) ? $sortBy : 'sort_order';
@@ -45,8 +45,10 @@ class Enumeration
         $whereStr = implode(' AND ', $where);
 
         return $this->db->fetchAll(
-            "SELECT * FROM enumeration WHERE {$whereStr} ORDER BY type ASC, {$sortBy} {$sortDir}, label ASC",
-            $params
+            "SELECT * FROM enumeration
+             WHERE {$whereStr}
+             ORDER BY type ASC, {$sortBy} {$sortDir}, label ASC",
+            $params,
         );
     }
 
@@ -54,7 +56,7 @@ class Enumeration
     {
         $row = $this->db->fetchOne(
             'SELECT * FROM enumeration WHERE id = ? AND franchise_code = ?',
-            [$id, $this->code]
+            [$id, $this->code],
         );
 
         return $row ?: null;
@@ -63,8 +65,9 @@ class Enumeration
     public function getTypes(): array
     {
         $rows = $this->db->fetchAll(
-            'SELECT DISTINCT type FROM enumeration WHERE franchise_code = ? ORDER BY type ASC',
-            [$this->code]
+            'SELECT DISTINCT type FROM enumeration
+             WHERE franchise_code = ? ORDER BY type ASC',
+            [$this->code],
         );
 
         return array_column($rows, 'type');
@@ -74,13 +77,15 @@ class Enumeration
     {
         if ($excludeId !== null) {
             $row = $this->db->fetchOne(
-                'SELECT id FROM enumeration WHERE franchise_code = ? AND type = ? AND code = ? AND id != ?',
-                [$this->code, $type, $code, $excludeId]
+                'SELECT id FROM enumeration
+                 WHERE franchise_code = ? AND type = ? AND code = ? AND id != ?',
+                [$this->code, $type, $code, $excludeId],
             );
         } else {
             $row = $this->db->fetchOne(
-                'SELECT id FROM enumeration WHERE franchise_code = ? AND type = ? AND code = ?',
-                [$this->code, $type, $code]
+                'SELECT id FROM enumeration
+                 WHERE franchise_code = ? AND type = ? AND code = ?',
+                [$this->code, $type, $code],
             );
         }
 
@@ -101,12 +106,16 @@ class Enumeration
             'enumeration',
             array_merge($data, ['updated_at' => date('Y-m-d H:i:s')]),
             'id = ? AND franchise_code = ?',
-            [$id, $this->code]
+            [$id, $this->code],
         );
     }
 
     public function delete(int $id): void
     {
-        $this->db->delete('enumeration', 'id = ? AND franchise_code = ?', [$id, $this->code]);
+        $this->db->delete(
+            'enumeration',
+            'id = ? AND franchise_code = ?',
+            [$id, $this->code],
+        );
     }
 }

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Address;
 
+use App\Core\Franchise;
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
-use App\Core\Franchise;
 use App\Modules\Router\Response;
 use App\Modules\Validator\Validator;
 
@@ -19,7 +19,12 @@ class AddressService
         $this->address = new Address(Database::getInstance(), Franchise::code());
     }
 
-    public function listByUser(int $userId, ?string $type, string $sortBy, string $sortDir): array
+    public function listByUser(
+        int $userId,
+        ?string $type,
+        string $sortBy,
+        string $sortDir,
+    ): array
     {
         Auth::require();
 
@@ -72,7 +77,7 @@ class AddressService
             'street'     => $input['street'],
             'city'       => $input['city'],
             'zip'        => $input['zip'],
-            'country'    => $input['country']    ?? 'CZ',
+            'country'    => $input['country'] ?? 'CZ',
             'is_default' => $isDefault,
         ]);
     }
@@ -90,8 +95,11 @@ class AddressService
             Response::forbidden();
         }
 
-        $set = [];
-        $textFields = ['type', 'company', 'first_name', 'last_name', 'street', 'city', 'zip', 'country'];
+        $set        = [];
+        $textFields = [
+            'type', 'company', 'first_name', 'last_name',
+            'street', 'city', 'zip', 'country',
+        ];
 
         foreach ($textFields as $f) {
             if (array_key_exists($f, $input) && $input[$f] !== null) {
@@ -125,7 +133,9 @@ class AddressService
             Response::forbidden();
         }
 
-        Validator::make($input)->required(['street', 'city', 'zip', 'country'])->validate();
+        Validator::make($input)
+            ->required(['street', 'city', 'zip', 'country'])
+            ->validate();
 
         $isDefault = (int) ($input['is_default'] ?? 0);
         if ($isDefault) {

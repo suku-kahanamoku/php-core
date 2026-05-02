@@ -22,7 +22,7 @@ class CategoryApi
         Response::success($this->service->list(
             (string) $request->get('sort_by', 'sort_order'),
             (string) $request->get('sort_dir', 'ASC'),
-            (bool) $request->get('flat', false)
+            (bool) $request->get('flat', false),
         ));
     }
 
@@ -42,7 +42,7 @@ class CategoryApi
                 'description' => $request->get('description', ''),
                 'parent_id'   => $request->get('parent_id'),
                 'sort_order'  => $request->get('sort_order', 0),
-            ]
+            ],
         );
         Response::created(['id' => $id], 'Category created');
     }
@@ -71,7 +71,7 @@ class CategoryApi
                 'description' => $request->get('description'),
                 'parent_id'   => $request->get('parent_id'),
                 'sort_order'  => $request->get('sort_order', 0),
-            ]
+            ],
         );
         Response::success(null, 'Category replaced');
     }

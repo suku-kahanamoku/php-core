@@ -28,7 +28,7 @@ class User
         ?string $role = null,
         ?string $status = null,
         string $sortBy = 'created_at',
-        string $sortDir = 'DESC'
+        string $sortDir = 'DESC',
     ): array {
         $allowed = ['created_at', 'last_name', 'email', 'status'];
         $sortBy  = in_array($sortBy, $allowed, true) ? $sortBy : 'created_at';
@@ -41,8 +41,8 @@ class User
         $params = [$this->code];
 
         if ($search) {
-            $where[]  = '(u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ?)';
-            $s = '%' . $search . '%';
+            $where[] = '(u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ?)';
+            $s       = '%' . $search . '%';
             array_push($params, $s, $s, $s);
         }
         if ($role) {
@@ -57,19 +57,22 @@ class User
         $whereStr = implode(' AND ', $where);
 
         $total = (int) $this->db->fetchOne(
-            "SELECT COUNT(*) AS cnt FROM user u JOIN role r ON r.id = u.role_id WHERE {$whereStr}",
-            $params
+            'SELECT COUNT(*) AS cnt FROM user u'
+            . ' JOIN role r ON r.id = u.role_id'
+            . " WHERE {$whereStr}",
+            $params,
         )['cnt'];
 
         $items = $this->db->fetchAll(
-            "SELECT u.id, u.first_name, u.last_name, u.email, r.name AS role, r.id AS role_id,
+            "SELECT u.id, u.first_name, u.last_name, u.email,
+                    r.name AS role, r.id AS role_id,
                     u.status, u.phone, u.created_at, u.last_login_at
              FROM user u
              JOIN role r ON r.id = u.role_id
              WHERE {$whereStr}
              ORDER BY u.{$sortBy} {$sortDir}
              LIMIT {$limit} OFFSET {$offset}",
-            $params
+            $params,
         );
 
         return [
@@ -85,13 +88,14 @@ class User
     public function findById(int $id): ?array
     {
         $user = $this->db->fetchOne(
-            'SELECT u.id, u.first_name, u.last_name, u.email, r.name AS role, r.id AS role_id,
+            'SELECT u.id, u.first_name, u.last_name, u.email,
+                    r.name AS role, r.id AS role_id,
                     u.status, u.phone, u.address_id,
                     u.created_at, u.updated_at, u.last_login_at
              FROM user u
              JOIN role r ON r.id = u.role_id
              WHERE u.id = ? AND u.franchise_code = ?',
-            [$id, $this->code]
+            [$id, $this->code],
         );
 
         return $user ?: null;
@@ -102,7 +106,7 @@ class User
     {
         $row = $this->db->fetchOne(
             'SELECT id FROM role WHERE franchise_code = ? AND name = ?',
-            [$this->code, $name]
+            [$this->code, $name],
         );
 
         return $row ? (int) $row['id'] : null;
@@ -114,12 +118,12 @@ class User
         if ($excludeId !== null) {
             $row = $this->db->fetchOne(
                 'SELECT id FROM user WHERE franchise_code = ? AND email = ? AND id != ?',
-                [$this->code, $email, $excludeId]
+                [$this->code, $email, $excludeId],
             );
         } else {
             $row = $this->db->fetchOne(
                 'SELECT id FROM user WHERE franchise_code = ? AND email = ?',
-                [$this->code, $email]
+                [$this->code, $email],
             );
         }
 
@@ -140,7 +144,7 @@ class User
             'user',
             array_merge($data, ['updated_at' => date('Y-m-d H:i:s')]),
             'id = ? AND franchise_code = ?',
-            [$id, $this->code]
+            [$id, $this->code],
         );
     }
 

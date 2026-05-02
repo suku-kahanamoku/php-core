@@ -25,11 +25,11 @@ class Role
     public function findAll(
         ?bool $isActive = null,
         string $sortBy = 'sort_order',
-        string $sortDir = 'ASC'
+        string $sortDir = 'ASC',
     ): array {
-        $allowed  = ['sort_order', 'name', 'label', 'created_at'];
-        $sortBy   = in_array($sortBy, $allowed, true) ? $sortBy : 'sort_order';
-        $sortDir  = strtoupper($sortDir) === 'DESC' ? 'DESC' : 'ASC';
+        $allowed = ['sort_order', 'name', 'label', 'created_at'];
+        $sortBy  = in_array($sortBy, $allowed, true) ? $sortBy : 'sort_order';
+        $sortDir = strtoupper($sortDir) === 'DESC' ? 'DESC' : 'ASC';
 
         $where  = ['franchise_code = ?'];
         $params = [$this->code];
@@ -44,7 +44,7 @@ class Role
         return $this->db->fetchAll(
             "SELECT id, name, label, sort_order, is_active, created_at, updated_at
              FROM role WHERE {$whereStr} ORDER BY {$sortBy} {$sortDir}",
-            $params
+            $params,
         );
     }
 
@@ -54,7 +54,7 @@ class Role
         $role = $this->db->fetchOne(
             'SELECT id, name, label, sort_order, is_active, created_at, updated_at
              FROM role WHERE id = ? AND franchise_code = ?',
-            [$id, $this->code]
+            [$id, $this->code],
         );
 
         return $role ?: null;
@@ -66,7 +66,7 @@ class Role
         $role = $this->db->fetchOne(
             'SELECT id, name, label, sort_order, is_active, created_at, updated_at
              FROM role WHERE franchise_code = ? AND name = ?',
-            [$this->code, $name]
+            [$this->code, $name],
         );
 
         return $role ?: null;
@@ -76,8 +76,9 @@ class Role
     public function countUsers(int $id): int
     {
         return (int) $this->db->fetchOne(
-            'SELECT COUNT(*) AS cnt FROM user WHERE role_id = ? AND franchise_code = ? AND status != "deleted"',
-            [$id, $this->code]
+            'SELECT COUNT(*) AS cnt FROM user
+             WHERE role_id = ? AND franchise_code = ? AND status != "deleted"',
+            [$id, $this->code],
         )['cnt'];
     }
 
@@ -97,7 +98,7 @@ class Role
             'role',
             array_merge($data, ['updated_at' => date('Y-m-d H:i:s')]),
             'id = ? AND franchise_code = ?',
-            [$id, $this->code]
+            [$id, $this->code],
         );
     }
 
@@ -113,12 +114,12 @@ class Role
         if ($excludeId !== null) {
             $row = $this->db->fetchOne(
                 'SELECT id FROM role WHERE franchise_code = ? AND name = ? AND id != ?',
-                [$this->code, $name, $excludeId]
+                [$this->code, $name, $excludeId],
             );
         } else {
             $row = $this->db->fetchOne(
                 'SELECT id FROM role WHERE franchise_code = ? AND name = ?',
-                [$this->code, $name]
+                [$this->code, $name],
             );
         }
 

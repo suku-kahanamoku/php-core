@@ -14,7 +14,11 @@ class Response
         exit;
     }
 
-    public static function success(mixed $data = null, string $message = 'OK', int $status = 200): never
+    public static function success(
+        mixed $data = null,
+        string $message = 'OK',
+        int $status = 200,
+    ): never
     {
         self::json([
             'success' => true,
@@ -28,7 +32,11 @@ class Response
         self::success($data, $message, 201);
     }
 
-    public static function error(string $message, int $status = 400, mixed $errors = null): never
+    public static function error(
+        string $message,
+        int $status = 400,
+        mixed $errors = null,
+    ): never
     {
         self::json([
             'success' => false,
@@ -52,7 +60,10 @@ class Response
         self::error($message, 404);
     }
 
-    public static function validationError(array $errors, string $message = 'Validation failed'): never
+    public static function validationError(
+        array $errors,
+        string $message = 'Validation failed',
+    ): never
     {
         self::error($message, 422, $errors);
     }

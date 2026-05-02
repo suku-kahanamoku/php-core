@@ -26,7 +26,7 @@ class Invoice
         ?int $userId = null,
         ?string $status = null,
         string $sortBy = 'issued_at',
-        string $sortDir = 'DESC'
+        string $sortDir = 'DESC',
     ): array {
         $allowed = ['issued_at', 'due_at', 'total_amount', 'status', 'invoice_number'];
         $sortBy  = in_array($sortBy, $allowed, true) ? $sortBy : 'issued_at';
@@ -50,7 +50,8 @@ class Invoice
         $whereStr = implode(' AND ', $where);
 
         $total = (int) $this->db->fetchOne(
-            "SELECT COUNT(*) AS cnt FROM invoice i WHERE {$whereStr}", $params
+            "SELECT COUNT(*) AS cnt FROM invoice i WHERE {$whereStr}",
+            $params,
         )['cnt'];
 
         $items = $this->db->fetchAll(
@@ -63,7 +64,7 @@ class Invoice
              WHERE {$whereStr}
              ORDER BY i.{$sortBy} {$sortDir}
              LIMIT {$limit} OFFSET {$offset}",
-            $params
+            $params,
         );
 
         return [
@@ -78,13 +79,14 @@ class Invoice
     public function findById(int $id): ?array
     {
         $invoice = $this->db->fetchOne(
-            "SELECT i.*, u.first_name, u.last_name, u.email,
-                    ba.street AS bill_street, ba.city AS bill_city, ba.zip AS bill_zip, ba.country AS bill_country
+            'SELECT i.*, u.first_name, u.last_name, u.email,
+                    ba.street AS bill_street, ba.city AS bill_city,
+                    ba.zip AS bill_zip, ba.country AS bill_country
              FROM invoice i
              LEFT JOIN user u ON u.id = i.user_id
              LEFT JOIN address ba ON ba.id = i.billing_address_id
-             WHERE i.id = ? AND i.franchise_code = ? AND i.deleted_at IS NULL",
-            [$id, $this->code]
+             WHERE i.id = ? AND i.franchise_code = ? AND i.deleted_at IS NULL',
+            [$id, $this->code],
         );
 
         if (!$invoice) {
@@ -92,11 +94,11 @@ class Invoice
         }
 
         $invoice['items'] = $this->db->fetchAll(
-            "SELECT ii.*, p.name AS product_name, p.sku
+            'SELECT ii.*, p.name AS product_name, p.sku
              FROM invoice_item ii
              LEFT JOIN product p ON p.id = ii.product_id
-             WHERE ii.invoice_id = ?",
-            [$id]
+             WHERE ii.invoice_id = ?',
+            [$id],
         );
 
         return $invoice;
@@ -105,8 +107,9 @@ class Invoice
     public function findByOrder(int $orderId): ?array
     {
         $row = $this->db->fetchOne(
-            'SELECT id FROM invoice WHERE franchise_code = ? AND order_id = ? AND deleted_at IS NULL',
-            [$this->code, $orderId]
+            'SELECT id FROM invoice
+             WHERE franchise_code = ? AND order_id = ? AND deleted_at IS NULL',
+            [$this->code, $orderId],
         );
 
         return $row ?: null;
@@ -115,8 +118,9 @@ class Invoice
     public function getOrder(int $orderId): ?array
     {
         $row = $this->db->fetchOne(
-            'SELECT * FROM `order` WHERE id = ? AND franchise_code = ? AND deleted_at IS NULL',
-            [$orderId, $this->code]
+            'SELECT * FROM `order`
+             WHERE id = ? AND franchise_code = ? AND deleted_at IS NULL',
+            [$orderId, $this->code],
         );
 
         return $row ?: null;
@@ -127,7 +131,7 @@ class Invoice
         return $this->db->fetchAll(
             'SELECT oi.*, p.name AS product_name FROM order_item oi
              LEFT JOIN product p ON p.id = oi.product_id WHERE oi.order_id = ?',
-            [$orderId]
+            [$orderId],
         );
     }
 
@@ -152,23 +156,32 @@ class Invoice
         if ($status === 'paid') {
             $set['paid_at'] = date('Y-m-d H:i:s');
         }
-        $this->db->update('invoice', $set, 'id = ? AND franchise_code = ?', [$id, $this->code]);
+        $this->db->update(
+            'invoice',
+            $set,
+            'id = ? AND franchise_code = ?',
+            [$id, $this->code],
+        );
     }
 
     public function softDelete(int $id): void
     {
-        $this->db->update('invoice', ['deleted_at' => date('Y-m-d H:i:s')],
-            'id = ? AND franchise_code = ?', [$id, $this->code]);
+        $this->db->update(
+            'invoice',
+            ['deleted_at' => date('Y-m-d H:i:s')],
+            'id = ? AND franchise_code = ?',
+            [$id, $this->code],
+        );
     }
 
     public function generateNumber(): string
     {
         $year = date('Y');
         $last = $this->db->fetchOne(
-            "SELECT invoice_number FROM invoice
+            'SELECT invoice_number FROM invoice
              WHERE franchise_code = ? AND invoice_number LIKE ?
-             ORDER BY id DESC LIMIT 1",
-            [$this->code, $year . '%']
+             ORDER BY id DESC LIMIT 1',
+            [$this->code, $year . '%'],
         );
 
         $seq = 1;

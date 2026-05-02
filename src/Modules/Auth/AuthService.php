@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Auth;
 
+use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Core\Franchise;
 use App\Modules\Router\Response;
@@ -22,12 +23,11 @@ class AuthService
 
     public function login(string $email, string $password): array
     {
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            Response::validationError(['email' => 'Invalid email']);
-        }
+        Validator::make(['email' => $email])->email('email')->validate();
 
         $user = $this->db->fetchOne(
-            'SELECT u.id, u.email, u.password, r.name AS role, u.first_name, u.last_name, u.status
+            'SELECT u.id, u.email, u.password,
+                    r.name AS role, u.first_name, u.last_name, u.status
              FROM user u
              JOIN role r ON r.id = u.role_id
              WHERE u.email = ? AND u.franchise_code = ?
@@ -53,8 +53,12 @@ class AuthService
             'created_at' => date('Y-m-d H:i:s'),
         ]);
 
-        $this->db->update('user', ['last_login_at' => date('Y-m-d H:i:s')],
-            'id = ?', [$user['id']]);
+        $this->db->update(
+            'user',
+            ['last_login_at' => date('Y-m-d H:i:s')],
+            'id = ?',
+            [$user['id']]
+        );
 
         return [
             'token'      => $token,
@@ -79,17 +83,22 @@ class AuthService
         return Auth::user();
     }
 
-    public function register(string $firstName, string $lastName, string $email, string $password): int
-    {
-        $errors = [];
-        if ($firstName === '') $errors['first_name'] = 'Required';
-        if ($lastName  === '') $errors['last_name']  = 'Required';
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors['email'] = 'Invalid email';
-        if (strlen($password) < 8) $errors['password'] = 'Minimum 8 characters';
-
-        if (!empty($errors)) {
-            Response::validationError($errors);
-        }
+    public function register(
+        string $firstName,
+        string $lastName,
+        string $email,
+        string $password,
+    ): int {
+        Validator::make([
+            'first_name' => $firstName,
+            'last_name'  => $lastName,
+            'email'      => $email,
+            'password'   => $password,
+        ])
+            ->required(['first_name', 'last_name', 'email', 'password'])
+            ->email('email')
+            ->minLength('password', 8)
+            ->validate();
 
         $exists = $this->db->fetchOne(
             'SELECT id FROM user WHERE franchise_code = ? AND email = ?',
@@ -123,12 +132,13 @@ class AuthService
     {
         Auth::require();
 
-        if ($currentPassword === '' || $newPassword === '') {
-            Response::validationError(['message' => 'Both current_password and new_password are required']);
-        }
-        if (strlen($newPassword) < 8) {
-            Response::validationError(['new_password' => 'Minimum 8 characters']);
-        }
+        Validator::make([
+            'current_password' => $currentPassword,
+            'new_password'     => $newPassword,
+        ])
+            ->required(['current_password', 'new_password'])
+            ->minLength('new_password', 8)
+            ->validate();
 
         $userId = Auth::id();
         $user   = $this->db->fetchOne(

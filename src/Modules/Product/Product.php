@@ -27,7 +27,7 @@ class Product
         ?int $categoryId = null,
         ?string $status = null,
         string $sortBy = 'created_at',
-        string $sortDir = 'DESC'
+        string $sortDir = 'DESC',
     ): array {
         $allowed = ['created_at', 'name', 'price', 'sku', 'stock_quantity', 'status'];
         $sortBy  = in_array($sortBy, $allowed, true) ? $sortBy : 'created_at';
@@ -40,8 +40,8 @@ class Product
         $params = [$this->code];
 
         if ($search) {
-            $where[]  = '(p.name LIKE ? OR p.sku LIKE ? OR p.description LIKE ?)';
-            $s = '%' . $search . '%';
+            $where[] = '(p.name LIKE ? OR p.sku LIKE ? OR p.description LIKE ?)';
+            $s       = '%' . $search . '%';
             array_push($params, $s, $s, $s);
         }
         if ($categoryId !== null) {
@@ -56,18 +56,22 @@ class Product
         $whereStr = implode(' AND ', $where);
 
         $total = (int) $this->db->fetchOne(
-            "SELECT COUNT(*) AS cnt FROM product p WHERE {$whereStr}", $params
+            "SELECT COUNT(*) AS cnt FROM product p WHERE {$whereStr}",
+            $params,
         )['cnt'];
 
         $items = $this->db->fetchAll(
-            "SELECT p.id, p.sku, p.name, p.description, p.price, p.vat_rate, p.stock_quantity,
-                    p.status, p.category_id, c.name AS category_name, p.created_at, p.updated_at
+            "SELECT p.id, p.sku, p.name, p.description,
+                    p.price, p.vat_rate, p.stock_quantity,
+                    p.status, p.category_id,
+                    c.name AS category_name,
+                    p.created_at, p.updated_at
              FROM product p
              LEFT JOIN category c ON c.id = p.category_id
              WHERE {$whereStr}
              ORDER BY p.{$sortBy} {$sortDir}
              LIMIT {$limit} OFFSET {$offset}",
-            $params
+            $params,
         );
 
         return [
@@ -86,7 +90,7 @@ class Product
              FROM product p
              LEFT JOIN category c ON c.id = p.category_id
              WHERE p.id = ? AND p.franchise_code = ? AND p.deleted_at IS NULL',
-            [$id, $this->code]
+            [$id, $this->code],
         );
 
         return $row ?: null;
@@ -96,13 +100,17 @@ class Product
     {
         if ($excludeId !== null) {
             $row = $this->db->fetchOne(
-                'SELECT id FROM product WHERE franchise_code = ? AND sku = ? AND id != ? AND deleted_at IS NULL',
-                [$this->code, $sku, $excludeId]
+                'SELECT id FROM product
+                 WHERE franchise_code = ? AND sku = ?
+                   AND id != ? AND deleted_at IS NULL',
+                [$this->code, $sku, $excludeId],
             );
         } else {
             $row = $this->db->fetchOne(
-                'SELECT id FROM product WHERE franchise_code = ? AND sku = ? AND deleted_at IS NULL',
-                [$this->code, $sku]
+                'SELECT id FROM product
+                 WHERE franchise_code = ? AND sku = ?
+                   AND deleted_at IS NULL',
+                [$this->code, $sku],
             );
         }
 
@@ -123,21 +131,26 @@ class Product
             'product',
             array_merge($data, ['updated_at' => date('Y-m-d H:i:s')]),
             'id = ? AND franchise_code = ?',
-            [$id, $this->code]
+            [$id, $this->code],
         );
     }
 
     public function softDelete(int $id): void
     {
-        $this->db->update('product', ['deleted_at' => date('Y-m-d H:i:s')],
-            'id = ? AND franchise_code = ?', [$id, $this->code]);
+        $this->db->update(
+            'product',
+            ['deleted_at' => date('Y-m-d H:i:s')],
+            'id = ? AND franchise_code = ?',
+            [$id, $this->code],
+        );
     }
 
     public function adjustStock(int $id, int $delta): int
     {
         $product = $this->db->fetchOne(
-            'SELECT stock_quantity FROM product WHERE id = ? AND franchise_code = ? AND deleted_at IS NULL',
-            [$id, $this->code]
+            'SELECT stock_quantity FROM product
+             WHERE id = ? AND franchise_code = ? AND deleted_at IS NULL',
+            [$id, $this->code],
         );
 
         if (!$product) {
@@ -145,9 +158,11 @@ class Product
         }
 
         $newQty = $product['stock_quantity'] + $delta;
-        $this->db->update('product',
+        $this->db->update(
+            'product',
             ['stock_quantity' => $newQty, 'updated_at' => date('Y-m-d H:i:s')],
-            'id = ? AND franchise_code = ?', [$id, $this->code]
+            'id = ? AND franchise_code = ?',
+            [$id, $this->code],
         );
 
         return $newQty;

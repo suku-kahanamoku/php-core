@@ -25,7 +25,7 @@ class Address
         int $userId,
         ?string $type = null,
         string $sortBy = 'is_default',
-        string $sortDir = 'DESC'
+        string $sortDir = 'DESC',
     ): array {
         $allowed = ['is_default', 'type', 'created_at'];
         $sortBy  = in_array($sortBy, $allowed, true) ? $sortBy : 'is_default';
@@ -45,7 +45,7 @@ class Address
             "SELECT id, user_id, type, company, first_name, last_name,
                     street, city, zip, country, is_default, created_at, updated_at
              FROM address WHERE {$whereStr} ORDER BY {$sortBy} {$sortDir}",
-            $params
+            $params,
         );
     }
 
@@ -54,7 +54,7 @@ class Address
     {
         $row = $this->db->fetchOne(
             'SELECT * FROM address WHERE id = ? AND franchise_code = ?',
-            [$id, $this->code]
+            [$id, $this->code],
         );
 
         return $row ?: null;
@@ -74,7 +74,7 @@ class Address
             'address',
             array_merge($data, ['updated_at' => date('Y-m-d H:i:s')]),
             'id = ? AND franchise_code = ?',
-            [$id, $this->code]
+            [$id, $this->code],
         );
     }
 
@@ -90,7 +90,7 @@ class Address
             'address',
             ['is_default' => 0],
             'franchise_code = ? AND user_id = ? AND type = ?',
-            [$this->code, $userId, $type]
+            [$this->code, $userId, $type],
         );
     }
 }

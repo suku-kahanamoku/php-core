@@ -23,7 +23,7 @@ class RoleApi
         $items    = $this->service->list(
             $isActive !== null ? (bool)(int) $isActive : null,
             (string) $request->get('sort_by', 'sort_order'),
-            (string) $request->get('sort_dir', 'ASC')
+            (string) $request->get('sort_dir', 'ASC'),
         );
         Response::success($items);
     }
@@ -41,7 +41,7 @@ class RoleApi
             trim(strtolower((string) $request->get('name', ''))),
             trim((string) $request->get('label', '')),
             (int) $request->get('sort_order', 0),
-            (int) $request->get('is_active', 1)
+            (int) $request->get('is_active', 1),
         );
         Response::created(['id' => $id], 'Role created');
     }
@@ -49,11 +49,13 @@ class RoleApi
     /** PATCH /roles/:id */
     public function update(Request $request, array $params): void
     {
-        $fields    = [];
+        $fields     = [];
         $roleFields = ['name', 'label', 'sort_order', 'is_active'];
 
         foreach ($roleFields as $f) {
-            if ($request->get($f) !== null) $fields[$f] = $request->get($f);
+            if ($request->get($f) !== null) {
+                $fields[$f] = $request->get($f);
+            }
         }
         $this->service->update((int) $params['id'], $fields);
         Response::success(null, 'Role updated');
@@ -67,7 +69,7 @@ class RoleApi
             trim(strtolower((string) $request->get('name', ''))),
             trim((string) $request->get('label', '')),
             (int) $request->get('sort_order', 0),
-            (int) $request->get('is_active', 1)
+            (int) $request->get('is_active', 1),
         );
         Response::success(null, 'Role replaced');
     }

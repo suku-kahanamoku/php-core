@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Product;
 
+use App\Core\Franchise;
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
-use App\Core\Franchise;
 use App\Modules\Router\Response;
 use App\Modules\Validator\Validator;
 
@@ -20,11 +20,17 @@ class ProductService
     }
 
     public function list(
-        int $page, int $limit,
-        ?string $search, ?int $categoryId, ?string $status,
-        string $sortBy, string $sortDir
+        int $page,
+        int $limit,
+        ?string $search,
+        ?int $categoryId,
+        ?string $status,
+        string $sortBy,
+        string $sortDir,
     ): array {
-        return $this->product->findAll($page, $limit, $search, $categoryId, $status, $sortBy, $sortDir);
+        return $this->product->findAll(
+            $page, $limit, $search, $categoryId, $status, $sortBy, $sortDir,
+        );
     }
 
     public function get(int $id): array
@@ -45,7 +51,9 @@ class ProductService
 
         $name  = trim((string) ($input['name'] ?? ''));
         $price = $input['price'] ?? null;
-        $sku = !empty($input['sku']) ? trim((string) $input['sku']) : $this->product->generateSku();
+        $sku = !empty($input['sku'])
+            ? trim((string) $input['sku'])
+            : $this->product->generateSku();
 
         return $this->product->create([
             'sku'            => $sku,
@@ -54,7 +62,9 @@ class ProductService
             'price'          => (float) $price,
             'vat_rate'       => (float) ($input['vat_rate'] ?? 21),
             'stock_quantity' => (int) ($input['stock_quantity'] ?? 0),
-            'category_id'    => isset($input['category_id']) ? (int) $input['category_id'] : null,
+            'category_id'    => isset($input['category_id'])
+                ? (int) $input['category_id']
+                : null,
             'status'         => (string) ($input['status'] ?? 'active'),
         ]);
     }
@@ -67,7 +77,7 @@ class ProductService
             Response::notFound('Product not found');
         }
 
-        $set = [];
+        $set         = [];
         $textFields  = ['sku', 'name', 'description', 'status'];
         $floatFields = ['price', 'vat_rate'];
         $intFields   = ['stock_quantity', 'category_id'];
@@ -101,21 +111,30 @@ class ProductService
             Response::notFound('Product not found');
         }
 
-        Validator::make($input)->required(['name', 'sku'])->numeric('price', 0)->validate();
+        Validator::make($input)
+            ->required(['name', 'sku'])
+            ->numeric('price', 0)
+            ->validate();
 
-        $name  = trim((string) ($input['name']  ?? ''));
-        $sku   = trim((string) ($input['sku']   ?? ''));
+        $name  = trim((string) ($input['name'] ?? ''));
+        $sku   = trim((string) ($input['sku'] ?? ''));
         $price = $input['price'] ?? null;
 
         $this->product->update($id, [
             'name'           => $name,
             'sku'            => $sku,
             'price'          => (float) $price,
-            'description'    => (string) ($input['description']    ?? ''),
-            'vat_rate'       => isset($input['vat_rate'])       ? (float) $input['vat_rate']       : 21.0,
-            'stock_quantity' => isset($input['stock_quantity']) ? (int)   $input['stock_quantity'] : 0,
-            'status'         => (string) ($input['status']         ?? 'active'),
-            'category_id'    => isset($input['category_id']) && $input['category_id'] !== null ? (int) $input['category_id'] : null,
+            'description'    => (string) ($input['description'] ?? ''),
+            'vat_rate'       => isset($input['vat_rate'])
+                ? (float) $input['vat_rate']
+                : 21.0,
+            'stock_quantity' => isset($input['stock_quantity'])
+                ? (int) $input['stock_quantity']
+                : 0,
+            'status'         => (string) ($input['status'] ?? 'active'),
+            'category_id'    => !empty($input['category_id'])
+                ? (int) $input['category_id']
+                : null,
         ]);
     }
 

@@ -32,7 +32,9 @@ class Database
         try {
             $this->pdo = new PDO($dsn, $username, $password, $options);
         } catch (PDOException $e) {
-            throw new \RuntimeException('Database connection failed: ' . $e->getMessage());
+            throw new \RuntimeException(
+                'Database connection failed: ' . $e->getMessage(),
+            );
         }
     }
 
@@ -68,30 +70,37 @@ class Database
 
     public function insert(string $table, array $data): int
     {
-        $columns      = implode(', ', array_map(fn($c) => "`{$c}`", array_keys($data)));
+        $columns      = implode(', ', array_map(fn ($c) => "`{$c}`", array_keys($data)));
         $placeholders = implode(', ', array_fill(0, count($data), '?'));
-        $sql = "INSERT INTO `{$table}` ({$columns}) VALUES ({$placeholders})";
+        $sql          = "INSERT INTO `{$table}` ({$columns}) VALUES ({$placeholders})";
         $this->query($sql, array_values($data));
         return (int) $this->pdo->lastInsertId();
     }
 
-    public function update(string $table, array $data, string $where, array $whereParams = []): int
+    public function update(
+        string $table,
+        array $data,
+        string $where,
+        array $whereParams = [],
+    ): int
     {
-        $set = implode(', ', array_map(fn($col) => "`{$col}` = ?", array_keys($data)));
-        $sql = "UPDATE `{$table}` SET {$set} WHERE {$where}";
+        $set  = implode(', ', array_map(fn ($col) => "`{$col}` = ?", array_keys($data)));
+        $sql  = "UPDATE `{$table}` SET {$set} WHERE {$where}";
         $stmt = $this->query($sql, [...array_values($data), ...$whereParams]);
         return $stmt->rowCount();
     }
 
     public function delete(string $table, string $where, array $whereParams = []): int
     {
-        $sql = "DELETE FROM `{$table}` WHERE {$where}";
+        $sql  = "DELETE FROM `{$table}` WHERE {$where}";
         $stmt = $this->query($sql, $whereParams);
         return $stmt->rowCount();
     }
 
     // Prevent cloning/unserialization
-    private function __clone() {}
+    private function __clone()
+    {
+    }
     public function __wakeup(): never
     {
         throw new \RuntimeException('Cannot unserialize singleton.');

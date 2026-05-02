@@ -9,7 +9,9 @@ class Router
     /** @var array<string, array<string, callable>> */
     private array $routes = [];
 
-    /** @var array<array{methods: string[], pattern: string, handler: callable, middleware: callable[]}> */
+    /**
+     * @var array<array{methods: string[], pattern: string, handler: callable, middleware: callable[]}>
+     */
     private array $compiledRoutes = [];
 
     private array $globalMiddleware = [];

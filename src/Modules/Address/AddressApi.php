@@ -23,7 +23,7 @@ class AddressApi
             (int) $params['userId'],
             $request->get('type'),
             (string) $request->get('sort_by', 'is_default'),
-            (string) $request->get('sort_dir', 'DESC')
+            (string) $request->get('sort_dir', 'DESC'),
         ));
     }
 
@@ -38,12 +38,12 @@ class AddressApi
     {
         $id = $this->service->create([
             'type'       => $request->get('type', 'billing'),
-            'company'    => $request->get('company',    ''),
+            'company'    => $request->get('company', ''),
             'first_name' => $request->get('first_name', ''),
-            'last_name'  => $request->get('last_name',  ''),
-            'street'     => trim((string) $request->get('street',  '')),
-            'city'       => trim((string) $request->get('city',    '')),
-            'zip'        => trim((string) $request->get('zip',     '')),
+            'last_name'  => $request->get('last_name', ''),
+            'street'     => trim((string) $request->get('street', '')),
+            'city'       => trim((string) $request->get('city', '')),
+            'zip'        => trim((string) $request->get('zip', '')),
             'country'    => trim((string) $request->get('country', 'CZ')),
             'is_default' => $request->get('is_default', 0),
         ], $request->get('user_id') !== null ? (int) $request->get('user_id') : null);
@@ -72,13 +72,13 @@ class AddressApi
     public function replace(Request $request, array $params): void
     {
         $this->service->replace((int) $params['id'], [
-            'type'       => $request->get('type',       'billing'),
-            'company'    => $request->get('company',    ''),
+            'type'       => $request->get('type', 'billing'),
+            'company'    => $request->get('company', ''),
             'first_name' => $request->get('first_name', ''),
-            'last_name'  => $request->get('last_name',  ''),
-            'street'     => trim((string) $request->get('street',  '')),
-            'city'       => trim((string) $request->get('city',    '')),
-            'zip'        => trim((string) $request->get('zip',     '')),
+            'last_name'  => $request->get('last_name', ''),
+            'street'     => trim((string) $request->get('street', '')),
+            'city'       => trim((string) $request->get('city', '')),
+            'zip'        => trim((string) $request->get('zip', '')),
             'country'    => trim((string) $request->get('country', '')),
             'is_default' => $request->get('is_default', 0),
         ]);

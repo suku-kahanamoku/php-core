@@ -12,7 +12,7 @@ class CorsMiddleware
 
     public function __construct()
     {
-        $origins = $_ENV['ALLOWED_ORIGINS'] ?? '*';
+        $origins              = $_ENV['ALLOWED_ORIGINS'] ?? '*';
         $this->allowedOrigins = $origins === '*' ? ['*'] : explode(',', $origins);
     }
 
@@ -28,7 +28,8 @@ class CorsMiddleware
         }
 
         header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
-        header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+        $allowedHeaders = 'Content-Type, Authorization, X-Requested-With';
+        header("Access-Control-Allow-Headers: {$allowedHeaders}");
         header('Access-Control-Allow-Credentials: true');
     }
 }

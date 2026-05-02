@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Category;
 
+use App\Core\Franchise;
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
-use App\Core\Franchise;
 use App\Modules\Router\Response;
 
 class CategoryService
@@ -53,7 +53,9 @@ class CategoryService
             'name'        => $name,
             'slug'        => $slug,
             'description' => $input['description'] ?? '',
-            'parent_id'   => isset($input['parent_id']) && $input['parent_id'] !== '' ? (int) $input['parent_id'] : null,
+            'parent_id'   => isset($input['parent_id']) && $input['parent_id'] !== ''
+                ? (int) $input['parent_id']
+                : null,
             'sort_order'  => (int) ($input['sort_order'] ?? 0),
         ]);
     }
@@ -67,11 +69,18 @@ class CategoryService
         }
 
         $set = [];
-        if (isset($input['name']))        $set['name']        = trim((string) $input['name']);
-        if (isset($input['description'])) $set['description'] = trim((string) $input['description']);
-        if (isset($input['sort_order']))  $set['sort_order']  = (int) $input['sort_order'];
+        if (isset($input['name'])) {
+            $set['name'] = trim((string) $input['name']);
+        }
+        if (isset($input['description'])) {
+            $set['description'] = trim((string) $input['description']);
+        }
+        if (isset($input['sort_order'])) {
+            $set['sort_order'] = (int) $input['sort_order'];
+        }
         if (array_key_exists('parent_id', $input)) {
-            $set['parent_id'] = ($input['parent_id'] === null || $input['parent_id'] === '') ? null : (int) $input['parent_id'];
+            $isEmptyParent = $input['parent_id'] === null || $input['parent_id'] === '';
+            $set['parent_id'] = $isEmptyParent ? null : (int) $input['parent_id'];
         }
 
         if (isset($input['slug'])) {
@@ -101,7 +110,9 @@ class CategoryService
             Response::validationError(['name' => 'Required']);
         }
 
-        $slug = !empty($input['slug']) ? trim((string) $input['slug']) : $this->toSlug($name);
+        $slug = !empty($input['slug'])
+            ? trim((string) $input['slug'])
+            : $this->toSlug($name);
 
         if ($this->category->slugExists($slug, $id)) {
             Response::error("Slug '{$slug}' already exists", 409);

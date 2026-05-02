@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Auth;
 
-use App\Modules\Database\Database;
 use App\Core\Franchise;
+use App\Modules\Database\Database;
 use App\Modules\Router\Response;
 
 class Auth
@@ -42,7 +42,7 @@ class Auth
         if ($token !== null) {
             Database::getInstance()->query(
                 'DELETE FROM user_token WHERE token = ?',
-                [$token]
+                [$token],
             );
         }
         self::$currentUser = null;
@@ -68,7 +68,7 @@ class Auth
              WHERE t.token = ? AND t.expires_at > NOW()
                AND u.status = "active" AND u.franchise_code = ?
              LIMIT 1',
-            [$token, Franchise::code()]
+            [$token, Franchise::code()],
         );
 
         if (!$row) {

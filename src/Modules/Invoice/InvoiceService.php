@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Invoice;
 
+use App\Core\Franchise;
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
-use App\Core\Franchise;
 use App\Modules\Router\Response;
 
 class InvoiceService
@@ -18,13 +18,21 @@ class InvoiceService
         $this->invoice = new Invoice(Database::getInstance(), Franchise::code());
     }
 
-    public function list(int $page, int $limit, ?string $status, string $sortBy, string $sortDir): array
+    public function list(
+        int $page,
+        int $limit,
+        ?string $status,
+        string $sortBy,
+        string $sortDir,
+    ): array
     {
         Auth::require();
 
         $userId = Auth::hasRole('admin') ? null : Auth::id();
 
-        return $this->invoice->findAll($page, $limit, $userId, $status, $sortBy, $sortDir);
+        return $this->invoice->findAll(
+            $page, $limit, $userId, $status, $sortBy, $sortDir,
+        );
     }
 
     public function get(int $id): array
@@ -78,7 +86,7 @@ class InvoiceService
                 'issued_at'          => $issuedAt,
                 'due_at'             => $dueAt,
                 'billing_address_id' => $order['billing_address_id'] ?? null,
-                'note'               => $input['note'] ?? '',
+                'note'               => $input['note']               ?? '',
             ]);
 
             foreach ($orderItems as $item) {

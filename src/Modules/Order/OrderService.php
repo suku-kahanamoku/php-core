@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Order;
 
+use App\Core\Franchise;
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
-use App\Core\Franchise;
 use App\Modules\Router\Response;
 use App\Modules\Validator\Validator;
 
@@ -19,7 +19,13 @@ class OrderService
         $this->order = new Order(Database::getInstance(), Franchise::code());
     }
 
-    public function list(int $page, int $limit, ?string $status, string $sortBy, string $sortDir): array
+    public function list(
+        int $page,
+        int $limit,
+        ?string $status,
+        string $sortBy,
+        string $sortDir,
+    ): array
     {
         Auth::require();
 
@@ -28,7 +34,14 @@ class OrderService
         return $this->order->findAll($page, $limit, $userId, $status, $sortBy, $sortDir);
     }
 
-    public function listForUser(int $page, int $limit, int $userId, ?string $status, string $sortBy, string $sortDir): array
+    public function listForUser(
+        int $page,
+        int $limit,
+        int $userId,
+        ?string $status,
+        string $sortBy,
+        string $sortDir,
+    ): array
     {
         Auth::requireRole('admin');
 
@@ -70,23 +83,29 @@ class OrderService
 
             foreach ($items as $item) {
                 $productId = (int) ($item['product_id'] ?? 0);
-                $qty       = (int) ($item['quantity']   ?? 1);
+                $qty       = (int) ($item['quantity'] ?? 1);
 
                 if ($productId <= 0 || $qty <= 0) {
-                    throw new \InvalidArgumentException("Invalid item: product_id={$productId}, quantity={$qty}");
+                    throw new \InvalidArgumentException(
+                        "Invalid item: product_id={$productId}, quantity={$qty}",
+                    );
                 }
 
                 $product = $this->order->getProduct($productId);
 
                 if (!$product) {
-                    throw new \RuntimeException("Product #{$productId} not found or inactive");
+                    throw new \RuntimeException(
+                        "Product #{$productId} not found or inactive",
+                    );
                 }
                 if ($product['stock_quantity'] < $qty) {
-                    throw new \RuntimeException("Insufficient stock for product #{$productId}");
+                    throw new \RuntimeException(
+                        "Insufficient stock for product #{$productId}",
+                    );
                 }
 
-                $lineTotal       = round($product['price'] * $qty, 2);
-                $totalAmount    += $lineTotal;
+                $lineTotal = round($product['price'] * $qty, 2);
+                $totalAmount += $lineTotal;
                 $preparedItems[] = [
                     'product_id'  => $productId,
                     'quantity'    => $qty,
@@ -101,10 +120,14 @@ class OrderService
                 'status'              => 'pending',
                 'total_amount'        => $totalAmount,
                 'currency'            => $currency,
-                'payment_method'      => $input['payment_method']      ?? 'bank_transfer',
-                'note'                => $input['note']                ?? '',
-                'shipping_address_id' => isset($input['shipping_address_id']) ? (int) $input['shipping_address_id'] : null,
-                'billing_address_id'  => isset($input['billing_address_id'])  ? (int) $input['billing_address_id']  : null,
+                'payment_method'      => $input['payment_method'] ?? 'bank_transfer',
+                'note'                => $input['note']           ?? '',
+                'shipping_address_id' => isset($input['shipping_address_id'])
+                    ? (int) $input['shipping_address_id']
+                    : null,
+                'billing_address_id'  => isset($input['billing_address_id'])
+                    ? (int) $input['billing_address_id']
+                    : null,
             ]);
 
             foreach ($preparedItems as $item) {

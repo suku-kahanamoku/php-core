@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\User;
 
+use App\Core\Franchise;
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
-use App\Core\Franchise;
 use App\Modules\Router\Response;
 use App\Modules\Validator\Validator;
 
@@ -20,12 +20,18 @@ class UserService
     }
 
     public function list(
-        int $page, int $limit,
-        ?string $search, ?string $role, ?string $status,
-        string $sortBy, string $sortDir
+        int $page,
+        int $limit,
+        ?string $search,
+        ?string $role,
+        ?string $status,
+        string $sortBy,
+        string $sortDir,
     ): array {
         Auth::requireRole('admin');
-        return $this->user->findAll($page, $limit, $search, $role, $status, $sortBy, $sortDir);
+        return $this->user->findAll(
+            $page, $limit, $search, $role, $status, $sortBy, $sortDir,
+        );
     }
 
     public function get(int $id): array
@@ -73,7 +79,11 @@ class UserService
             'last_name'  => $input['last_name'],
             'email'      => $input['email'],
             'phone'      => $input['phone'] ?? null,
-            'password'   => password_hash($input['password'], PASSWORD_BCRYPT, ['cost' => 12]),
+            'password'   => password_hash(
+                $input['password'],
+                PASSWORD_BCRYPT,
+                ['cost' => 12],
+            ),
             'role_id'    => $roleId,
             'status'     => $input['status'] ?? 'active',
         ]);
@@ -91,7 +101,7 @@ class UserService
             Response::notFound('User not found');
         }
 
-        $set = [];
+        $set        = [];
         $textFields = ['first_name', 'last_name', 'phone'];
 
         foreach ($textFields as $f) {

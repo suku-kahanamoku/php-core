@@ -25,7 +25,7 @@ class Text
         ?bool $isActive = null,
         ?string $search = null,
         string $sortBy = 'key',
-        string $sortDir = 'ASC'
+        string $sortDir = 'ASC',
     ): array {
         $allowed = ['key', 'title', 'created_at', 'updated_at'];
         $sortBy  = in_array($sortBy, $allowed, true) ? $sortBy : 'key';
@@ -39,8 +39,8 @@ class Text
             $params[] = (int) $isActive;
         }
         if ($search) {
-            $where[]  = '(`key` LIKE ? OR title LIKE ? OR content LIKE ?)';
-            $s = '%' . $search . '%';
+            $where[] = '(`key` LIKE ? OR title LIKE ? OR content LIKE ?)';
+            $s       = '%' . $search . '%';
             array_push($params, $s, $s, $s);
         }
 
@@ -49,7 +49,7 @@ class Text
         return $this->db->fetchAll(
             "SELECT id, `key`, title, language, is_active, created_at, updated_at
              FROM text WHERE {$whereStr} ORDER BY `{$sortBy}` {$sortDir}",
-            $params
+            $params,
         );
     }
 
@@ -57,7 +57,7 @@ class Text
     {
         $row = $this->db->fetchOne(
             'SELECT * FROM text WHERE id = ? AND franchise_code = ?',
-            [$id, $this->code]
+            [$id, $this->code],
         );
 
         return $row ?: null;
@@ -67,7 +67,7 @@ class Text
     {
         $row = $this->db->fetchOne(
             'SELECT * FROM text WHERE franchise_code = ? AND `key` = ? AND language = ?',
-            [$this->code, $key, $language]
+            [$this->code, $key, $language],
         );
 
         return $row ?: null;
@@ -77,13 +77,15 @@ class Text
     {
         if ($excludeId !== null) {
             $row = $this->db->fetchOne(
-                'SELECT id FROM text WHERE franchise_code = ? AND `key` = ? AND language = ? AND id != ?',
-                [$this->code, $key, $language, $excludeId]
+                'SELECT id FROM text
+                 WHERE franchise_code = ? AND `key` = ? AND language = ? AND id != ?',
+                [$this->code, $key, $language, $excludeId],
             );
         } else {
             $row = $this->db->fetchOne(
-                'SELECT id FROM text WHERE franchise_code = ? AND `key` = ? AND language = ?',
-                [$this->code, $key, $language]
+                'SELECT id FROM text
+                 WHERE franchise_code = ? AND `key` = ? AND language = ?',
+                [$this->code, $key, $language],
             );
         }
 
@@ -104,7 +106,7 @@ class Text
             'text',
             array_merge($data, ['updated_at' => date('Y-m-d H:i:s')]),
             'id = ? AND franchise_code = ?',
-            [$id, $this->code]
+            [$id, $this->code],
         );
     }
 

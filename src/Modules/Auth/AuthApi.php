@@ -48,9 +48,9 @@ class AuthApi
     {
         $id = $this->service->register(
             trim((string) $request->get('first_name', '')),
-            trim((string) $request->get('last_name',  '')),
-            trim((string) $request->get('email',      '')),
-            (string) $request->get('password', '')
+            trim((string) $request->get('last_name', '')),
+            trim((string) $request->get('email', '')),
+            (string) $request->get('password', ''),
         );
 
         Response::created(['id' => $id], 'Registration successful');
@@ -61,7 +61,7 @@ class AuthApi
     {
         $this->service->changePassword(
             (string) $request->get('current_password', ''),
-            (string) $request->get('new_password', '')
+            (string) $request->get('new_password', ''),
         );
 
         Response::success(null, 'Password changed successfully');

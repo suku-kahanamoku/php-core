@@ -23,10 +23,12 @@ class ProductApi
             max(1, (int) $request->get('page', 1)),
             min(100, max(1, (int) $request->get('limit', 20))),
             $request->get('search'),
-            $request->get('category_id') !== null ? (int) $request->get('category_id') : null,
+            $request->get('category_id') !== null
+                ? (int) $request->get('category_id')
+                : null,
             $request->get('status'),
             (string) $request->get('sort_by', 'created_at'),
-            (string) $request->get('sort_dir', 'DESC')
+            (string) $request->get('sort_dir', 'DESC'),
         ));
     }
 
@@ -96,7 +98,7 @@ class ProductApi
     {
         $newQty = $this->service->adjustStock(
             (int) $params['id'],
-            (int) $request->get('quantity', 0)
+            (int) $request->get('quantity', 0),
         );
         Response::success(['stock_quantity' => $newQty], 'Stock adjusted');
     }

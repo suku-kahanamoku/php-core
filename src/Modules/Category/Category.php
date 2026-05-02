@@ -27,10 +27,11 @@ class Category
         $sortDir = strtoupper($sortDir) === 'DESC' ? 'DESC' : 'ASC';
 
         return $this->db->fetchAll(
-            "SELECT id, name, slug, parent_id, description, sort_order, created_at, updated_at
+            "SELECT id, name, slug, parent_id,
+                    description, sort_order, created_at, updated_at
              FROM category WHERE franchise_code = ?
              ORDER BY {$sortBy} {$sortDir}",
-            [$this->code]
+            [$this->code],
         );
     }
 
@@ -38,7 +39,7 @@ class Category
     {
         $row = $this->db->fetchOne(
             'SELECT * FROM category WHERE id = ? AND franchise_code = ?',
-            [$id, $this->code]
+            [$id, $this->code],
         );
 
         return $row ?: null;
@@ -48,13 +49,14 @@ class Category
     {
         if ($excludeId !== null) {
             $row = $this->db->fetchOne(
-                'SELECT id FROM category WHERE franchise_code = ? AND slug = ? AND id != ?',
-                [$this->code, $slug, $excludeId]
+                'SELECT id FROM category
+                 WHERE franchise_code = ? AND slug = ? AND id != ?',
+                [$this->code, $slug, $excludeId],
             );
         } else {
             $row = $this->db->fetchOne(
                 'SELECT id FROM category WHERE franchise_code = ? AND slug = ?',
-                [$this->code, $slug]
+                [$this->code, $slug],
             );
         }
 
@@ -64,8 +66,9 @@ class Category
     public function hasProducts(int $id): bool
     {
         $row = $this->db->fetchOne(
-            'SELECT id FROM product WHERE franchise_code = ? AND category_id = ? AND deleted_at IS NULL LIMIT 1',
-            [$this->code, $id]
+            'SELECT id FROM product
+             WHERE franchise_code = ? AND category_id = ? AND deleted_at IS NULL LIMIT 1',
+            [$this->code, $id],
         );
 
         return (bool) $row;
@@ -76,7 +79,7 @@ class Category
         return $this->db->fetchAll(
             'SELECT id, sku, name, price, status FROM product
              WHERE franchise_code = ? AND category_id = ? AND deleted_at IS NULL',
-            [$this->code, $id]
+            [$this->code, $id],
         );
     }
 
@@ -94,12 +97,16 @@ class Category
             'category',
             array_merge($data, ['updated_at' => date('Y-m-d H:i:s')]),
             'id = ? AND franchise_code = ?',
-            [$id, $this->code]
+            [$id, $this->code],
         );
     }
 
     public function delete(int $id): void
     {
-        $this->db->delete('category', 'id = ? AND franchise_code = ?', [$id, $this->code]);
+        $this->db->delete(
+            'category',
+            'id = ? AND franchise_code = ?',
+            [$id, $this->code],
+        );
     }
 }
