@@ -177,7 +177,7 @@ php tests/api_test.php http://myserver.com/api
 | GET    | `/users/:id` | Get user |
 | PATCH  | `/users/:id` | Partial update |
 | PUT    | `/users/:id` | Full replace |
-| DELETE | `/users/:id` | Soft-delete user |
+| DELETE | `/users/:id` | Delete user |
 | GET    | `/users/:userId/address` | User's addresses |
 
 ### Address
@@ -207,7 +207,7 @@ php tests/api_test.php http://myserver.com/api
 | GET    | `/products/:id` | public | Get product |
 | PATCH  | `/products/:id` | admin | Partial update |
 | PUT    | `/products/:id` | admin | Full replace |
-| DELETE | `/products/:id` | admin | Soft-delete |
+| DELETE | `/products/:id` | admin | Delete |
 | PATCH  | `/products/:id/stock` | admin | Adjust stock quantity |
 
 ### Texts (CMS)
@@ -215,7 +215,7 @@ php tests/api_test.php http://myserver.com/api
 |--------|------|------|-------------|
 | GET    | `/texts` | public | List texts |
 | POST   | `/texts` | admin | Create |
-| GET    | `/texts/by-key/:key` | public | Get by key + language |
+| GET    | `/texts/by-key/:syscode` | public | Get by syscode + language |
 | GET    | `/texts/:id` | public | Get by ID |
 | PATCH  | `/texts/:id` | admin | Partial update |
 | PUT    | `/texts/:id` | admin | Full replace |
@@ -239,7 +239,7 @@ php tests/api_test.php http://myserver.com/api
 | POST   | `/orders` | required | Create order |
 | GET    | `/orders/:id` | required | Get order with items |
 | PATCH  | `/orders/:id/status` | admin | Update status |
-| DELETE | `/orders/:id` | admin | Soft-delete |
+| DELETE | `/orders/:id` | admin | Delete |
 
 ### Invoices
 | Method | Path | Auth | Description |
@@ -248,7 +248,7 @@ php tests/api_test.php http://myserver.com/api
 | POST   | `/invoices` | admin | Generate from order |
 | GET    | `/invoices/:id` | required | Get invoice with items |
 | PATCH  | `/invoices/:id/status` | admin | Update status |
-| DELETE | `/invoices/:id` | admin | Soft-delete |
+| DELETE | `/invoices/:id` | admin | Delete |
 
 ## Database schema
 
@@ -256,77 +256,4 @@ Tables: `role`, `user`, `user_token`, `address`, `category`, `product`, `text`, 
 
 All tables (except `user_token`, `order_item`, `invoice_item`) are scoped by `franchise_code`.
 
-
-## Requirements
-
-- PHP 8.1+
-- MySQL 8.0+
-- Apache with `mod_rewrite` (or PHP built-in server)
-- Composer
-
-## Setup
-
-```bash
-cd php-core
-composer install
-cp .env.example .env
-# edit .env with your DB credentials
-```
-
-## Database
-
-```bash
-# Create the database and user
-mysql -u root -p -e "
-  CREATE DATABASE php_core CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-  CREATE USER 'admin'@'localhost' IDENTIFIED BY 'admin';
-  GRANT ALL PRIVILEGES ON php_core.* TO 'admin'@'localhost';
-  FLUSH PRIVILEGES;
-"
-
-# Run migration (creates all tables + seeds enumerations + admin user)
-php bin/migrate.php
-```
-
-Default admin credentials:
-- **Email:** `admin@example.com`
-- **Password:** `password` *(change immediately in production)*
-
-## Development server
-
-```bash
-php -S localhost:8000
-```
-
-## Authentication
-
-The API uses **Bearer token** authentication. Cookies and sessions are not used.
-
-**Login and get a token:**
-```bash
-curl -X POST http://localhost/php/php-core/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@example.com","password":"password"}'
-```
-
-Response:
-```json
-{
-  "success": true,
-  "data": {
-    "token": "a3f9c2...",
-    "id": 1,
-    "email": "admin@example.com",
-    "role": "admin"
-  }
-}
-```
-
-**Use the token in subsequent requests:**
-```bash
-curl http://localhost/php/php-core/products \
-  -H "Authorization: Bearer a3f9c2..."
-```
-
-Tokens expire after 24 hours (configurable via `TOKEN_LIFETIME` in `.env`). Logout invalidates the token server-side.
 

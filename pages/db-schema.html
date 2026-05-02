@@ -40,7 +40,6 @@ erDiagram
         varchar name
         varchar label
         smallint position
-        tinyint is_active
         datetime created_at }
     user { int id PK
         varchar first_name
@@ -49,11 +48,8 @@ erDiagram
         varchar phone
         varchar password
         int role_id FK
-        varchar status
-        int address_id FK
         datetime last_login_at
-        datetime created_at
-        datetime deleted_at }
+        datetime created_at }
     user_token { int id PK
         int user_id FK
         varchar token
@@ -74,7 +70,6 @@ erDiagram
     category { int id PK
         int parent_id FK
         varchar name
-        varchar slug
         text description
         smallint position
         datetime created_at }
@@ -86,11 +81,9 @@ erDiagram
         decimal price
         decimal vat_rate
         int stock_quantity
-        varchar status
-        datetime created_at
-        datetime deleted_at }
+        datetime created_at }
     text { int id PK
-        varchar key
+        varchar syscode
         varchar title
         longtext content
         varchar language
@@ -99,7 +92,7 @@ erDiagram
         datetime created_at }
     enumeration { int id PK
         varchar type
-        varchar code
+        varchar syscode
         varchar label
         varchar value
         smallint position
@@ -108,15 +101,14 @@ erDiagram
     order { int id PK
         varchar order_number
         int user_id FK
-        varchar status
+        enum status
         decimal total_amount
         varchar currency
         varchar payment_method
         int shipping_address_id FK
         int billing_address_id FK
         text note
-        datetime created_at
-        datetime deleted_at }
+        datetime created_at }
     order_item { int id PK
         int order_id FK
         int product_id FK
@@ -128,7 +120,7 @@ erDiagram
         varchar invoice_number
         int order_id FK
         int user_id FK
-        varchar status
+        enum status
         decimal total_amount
         varchar currency
         int billing_address_id FK
@@ -136,7 +128,7 @@ erDiagram
         datetime issued_at
         date due_at
         datetime paid_at
-        datetime deleted_at }
+        datetime created_at }
     invoice_item { int id PK
         int invoice_id FK
         int product_id FK
@@ -148,7 +140,6 @@ erDiagram
     role ||--o{ user : "assigned to"
     user ||--o{ user_token : "has tokens"
     user ||--o{ address : "has addresses"
-    user ||--o| address : "default billing"
     user ||--o{ order : "places"
     user ||--o{ invoice : "owns"
     user ||--o{ text : "created_by"
