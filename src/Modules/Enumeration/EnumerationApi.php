@@ -26,7 +26,7 @@ class EnumerationApi
         Response::success($this->service->list(
             $request->get('type'),
             $isActive !== null ? (bool)(int) $isActive : null,
-            (string) $request->get('sort_by', 'sort_order'),
+            (string) $request->get('sort_by', 'position'),
             (string) $request->get('sort_dir', 'ASC'),
         ));
     }
@@ -52,7 +52,7 @@ class EnumerationApi
             trim((string) $request->get('label', '')),
             [
                 'value'      => $request->get('value'),
-                'sort_order' => $request->get('sort_order', 0),
+                'position' => $request->get('position', 0),
                 'is_active'  => $request->get('is_active', 1),
             ],
         );
@@ -67,7 +67,7 @@ class EnumerationApi
             'code'       => $request->get('code'),
             'label'      => $request->get('label'),
             'value'      => $request->get('value'),
-            'sort_order' => $request->get('sort_order'),
+            'position' => $request->get('position'),
             'is_active'  => $request->get('is_active'),
         ]);
         Response::success(null, 'Enumeration updated');
@@ -83,7 +83,7 @@ class EnumerationApi
             trim((string) $request->get('label', '')),
             [
                 'value'      => $request->get('value'),
-                'sort_order' => $request->get('sort_order', 0),
+                'position' => $request->get('position', 0),
                 'is_active'  => $request->get('is_active', 1),
             ],
         );

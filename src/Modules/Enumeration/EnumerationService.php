@@ -70,7 +70,7 @@ class EnumerationService
             'code'       => $code,
             'label'      => $label,
             'value'      => $input['value'] ?? $code,
-            'sort_order' => (int) ($input['sort_order'] ?? 0),
+            'position' => (int) ($input['position'] ?? 0),
             'is_active'  => (int) ($input['is_active'] ?? 1),
         ]);
     }
@@ -85,7 +85,7 @@ class EnumerationService
 
         $set        = [];
         $textFields = ['type', 'code', 'label', 'value'];
-        $intFields  = ['sort_order', 'is_active'];
+        $intFields  = ['position', 'is_active'];
 
         foreach ($textFields as $f) {
             if (array_key_exists($f, $input) && $input[$f] !== null) {
@@ -125,7 +125,7 @@ class EnumerationService
             'code'       => $code,
             'label'      => $label,
             'value'      => (string) ($input['value'] ?? $code),
-            'sort_order' => (int)    ($input['sort_order'] ?? 0),
+            'position' => (int)    ($input['position'] ?? 0),
             'is_active'  => (int)    ($input['is_active'] ?? 1),
         ]);
     }

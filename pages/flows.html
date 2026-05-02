@@ -728,7 +728,7 @@
   <div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div></div>
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono">SELECT id,name,slug,parent_id,description,sort_order,created_at FROM category ORDER BY sort_order,name</div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono">SELECT id,name,slug,parent_id,description,position,created_at FROM category ORDER BY position,name</div></div>
 </div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
@@ -782,7 +782,7 @@
 </div>
 <div class="flex items-center gap-2 text-sm font-bold text-slate-900 mt-6 mb-2"><span class="px-2 py-0.5 rounded text-white text-xs font-bold bg-blue-600">POST</span><span class="font-mono text-slate-700">/categories</span><span class="text-xs font-normal normal-case px-1.5 py-0.5 rounded bg-red-100 text-red-700 ml-1">&#128274; admin</span><span class="text-xs text-slate-400 font-normal ml-2">vytvoření kategorie</span><span class="flex-1 h-px bg-slate-200 block ml-2"></span></div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">POST /categories<br><small>{ name, slug?, description?, parent_id?, sort_order? }</small></div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">POST /categories<br><small>{ name, slug?, description?, parent_id?, position? }</small></div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
@@ -807,7 +807,7 @@
   <div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div></div>
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono">INSERT INTO category (name, slug, description, parent_id, sort_order, created_at)</div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono">INSERT INTO category (name, slug, description, parent_id, position, created_at)</div></div>
 </div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
   <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-emerald-400 bg-emerald-50 text-emerald-700">← 201 · { id }</div></div>
@@ -818,7 +818,7 @@
 </div>
 <div class="flex items-center gap-2 text-sm font-bold text-slate-900 mt-6 mb-2"><span class="px-2 py-0.5 rounded text-white text-xs font-bold bg-amber-600">PATCH</span><span class="font-mono text-slate-700">/categories/:id</span><span class="text-xs font-normal normal-case px-1.5 py-0.5 rounded bg-red-100 text-red-700 ml-1">&#128274; admin</span><span class="text-xs text-slate-400 font-normal ml-2">částečná úprava kategorie</span><span class="flex-1 h-px bg-slate-200 block ml-2"></span></div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">PATCH /categories/3<br><small>{ name?, description?, slug?, parent_id?, sort_order? }</small></div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">PATCH /categories/3<br><small>{ name?, description?, slug?, parent_id?, position? }</small></div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
@@ -847,7 +847,7 @@
 </div>
 <div class="flex items-center gap-2 text-sm font-bold text-slate-900 mt-6 mb-2"><span class="px-2 py-0.5 rounded text-white text-xs font-bold bg-orange-600">PUT</span><span class="font-mono text-slate-700">/categories/:id</span><span class="text-xs font-normal normal-case px-1.5 py-0.5 rounded bg-red-100 text-red-700 ml-1">&#128274; admin</span><span class="text-xs text-slate-400 font-normal ml-2">úplná náhrada (povinné: name)</span><span class="flex-1 h-px bg-slate-200 block ml-2"></span></div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">PUT /categories/3<br><small>{ name, slug?, description?, parent_id?, sort_order? }</small></div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">PUT /categories/3<br><small>{ name, slug?, description?, parent_id?, position? }</small></div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
@@ -865,7 +865,7 @@
   <div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div></div>
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono">UPDATE category SET name,slug,description,parent_id,sort_order,updated_at WHERE id=?</div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono">UPDATE category SET name,slug,description,parent_id,position,updated_at WHERE id=?</div></div>
 </div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
   <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-emerald-400 bg-emerald-50 text-emerald-700">← 200 · Category replaced</div></div>
@@ -1875,7 +1875,7 @@
   <div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div></div>
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono">SELECT * FROM enumeration WHERE … ORDER BY type,sort_order,label</div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono">SELECT * FROM enumeration WHERE … ORDER BY type,position,label</div></div>
 </div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
@@ -1943,7 +1943,7 @@
   <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono">SELECT * FROM enumeration WHERE id=? · nenalezeno → 404</div></div>
 </div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-emerald-400 bg-emerald-50 text-emerald-700">← 200 · { id, type, code, label, value, sort_order, is_active }</div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-emerald-400 bg-emerald-50 text-emerald-700">← 200 · { id, type, code, label, value, position, is_active }</div></div>
   <div class="flex items-center"><div class="w-0 h-0 border-y-[4px] border-y-transparent border-r-[8px] border-r-emerald-500"></div><div class="flex-1 h-0.5 bg-emerald-500"></div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div class="flex items-center"><div class="w-0 h-0 border-y-[4px] border-y-transparent border-r-[8px] border-r-emerald-500"></div><div class="flex-1 h-0.5 bg-emerald-500"></div></div>
@@ -1951,7 +1951,7 @@
 </div>
 <div class="flex items-center gap-2 text-sm font-bold text-slate-900 mt-6 mb-2"><span class="px-2 py-0.5 rounded text-white text-xs font-bold bg-blue-600">POST</span><span class="font-mono text-slate-700">/enumerations</span><span class="text-xs font-normal normal-case px-1.5 py-0.5 rounded bg-red-100 text-red-700 ml-1">&#128274; admin</span><span class="text-xs text-slate-400 font-normal ml-2">vytvoření položky číselníku</span><span class="flex-1 h-px bg-slate-200 block ml-2"></span></div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">POST /enumerations<br><small>{ type, code, label, value?, sort_order?, is_active? }</small></div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">POST /enumerations<br><small>{ type, code, label, value?, position?, is_active? }</small></div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
@@ -1976,7 +1976,7 @@
   <div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div></div>
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono">INSERT INTO enumeration (type, code, label, value, sort_order, is_active, created_at)</div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono">INSERT INTO enumeration (type, code, label, value, position, is_active, created_at)</div></div>
 </div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
   <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-emerald-400 bg-emerald-50 text-emerald-700">← 201 · { id }</div></div>
@@ -1987,7 +1987,7 @@
 </div>
 <div class="flex items-center gap-2 text-sm font-bold text-slate-900 mt-6 mb-2"><span class="px-2 py-0.5 rounded text-white text-xs font-bold bg-amber-600">PATCH</span><span class="font-mono text-slate-700">/enumerations/:id</span><span class="text-xs font-normal normal-case px-1.5 py-0.5 rounded bg-red-100 text-red-700 ml-1">&#128274; admin</span><span class="text-xs text-slate-400 font-normal ml-2">částečná úprava</span><span class="flex-1 h-px bg-slate-200 block ml-2"></span></div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">PATCH /enumerations/12<br><small>{ type?,code?,label?,value?,sort_order?,is_active? }</small></div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">PATCH /enumerations/12<br><small>{ type?,code?,label?,value?,position?,is_active? }</small></div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
@@ -2016,7 +2016,7 @@
 </div>
 <div class="flex items-center gap-2 text-sm font-bold text-slate-900 mt-6 mb-2"><span class="px-2 py-0.5 rounded text-white text-xs font-bold bg-orange-600">PUT</span><span class="font-mono text-slate-700">/enumerations/:id</span><span class="text-xs font-normal normal-case px-1.5 py-0.5 rounded bg-red-100 text-red-700 ml-1">&#128274; admin</span><span class="text-xs text-slate-400 font-normal ml-2">úplná náhrada (povinné: type, code, label)</span><span class="flex-1 h-px bg-slate-200 block ml-2"></span></div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">PUT /enumerations/12<br><small>{ type, code, label, value?, sort_order?, is_active? }</small></div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">PUT /enumerations/12<br><small>{ type, code, label, value?, position?, is_active? }</small></div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
@@ -2034,7 +2034,7 @@
   <div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div></div>
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono">UPDATE enumeration SET type,code,label,value,sort_order,is_active,updated_at WHERE id=?</div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono">UPDATE enumeration SET type,code,label,value,position,is_active,updated_at WHERE id=?</div></div>
 </div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
   <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-emerald-400 bg-emerald-50 text-emerald-700">← 200 · Enumeration replaced</div></div>
@@ -2090,7 +2090,7 @@
   <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-emerald-400 bg-emerald-50 text-emerald-700">SELECT * FROM role<br><small>WHERE franchise_code=?</small></div></div>
 </div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-green-400 bg-green-50 text-green-700">200 [ {id, name, label, sort_order, is_active} ]</div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-green-400 bg-green-50 text-green-700">200 [ {id, name, label, position, is_active} ]</div></div>
   <div class="flex items-center"><div class="w-0 h-0 border-y-[4px] border-y-transparent border-r-[8px] border-r-green-500"></div><div class="flex-1 h-0.5 bg-green-500"></div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div class="flex items-center"><div class="w-0 h-0 border-y-[4px] border-y-transparent border-r-[8px] border-r-green-500"></div><div class="flex-1 h-0.5 bg-green-500"></div></div>
@@ -2115,7 +2115,7 @@
 
 <div class="flex items-center gap-2 text-sm font-bold text-slate-900 mt-6 mb-2"><span class="px-2 py-0.5 rounded text-white text-xs font-bold bg-green-600">POST</span><span class="font-mono text-slate-700">/roles</span><span class="text-xs font-normal normal-case px-1.5 py-0.5 rounded bg-red-100 text-red-700 ml-1">&#128274; admin</span><span class="text-xs text-slate-400 font-normal ml-2">vytvoření nové role</span><span class="flex-1 h-px bg-slate-200 block ml-2"></span></div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">POST /roles<br><small>{ name, label, sort_order }</small></div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">POST /roles<br><small>{ name, label, position }</small></div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>

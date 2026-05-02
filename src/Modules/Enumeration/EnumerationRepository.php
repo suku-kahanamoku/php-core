@@ -23,11 +23,11 @@ class EnumerationRepository
     public function findAll(
         ?string $type = null,
         ?bool $isActive = null,
-        string $sortBy = 'sort_order',
+        string $sortBy = 'position',
         string $sortDir = 'ASC',
     ): array {
-        $allowed = ['sort_order', 'label', 'code', 'type', 'created_at'];
-        $sortBy  = in_array($sortBy, $allowed, true) ? $sortBy : 'sort_order';
+        $allowed = ['position', 'label', 'code', 'type', 'created_at'];
+        $sortBy  = in_array($sortBy, $allowed, true) ? $sortBy : 'position';
         $sortDir = strtoupper($sortDir) === 'DESC' ? 'DESC' : 'ASC';
 
         $where  = ['franchise_code = ?'];

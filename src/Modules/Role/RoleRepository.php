@@ -24,11 +24,11 @@ class RoleRepository
     /** Return all roles, optionally filtered and sorted. */
     public function findAll(
         ?bool $isActive = null,
-        string $sortBy = 'sort_order',
+        string $sortBy = 'position',
         string $sortDir = 'ASC',
     ): array {
-        $allowed = ['sort_order', 'name', 'label', 'created_at'];
-        $sortBy  = in_array($sortBy, $allowed, true) ? $sortBy : 'sort_order';
+        $allowed = ['position', 'name', 'label', 'created_at'];
+        $sortBy  = in_array($sortBy, $allowed, true) ? $sortBy : 'position';
         $sortDir = strtoupper($sortDir) === 'DESC' ? 'DESC' : 'ASC';
 
         $where  = ['franchise_code = ?'];
@@ -42,7 +42,7 @@ class RoleRepository
         $whereStr = implode(' AND ', $where);
 
         return $this->db->fetchAll(
-            "SELECT id, name, label, sort_order, is_active, created_at, updated_at
+            "SELECT id, name, label, position, is_active, created_at, updated_at
              FROM role WHERE {$whereStr} ORDER BY {$sortBy} {$sortDir}",
             $params,
         );
@@ -52,7 +52,7 @@ class RoleRepository
     public function findById(int $id): ?array
     {
         $role = $this->db->fetchOne(
-            'SELECT id, name, label, sort_order, is_active, created_at, updated_at
+            'SELECT id, name, label, position, is_active, created_at, updated_at
              FROM role WHERE id = ? AND franchise_code = ?',
             [$id, $this->code],
         );

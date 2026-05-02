@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS `enumeration` (
     `code`         VARCHAR(64)  NOT NULL,
     `label`        VARCHAR(255) NOT NULL,
     `value`        VARCHAR(255) NOT NULL DEFAULT '',
-    `sort_order`   SMALLINT     NOT NULL DEFAULT 0,
+    `position`   SMALLINT     NOT NULL DEFAULT 0,
     `is_active`    TINYINT(1)   NOT NULL DEFAULT 1,
     `created_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`   DATETIME              DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS `role` (
     `franchise_code` VARCHAR(64)  NOT NULL DEFAULT 'default',
     `name`           VARCHAR(64)  NOT NULL COMMENT 'e.g. admin, user, manager',
     `label`          VARCHAR(255) NOT NULL,
-    `sort_order`     SMALLINT     NOT NULL DEFAULT 0,
+    `position`     SMALLINT     NOT NULL DEFAULT 0,
     `is_active`      TINYINT(1)   NOT NULL DEFAULT 1,
     `created_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`     DATETIME              DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS `category` (
     `name`         VARCHAR(255) NOT NULL,
     `slug`         VARCHAR(255) NOT NULL,
     `description`  TEXT                  DEFAULT NULL,
-    `sort_order`   SMALLINT     NOT NULL DEFAULT 0,
+    `position`   SMALLINT     NOT NULL DEFAULT 0,
     `created_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`   DATETIME              DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
 
@@ -256,13 +256,13 @@ CREATE TABLE IF NOT EXISTS `invoice_item` (
 SET foreign_key_checks = 1;
 
 -- ── Seed: default roles ───────────────────────────────────
-INSERT INTO `role` (`franchise_code`, `name`, `label`, `sort_order`) VALUES
+INSERT INTO `role` (`franchise_code`, `name`, `label`, `position`) VALUES
   ('default', 'admin',   'Admin',   10),
   ('default', 'manager', 'Manager', 20),
   ('default', 'user',    'User',    30);
 
 -- ── Seed: default enumerations ────────────────────────────
-INSERT INTO `enumeration` (`franchise_code`, `type`, `code`, `label`, `value`, `sort_order`) VALUES
+INSERT INTO `enumeration` (`franchise_code`, `type`, `code`, `label`, `value`, `position`) VALUES
   -- Order statuses
   ('default', 'order_status', 'pending',    'Pending',    'pending',    10),
   ('default', 'order_status', 'confirmed',  'Confirmed',  'confirmed',  20),

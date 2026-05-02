@@ -60,7 +60,7 @@ class RoleService
         return $this->role->create([
             'name'       => $name,
             'label'      => $label,
-            'sort_order' => $sortOrder,
+            'position' => $sortOrder,
             'is_active'  => $isActive,
         ]);
     }
@@ -92,8 +92,8 @@ class RoleService
         if (array_key_exists('label', $fields)) {
             $set['label'] = trim((string) $fields['label']);
         }
-        if (array_key_exists('sort_order', $fields)) {
-            $set['sort_order'] = (int) $fields['sort_order'];
+        if (array_key_exists('position', $fields)) {
+            $set['position'] = (int) $fields['position'];
         }
         if (array_key_exists('is_active', $fields)) {
             $set['is_active'] = (int) $fields['is_active'];
@@ -133,7 +133,7 @@ class RoleService
         $this->role->update($id, [
             'name'       => $name,
             'label'      => $label,
-            'sort_order' => $sortOrder,
+            'position' => $sortOrder,
             'is_active'  => $isActive,
         ]);
     }

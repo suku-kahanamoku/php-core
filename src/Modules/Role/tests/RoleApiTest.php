@@ -82,7 +82,7 @@ if ($roleRegUserId) {
 // ── CRUD ──────────────────────────────────────────────────────────────────────
 
 section('Roles – CRUD');
-$r = request('POST', "{$base}/roles", ['name' => 'test_role', 'label' => 'Test Role', 'sort_order' => 99]);
+$r = request('POST', "{$base}/roles", ['name' => 'test_role', 'label' => 'Test Role', 'position' => 99]);
 assert_test('POST /roles 201', $r['status'] === 201, dump_on_fail($r));
 $newRoleId = $r['data']['data']['id'] ?? null;
 

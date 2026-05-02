@@ -57,7 +57,7 @@ class CategoryService
             'parent_id'   => isset($input['parent_id']) && $input['parent_id'] !== ''
                 ? (int) $input['parent_id']
                 : null,
-            'sort_order' => (int) ($input['sort_order'] ?? 0),
+            'position' => (int) ($input['position'] ?? 0),
         ]);
     }
 
@@ -76,8 +76,8 @@ class CategoryService
         if (isset($input['description'])) {
             $set['description'] = trim((string) $input['description']);
         }
-        if (isset($input['sort_order'])) {
-            $set['sort_order'] = (int) $input['sort_order'];
+        if (isset($input['position'])) {
+            $set['position'] = (int) $input['position'];
         }
         if (array_key_exists('parent_id', $input)) {
             $isEmptyParent    = $input['parent_id'] === null || $input['parent_id'] === '';
@@ -127,7 +127,7 @@ class CategoryService
             'slug'        => $slug,
             'description' => (string) ($input['description'] ?? ''),
             'parent_id'   => $parentId,
-            'sort_order'  => (int) ($input['sort_order'] ?? 0),
+            'position'  => (int) ($input['position'] ?? 0),
         ]);
     }
 

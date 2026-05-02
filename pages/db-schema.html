@@ -37,7 +37,7 @@ erDiagram
     role { int id PK
         varchar name
         varchar label
-        smallint sort_order
+        smallint position
         tinyint is_active
         datetime created_at }
     user { int id PK
@@ -74,7 +74,7 @@ erDiagram
         varchar name
         varchar slug
         text description
-        smallint sort_order
+        smallint position
         datetime created_at }
     product { int id PK
         int category_id FK
@@ -100,7 +100,7 @@ erDiagram
         varchar code
         varchar label
         varchar value
-        smallint sort_order
+        smallint position
         tinyint is_active
         datetime created_at }
     order { int id PK
