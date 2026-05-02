@@ -17,17 +17,8 @@ $db      = Database::getInstance();
 $code    = $request->franchiseCode;
 $auth    = new Auth($db);
 
-
-$user    = new UserApi($db, $code, $auth);
 $address = new AddressApi($db, $code, $auth);
-
-$router->get('/', [$user, 'list']);
-$router->post('/', [$user, 'create']);
-$router->get('/:id', [$user, 'get']);
-$router->put('/:id', [$user, 'replace']);
-$router->patch('/:id', [$user, 'update']);
-$router->delete('/:id', [$user, 'delete']);
-
-$router->get('/:userId/address', [$address, 'list']);
+$api = new UserApi($db, $code, $auth);
+$api->registerRoutes($router, $address);
 
 $router->dispatch($request);

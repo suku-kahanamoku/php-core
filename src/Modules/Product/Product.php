@@ -96,27 +96,6 @@ class Product
         return $row ?: null;
     }
 
-    public function skuExists(string $sku, ?int $excludeId = null): bool
-    {
-        if ($excludeId !== null) {
-            $row = $this->db->fetchOne(
-                'SELECT id FROM product
-                 WHERE franchise_code = ? AND sku = ?
-                   AND id != ? AND deleted_at IS NULL',
-                [$this->code, $sku, $excludeId],
-            );
-        } else {
-            $row = $this->db->fetchOne(
-                'SELECT id FROM product
-                 WHERE franchise_code = ? AND sku = ?
-                   AND deleted_at IS NULL',
-                [$this->code, $sku],
-            );
-        }
-
-        return (bool) $row;
-    }
-
     public function create(array $data): int
     {
         return $this->db->insert('product', array_merge($data, [

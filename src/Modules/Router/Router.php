@@ -125,17 +125,4 @@ class Router
         Response::notFound("Endpoint '{$uri}' not found.");
     }
 
-    // ─── Listing ───────────────────────────────────────────────────────────────
-
-    public function getRoutes(): array
-    {
-        $list = [];
-        foreach ($this->compiledRoutes as $route) {
-            $list[] = [
-                'method' => $route['method'],
-                'path'   => $route['path'],
-            ];
-        }
-        return $list;
-    }
 }

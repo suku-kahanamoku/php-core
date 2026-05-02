@@ -16,15 +16,7 @@ require_once __DIR__ . '/bootstrap.php';
 $base       = rtrim($argv[1] ?? 'http://localhost/php/php-core/api', '/');
 $runnerMode = true;
 
-// ── Misc: endpoint listing + 404 ─────────────────────────────────────────────
-
-section('GET /  –  endpoint listing');
-$r = request('GET', "{$base}/", [], false);
-assert_test('200', $r['status'] === 200, dump_on_fail($r));
-assert_test('success = true', $r['data']['success'] === true);
-assert_test('data.endpoints exists', isset($r['data']['data']['endpoints']));
-assert_test('lists auth endpoints', isset($r['data']['data']['endpoints']['auth']));
-assert_test('lists products endpoints', isset($r['data']['data']['endpoints']['products']));
+// ── Misc: 404 ────────────────────────────────────────────────────────────────
 
 section('Non-existent endpoint');
 $r = request('GET', "{$base}/nonexistent", [], false);

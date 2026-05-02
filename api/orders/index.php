@@ -16,13 +16,7 @@ $db      = Database::getInstance();
 $code    = $request->franchiseCode;
 $auth    = new Auth($db);
 
-
-$order = new OrderApi($db, $code, $auth);
-
-$router->get('/', [$order, 'list']);
-$router->post('/', [$order, 'create']);
-$router->get('/:id', [$order, 'get']);
-$router->patch('/:id/status', [$order, 'updateStatus']);
-$router->delete('/:id', [$order, 'delete']);
+$api = new OrderApi($db, $code, $auth);
+$api->registerRoutes($router);
 
 $router->dispatch($request);

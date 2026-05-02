@@ -16,14 +16,7 @@ $db      = Database::getInstance();
 $code    = $request->franchiseCode;
 $auth    = new Auth($db);
 
-
-$role = new RoleApi($db, $code, $auth);
-
-$router->get('/', [$role, 'list']);
-$router->post('/', [$role, 'create']);
-$router->get('/:id', [$role, 'get']);
-$router->put('/:id', [$role, 'replace']);
-$router->patch('/:id', [$role, 'update']);
-$router->delete('/:id', [$role, 'delete']);
+$api = new RoleApi($db, $code, $auth);
+$api->registerRoutes($router);
 
 $router->dispatch($request);

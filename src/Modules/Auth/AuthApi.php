@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Auth;
 
-use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Request;
 use App\Modules\Router\Response;
+use App\Modules\Router\Router;
 
 class AuthApi
 {
@@ -67,5 +67,14 @@ class AuthApi
         );
 
         Response::success(null, 'Password changed successfully');
+    }
+
+    public function registerRoutes(Router $router): void
+    {
+        $router->post('/login', [$this, 'login']);
+        $router->post('/logout', [$this, 'logout']);
+        $router->get('/me', [$this, 'me']);
+        $router->post('/register', [$this, 'register']);
+        $router->post('/change-password', [$this, 'changePassword']);
     }
 }

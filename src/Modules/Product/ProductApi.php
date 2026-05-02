@@ -8,6 +8,7 @@ use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Request;
 use App\Modules\Router\Response;
+use App\Modules\Router\Router;
 
 class ProductApi
 {
@@ -103,5 +104,16 @@ class ProductApi
             (int) $request->get('quantity', 0),
         );
         Response::success(['stock_quantity' => $newQty], 'Stock adjusted');
+    }
+
+    public function registerRoutes(Router $router): void
+    {
+        $router->get('/', [$this, 'list']);
+        $router->post('/', [$this, 'create']);
+        $router->get('/:id', [$this, 'get']);
+        $router->put('/:id', [$this, 'replace']);
+        $router->patch('/:id', [$this, 'update']);
+        $router->delete('/:id', [$this, 'delete']);
+        $router->patch('/:id/stock', [$this, 'adjustStock']);
     }
 }

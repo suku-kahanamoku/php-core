@@ -65,8 +65,4 @@ class Response
         self::error($message, 422, $errors);
     }
 
-    public static function serverError(string $message = 'Internal Server Error'): never
-    {
-        self::error($message, 500);
-    }
 }

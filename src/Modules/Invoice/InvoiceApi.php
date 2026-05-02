@@ -8,6 +8,7 @@ use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Request;
 use App\Modules\Router\Response;
+use App\Modules\Router\Router;
 
 class InvoiceApi
 {
@@ -64,5 +65,14 @@ class InvoiceApi
     {
         $this->service->delete((int) $params['id']);
         Response::success(null, 'Invoice deleted');
+    }
+
+    public function registerRoutes(Router $router): void
+    {
+        $router->get('/', [$this, 'list']);
+        $router->post('/', [$this, 'create']);
+        $router->get('/:id', [$this, 'get']);
+        $router->patch('/:id/status', [$this, 'updateStatus']);
+        $router->delete('/:id', [$this, 'delete']);
     }
 }

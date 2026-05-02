@@ -16,15 +16,7 @@ $db      = Database::getInstance();
 $code    = $request->franchiseCode;
 $auth    = new Auth($db);
 
-
-$enumeration = new EnumerationApi($db, $code, $auth);
-
-$router->get('/', [$enumeration, 'list']);
-$router->get('/types', [$enumeration, 'types']);
-$router->post('/', [$enumeration, 'create']);
-$router->get('/:id', [$enumeration, 'get']);
-$router->put('/:id', [$enumeration, 'replace']);
-$router->patch('/:id', [$enumeration, 'update']);
-$router->delete('/:id', [$enumeration, 'delete']);
+$api = new EnumerationApi($db, $code, $auth);
+$api->registerRoutes($router);
 
 $router->dispatch($request);

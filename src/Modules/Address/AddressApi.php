@@ -8,6 +8,7 @@ use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Request;
 use App\Modules\Router\Response;
+use App\Modules\Router\Router;
 
 class AddressApi
 {
@@ -92,5 +93,14 @@ class AddressApi
     {
         $this->service->delete((int) $params['id']);
         Response::success(null, 'Address deleted');
+    }
+
+    public function registerRoutes(Router $router): void
+    {
+        $router->post('/', [$this, 'create']);
+        $router->get('/:id', [$this, 'get']);
+        $router->put('/:id', [$this, 'replace']);
+        $router->patch('/:id', [$this, 'update']);
+        $router->delete('/:id', [$this, 'delete']);
     }
 }

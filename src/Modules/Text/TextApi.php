@@ -8,6 +8,7 @@ use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Request;
 use App\Modules\Router\Response;
+use App\Modules\Router\Router;
 
 class TextApi
 {
@@ -95,5 +96,16 @@ class TextApi
     {
         $this->service->delete((int) $params['id']);
         Response::success(null, 'Text deleted');
+    }
+
+    public function registerRoutes(Router $router): void
+    {
+        $router->get('/', [$this, 'list']);
+        $router->post('/', [$this, 'create']);
+        $router->get('/by-key/:key', [$this, 'getByKey']);
+        $router->get('/:id', [$this, 'get']);
+        $router->put('/:id', [$this, 'replace']);
+        $router->patch('/:id', [$this, 'update']);
+        $router->delete('/:id', [$this, 'delete']);
     }
 }

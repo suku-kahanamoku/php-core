@@ -16,13 +16,7 @@ $db      = Database::getInstance();
 $code    = $request->franchiseCode;
 $auth    = new Auth($db);
 
-
-$authApi = new AuthApi($db, $code, $auth);
-
-$router->post('/login', [$authApi, 'login']);
-$router->post('/logout', [$authApi, 'logout']);
-$router->get('/me', [$authApi, 'me']);
-$router->post('/register', [$authApi, 'register']);
-$router->post('/change-password', [$authApi, 'changePassword']);
+$api = new AuthApi($db, $code, $auth);
+$api->registerRoutes($router);
 
 $router->dispatch($request);

@@ -16,13 +16,7 @@ $db      = Database::getInstance();
 $code    = $request->franchiseCode;
 $auth    = new Auth($db);
 
-
-$invoice = new InvoiceApi($db, $code, $auth);
-
-$router->get('/', [$invoice, 'list']);
-$router->post('/', [$invoice, 'create']);
-$router->get('/:id', [$invoice, 'get']);
-$router->patch('/:id/status', [$invoice, 'updateStatus']);
-$router->delete('/:id', [$invoice, 'delete']);
+$api = new InvoiceApi($db, $code, $auth);
+$api->registerRoutes($router);
 
 $router->dispatch($request);

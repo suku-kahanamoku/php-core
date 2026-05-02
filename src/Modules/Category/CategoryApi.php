@@ -8,6 +8,7 @@ use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Request;
 use App\Modules\Router\Response;
+use App\Modules\Router\Router;
 
 class CategoryApi
 {
@@ -83,5 +84,15 @@ class CategoryApi
     {
         $this->service->delete((int) $params['id']);
         Response::success(null, 'Category deleted');
+    }
+
+    public function registerRoutes(Router $router): void
+    {
+        $router->get('/', [$this, 'list']);
+        $router->post('/', [$this, 'create']);
+        $router->get('/:id', [$this, 'get']);
+        $router->put('/:id', [$this, 'replace']);
+        $router->patch('/:id', [$this, 'update']);
+        $router->delete('/:id', [$this, 'delete']);
     }
 }

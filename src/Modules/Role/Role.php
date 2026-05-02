@@ -60,18 +60,6 @@ class Role
         return $role ?: null;
     }
 
-    /** Find single role by name. */
-    public function findByName(string $name): ?array
-    {
-        $role = $this->db->fetchOne(
-            'SELECT id, name, label, sort_order, is_active, created_at, updated_at
-             FROM role WHERE franchise_code = ? AND name = ?',
-            [$this->code, $name],
-        );
-
-        return $role ?: null;
-    }
-
     /** Count users assigned to this role. */
     public function countUsers(int $id): int
     {

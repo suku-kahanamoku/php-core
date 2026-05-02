@@ -16,15 +16,7 @@ $db      = Database::getInstance();
 $code    = $request->franchiseCode;
 $auth    = new Auth($db);
 
-
-$product = new ProductApi($db, $code, $auth);
-
-$router->get('/', [$product, 'list']);
-$router->post('/', [$product, 'create']);
-$router->get('/:id', [$product, 'get']);
-$router->put('/:id', [$product, 'replace']);
-$router->patch('/:id', [$product, 'update']);
-$router->delete('/:id', [$product, 'delete']);
-$router->patch('/:id/stock', [$product, 'adjustStock']);
+$api = new ProductApi($db, $code, $auth);
+$api->registerRoutes($router);
 
 $router->dispatch($request);

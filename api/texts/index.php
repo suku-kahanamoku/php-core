@@ -16,15 +16,7 @@ $db      = Database::getInstance();
 $code    = $request->franchiseCode;
 $auth    = new Auth($db);
 
-
-$text = new TextApi($db, $code, $auth);
-
-$router->get('/', [$text, 'list']);
-$router->post('/', [$text, 'create']);
-$router->get('/by-key/:key', [$text, 'getByKey']);
-$router->get('/:id', [$text, 'get']);
-$router->put('/:id', [$text, 'replace']);
-$router->patch('/:id', [$text, 'update']);
-$router->delete('/:id', [$text, 'delete']);
+$api = new TextApi($db, $code, $auth);
+$api->registerRoutes($router);
 
 $router->dispatch($request);

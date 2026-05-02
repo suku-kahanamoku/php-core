@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\User;
 
+use App\Modules\Address\AddressApi;
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Request;
 use App\Modules\Router\Response;
+use App\Modules\Router\Router;
 
 class UserApi
 {
@@ -84,5 +86,16 @@ class UserApi
     {
         $this->service->delete((int) $params['id']);
         Response::success(null, 'User deleted');
+    }
+
+    public function registerRoutes(Router $router, AddressApi $addressApi): void
+    {
+        $router->get('/', [$this, 'list']);
+        $router->post('/', [$this, 'create']);
+        $router->get('/:id', [$this, 'get']);
+        $router->put('/:id', [$this, 'replace']);
+        $router->patch('/:id', [$this, 'update']);
+        $router->delete('/:id', [$this, 'delete']);
+        $router->get('/:userId/address', [$addressApi, 'list']);
     }
 }

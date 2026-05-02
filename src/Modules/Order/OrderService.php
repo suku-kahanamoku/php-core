@@ -17,7 +17,7 @@ class OrderService
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->order = new Order($db, $franchiseCode);
-        $this->auth = $auth;
+        $this->auth  = $auth;
     }
 
     public function list(
@@ -30,19 +30,6 @@ class OrderService
         $this->auth->require();
 
         $userId = $this->auth->hasRole('admin') ? null : $this->auth->id();
-
-        return $this->order->findAll($page, $limit, $userId, $status, $sortBy, $sortDir);
-    }
-
-    public function listForUser(
-        int $page,
-        int $limit,
-        int $userId,
-        ?string $status,
-        string $sortBy,
-        string $sortDir,
-    ): array {
-        $this->auth->requireRole('admin');
 
         return $this->order->findAll($page, $limit, $userId, $status, $sortBy, $sortDir);
     }

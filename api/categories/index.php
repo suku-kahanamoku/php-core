@@ -16,14 +16,7 @@ $db      = Database::getInstance();
 $code    = $request->franchiseCode;
 $auth    = new Auth($db);
 
-
-$category = new CategoryApi($db, $code, $auth);
-
-$router->get('/', [$category, 'list']);
-$router->post('/', [$category, 'create']);
-$router->get('/:id', [$category, 'get']);
-$router->put('/:id', [$category, 'replace']);
-$router->patch('/:id', [$category, 'update']);
-$router->delete('/:id', [$category, 'delete']);
+$api = new CategoryApi($db, $code, $auth);
+$api->registerRoutes($router);
 
 $router->dispatch($request);
