@@ -54,7 +54,7 @@
   <div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div></div>
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-slate-300 bg-slate-50 text-slate-500">Router::dispatch() → match route<br><small>CorsMiddleware → controller::method()</small></div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-slate-300 bg-slate-50 text-slate-500">Router::dispatch() → match route<br><small>CorsMiddleware (bootstrap) → Api::method()</small></div></div>
 </div>
 <div class="flex items-center py-1.5 px-3 my-1 bg-white border border-slate-200 border-l-4 border-l-emerald-500 rounded-r-lg text-xs font-bold text-slate-500 uppercase tracking-wider">AuthController::login()</div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
@@ -277,7 +277,7 @@
   <div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div></div>
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-slate-300 bg-slate-50 text-slate-500">Router::dispatch() → match route<br><small>CorsMiddleware → controller::method()</small></div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-slate-300 bg-slate-50 text-slate-500">Router::dispatch() → match route<br><small>CorsMiddleware (bootstrap) → Api::method()</small></div></div>
 </div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
@@ -493,9 +493,9 @@
   <div></div>
   <div class="p-2.5 rounded-xl text-center text-xs font-bold border-2 border-emerald-500 bg-emerald-50 text-emerald-700">&#9881; PHP + DB<small class="block font-normal text-xs mt-0.5 opacity-80">router → controller</small></div>
 </div>
-<div class="flex items-center gap-2 text-sm font-bold text-slate-900 mt-6 mb-2"><span class="px-2 py-0.5 rounded text-white text-xs font-bold bg-emerald-600">GET</span><span class="font-mono text-slate-700">/users/:userId/addresses</span><span class="text-xs font-normal normal-case px-1.5 py-0.5 rounded bg-red-100 text-red-700 ml-1">&#128274; required</span><span class="text-xs text-slate-400 font-normal ml-2">adresy uživatele</span><span class="flex-1 h-px bg-slate-200 block ml-2"></span></div>
+<div class="flex items-center gap-2 text-sm font-bold text-slate-900 mt-6 mb-2"><span class="px-2 py-0.5 rounded text-white text-xs font-bold bg-emerald-600">GET</span><span class="font-mono text-slate-700">/users/:userId/address</span><span class="text-xs font-normal normal-case px-1.5 py-0.5 rounded bg-red-100 text-red-700 ml-1">&#128274; required</span><span class="text-xs text-slate-400 font-normal ml-2">adresy uživatele</span><span class="flex-1 h-px bg-slate-200 block ml-2"></span></div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">GET /users/42/addresses</div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">GET /users/42/address</div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
@@ -513,7 +513,7 @@
   <div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div></div>
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-slate-300 bg-slate-50 text-slate-500">Router::dispatch() → match route<br><small>CorsMiddleware → controller::method()</small></div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-slate-300 bg-slate-50 text-slate-500">Router::dispatch() → match route<br><small>CorsMiddleware (bootstrap) → Api::method()</small></div></div>
 </div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
@@ -536,9 +536,9 @@
   <div class="flex items-center"><div class="w-0 h-0 border-y-[4px] border-y-transparent border-r-[8px] border-r-emerald-500"></div><div class="flex-1 h-0.5 bg-emerald-500"></div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
 </div>
-<div class="flex items-center gap-2 text-sm font-bold text-slate-900 mt-6 mb-2"><span class="px-2 py-0.5 rounded text-white text-xs font-bold bg-emerald-600">GET</span><span class="font-mono text-slate-700">/addresses/:id</span><span class="text-xs font-normal normal-case px-1.5 py-0.5 rounded bg-red-100 text-red-700 ml-1">&#128274; required</span><span class="text-xs text-slate-400 font-normal ml-2">detail adresy</span><span class="flex-1 h-px bg-slate-200 block ml-2"></span></div>
+<div class="flex items-center gap-2 text-sm font-bold text-slate-900 mt-6 mb-2"><span class="px-2 py-0.5 rounded text-white text-xs font-bold bg-emerald-600">GET</span><span class="font-mono text-slate-700">/address/:id</span><span class="text-xs font-normal normal-case px-1.5 py-0.5 rounded bg-red-100 text-red-700 ml-1">&#128274; required</span><span class="text-xs text-slate-400 font-normal ml-2">detail adresy</span><span class="flex-1 h-px bg-slate-200 block ml-2"></span></div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">GET /addresses/7</div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">GET /address/7</div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
@@ -565,9 +565,9 @@
   <div class="flex items-center"><div class="w-0 h-0 border-y-[4px] border-y-transparent border-r-[8px] border-r-emerald-500"></div><div class="flex-1 h-0.5 bg-emerald-500"></div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
 </div>
-<div class="flex items-center gap-2 text-sm font-bold text-slate-900 mt-6 mb-2"><span class="px-2 py-0.5 rounded text-white text-xs font-bold bg-blue-600">POST</span><span class="font-mono text-slate-700">/addresses</span><span class="text-xs font-normal normal-case px-1.5 py-0.5 rounded bg-red-100 text-red-700 ml-1">&#128274; required</span><span class="text-xs text-slate-400 font-normal ml-2">vytvoření adresy</span><span class="flex-1 h-px bg-slate-200 block ml-2"></span></div>
+<div class="flex items-center gap-2 text-sm font-bold text-slate-900 mt-6 mb-2"><span class="px-2 py-0.5 rounded text-white text-xs font-bold bg-blue-600">POST</span><span class="font-mono text-slate-700">/address</span><span class="text-xs font-normal normal-case px-1.5 py-0.5 rounded bg-red-100 text-red-700 ml-1">&#128274; required</span><span class="text-xs text-slate-400 font-normal ml-2">vytvoření adresy</span><span class="flex-1 h-px bg-slate-200 block ml-2"></span></div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">POST /addresses<br><small>{ street, city, zip, country, type?, company?, first_name?, last_name?, is_default? }</small></div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">POST /address<br><small>{ street, city, zip, country, type?, company?, first_name?, last_name?, is_default? }</small></div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
@@ -601,9 +601,9 @@
   <div class="flex items-center"><div class="w-0 h-0 border-y-[4px] border-y-transparent border-r-[8px] border-r-emerald-500"></div><div class="flex-1 h-0.5 bg-emerald-500"></div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
 </div>
-<div class="flex items-center gap-2 text-sm font-bold text-slate-900 mt-6 mb-2"><span class="px-2 py-0.5 rounded text-white text-xs font-bold bg-amber-600">PATCH</span><span class="font-mono text-slate-700">/addresses/:id</span><span class="text-xs font-normal normal-case px-1.5 py-0.5 rounded bg-red-100 text-red-700 ml-1">&#128274; required</span><span class="text-xs text-slate-400 font-normal ml-2">částečná úprava adresy</span><span class="flex-1 h-px bg-slate-200 block ml-2"></span></div>
+<div class="flex items-center gap-2 text-sm font-bold text-slate-900 mt-6 mb-2"><span class="px-2 py-0.5 rounded text-white text-xs font-bold bg-amber-600">PATCH</span><span class="font-mono text-slate-700">/address/:id</span><span class="text-xs font-normal normal-case px-1.5 py-0.5 rounded bg-red-100 text-red-700 ml-1">&#128274; required</span><span class="text-xs text-slate-400 font-normal ml-2">částečná úprava adresy</span><span class="flex-1 h-px bg-slate-200 block ml-2"></span></div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">PATCH /addresses/7<br><small>{ libovolné pole z: type,company,street,city,zip,country,is_default }</small></div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">PATCH /address/7<br><small>{ libovolné pole z: type,company,street,city,zip,country,is_default }</small></div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
@@ -630,9 +630,9 @@
   <div class="flex items-center"><div class="w-0 h-0 border-y-[4px] border-y-transparent border-r-[8px] border-r-emerald-500"></div><div class="flex-1 h-0.5 bg-emerald-500"></div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
 </div>
-<div class="flex items-center gap-2 text-sm font-bold text-slate-900 mt-6 mb-2"><span class="px-2 py-0.5 rounded text-white text-xs font-bold bg-orange-600">PUT</span><span class="font-mono text-slate-700">/addresses/:id</span><span class="text-xs font-normal normal-case px-1.5 py-0.5 rounded bg-red-100 text-red-700 ml-1">&#128274; required</span><span class="text-xs text-slate-400 font-normal ml-2">úplná náhrada (povinné: street, city, zip, country)</span><span class="flex-1 h-px bg-slate-200 block ml-2"></span></div>
+<div class="flex items-center gap-2 text-sm font-bold text-slate-900 mt-6 mb-2"><span class="px-2 py-0.5 rounded text-white text-xs font-bold bg-orange-600">PUT</span><span class="font-mono text-slate-700">/address/:id</span><span class="text-xs font-normal normal-case px-1.5 py-0.5 rounded bg-red-100 text-red-700 ml-1">&#128274; required</span><span class="text-xs text-slate-400 font-normal ml-2">úplná náhrada (povinné: street, city, zip, country)</span><span class="flex-1 h-px bg-slate-200 block ml-2"></span></div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">PUT /addresses/7<br><small>{ type, street, city, zip, country, company?, first_name?, last_name?, is_default? }</small></div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">PUT /address/7<br><small>{ type, street, city, zip, country, company?, first_name?, last_name?, is_default? }</small></div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
@@ -659,9 +659,9 @@
   <div class="flex items-center"><div class="w-0 h-0 border-y-[4px] border-y-transparent border-r-[8px] border-r-emerald-500"></div><div class="flex-1 h-0.5 bg-emerald-500"></div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
 </div>
-<div class="flex items-center gap-2 text-sm font-bold text-slate-900 mt-6 mb-2"><span class="px-2 py-0.5 rounded text-white text-xs font-bold bg-red-600">DELETE</span><span class="font-mono text-slate-700">/addresses/:id</span><span class="text-xs font-normal normal-case px-1.5 py-0.5 rounded bg-red-100 text-red-700 ml-1">&#128274; required</span><span class="text-xs text-slate-400 font-normal ml-2">smazání adresy (hard delete)</span><span class="flex-1 h-px bg-slate-200 block ml-2"></span></div>
+<div class="flex items-center gap-2 text-sm font-bold text-slate-900 mt-6 mb-2"><span class="px-2 py-0.5 rounded text-white text-xs font-bold bg-red-600">DELETE</span><span class="font-mono text-slate-700">/address/:id</span><span class="text-xs font-normal normal-case px-1.5 py-0.5 rounded bg-red-100 text-red-700 ml-1">&#128274; required</span><span class="text-xs text-slate-400 font-normal ml-2">smazání adresy (hard delete)</span><span class="flex-1 h-px bg-slate-200 block ml-2"></span></div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">DELETE /addresses/7</div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">DELETE /address/7</div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
@@ -714,7 +714,7 @@
   <div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div></div>
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-slate-300 bg-slate-50 text-slate-500">Router::dispatch() → match route<br><small>CorsMiddleware → controller::method()</small></div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-slate-300 bg-slate-50 text-slate-500">Router::dispatch() → match route<br><small>CorsMiddleware (bootstrap) → Api::method()</small></div></div>
 </div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
@@ -943,7 +943,7 @@
   <div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div></div>
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-slate-300 bg-slate-50 text-slate-500">Router::dispatch() → match route<br><small>CorsMiddleware → controller::method()</small></div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-slate-300 bg-slate-50 text-slate-500">Router::dispatch() → match route<br><small>CorsMiddleware (bootstrap) → Api::method()</small></div></div>
 </div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
@@ -1187,7 +1187,7 @@
   <div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div></div>
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-slate-300 bg-slate-50 text-slate-500">Router::dispatch() → match route<br><small>CorsMiddleware → controller::method()</small></div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-slate-300 bg-slate-50 text-slate-500">Router::dispatch() → match route<br><small>CorsMiddleware (bootstrap) → Api::method()</small></div></div>
 </div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
@@ -1410,7 +1410,7 @@
   <div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div></div>
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-slate-300 bg-slate-50 text-slate-500">Router::dispatch() → match route<br><small>CorsMiddleware → controller::method()</small></div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-slate-300 bg-slate-50 text-slate-500">Router::dispatch() → match route<br><small>CorsMiddleware (bootstrap) → Api::method()</small></div></div>
 </div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
@@ -1617,7 +1617,7 @@
   <div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div></div>
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-slate-300 bg-slate-50 text-slate-500">Router::dispatch() → match route<br><small>CorsMiddleware → controller::method()</small></div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-slate-300 bg-slate-50 text-slate-500">Router::dispatch() → match route<br><small>CorsMiddleware (bootstrap) → Api::method()</small></div></div>
 </div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
@@ -1854,7 +1854,7 @@
   <div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div></div>
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-slate-300 bg-slate-50 text-slate-500">Router::dispatch() → match route<br><small>CorsMiddleware → controller::method()</small></div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-slate-300 bg-slate-50 text-slate-500">Router::dispatch() → match route<br><small>CorsMiddleware (bootstrap) → Api::method()</small></div></div>
 </div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
