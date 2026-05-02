@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../bootstrap.php';
 
-use App\Core\Franchise;
 use App\Middleware\CorsMiddleware;
 use App\Modules\Database\Database;
 use App\Modules\Invoice\InvoiceApi;
@@ -14,11 +13,11 @@ use App\Modules\Router\Router;
 $request = new Request();
 $router  = new Router();
 $db      = Database::getInstance();
-$code    = Franchise::code();
+
 
 $router->addGlobalMiddleware(new CorsMiddleware());
 
-$invoice = new InvoiceApi($db, $code);
+$invoice = new InvoiceApi($db, $request->franchiseCode);
 
 $router->get('/', [$invoice, 'list']);
 $router->post('/', [$invoice, 'create']);

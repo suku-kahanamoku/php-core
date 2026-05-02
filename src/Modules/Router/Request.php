@@ -8,6 +8,7 @@ class Request
 {
     public readonly string $method;
     public readonly string $uri;
+    public readonly string $franchiseCode;
     public readonly array  $query;
     public readonly array  $body;
     public readonly array  $headers;
@@ -15,12 +16,40 @@ class Request
 
     public function __construct()
     {
-        $this->method  = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
-        $this->uri     = $this->parsePath();
-        $this->query   = $_GET;
-        $this->body    = $this->parseBody();
-        $this->headers = $this->parseHeaders();
-        $this->files   = $_FILES;
+        $this->method        = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+        $this->uri           = $this->parsePath();
+        $this->franchiseCode = self::resolveCode();
+        $this->query         = $_GET;
+        $this->body          = $this->parseBody();
+        $this->headers       = $this->parseHeaders();
+        $this->files         = $_FILES;
+    }
+
+    /**
+     * Resolve and validate the franchise code from the HTTP Host header.
+     * Allowed codes are defined in FRANCHISE_CODES env var (comma-separated).
+     * Aborts with 403 if the resolved code is not in the allowed list.
+     * Called statically from Auth (which has no Request instance).
+     */
+    public static function resolveCode(): string
+    {
+        $host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '';
+        $host = explode(':', $host)[0];
+        $host = preg_replace('/^www\./i', '', $host);
+        $code = ($host === '' || $host === 'localhost' || $host === '127.0.0.1')
+            ? 'default'
+            : $host;
+
+        $allowed = array_map('trim', explode(',', $_ENV['FRANCHISE_CODES'] ?? 'default'));
+
+        if (!in_array($code, $allowed, true)) {
+            http_response_code(403);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Franchise not recognised.', 'errors' => null]);
+            exit;
+        }
+
+        return $code;
     }
 
     private function parsePath(): string

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../bootstrap.php';
 
-use App\Core\Franchise;
 use App\Middleware\CorsMiddleware;
 use App\Modules\Database\Database;
 use App\Modules\Role\RoleApi;
@@ -14,11 +13,11 @@ use App\Modules\Router\Router;
 $request = new Request();
 $router  = new Router();
 $db      = Database::getInstance();
-$code    = Franchise::code();
+
 
 $router->addGlobalMiddleware(new CorsMiddleware());
 
-$role = new RoleApi($db, $code);
+$role = new RoleApi($db, $request->franchiseCode);
 
 $router->get('/', [$role, 'list']);
 $router->post('/', [$role, 'create']);
