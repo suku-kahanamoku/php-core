@@ -29,7 +29,7 @@ $router->put('/:id', [$user, 'replace']);
 $router->patch('/:id', [$user, 'update']);
 $router->delete('/:id', [$user, 'delete']);
 
-// Nested addresses under users
-$router->get('/:userId/addresses', [$address, 'list']);
+// Nested address under users
+$router->get('/:userId/address', [$address, 'list']);
 
 $router->dispatch($request);

@@ -6,7 +6,7 @@ declare(strict_types=1);
 /**
  * API endpoint tests for App\Modules\Address\AddressApi
  *
- * Tests all /addresses/* and /users/:userId/addresses routes
+ * Tests all /address/* and /users/:userId/address routes
  */
 
 if (!function_exists('assert_test')) {
@@ -39,22 +39,22 @@ $addrUserId = $r['data']['data']['id'] ?? null;
 // ── Create ────────────────────────────────────────────────────────────────────
 
 section('Addresses – create');
-$r = request('POST', "{$base}/addresses", [
+$r = request('POST', "{$base}/address", [
     'user_id' => $addrUserId, 'type' => 'billing',
     'street'  => 'Testovací 1', 'city' => 'Praha', 'zip' => '11000', 'country' => 'CZ',
 ]);
-assert_test('POST /addresses 201', $r['status'] === 201, dump_on_fail($r));
+assert_test('POST /address 201', $r['status'] === 201, dump_on_fail($r));
 $addrId = $r['data']['data']['id'] ?? null;
 
-$r = request('POST', "{$base}/addresses", ['type' => 'billing']);
-assert_test('POST /addresses 422 missing fields', $r['status'] === 422, dump_on_fail($r));
+$r = request('POST', "{$base}/address", ['type' => 'billing']);
+assert_test('POST /address 422 missing fields', $r['status'] === 422, dump_on_fail($r));
 
 // ── List by user ──────────────────────────────────────────────────────────────
 
 section('Addresses – list by user');
 if ($addrUserId) {
-    $r = request('GET', "{$base}/users/{$addrUserId}/addresses");
-    assert_test('GET /users/:userId/addresses 200', $r['status'] === 200, dump_on_fail($r));
+    $r = request('GET', "{$base}/users/{$addrUserId}/address");
+    assert_test('GET /users/:userId/address 200', $r['status'] === 200, dump_on_fail($r));
     assert_test('returns array', is_array($r['data']['data']));
 }
 
@@ -62,24 +62,24 @@ if ($addrUserId) {
 
 section('Addresses – read & update');
 if ($addrId) {
-    $r = request('GET', "{$base}/addresses/{$addrId}");
-    assert_test('GET /addresses/:id 200', $r['status'] === 200, dump_on_fail($r));
+    $r = request('GET', "{$base}/address/{$addrId}");
+    assert_test('GET /address/:id 200', $r['status'] === 200, dump_on_fail($r));
     assert_test('street matches', $r['data']['data']['street'] === 'Testovací 1');
 
-    $r = request('PATCH', "{$base}/addresses/{$addrId}", ['city' => 'Brno']);
-    assert_test('PATCH /addresses/:id 200', $r['status'] === 200, dump_on_fail($r));
+    $r = request('PATCH', "{$base}/address/{$addrId}", ['city' => 'Brno']);
+    assert_test('PATCH /address/:id 200', $r['status'] === 200, dump_on_fail($r));
 
-    $r = request('PUT', "{$base}/addresses/{$addrId}", [
+    $r = request('PUT', "{$base}/address/{$addrId}", [
         'type' => 'shipping', 'street' => 'Nová 5',
         'city' => 'Brno', 'zip' => '60200', 'country' => 'CZ',
     ]);
-    assert_test('PUT /addresses/:id 200', $r['status'] === 200, dump_on_fail($r));
+    assert_test('PUT /address/:id 200', $r['status'] === 200, dump_on_fail($r));
 
-    $r = request('PUT', "{$base}/addresses/{$addrId}", ['street' => 'x', 'city' => '', 'zip' => '1', 'country' => 'CZ']);
-    assert_test('PUT /addresses/:id 422 missing city', $r['status'] === 422, dump_on_fail($r));
+    $r = request('PUT', "{$base}/address/{$addrId}", ['street' => 'x', 'city' => '', 'zip' => '1', 'country' => 'CZ']);
+    assert_test('PUT /address/:id 422 missing city', $r['status'] === 422, dump_on_fail($r));
 
-    $r = request('DELETE', "{$base}/addresses/{$addrId}");
-    assert_test('DELETE /addresses/:id 200', $r['status'] === 200, dump_on_fail($r));
+    $r = request('DELETE', "{$base}/address/{$addrId}");
+    assert_test('DELETE /address/:id 200', $r['status'] === 200, dump_on_fail($r));
 }
 
 // ── Cleanup ───────────────────────────────────────────────────────────────────

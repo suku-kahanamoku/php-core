@@ -35,10 +35,10 @@ $svcUserId = $r['data']['data']['id'] ?? null;
 // ── AddressService – create() validation ────────────────────────────────────
 
 section('AddressService – create() validation');
-$r = request('POST', "{$base}/addresses", ['type' => 'billing']);
+$r = request('POST', "{$base}/address", ['type' => 'billing']);
 assert_test('missing required fields → 422', $r['status'] === 422, dump_on_fail($r));
 
-$r = request('POST', "{$base}/addresses", [
+$r = request('POST', "{$base}/address", [
     'user_id' => $svcUserId, 'type' => 'billing',
     'street'  => 'x', 'city' => '', 'zip' => '1', 'country' => 'CZ',
 ]);
@@ -47,7 +47,7 @@ assert_test('empty city → 422', $r['status'] === 422, dump_on_fail($r));
 // ── AddressService – create() success ────────────────────────────────────────
 
 section('AddressService – create() success');
-$r = request('POST', "{$base}/addresses", [
+$r = request('POST', "{$base}/address", [
     'user_id' => $svcUserId, 'type' => 'billing',
     'street'  => 'Servisní 1', 'city' => 'Praha', 'zip' => '11000', 'country' => 'CZ',
 ]);
@@ -58,7 +58,7 @@ $svcAddrId = $r['data']['data']['id'] ?? null;
 
 section('AddressService – update() validation');
 if ($svcAddrId) {
-    $r = request('PUT', "{$base}/addresses/{$svcAddrId}", [
+    $r = request('PUT', "{$base}/address/{$svcAddrId}", [
         'street' => 'x', 'city' => '', 'zip' => '1', 'country' => 'CZ',
     ]);
     assert_test('PUT empty city → 422', $r['status'] === 422, dump_on_fail($r));
@@ -67,7 +67,7 @@ if ($svcAddrId) {
 // ── Cleanup ───────────────────────────────────────────────────────────────────
 
 if ($svcAddrId) {
-    request('DELETE', "{$base}/addresses/{$svcAddrId}");
+    request('DELETE', "{$base}/address/{$svcAddrId}");
 }
 if ($svcUserId) {
     request('DELETE', "{$base}/users/{$svcUserId}");

@@ -38,14 +38,14 @@ $router->get('/', function (Request $request) {
             ['method' => 'PUT',    'path' => '/users/:id'],
             ['method' => 'PATCH',  'path' => '/users/:id'],
             ['method' => 'DELETE', 'path' => '/users/:id'],
-            ['method' => 'GET',    'path' => '/users/:userId/addresses'],
+            ['method' => 'GET',    'path' => '/users/:userId/address'],
         ],
-        'addresses' => [
-            ['method' => 'POST',   'path' => '/addresses'],
-            ['method' => 'GET',    'path' => '/addresses/:id'],
-            ['method' => 'PUT',    'path' => '/addresses/:id'],
-            ['method' => 'PATCH',  'path' => '/addresses/:id'],
-            ['method' => 'DELETE', 'path' => '/addresses/:id'],
+        'address' => [
+            ['method' => 'POST',   'path' => '/address'],
+            ['method' => 'GET',    'path' => '/address/:id'],
+            ['method' => 'PUT',    'path' => '/address/:id'],
+            ['method' => 'PATCH',  'path' => '/address/:id'],
+            ['method' => 'DELETE', 'path' => '/address/:id'],
         ],
         'categories' => [
             ['method' => 'GET',    'path' => '/categories'],
