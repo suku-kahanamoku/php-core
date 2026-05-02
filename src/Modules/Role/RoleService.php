@@ -8,6 +8,7 @@ use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Core\Franchise;
 use App\Modules\Router\Response;
+use App\Modules\Validator\Validator;
 
 class RoleService
 {
@@ -38,14 +39,10 @@ class RoleService
     {
         Auth::requireRole('admin');
 
-        $errors = [];
-        if ($name  === '') $errors['name']  = 'Required';
-        if ($label === '') $errors['label'] = 'Required';
-        if (!preg_match('/^[a-z0-9_]+$/', $name)) $errors['name'] = 'Only lowercase letters, digits and underscores';
-
-        if (!empty($errors)) {
-            Response::validationError($errors);
-        }
+        Validator::make(['name' => $name, 'label' => $label])
+            ->required(['name', 'label'])
+            ->pattern('name', '/^[a-z0-9_]+$/', 'Only lowercase letters, digits and underscores')
+            ->validate();
 
         if ($this->role->nameExists($name)) {
             Response::error('Role with this name already exists', 409);
@@ -98,13 +95,10 @@ class RoleService
             Response::notFound('Role not found');
         }
 
-        $errors = [];
-        if ($name  === '') $errors['name']  = 'Required';
-        if ($label === '') $errors['label'] = 'Required';
-        if (!preg_match('/^[a-z0-9_]+$/', $name)) $errors['name'] = 'Only lowercase letters, digits and underscores';
-        if (!empty($errors)) {
-            Response::validationError($errors);
-        }
+        Validator::make(['name' => $name, 'label' => $label])
+            ->required(['name', 'label'])
+            ->pattern('name', '/^[a-z0-9_]+$/', 'Only lowercase letters, digits and underscores')
+            ->validate();
 
         if ($this->role->nameExists($name, $id)) {
             Response::error('Role with this name already exists', 409);

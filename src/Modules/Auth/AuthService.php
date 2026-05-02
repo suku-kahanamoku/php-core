@@ -7,6 +7,7 @@ namespace App\Modules\Auth;
 use App\Modules\Database\Database;
 use App\Core\Franchise;
 use App\Modules\Router\Response;
+use App\Modules\Validator\Validator;
 
 class AuthService
 {

@@ -8,6 +8,7 @@ use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Core\Franchise;
 use App\Modules\Router\Response;
+use App\Modules\Validator\Validator;
 
 class UserService
 {
@@ -47,10 +48,11 @@ class UserService
     {
         Auth::requireRole('admin');
 
-        $errors = $this->validateInput($input);
-        if (!empty($errors)) {
-            Response::validationError($errors);
-        }
+        Validator::make($input)
+            ->required(['first_name', 'last_name', 'email', 'password'])
+            ->email('email')
+            ->minLength('password', 8)
+            ->validate();
 
         if ($this->user->emailExists($input['email'])) {
             Response::error('Email already registered', 409);
@@ -127,12 +129,9 @@ class UserService
             Response::notFound('User not found');
         }
 
-        $errors = [];
-        if (($input['first_name'] ?? '') === '') $errors['first_name'] = 'Required';
-        if (($input['last_name']  ?? '') === '') $errors['last_name']  = 'Required';
-        if (!empty($errors)) {
-            Response::validationError($errors);
-        }
+        Validator::make($input)
+            ->required(['first_name', 'last_name'])
+            ->validate();
 
         $set = [
             'first_name' => $input['first_name'],
@@ -164,13 +163,4 @@ class UserService
         $this->user->softDelete($id);
     }
 
-    private function validateInput(array $input): array
-    {
-        $errors = [];
-        if (($input['first_name'] ?? '') === '') $errors['first_name'] = 'Required';
-        if (($input['last_name']  ?? '') === '') $errors['last_name']  = 'Required';
-        if (!filter_var($input['email'] ?? '', FILTER_VALIDATE_EMAIL)) $errors['email'] = 'Invalid email';
-        if (strlen((string) ($input['password'] ?? '')) < 8) $errors['password'] = 'Minimum 8 characters';
-        return $errors;
-    }
 }

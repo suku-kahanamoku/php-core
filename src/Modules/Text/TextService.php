@@ -8,6 +8,7 @@ use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Core\Franchise;
 use App\Modules\Router\Response;
+use App\Modules\Validator\Validator;
 
 class TextService
 {
@@ -45,12 +46,9 @@ class TextService
     {
         Auth::requireRole('admin');
 
-        $errors = [];
-        if ($key   === '') $errors['key']   = 'Required';
-        if ($title === '') $errors['title'] = 'Required';
-        if (!empty($errors)) {
-            Response::validationError($errors);
-        }
+        Validator::make(['key' => $key, 'title' => $title])
+            ->required(['key', 'title'])
+            ->validate();
 
         if ($this->text->keyExists($key, $language)) {
             Response::error("Key '$key' already exists for language '$language'", 409);
@@ -97,12 +95,9 @@ class TextService
             Response::notFound('Text not found');
         }
 
-        $errors = [];
-        if ($key   === '') $errors['key']   = 'Required';
-        if ($title === '') $errors['title'] = 'Required';
-        if (!empty($errors)) {
-            Response::validationError($errors);
-        }
+        Validator::make(['key' => $key, 'title' => $title])
+            ->required(['key', 'title'])
+            ->validate();
 
         $this->text->update($id, [
             'key'       => $key,

@@ -8,6 +8,7 @@ use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Core\Franchise;
 use App\Modules\Router\Response;
+use App\Modules\Validator\Validator;
 
 class ProductService
 {
@@ -40,17 +41,10 @@ class ProductService
     {
         Auth::requireRole('admin');
 
-        $errors = [];
+        Validator::make($input)->required('name')->numeric('price', 0)->validate();
+
         $name  = trim((string) ($input['name'] ?? ''));
         $price = $input['price'] ?? null;
-
-        if ($name === '') $errors['name'] = 'Required';
-        if ($price === null || !is_numeric($price) || (float) $price < 0) $errors['price'] = 'Valid price required';
-
-        if (!empty($errors)) {
-            Response::validationError($errors);
-        }
-
         $sku = !empty($input['sku']) ? trim((string) $input['sku']) : $this->product->generateSku();
 
         return $this->product->create([
@@ -103,17 +97,11 @@ class ProductService
             Response::notFound('Product not found');
         }
 
-        $errors = [];
+        Validator::make($input)->required(['name', 'sku'])->numeric('price', 0)->validate();
+
         $name  = trim((string) ($input['name']  ?? ''));
         $sku   = trim((string) ($input['sku']   ?? ''));
         $price = $input['price'] ?? null;
-
-        if ($name  === '') $errors['name']  = 'Required';
-        if ($sku   === '') $errors['sku']   = 'Required';
-        if ($price === null || !is_numeric($price) || (float) $price < 0) $errors['price'] = 'Required, must be >= 0';
-        if (!empty($errors)) {
-            Response::validationError($errors);
-        }
 
         $this->product->update($id, [
             'name'           => $name,

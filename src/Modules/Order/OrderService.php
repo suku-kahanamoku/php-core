@@ -8,6 +8,7 @@ use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Core\Franchise;
 use App\Modules\Router\Response;
+use App\Modules\Validator\Validator;
 
 class OrderService
 {
@@ -124,9 +125,7 @@ class OrderService
     {
         Auth::requireRole('admin');
 
-        if ($status === '') {
-            Response::validationError(['status' => 'Required']);
-        }
+        Validator::make(['status' => $status])->required('status')->validate();
 
         $order = $this->order->findById($id);
         if (!$order) {

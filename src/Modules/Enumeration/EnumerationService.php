@@ -8,6 +8,7 @@ use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Core\Franchise;
 use App\Modules\Router\Response;
+use App\Modules\Validator\Validator;
 
 class EnumerationService
 {
@@ -51,14 +52,9 @@ class EnumerationService
     {
         Auth::requireRole('admin');
 
-        $errors = [];
-        if ($type  === '') $errors['type']  = 'Required';
-        if ($code  === '') $errors['code']  = 'Required';
-        if ($label === '') $errors['label'] = 'Required';
-
-        if (!empty($errors)) {
-            Response::validationError($errors);
-        }
+        Validator::make(['type' => $type, 'code' => $code, 'label' => $label])
+            ->required(['type', 'code', 'label'])
+            ->validate();
 
         if ($this->enum->codeExists($type, $code)) {
             Response::error("Code '$code' already exists for type '$type'", 409);
@@ -107,13 +103,9 @@ class EnumerationService
             Response::notFound('Enumeration not found');
         }
 
-        $errors = [];
-        if ($type  === '') $errors['type']  = 'Required';
-        if ($code  === '') $errors['code']  = 'Required';
-        if ($label === '') $errors['label'] = 'Required';
-        if (!empty($errors)) {
-            Response::validationError($errors);
-        }
+        Validator::make(['type' => $type, 'code' => $code, 'label' => $label])
+            ->required(['type', 'code', 'label'])
+            ->validate();
 
         $this->enum->update($id, [
             'type'       => $type,

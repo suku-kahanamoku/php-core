@@ -8,6 +8,7 @@ use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Core\Franchise;
 use App\Modules\Router\Response;
+use App\Modules\Validator\Validator;
 
 class AddressService
 {
@@ -53,14 +54,7 @@ class AddressService
             ? $overrideUserId
             : Auth::id();
 
-        $errors = [];
-        if (($input['street']  ?? '') === '') $errors['street']  = 'Required';
-        if (($input['city']    ?? '') === '') $errors['city']    = 'Required';
-        if (($input['zip']     ?? '') === '') $errors['zip']     = 'Required';
-
-        if (!empty($errors)) {
-            Response::validationError($errors);
-        }
+        Validator::make($input)->required(['street', 'city', 'zip'])->validate();
 
         $isDefault = (int) ($input['is_default'] ?? 0);
 
@@ -129,14 +123,7 @@ class AddressService
             Response::forbidden();
         }
 
-        $errors = [];
-        if (($input['street']  ?? '') === '') $errors['street']  = 'Required';
-        if (($input['city']    ?? '') === '') $errors['city']    = 'Required';
-        if (($input['zip']     ?? '') === '') $errors['zip']     = 'Required';
-        if (($input['country'] ?? '') === '') $errors['country'] = 'Required';
-        if (!empty($errors)) {
-            Response::validationError($errors);
-        }
+        Validator::make($input)->required(['street', 'city', 'zip', 'country'])->validate();
 
         $isDefault = (int) ($input['is_default'] ?? 0);
         if ($isDefault) {
