@@ -18,8 +18,7 @@ class Response
         mixed $data = null,
         string $message = 'OK',
         int $status = 200,
-    ): never
-    {
+    ): never {
         self::json([
             'success' => true,
             'message' => $message,
@@ -36,8 +35,7 @@ class Response
         string $message,
         int $status = 400,
         mixed $errors = null,
-    ): never
-    {
+    ): never {
         self::json([
             'success' => false,
             'message' => $message,
@@ -63,8 +61,7 @@ class Response
     public static function validationError(
         array $errors,
         string $message = 'Validation failed',
-    ): never
-    {
+    ): never {
         self::error($message, 422, $errors);
     }
 

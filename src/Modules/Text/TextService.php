@@ -25,8 +25,7 @@ class TextService
         ?string $search,
         string $sortBy,
         string $sortDir,
-    ): array
-    {
+    ): array {
         return $this->text->findAll($language, $isActive, $search, $sortBy, $sortDir);
     }
 
@@ -53,8 +52,7 @@ class TextService
         string $title,
         string $language,
         array $input,
-    ): int
-    {
+    ): int {
         Auth::requireRole('admin');
 
         Validator::make(['key' => $key, 'title' => $title])

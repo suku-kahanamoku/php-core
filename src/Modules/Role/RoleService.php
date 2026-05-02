@@ -40,8 +40,7 @@ class RoleService
         string $label,
         int $sortOrder,
         int $isActive,
-    ): int
-    {
+    ): int {
         Auth::requireRole('admin');
 
         Validator::make(['name' => $name, 'label' => $label])
@@ -110,8 +109,7 @@ class RoleService
         string $label,
         int $sortOrder,
         int $isActive,
-    ): void
-    {
+    ): void {
         Auth::requireRole('admin');
 
         if (!$this->role->findById($id)) {

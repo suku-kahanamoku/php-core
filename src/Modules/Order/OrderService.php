@@ -25,8 +25,7 @@ class OrderService
         ?string $status,
         string $sortBy,
         string $sortDir,
-    ): array
-    {
+    ): array {
         Auth::require();
 
         $userId = Auth::hasRole('admin') ? null : Auth::id();
@@ -41,8 +40,7 @@ class OrderService
         ?string $status,
         string $sortBy,
         string $sortDir,
-    ): array
-    {
+    ): array {
         Auth::requireRole('admin');
 
         return $this->order->findAll($page, $limit, $userId, $status, $sortBy, $sortDir);
@@ -125,7 +123,7 @@ class OrderService
                 'shipping_address_id' => isset($input['shipping_address_id'])
                     ? (int) $input['shipping_address_id']
                     : null,
-                'billing_address_id'  => isset($input['billing_address_id'])
+                'billing_address_id' => isset($input['billing_address_id'])
                     ? (int) $input['billing_address_id']
                     : null,
             ]);

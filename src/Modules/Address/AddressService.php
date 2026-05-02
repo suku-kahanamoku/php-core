@@ -24,8 +24,7 @@ class AddressService
         ?string $type,
         string $sortBy,
         string $sortDir,
-    ): array
-    {
+    ): array {
         Auth::require();
 
         if (!Auth::hasRole('admin') && Auth::id() !== $userId) {

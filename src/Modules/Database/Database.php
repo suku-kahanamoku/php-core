@@ -82,8 +82,7 @@ class Database
         array $data,
         string $where,
         array $whereParams = [],
-    ): int
-    {
+    ): int {
         $set  = implode(', ', array_map(fn ($col) => "`{$col}` = ?", array_keys($data)));
         $sql  = "UPDATE `{$table}` SET {$set} WHERE {$where}";
         $stmt = $this->query($sql, [...array_values($data), ...$whereParams]);

@@ -29,7 +29,13 @@ class ProductService
         string $sortDir,
     ): array {
         return $this->product->findAll(
-            $page, $limit, $search, $categoryId, $status, $sortBy, $sortDir,
+            $page,
+            $limit,
+            $search,
+            $categoryId,
+            $status,
+            $sortBy,
+            $sortDir,
         );
     }
 
@@ -51,7 +57,7 @@ class ProductService
 
         $name  = trim((string) ($input['name'] ?? ''));
         $price = $input['price'] ?? null;
-        $sku = !empty($input['sku'])
+        $sku   = !empty($input['sku'])
             ? trim((string) $input['sku'])
             : $this->product->generateSku();
 
@@ -65,7 +71,7 @@ class ProductService
             'category_id'    => isset($input['category_id'])
                 ? (int) $input['category_id']
                 : null,
-            'status'         => (string) ($input['status'] ?? 'active'),
+            'status' => (string) ($input['status'] ?? 'active'),
         ]);
     }
 
@@ -121,18 +127,18 @@ class ProductService
         $price = $input['price'] ?? null;
 
         $this->product->update($id, [
-            'name'           => $name,
-            'sku'            => $sku,
-            'price'          => (float) $price,
-            'description'    => (string) ($input['description'] ?? ''),
-            'vat_rate'       => isset($input['vat_rate'])
+            'name'        => $name,
+            'sku'         => $sku,
+            'price'       => (float) $price,
+            'description' => (string) ($input['description'] ?? ''),
+            'vat_rate'    => isset($input['vat_rate'])
                 ? (float) $input['vat_rate']
                 : 21.0,
             'stock_quantity' => isset($input['stock_quantity'])
                 ? (int) $input['stock_quantity']
                 : 0,
-            'status'         => (string) ($input['status'] ?? 'active'),
-            'category_id'    => !empty($input['category_id'])
+            'status'      => (string) ($input['status'] ?? 'active'),
+            'category_id' => !empty($input['category_id'])
                 ? (int) $input['category_id']
                 : null,
         ]);

@@ -30,7 +30,13 @@ class UserService
     ): array {
         Auth::requireRole('admin');
         return $this->user->findAll(
-            $page, $limit, $search, $role, $status, $sortBy, $sortDir,
+            $page,
+            $limit,
+            $search,
+            $role,
+            $status,
+            $sortBy,
+            $sortDir,
         );
     }
 
@@ -84,8 +90,8 @@ class UserService
                 PASSWORD_BCRYPT,
                 ['cost' => 12],
             ),
-            'role_id'    => $roleId,
-            'status'     => $input['status'] ?? 'active',
+            'role_id' => $roleId,
+            'status'  => $input['status'] ?? 'active',
         ]);
     }
 

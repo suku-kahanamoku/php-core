@@ -24,14 +24,18 @@ class InvoiceService
         ?string $status,
         string $sortBy,
         string $sortDir,
-    ): array
-    {
+    ): array {
         Auth::require();
 
         $userId = Auth::hasRole('admin') ? null : Auth::id();
 
         return $this->invoice->findAll(
-            $page, $limit, $userId, $status, $sortBy, $sortDir,
+            $page,
+            $limit,
+            $userId,
+            $status,
+            $sortBy,
+            $sortDir,
         );
     }
 

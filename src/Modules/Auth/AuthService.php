@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Auth;
 
-use App\Modules\Auth\Auth;
-use App\Modules\Database\Database;
 use App\Core\Franchise;
+use App\Modules\Database\Database;
 use App\Modules\Router\Response;
 use App\Modules\Validator\Validator;
 
@@ -32,7 +31,7 @@ class AuthService
              JOIN role r ON r.id = u.role_id
              WHERE u.email = ? AND u.franchise_code = ?
              LIMIT 1',
-            [$email, $this->code]
+            [$email, $this->code],
         );
 
         if (!$user || !password_verify($password, $user['password'])) {
@@ -57,7 +56,7 @@ class AuthService
             'user',
             ['last_login_at' => date('Y-m-d H:i:s')],
             'id = ?',
-            [$user['id']]
+            [$user['id']],
         );
 
         return [
@@ -102,7 +101,7 @@ class AuthService
 
         $exists = $this->db->fetchOne(
             'SELECT id FROM user WHERE franchise_code = ? AND email = ?',
-            [$this->code, $email]
+            [$this->code, $email],
         );
         if ($exists) {
             Response::error('Email already registered', 409);
@@ -110,7 +109,7 @@ class AuthService
 
         $roleRow = $this->db->fetchOne(
             'SELECT id FROM role WHERE franchise_code = ? AND name = ?',
-            [$this->code, 'user']
+            [$this->code, 'user'],
         );
         if (!$roleRow) {
             Response::error('Default role not configured', 500);
@@ -143,7 +142,7 @@ class AuthService
         $userId = Auth::id();
         $user   = $this->db->fetchOne(
             'SELECT password FROM user WHERE id = ? AND franchise_code = ?',
-            [$userId, $this->code]
+            [$userId, $this->code],
         );
 
         if (!$user || !password_verify($currentPassword, $user['password'])) {

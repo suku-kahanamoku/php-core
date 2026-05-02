@@ -24,8 +24,7 @@ class EnumerationService
         ?bool $isActive,
         string $sortBy,
         string $sortDir,
-    ): array
-    {
+    ): array {
         $items = $this->enum->findAll($type, $isActive, $sortBy, $sortDir);
 
         if ($type === null) {
@@ -109,8 +108,7 @@ class EnumerationService
         string $code,
         string $label,
         array $input,
-    ): void
-    {
+    ): void {
         Auth::requireRole('admin');
 
         if (!$this->enum->findById($id)) {
