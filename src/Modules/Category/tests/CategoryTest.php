@@ -34,8 +34,7 @@ $token = $r['data']['data']['token'] ?? null;
 // ── Category model – create() ────────────────────────────────────────────────
 
 section('Category model – create()');
-$catSlug = 'model-cat-' . time();
-$r       = request('POST', "{$base}/categories", ['name' => 'Model Category', 'slug' => $catSlug]);
+$r       = request('POST', "{$base}/categories", ['name' => 'Model Category']);
 assert_test('create category 201', $r['status'] === 201, dump_on_fail($r));
 $catId = $r['data']['data']['id'] ?? null;
 

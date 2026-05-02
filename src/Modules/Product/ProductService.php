@@ -17,7 +17,7 @@ class ProductService
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->product = new ProductRepository($db, $franchiseCode);
-        $this->auth = $auth;
+        $this->auth    = $auth;
     }
 
     public function list(
@@ -153,7 +153,7 @@ class ProductService
             Response::notFound('Product not found');
         }
 
-        $this->product->softDelete($id);
+        $this->product->delete($id);
     }
 
     public function adjustStock(int $id, int $delta): int

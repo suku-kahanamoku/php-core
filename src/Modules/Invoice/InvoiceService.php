@@ -16,7 +16,7 @@ class InvoiceService
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->invoice = new InvoiceRepository($db, $franchiseCode);
-        $this->auth = $auth;
+        $this->auth    = $auth;
     }
 
     public function list(
@@ -139,6 +139,6 @@ class InvoiceService
             Response::notFound('Invoice not found');
         }
 
-        $this->invoice->softDelete($id);
+        $this->invoice->delete($id);
     }
 }

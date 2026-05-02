@@ -41,10 +41,9 @@ class CategoryApi
         $id = $this->service->create(
             trim((string) $request->get('name', '')),
             [
-                'slug'        => $request->get('slug'),
                 'description' => $request->get('description', ''),
                 'parent_id'   => $request->get('parent_id'),
-                'position'  => $request->get('position', 0),
+                'position'    => $request->get('position', 0),
             ],
         );
         Response::created(['id' => $id], 'Category created');
@@ -55,10 +54,9 @@ class CategoryApi
     {
         $this->service->update((int) $params['id'], [
             'name'        => $request->get('name'),
-            'slug'        => $request->get('slug'),
             'description' => $request->get('description'),
             'parent_id'   => $request->get('parent_id'),
-            'position'  => $request->get('position'),
+            'position'    => $request->get('position'),
         ]);
         Response::success(null, 'Category updated');
     }
@@ -70,10 +68,9 @@ class CategoryApi
             (int) $params['id'],
             trim((string) $request->get('name', '')),
             [
-                'slug'        => $request->get('slug'),
                 'description' => $request->get('description'),
                 'parent_id'   => $request->get('parent_id'),
-                'position'  => $request->get('position', 0),
+                'position'    => $request->get('position', 0),
             ],
         );
         Response::success(null, 'Category replaced');

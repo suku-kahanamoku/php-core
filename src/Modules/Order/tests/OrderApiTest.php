@@ -28,8 +28,7 @@ $r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'pas
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
-$ordCatSlug = 'ord-cat-' . time();
-$r          = request('POST', "{$base}/categories", ['name' => 'Orders Cat', 'slug' => $ordCatSlug]);
+$r          = request('POST', "{$base}/categories", ['name' => 'Orders Cat']);
 assert_test('create category 201', $r['status'] === 201, dump_on_fail($r));
 $ordCatId = $r['data']['data']['id'] ?? null;
 

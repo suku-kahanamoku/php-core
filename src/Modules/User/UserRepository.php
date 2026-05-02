@@ -26,11 +26,10 @@ class UserRepository
         int $limit = 20,
         ?string $search = null,
         ?string $role = null,
-        ?string $status = null,
         string $sortBy = 'created_at',
         string $sortDir = 'DESC',
     ): array {
-        $allowed = ['created_at', 'last_name', 'email', 'status'];
+        $allowed = ['created_at', 'last_name', 'email'];
         $sortBy  = in_array($sortBy, $allowed, true) ? $sortBy : 'created_at';
         $sortDir = strtoupper($sortDir) === 'ASC' ? 'ASC' : 'DESC';
 
@@ -49,10 +48,6 @@ class UserRepository
             $where[]  = 'r.name = ?';
             $params[] = $role;
         }
-        if ($status) {
-            $where[]  = 'u.status = ?';
-            $params[] = $status;
-        }
 
         $whereStr = implode(' AND ', $where);
 
@@ -66,7 +61,7 @@ class UserRepository
         $items = $this->db->fetchAll(
             "SELECT u.id, u.first_name, u.last_name, u.email,
                     r.name AS role, r.id AS role_id,
-                    u.status, u.phone, u.created_at, u.last_login_at
+                    u.phone, u.created_at, u.last_login_at
              FROM user u
              JOIN role r ON r.id = u.role_id
              WHERE {$whereStr}
@@ -90,7 +85,7 @@ class UserRepository
         $user = $this->db->fetchOne(
             'SELECT u.id, u.first_name, u.last_name, u.email,
                     r.name AS role, r.id AS role_id,
-                    u.status, u.phone, u.address_id,
+                    u.phone,
                     u.created_at, u.updated_at, u.last_login_at
              FROM user u
              JOIN role r ON r.id = u.role_id
@@ -148,12 +143,8 @@ class UserRepository
         );
     }
 
-    /** Soft-delete: set status=deleted + deleted_at. */
-    public function softDelete(int $id): void
+    public function delete(int $id): void
     {
-        $this->db->update('user', [
-            'status'     => 'deleted',
-            'deleted_at' => date('Y-m-d H:i:s'),
-        ], 'id = ? AND franchise_code = ?', [$id, $this->code]);
+        $this->db->delete('user', 'id = ? AND franchise_code = ?', [$id, $this->code]);
     }
 }

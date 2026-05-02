@@ -28,7 +28,6 @@ class UserApi
             min(100, max(1, (int) $request->get('limit', 20))),
             $request->get('search'),
             $request->get('role'),
-            $request->get('status'),
             (string) $request->get('sort_by', 'created_at'),
             (string) $request->get('sort_dir', 'DESC'),
         ));
@@ -50,7 +49,6 @@ class UserApi
             'password'   => (string) $request->get('password', ''),
             'phone'      => $request->get('phone'),
             'role'       => $request->get('role'),
-            'status'     => $request->get('status'),
         ]);
         Response::created(['id' => $id], 'User created');
     }
@@ -63,7 +61,6 @@ class UserApi
             'last_name'  => $request->get('last_name'),
             'phone'      => $request->get('phone'),
             'role'       => $request->get('role'),
-            'status'     => $request->get('status'),
         ]);
         Response::success(null, 'User updated');
     }
@@ -76,7 +73,6 @@ class UserApi
             'last_name'  => trim((string) $request->get('last_name', '')),
             'phone'      => $request->get('phone'),
             'role'       => $request->get('role'),
-            'status'     => $request->get('status'),
         ]);
         Response::success(null, 'User replaced');
     }

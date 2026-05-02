@@ -20,9 +20,9 @@ class RoleService
         $this->auth = $auth;
     }
 
-    public function list(?bool $isActive, string $sortBy, string $sortDir): array
+    public function list(string $sortBy, string $sortDir): array
     {
-        return $this->role->findAll($isActive, $sortBy, $sortDir);
+        return $this->role->findAll($sortBy, $sortDir);
     }
 
     public function get(int $id): array
@@ -40,7 +40,6 @@ class RoleService
         string $name,
         string $label,
         int $sortOrder,
-        int $isActive,
     ): int {
         $this->auth->requireRole('admin');
 
@@ -58,10 +57,9 @@ class RoleService
         }
 
         return $this->role->create([
-            'name'       => $name,
-            'label'      => $label,
+            'name'     => $name,
+            'label'    => $label,
             'position' => $sortOrder,
-            'is_active'  => $isActive,
         ]);
     }
 
@@ -95,9 +93,6 @@ class RoleService
         if (array_key_exists('position', $fields)) {
             $set['position'] = (int) $fields['position'];
         }
-        if (array_key_exists('is_active', $fields)) {
-            $set['is_active'] = (int) $fields['is_active'];
-        }
 
         if (!empty($set)) {
             $this->role->update($id, $set);
@@ -109,7 +104,6 @@ class RoleService
         string $name,
         string $label,
         int $sortOrder,
-        int $isActive,
     ): void {
         $this->auth->requireRole('admin');
 
@@ -131,10 +125,9 @@ class RoleService
         }
 
         $this->role->update($id, [
-            'name'       => $name,
-            'label'      => $label,
+            'name'     => $name,
+            'label'    => $label,
             'position' => $sortOrder,
-            'is_active'  => $isActive,
         ]);
     }
 

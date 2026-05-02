@@ -65,14 +65,12 @@ if ($catRegId) {
 // ── Create ────────────────────────────────────────────────────────────────────
 
 section('Categories – create');
-$catSlug      = 'test-cat-' . time();
-$emptyCatSlug = 'empty-cat-' . time();
 
-$r = request('POST', "{$base}/categories", ['name' => 'Test Category', 'slug' => $catSlug]);
+$r = request('POST', "{$base}/categories", ['name' => 'Test Category']);
 assert_test('POST /categories 201', $r['status'] === 201, dump_on_fail($r));
 $catId = $r['data']['data']['id'] ?? null;
 
-$r = request('POST', "{$base}/categories", ['name' => 'Empty Category', 'slug' => $emptyCatSlug]);
+$r = request('POST', "{$base}/categories", ['name' => 'Empty Category']);
 assert_test('POST /categories 201 (empty)', $r['status'] === 201, dump_on_fail($r));
 $emptyCatId = $r['data']['data']['id'] ?? null;
 

@@ -35,7 +35,7 @@ class InvoiceRepository
         $limit  = min(100, max(1, $limit));
         $offset = ($page - 1) * $limit;
 
-        $where  = ['i.franchise_code = ?', 'i.deleted_at IS NULL'];
+        $where  = ['i.franchise_code = ?'];
         $params = [$this->code];
 
         if ($userId !== null) {
@@ -85,7 +85,7 @@ class InvoiceRepository
              FROM invoice i
              LEFT JOIN user u ON u.id = i.user_id
              LEFT JOIN address ba ON ba.id = i.billing_address_id
-             WHERE i.id = ? AND i.franchise_code = ? AND i.deleted_at IS NULL',
+             WHERE i.id = ? AND i.franchise_code = ?',
             [$id, $this->code],
         );
 
@@ -108,7 +108,7 @@ class InvoiceRepository
     {
         $row = $this->db->fetchOne(
             'SELECT id FROM invoice
-             WHERE franchise_code = ? AND order_id = ? AND deleted_at IS NULL',
+             WHERE franchise_code = ? AND order_id = ?',
             [$this->code, $orderId],
         );
 
@@ -119,7 +119,7 @@ class InvoiceRepository
     {
         $row = $this->db->fetchOne(
             'SELECT * FROM `order`
-             WHERE id = ? AND franchise_code = ? AND deleted_at IS NULL',
+             WHERE id = ? AND franchise_code = ?',
             [$orderId, $this->code],
         );
 
@@ -164,14 +164,9 @@ class InvoiceRepository
         );
     }
 
-    public function softDelete(int $id): void
+    public function delete(int $id): void
     {
-        $this->db->update(
-            'invoice',
-            ['deleted_at' => date('Y-m-d H:i:s')],
-            'id = ? AND franchise_code = ?',
-            [$id, $this->code],
-        );
+        $this->db->delete('invoice', 'id = ? AND franchise_code = ?', [$id, $this->code]);
     }
 
     public function generateNumber(): string

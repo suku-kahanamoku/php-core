@@ -24,7 +24,7 @@ class UserTokenRepository
              JOIN `user` u ON u.id = t.user_id
              JOIN `role` r ON r.id = u.role_id
              WHERE t.token = ? AND t.expires_at > NOW()
-               AND u.status = "active" AND u.franchise_code = ?
+               AND u.franchise_code = ?
              LIMIT 1',
             [$token, $franchiseCode],
         );

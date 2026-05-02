@@ -27,8 +27,7 @@ $r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'pas
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
-$modelCatSlug = 'model-inv-cat-' . time();
-$r            = request('POST', "{$base}/categories", ['name' => 'Model Inv Cat', 'slug' => $modelCatSlug]);
+$r            = request('POST', "{$base}/categories", ['name' => 'Model Inv Cat']);
 $modelCatId   = $r['data']['data']['id'] ?? null;
 
 $modelSku = 'MODEL-INV-PROD-' . time();

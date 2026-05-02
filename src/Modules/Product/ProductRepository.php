@@ -36,7 +36,7 @@ class ProductRepository
         $limit  = min(100, max(1, $limit));
         $offset = ($page - 1) * $limit;
 
-        $where  = ['p.franchise_code = ?', 'p.deleted_at IS NULL'];
+        $where  = ['p.franchise_code = ?'];
         $params = [$this->code];
 
         if ($search) {
@@ -89,7 +89,7 @@ class ProductRepository
             'SELECT p.*, c.name AS category_name
              FROM product p
              LEFT JOIN category c ON c.id = p.category_id
-             WHERE p.id = ? AND p.franchise_code = ? AND p.deleted_at IS NULL',
+             WHERE p.id = ? AND p.franchise_code = ?',
             [$id, $this->code],
         );
 
@@ -114,21 +114,16 @@ class ProductRepository
         );
     }
 
-    public function softDelete(int $id): void
+    public function delete(int $id): void
     {
-        $this->db->update(
-            'product',
-            ['deleted_at' => date('Y-m-d H:i:s')],
-            'id = ? AND franchise_code = ?',
-            [$id, $this->code],
-        );
+        $this->db->delete('product', 'id = ? AND franchise_code = ?', [$id, $this->code]);
     }
 
     public function adjustStock(int $id, int $delta): int
     {
         $product = $this->db->fetchOne(
             'SELECT stock_quantity FROM product
-             WHERE id = ? AND franchise_code = ? AND deleted_at IS NULL',
+             WHERE id = ? AND franchise_code = ?',
             [$id, $this->code],
         );
 

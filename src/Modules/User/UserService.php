@@ -25,7 +25,6 @@ class UserService
         int $limit,
         ?string $search,
         ?string $role,
-        ?string $status,
         string $sortBy,
         string $sortDir,
     ): array {
@@ -35,7 +34,6 @@ class UserService
             $limit,
             $search,
             $role,
-            $status,
             $sortBy,
             $sortDir,
         );
@@ -92,7 +90,6 @@ class UserService
                 ['cost' => 12],
             ),
             'role_id' => $roleId,
-            'status'  => $input['status'] ?? 'active',
         ]);
     }
 
@@ -124,9 +121,6 @@ class UserService
                     Response::validationError(['role' => 'Unknown role']);
                 }
                 $set['role_id'] = $roleId;
-            }
-            if (array_key_exists('status', $input) && $input['status'] !== null) {
-                $set['status'] = (string) $input['status'];
             }
         }
 
@@ -164,7 +158,6 @@ class UserService
                 Response::validationError(['role' => 'Unknown role']);
             }
             $set['role_id'] = $roleId;
-            $set['status']  = $input['status'] ?? 'active';
         }
 
         $this->user->update($id, $set);
@@ -178,7 +171,7 @@ class UserService
             Response::notFound('User not found');
         }
 
-        $this->user->softDelete($id);
+        $this->user->delete($id);
     }
 
 }

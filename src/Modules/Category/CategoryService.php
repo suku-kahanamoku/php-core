@@ -16,7 +16,7 @@ class CategoryService
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->category = new CategoryRepository($db, $franchiseCode);
-        $this->auth = $auth;
+        $this->auth     = $auth;
     }
 
     public function list(string $sortBy, string $sortDir, bool $flat = false): array
@@ -44,15 +44,8 @@ class CategoryService
             Response::validationError(['name' => 'Required']);
         }
 
-        $slug = !empty($input['slug']) ? $input['slug'] : $this->toSlug($name);
-
-        if ($this->category->slugExists($slug)) {
-            Response::error("Slug '{$slug}' already exists", 409);
-        }
-
         return $this->category->create([
             'name'        => $name,
-            'slug'        => $slug,
             'description' => $input['description'] ?? '',
             'parent_id'   => isset($input['parent_id']) && $input['parent_id'] !== ''
                 ? (int) $input['parent_id']
@@ -84,16 +77,6 @@ class CategoryService
             $set['parent_id'] = $isEmptyParent ? null : (int) $input['parent_id'];
         }
 
-        if (isset($input['slug'])) {
-            $newSlug = trim((string) $input['slug']);
-            if ($this->category->slugExists($newSlug, $id)) {
-                Response::error("Slug '{$newSlug}' already exists", 409);
-            }
-            $set['slug'] = $newSlug;
-        } elseif (isset($set['name'])) {
-            // Auto-update slug only if name changed and no explicit slug given
-        }
-
         if (!empty($set)) {
             $this->category->update($id, $set);
         }
@@ -111,23 +94,14 @@ class CategoryService
             Response::validationError(['name' => 'Required']);
         }
 
-        $slug = !empty($input['slug'])
-            ? trim((string) $input['slug'])
-            : $this->toSlug($name);
-
-        if ($this->category->slugExists($slug, $id)) {
-            Response::error("Slug '{$slug}' already exists", 409);
-        }
-
         $parentId = ($input['parent_id'] ?? null);
         $parentId = ($parentId !== null && $parentId !== '') ? (int) $parentId : null;
 
         $this->category->update($id, [
             'name'        => $name,
-            'slug'        => $slug,
             'description' => (string) ($input['description'] ?? ''),
             'parent_id'   => $parentId,
-            'position'  => (int) ($input['position'] ?? 0),
+            'position'    => (int) ($input['position'] ?? 0),
         ]);
     }
 
@@ -159,10 +133,5 @@ class CategoryService
             }
         }
         return $branch;
-    }
-
-    private function toSlug(string $name): string
-    {
-        return strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $name));
     }
 }

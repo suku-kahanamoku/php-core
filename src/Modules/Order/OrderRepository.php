@@ -35,7 +35,7 @@ class OrderRepository
         $limit  = min(100, max(1, $limit));
         $offset = ($page - 1) * $limit;
 
-        $where  = ['o.franchise_code = ?', 'o.deleted_at IS NULL'];
+        $where  = ['o.franchise_code = ?'];
         $params = [$this->code];
 
         if ($userId !== null) {
@@ -85,7 +85,7 @@ class OrderRepository
              FROM `order` o
              LEFT JOIN user u ON u.id = o.user_id
              LEFT JOIN address a ON a.id = o.shipping_address_id
-             WHERE o.id = ? AND o.franchise_code = ? AND o.deleted_at IS NULL',
+             WHERE o.id = ? AND o.franchise_code = ?',
             [$id, $this->code],
         );
 
@@ -108,7 +108,7 @@ class OrderRepository
     {
         return $this->db->fetchOne(
             'SELECT id, name, price, stock_quantity FROM product
-             WHERE id = ? AND franchise_code = ? AND status = ? AND deleted_at IS NULL',
+             WHERE id = ? AND franchise_code = ? AND status = ?',
             [$productId, $this->code, 'active'],
         ) ?: null;
     }
@@ -149,14 +149,9 @@ class OrderRepository
         ], 'id = ? AND franchise_code = ?', [$id, $this->code]);
     }
 
-    public function softDelete(int $id): void
+    public function delete(int $id): void
     {
-        $this->db->update(
-            'order',
-            ['deleted_at' => date('Y-m-d H:i:s')],
-            'id = ? AND franchise_code = ?',
-            [$id, $this->code],
-        );
+        $this->db->delete('order', 'id = ? AND franchise_code = ?', [$id, $this->code]);
     }
 
     public function generateNumber(): string

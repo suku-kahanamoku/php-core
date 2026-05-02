@@ -27,7 +27,7 @@ class CategoryRepository
         $sortDir = strtoupper($sortDir) === 'DESC' ? 'DESC' : 'ASC';
 
         return $this->db->fetchAll(
-            "SELECT id, name, slug, parent_id,
+            "SELECT id, name, parent_id,
                     description, position, created_at, updated_at
              FROM category WHERE franchise_code = ?
              ORDER BY {$sortBy} {$sortDir}",
@@ -45,29 +45,11 @@ class CategoryRepository
         return $row ?: null;
     }
 
-    public function slugExists(string $slug, ?int $excludeId = null): bool
-    {
-        if ($excludeId !== null) {
-            $row = $this->db->fetchOne(
-                'SELECT id FROM category
-                 WHERE franchise_code = ? AND slug = ? AND id != ?',
-                [$this->code, $slug, $excludeId],
-            );
-        } else {
-            $row = $this->db->fetchOne(
-                'SELECT id FROM category WHERE franchise_code = ? AND slug = ?',
-                [$this->code, $slug],
-            );
-        }
-
-        return (bool) $row;
-    }
-
     public function hasProducts(int $id): bool
     {
         $row = $this->db->fetchOne(
             'SELECT id FROM product
-             WHERE franchise_code = ? AND category_id = ? AND deleted_at IS NULL LIMIT 1',
+             WHERE franchise_code = ? AND category_id = ? LIMIT 1',
             [$this->code, $id],
         );
 
@@ -78,7 +60,7 @@ class CategoryRepository
     {
         return $this->db->fetchAll(
             'SELECT id, sku, name, price, status FROM product
-             WHERE franchise_code = ? AND category_id = ? AND deleted_at IS NULL',
+             WHERE franchise_code = ? AND category_id = ?',
             [$this->code, $id],
         );
     }

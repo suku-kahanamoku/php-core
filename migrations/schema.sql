@@ -30,7 +30,6 @@ CREATE TABLE IF NOT EXISTS `role` (
     `name`           VARCHAR(64)  NOT NULL COMMENT 'e.g. admin, user, manager',
     `label`          VARCHAR(255) NOT NULL,
     `position`     SMALLINT     NOT NULL DEFAULT 0,
-    `is_active`      TINYINT(1)   NOT NULL DEFAULT 1,
     `created_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`     DATETIME              DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
@@ -48,16 +47,12 @@ CREATE TABLE IF NOT EXISTS `user` (
     `phone`         VARCHAR(30)           DEFAULT NULL,
     `password`      VARCHAR(255) NOT NULL,
     `role_id`       INT UNSIGNED NOT NULL COMMENT 'FK → role.id',
-    `status`        VARCHAR(32)  NOT NULL DEFAULT 'active' COMMENT 'active | inactive | deleted',
-    `address_id`    INT UNSIGNED          DEFAULT NULL COMMENT 'default billing address',
     `last_login_at` DATETIME              DEFAULT NULL,
     `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`    DATETIME              DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at`    DATETIME              DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_user_franchise_email` (`franchise_code`, `email`),
     KEY `idx_user_franchise` (`franchise_code`),
-    KEY `idx_user_status`    (`status`),
     KEY `idx_user_role_id`   (`role_id`),
     CONSTRAINT `fk_user_role` FOREIGN KEY (`role_id`) REFERENCES `role` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -84,11 +79,6 @@ CREATE TABLE IF NOT EXISTS `address` (
     CONSTRAINT `fk_addr_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Add FK for user.address_id after address table exists
-ALTER TABLE `user`
-    ADD CONSTRAINT `fk_user_address`
-    FOREIGN KEY (`address_id`) REFERENCES `address` (`id`) ON DELETE SET NULL;
-
 -- ── user_token ────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS `user_token` (
     `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -109,14 +99,12 @@ CREATE TABLE IF NOT EXISTS `category` (
     `franchise_code` VARCHAR(64)  NOT NULL DEFAULT 'default',
     `parent_id`    INT UNSIGNED          DEFAULT NULL,
     `name`         VARCHAR(255) NOT NULL,
-    `slug`         VARCHAR(255) NOT NULL,
     `description`  TEXT                  DEFAULT NULL,
     `position`   SMALLINT     NOT NULL DEFAULT 0,
     `created_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`   DATETIME              DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_cat_franchise_slug` (`franchise_code`, `slug`),
     KEY `idx_cat_franchise` (`franchise_code`),
     KEY `idx_cat_parent`    (`parent_id`),
     CONSTRAINT `fk_cat_parent` FOREIGN KEY (`parent_id`) REFERENCES `category` (`id`) ON DELETE SET NULL
@@ -136,7 +124,6 @@ CREATE TABLE IF NOT EXISTS `product` (
     `status`         VARCHAR(32)    NOT NULL DEFAULT 'active' COMMENT 'active | inactive | archived',
     `created_at`     DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`     DATETIME                DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at`     DATETIME                DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_product_franchise_sku` (`franchise_code`, `sku`),
     KEY `idx_product_franchise` (`franchise_code`),
@@ -180,7 +167,6 @@ CREATE TABLE IF NOT EXISTS `order` (
     `note`                TEXT                    DEFAULT NULL,
     `created_at`          DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`          DATETIME                DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at`          DATETIME                DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_order_franchise_number` (`franchise_code`, `order_number`),
     KEY `idx_order_franchise` (`franchise_code`),
@@ -226,7 +212,6 @@ CREATE TABLE IF NOT EXISTS `invoice` (
     `paid_at`            DATETIME                DEFAULT NULL,
     `created_at`         DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`         DATETIME                DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at`         DATETIME                DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_inv_franchise_number` (`franchise_code`, `invoice_number`),
     KEY `idx_inv_franchise` (`franchise_code`),
@@ -297,9 +282,8 @@ INSERT INTO `enumeration` (`franchise_code`, `type`, `code`, `label`, `value`, `
   ('default', 'vat_rate', '21', '21%', '21', 40);
 
 -- ── Seed: admin user (password: password) ────────────────
-INSERT INTO `user` (`franchise_code`, `first_name`, `last_name`, `email`, `password`, `role_id`, `status`) VALUES
+INSERT INTO `user` (`franchise_code`, `first_name`, `last_name`, `email`, `password`, `role_id`) VALUES
   ('default', 'Admin', 'User', 'admin@example.com',
    '$2y$12$ubNeYmIWTWs4hXG6OQWQdO5rRStAzqrHM1C/xxU9H7vZx0LvMKI5q',
-   (SELECT id FROM role WHERE franchise_code = 'default' AND name = 'admin'),
-   'active');
+   (SELECT id FROM role WHERE franchise_code = 'default' AND name = 'admin'));
 

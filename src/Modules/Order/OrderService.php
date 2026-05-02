@@ -153,6 +153,6 @@ class OrderService
             Response::notFound('Order not found');
         }
 
-        $this->order->softDelete($id);
+        $this->order->delete($id);
     }
 }

@@ -23,7 +23,6 @@ class RoleRepository
 
     /** Return all roles, optionally filtered and sorted. */
     public function findAll(
-        ?bool $isActive = null,
         string $sortBy = 'position',
         string $sortDir = 'ASC',
     ): array {
@@ -31,20 +30,10 @@ class RoleRepository
         $sortBy  = in_array($sortBy, $allowed, true) ? $sortBy : 'position';
         $sortDir = strtoupper($sortDir) === 'DESC' ? 'DESC' : 'ASC';
 
-        $where  = ['franchise_code = ?'];
-        $params = [$this->code];
-
-        if ($isActive !== null) {
-            $where[]  = 'is_active = ?';
-            $params[] = (int) $isActive;
-        }
-
-        $whereStr = implode(' AND ', $where);
-
         return $this->db->fetchAll(
-            "SELECT id, name, label, position, is_active, created_at, updated_at
-             FROM role WHERE {$whereStr} ORDER BY {$sortBy} {$sortDir}",
-            $params,
+            "SELECT id, name, label, position, created_at, updated_at
+             FROM role WHERE franchise_code = ? ORDER BY {$sortBy} {$sortDir}",
+            [$this->code],
         );
     }
 
@@ -52,7 +41,7 @@ class RoleRepository
     public function findById(int $id): ?array
     {
         $role = $this->db->fetchOne(
-            'SELECT id, name, label, position, is_active, created_at, updated_at
+            'SELECT id, name, label, position, created_at, updated_at
              FROM role WHERE id = ? AND franchise_code = ?',
             [$id, $this->code],
         );
@@ -65,7 +54,7 @@ class RoleRepository
     {
         return (int) $this->db->fetchOne(
             'SELECT COUNT(*) AS cnt FROM user
-             WHERE role_id = ? AND franchise_code = ? AND status != "deleted"',
+             WHERE role_id = ? AND franchise_code = ?',
             [$id, $this->code],
         )['cnt'];
     }

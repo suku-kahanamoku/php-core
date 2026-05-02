@@ -37,8 +37,7 @@ assert_test('PUT empty name → 422', $r['status'] === 422, dump_on_fail($r));
 // ── CategoryService – cannot delete if has products ──────────────────────────
 
 section('CategoryService – delete blocked by products');
-$svcCatSlug = 'svc-cat-' . time();
-$r          = request('POST', "{$base}/categories", ['name' => 'Svc Category', 'slug' => $svcCatSlug]);
+$r          = request('POST', "{$base}/categories", ['name' => 'Svc Category']);
 assert_test('create category 201', $r['status'] === 201, dump_on_fail($r));
 $svcCatId = $r['data']['data']['id'] ?? null;
 

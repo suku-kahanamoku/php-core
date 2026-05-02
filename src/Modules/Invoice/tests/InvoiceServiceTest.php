@@ -27,8 +27,7 @@ $r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'pas
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
-$svcCatSlug = 'svc-inv-cat-' . time();
-$r          = request('POST', "{$base}/categories", ['name' => 'Svc Inv Cat', 'slug' => $svcCatSlug]);
+$r          = request('POST', "{$base}/categories", ['name' => 'Svc Inv Cat']);
 $svcCatId   = $r['data']['data']['id'] ?? null;
 
 $svcSku = 'SVC-INV-PROD-' . time();

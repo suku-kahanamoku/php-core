@@ -22,9 +22,7 @@ class RoleApi
     /** GET /roles */
     public function list(Request $request): void
     {
-        $isActive = $request->get('is_active');
-        $items    = $this->service->list(
-            $isActive !== null ? (bool)(int) $isActive : null,
+        $items = $this->service->list(
             (string) $request->get('sort_by', 'position'),
             (string) $request->get('sort_dir', 'ASC'),
         );
@@ -44,7 +42,6 @@ class RoleApi
             trim(strtolower((string) $request->get('name', ''))),
             trim((string) $request->get('label', '')),
             (int) $request->get('position', 0),
-            (int) $request->get('is_active', 1),
         );
         Response::created(['id' => $id], 'Role created');
     }
@@ -53,7 +50,7 @@ class RoleApi
     public function update(Request $request, array $params): void
     {
         $fields     = [];
-        $roleFields = ['name', 'label', 'position', 'is_active'];
+        $roleFields = ['name', 'label', 'position'];
 
         foreach ($roleFields as $f) {
             if ($request->get($f) !== null) {
@@ -72,7 +69,6 @@ class RoleApi
             trim(strtolower((string) $request->get('name', ''))),
             trim((string) $request->get('label', '')),
             (int) $request->get('position', 0),
-            (int) $request->get('is_active', 1),
         );
         Response::success(null, 'Role replaced');
     }

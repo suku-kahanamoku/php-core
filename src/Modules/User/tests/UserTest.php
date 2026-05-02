@@ -75,7 +75,7 @@ if ($userId) {
     assert_test('DELETE user 200', $r['status'] === 200, dump_on_fail($r));
 
     $r = request('GET', "{$base}/users/{$userId}");
-    assert_test('deleted user has status=deleted', $r['data']['data']['status'] === 'deleted', dump_on_fail($r));
+    assert_test('deleted user returns 404', $r['status'] === 404, dump_on_fail($r));
 }
 
 $token = null;
