@@ -6,21 +6,22 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Database;
+use App\Core\Franchise;
 use App\Core\Request;
 use App\Core\Response;
 
 class AuthController
 {
     private Database $db;
+    private string   $code;
 
     public function __construct()
     {
-        $this->db = Database::getInstance();
+        $this->db  = Database::getInstance();
+        $this->code = Franchise::code();
     }
 
-    /**
-     * POST /auth/login
-     */
+    /** POST /auth/login */
     public function login(Request $request): void
     {
         $email    = trim((string) $request->get('email', ''));
@@ -35,8 +36,9 @@ class AuthController
         }
 
         $user = $this->db->fetchOne(
-            'SELECT id, email, password, role, first_name, last_name, status FROM user WHERE email = ? LIMIT 1',
-            [$email]
+            'SELECT id, email, password, role, first_name, last_name, status
+             FROM user WHERE franchise_code = ? AND email = ? LIMIT 1',
+            [$this->code, $email]
         );
 
         if (!$user || !password_verify($password, $user['password'])) {
@@ -47,8 +49,8 @@ class AuthController
             Response::error('Account is not active', 403);
         }
 
-        // Update last login
-        $this->db->update('user', ['last_login_at' => date('Y-m-d H:i:s')], 'id = ?', [$user['id']]);
+        $this->db->update('user', ['last_login_at' => date('Y-m-d H:i:s')],
+            'id = ? AND franchise_code = ?', [$user['id'], $this->code]);
 
         $token = Auth::login([
             'id'         => $user['id'],
@@ -67,28 +69,21 @@ class AuthController
         ], 'Login successful');
     }
 
-    /**
-     * POST /auth/logout
-     */
+    /** POST /auth/logout */
     public function logout(Request $request): void
     {
         Auth::logout();
         Response::success(null, 'Logged out successfully');
     }
 
-    /**
-     * GET /auth/me
-     */
+    /** GET /auth/me */
     public function me(Request $request): void
     {
         Auth::require();
-        $user = Auth::user();
-        Response::success($user);
+        Response::success(Auth::user());
     }
 
-    /**
-     * POST /auth/register
-     */
+    /** POST /auth/register */
     public function register(Request $request): void
     {
         $data = [
@@ -100,7 +95,7 @@ class AuthController
 
         $errors = [];
         if ($data['first_name'] === '') $errors['first_name'] = 'Required';
-        if ($data['last_name'] === '')  $errors['last_name']  = 'Required';
+        if ($data['last_name']  === '') $errors['last_name']  = 'Required';
         if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) $errors['email'] = 'Invalid email';
         if (strlen($data['password']) < 8) $errors['password'] = 'Minimum 8 characters';
 
@@ -108,27 +103,29 @@ class AuthController
             Response::validationError($errors);
         }
 
-        $exists = $this->db->fetchOne('SELECT id FROM user WHERE email = ?', [$data['email']]);
+        $exists = $this->db->fetchOne(
+            'SELECT id FROM user WHERE franchise_code = ? AND email = ?',
+            [$this->code, $data['email']]
+        );
         if ($exists) {
             Response::error('Email already registered', 409);
         }
 
         $id = $this->db->insert('user', [
-            'first_name'    => $data['first_name'],
-            'last_name'     => $data['last_name'],
-            'email'         => $data['email'],
-            'password' => password_hash($data['password'], PASSWORD_BCRYPT, ['cost' => 12]),
-            'role'     => 'user',
-            'status'        => 'active',
-            'created_at'    => date('Y-m-d H:i:s'),
+            'franchise_code' => $this->code,
+            'first_name'   => $data['first_name'],
+            'last_name'    => $data['last_name'],
+            'email'        => $data['email'],
+            'password'     => password_hash($data['password'], PASSWORD_BCRYPT, ['cost' => 12]),
+            'role'         => 'user',
+            'status'       => 'active',
+            'created_at'   => date('Y-m-d H:i:s'),
         ]);
 
         Response::created(['id' => $id], 'Registration successful');
     }
 
-    /**
-     * POST /auth/change-password
-     */
+    /** POST /auth/change-password */
     public function changePassword(Request $request): void
     {
         Auth::require();
@@ -145,7 +142,10 @@ class AuthController
         }
 
         $userId = Auth::id();
-        $user   = $this->db->fetchOne('SELECT password FROM user WHERE id = ?', [$userId]);
+        $user   = $this->db->fetchOne(
+            'SELECT password FROM user WHERE id = ? AND franchise_code = ?',
+            [$userId, $this->code]
+        );
 
         if (!$user || !password_verify($currentPassword, $user['password'])) {
             Response::error('Current password is incorrect', 401);
@@ -154,7 +154,7 @@ class AuthController
         $this->db->update('user', [
             'password'   => password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 12]),
             'updated_at' => date('Y-m-d H:i:s'),
-        ], 'id = ?', [$userId]);
+        ], 'id = ? AND franchise_code = ?', [$userId, $this->code]);
 
         Response::success(null, 'Password changed successfully');
     }

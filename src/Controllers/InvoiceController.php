@@ -6,16 +6,19 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Database;
+use App\Core\Franchise;
 use App\Core\Request;
 use App\Core\Response;
 
 class InvoiceController
 {
     private Database $db;
+    private string   $code;
 
     public function __construct()
     {
-        $this->db = Database::getInstance();
+        $this->db  = Database::getInstance();
+        $this->code = Franchise::code();
     }
 
     /** GET /invoices */
@@ -28,8 +31,8 @@ class InvoiceController
         $offset = ($page - 1) * $limit;
         $status = $request->get('status');
 
-        $where  = ['i.deleted_at IS NULL'];
-        $params = [];
+        $where  = ['i.franchise_code = ?', 'i.deleted_at IS NULL'];
+        $params = [$this->code];
 
         if (!Auth::hasRole('admin')) {
             $where[]  = 'i.user_id = ?';
@@ -84,8 +87,8 @@ class InvoiceController
              FROM invoice i
              LEFT JOIN user u ON u.id = i.user_id
              LEFT JOIN address ba ON ba.id = i.billing_address_id
-             WHERE i.id = ? AND i.deleted_at IS NULL",
-            [$id]
+             WHERE i.id = ? AND i.franchise_code = ? AND i.deleted_at IS NULL",
+            [$id, $this->code]
         );
 
         if (!$invoice) {
@@ -107,7 +110,7 @@ class InvoiceController
         Response::success($invoice);
     }
 
-    /** POST /invoices – generate invoice from order */
+    /** POST /invoices */
     public function create(Request $request): void
     {
         Auth::requireRole('admin');
@@ -118,23 +121,24 @@ class InvoiceController
         }
 
         $order = $this->db->fetchOne(
-            'SELECT * FROM `order` WHERE id = ? AND deleted_at IS NULL',
-            [$orderId]
+            'SELECT * FROM `order` WHERE id = ? AND franchise_code = ? AND deleted_at IS NULL',
+            [$orderId, $this->code]
         );
         if (!$order) {
             Response::notFound('Order not found');
         }
 
         $existing = $this->db->fetchOne(
-            'SELECT id FROM invoice WHERE order_id = ? AND deleted_at IS NULL',
-            [$orderId]
+            'SELECT id FROM invoice WHERE franchise_code = ? AND order_id = ? AND deleted_at IS NULL',
+            [$this->code, $orderId]
         );
         if ($existing) {
             Response::error('Invoice already exists for this order', 409);
         }
 
         $orderItems = $this->db->fetchAll(
-            'SELECT oi.*, p.name AS product_name FROM order_item oi LEFT JOIN product p ON p.id = oi.product_id WHERE oi.order_id = ?',
+            'SELECT oi.*, p.name AS product_name FROM order_item oi
+             LEFT JOIN product p ON p.id = oi.product_id WHERE oi.order_id = ?',
             [$orderId]
         );
 
@@ -146,6 +150,7 @@ class InvoiceController
 
         try {
             $invoiceId = $this->db->insert('invoice', [
+                'franchise_code'       => $this->code,
                 'invoice_number'     => $this->generateInvoiceNumber(),
                 'order_id'           => $orderId,
                 'user_id'            => $order['user_id'],
@@ -191,7 +196,10 @@ class InvoiceController
             Response::validationError(['status' => 'Required']);
         }
 
-        $invoice = $this->db->fetchOne('SELECT id FROM invoice WHERE id = ? AND deleted_at IS NULL', [$id]);
+        $invoice = $this->db->fetchOne(
+            'SELECT id FROM invoice WHERE id = ? AND franchise_code = ? AND deleted_at IS NULL',
+            [$id, $this->code]
+        );
         if (!$invoice) {
             Response::notFound('Invoice not found');
         }
@@ -201,7 +209,7 @@ class InvoiceController
             $set['paid_at'] = date('Y-m-d H:i:s');
         }
 
-        $this->db->update('invoice', $set, 'id = ?', [$id]);
+        $this->db->update('invoice', $set, 'id = ? AND franchise_code = ?', [$id, $this->code]);
         Response::success(null, 'Invoice status updated');
     }
 
@@ -211,12 +219,16 @@ class InvoiceController
         Auth::requireRole('admin');
         $id = (int) $params['id'];
 
-        $invoice = $this->db->fetchOne('SELECT id FROM invoice WHERE id = ? AND deleted_at IS NULL', [$id]);
+        $invoice = $this->db->fetchOne(
+            'SELECT id FROM invoice WHERE id = ? AND franchise_code = ? AND deleted_at IS NULL',
+            [$id, $this->code]
+        );
         if (!$invoice) {
             Response::notFound('Invoice not found');
         }
 
-        $this->db->update('invoice', ['deleted_at' => date('Y-m-d H:i:s')], 'id = ?', [$id]);
+        $this->db->update('invoice', ['deleted_at' => date('Y-m-d H:i:s')],
+            'id = ? AND franchise_code = ?', [$id, $this->code]);
         Response::success(null, 'Invoice deleted');
     }
 
@@ -224,8 +236,10 @@ class InvoiceController
     {
         $year = date('Y');
         $last = $this->db->fetchOne(
-            "SELECT invoice_number FROM invoice WHERE invoice_number LIKE ? ORDER BY id DESC LIMIT 1",
-            [$year . '%']
+            "SELECT invoice_number FROM invoice
+             WHERE franchise_code = ? AND invoice_number LIKE ?
+             ORDER BY id DESC LIMIT 1",
+            [$this->code, $year . '%']
         );
 
         $seq = 1;

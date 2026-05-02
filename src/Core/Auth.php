@@ -14,7 +14,6 @@ class Auth
 
     /**
      * Create a Bearer token for the given user, persist it, and return it.
-     * Returns the raw token string to be sent back to the client.
      */
     public static function login(array $user): string
     {
@@ -61,9 +60,10 @@ class Auth
             'SELECT u.id, u.email, u.role, u.first_name, u.last_name
              FROM user_token t
              JOIN `user` u ON u.id = t.user_id
-             WHERE t.token = ? AND t.expires_at > NOW() AND u.status = "active"
+             WHERE t.token = ? AND t.expires_at > NOW()
+               AND u.status = "active" AND u.franchise_code = ?
              LIMIT 1',
-            [$token]
+            [$token, Franchise::code()]
         );
 
         if (!$row) {
@@ -122,14 +122,13 @@ class Auth
 
     // ── Internal ─────────────────────────────────────────────────────────────
 
-    /** Extract the raw token string from the Authorization: Bearer header. */
     private static function extractToken(): ?string
     {
         $header = $_SERVER['HTTP_AUTHORIZATION']
             ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION']
             ?? '';
 
-        if (preg_match('/^Bearer\s+(\S+)$/i', trim($header), $m)) {
+        if (preg_match('/^Bearer\\s+(\\S+)$/i', trim($header), $m)) {
             return $m[1];
         }
 

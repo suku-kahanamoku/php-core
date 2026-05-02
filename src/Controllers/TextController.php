@@ -6,20 +6,19 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Database;
+use App\Core\Franchise;
 use App\Core\Request;
 use App\Core\Response;
 
-/**
- * TextController – manages CMS-style text blocks / pages
- * Table: text (id, key, title, content, language, is_active, created_by, created_at, updated_at)
- */
 class TextController
 {
     private Database $db;
+    private string   $code;
 
     public function __construct()
     {
-        $this->db = Database::getInstance();
+        $this->db  = Database::getInstance();
+        $this->code = Franchise::code();
     }
 
     /** GET /texts */
@@ -29,8 +28,8 @@ class TextController
         $isActive = $request->get('is_active');
         $search   = $request->get('search');
 
-        $where  = ['language = ?'];
-        $params = [$lang];
+        $where  = ['franchise_code = ?', 'language = ?'];
+        $params = [$this->code, $lang];
 
         if ($isActive !== null) {
             $where[]  = 'is_active = ?';
@@ -57,7 +56,10 @@ class TextController
     {
         $id = (int) $params['id'];
 
-        $text = $this->db->fetchOne('SELECT * FROM text WHERE id = ?', [$id]);
+        $text = $this->db->fetchOne(
+            'SELECT * FROM text WHERE id = ? AND franchise_code = ?',
+            [$id, $this->code]
+        );
         if (!$text) {
             Response::notFound('Text not found');
         }
@@ -72,12 +74,12 @@ class TextController
         $lang = $request->get('language', 'cs');
 
         $text = $this->db->fetchOne(
-            'SELECT * FROM text WHERE `key` = ? AND language = ?',
-            [$key, $lang]
+            'SELECT * FROM text WHERE franchise_code = ? AND `key` = ? AND language = ?',
+            [$this->code, $key, $lang]
         );
 
         if (!$text) {
-            Response::notFound("Text with key '{$key}' not found");
+            Response::notFound("Text with key '$key' not found");
         }
 
         Response::success($text);
@@ -94,37 +96,41 @@ class TextController
 
         $errors = [];
         if ($key   === '') $errors['key']   = 'Required';
-        if ($title === '') $errors['title']  = 'Required';
+        if ($title === '') $errors['title'] = 'Required';
 
         if (!empty($errors)) {
             Response::validationError($errors);
         }
 
-        $exists = $this->db->fetchOne('SELECT id FROM text WHERE `key` = ? AND language = ?', [$key, $lang]);
+        $exists = $this->db->fetchOne(
+            'SELECT id FROM text WHERE franchise_code = ? AND `key` = ? AND language = ?',
+            [$this->code, $key, $lang]
+        );
         if ($exists) {
-            Response::error("Key '{$key}' already exists for language '{$lang}'", 409);
+            Response::error("Key '$key' already exists for language '$lang'", 409);
         }
 
         $id = $this->db->insert('text', [
-            'key'        => $key,
-            'title'      => $title,
-            'content'    => $request->get('content') ?? '',
-            'language'   => $lang,
-            'is_active'  => (int) ($request->get('is_active') ?? 1),
-            'created_by' => Auth::id(),
-            'created_at' => date('Y-m-d H:i:s'),
+            'franchise_code' => $this->code,
+            'key'          => $key,
+            'title'        => $title,
+            'content'      => $request->get('content') ?? '',
+            'language'     => $lang,
+            'is_active'    => (int) ($request->get('is_active') ?? 1),
+            'created_by'   => Auth::id(),
+            'created_at'   => date('Y-m-d H:i:s'),
         ]);
 
         Response::created(['id' => $id], 'Text created');
     }
 
-    /** PATCH /texts/:id – partial update */
+    /** PATCH /texts/:id */
     public function update(Request $request, array $params): void
     {
         Auth::requireRole('admin');
         $id = (int) $params['id'];
 
-        $text = $this->db->fetchOne('SELECT id FROM text WHERE id = ?', [$id]);
+        $text = $this->db->fetchOne('SELECT id FROM text WHERE id = ? AND franchise_code = ?', [$id, $this->code]);
         if (!$text) {
             Response::notFound('Text not found');
         }
@@ -137,17 +143,17 @@ class TextController
             $set['is_active'] = (int) $v;
         }
 
-        $this->db->update('text', $set, 'id = ?', [$id]);
+        $this->db->update('text', $set, 'id = ? AND franchise_code = ?', [$id, $this->code]);
         Response::success(null, 'Text updated');
     }
 
-    /** PUT /texts/:id – full replace */
+    /** PUT /texts/:id */
     public function replace(Request $request, array $params): void
     {
         Auth::requireRole('admin');
         $id = (int) $params['id'];
 
-        $text = $this->db->fetchOne('SELECT id FROM text WHERE id = ?', [$id]);
+        $text = $this->db->fetchOne('SELECT id FROM text WHERE id = ? AND franchise_code = ?', [$id, $this->code]);
         if (!$text) {
             Response::notFound('Text not found');
         }
@@ -169,7 +175,7 @@ class TextController
             'language'   => (string) ($request->get('language') ?? 'cs'),
             'is_active'  => (int)    ($request->get('is_active') ?? 1),
             'updated_at' => date('Y-m-d H:i:s'),
-        ], 'id = ?', [$id]);
+        ], 'id = ? AND franchise_code = ?', [$id, $this->code]);
 
         Response::success(null, 'Text replaced');
     }
@@ -180,12 +186,12 @@ class TextController
         Auth::requireRole('admin');
         $id = (int) $params['id'];
 
-        $text = $this->db->fetchOne('SELECT id FROM text WHERE id = ?', [$id]);
+        $text = $this->db->fetchOne('SELECT id FROM text WHERE id = ? AND franchise_code = ?', [$id, $this->code]);
         if (!$text) {
             Response::notFound('Text not found');
         }
 
-        $this->db->delete('text', 'id = ?', [$id]);
+        $this->db->delete('text', 'id = ? AND franchise_code = ?', [$id, $this->code]);
         Response::success(null, 'Text deleted');
     }
 }

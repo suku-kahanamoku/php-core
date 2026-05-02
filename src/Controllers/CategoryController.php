@@ -6,30 +6,32 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Database;
+use App\Core\Franchise;
 use App\Core\Request;
 use App\Core\Response;
 
 class CategoryController
 {
     private Database $db;
+    private string   $code;
 
     public function __construct()
     {
-        $this->db = Database::getInstance();
+        $this->db  = Database::getInstance();
+        $this->code = Franchise::code();
     }
 
     /** GET /categories */
     public function list(Request $request): void
     {
-
         $items = $this->db->fetchAll(
             'SELECT id, name, slug, parent_id, description, sort_order, created_at
-             FROM category ORDER BY sort_order ASC, name ASC'
+             FROM category WHERE franchise_code = ?
+             ORDER BY sort_order ASC, name ASC',
+            [$this->code]
         );
 
-        // Build tree
-        $tree = $this->buildTree($items);
-        Response::success($tree);
+        Response::success($this->buildTree($items));
     }
 
     /** GET /categories/:id */
@@ -37,14 +39,18 @@ class CategoryController
     {
         $id = (int) $params['id'];
 
-        $category = $this->db->fetchOne('SELECT * FROM category WHERE id = ?', [$id]);
+        $category = $this->db->fetchOne(
+            'SELECT * FROM category WHERE id = ? AND franchise_code = ?',
+            [$id, $this->code]
+        );
         if (!$category) {
             Response::notFound('Category not found');
         }
 
         $products = $this->db->fetchAll(
-            'SELECT id, sku, name, price, status FROM product WHERE category_id = ? AND deleted_at IS NULL',
-            [$id]
+            'SELECT id, sku, name, price, status FROM product
+             WHERE franchise_code = ? AND category_id = ? AND deleted_at IS NULL',
+            [$this->code, $id]
         );
 
         $category['products'] = $products;
@@ -64,24 +70,28 @@ class CategoryController
         $slug = $request->get('slug') ?? $this->toSlug($name);
 
         $id = $this->db->insert('category', [
-            'name'        => $name,
-            'slug'        => $slug,
-            'description' => $request->get('description') ?? '',
-            'parent_id'   => $request->get('parent_id') ? (int) $request->get('parent_id') : null,
-            'sort_order'  => (int) ($request->get('sort_order') ?? 0),
-            'created_at'  => date('Y-m-d H:i:s'),
+            'franchise_code' => $this->code,
+            'name'         => $name,
+            'slug'         => $slug,
+            'description'  => $request->get('description') ?? '',
+            'parent_id'    => $request->get('parent_id') ? (int) $request->get('parent_id') : null,
+            'sort_order'   => (int) ($request->get('sort_order') ?? 0),
+            'created_at'   => date('Y-m-d H:i:s'),
         ]);
 
         Response::created(['id' => $id], 'Category created');
     }
 
-    /** PATCH /categories/:id – partial update */
+    /** PATCH /categories/:id */
     public function update(Request $request, array $params): void
     {
         Auth::requireRole('admin');
         $id = (int) $params['id'];
 
-        $category = $this->db->fetchOne('SELECT id FROM category WHERE id = ?', [$id]);
+        $category = $this->db->fetchOne(
+            'SELECT id FROM category WHERE id = ? AND franchise_code = ?',
+            [$id, $this->code]
+        );
         if (!$category) {
             Response::notFound('Category not found');
         }
@@ -97,17 +107,20 @@ class CategoryController
             $set['sort_order'] = (int) $v;
         }
 
-        $this->db->update('category', $set, 'id = ?', [$id]);
+        $this->db->update('category', $set, 'id = ? AND franchise_code = ?', [$id, $this->code]);
         Response::success(null, 'Category updated');
     }
 
-    /** PUT /categories/:id – full replace */
+    /** PUT /categories/:id */
     public function replace(Request $request, array $params): void
     {
         Auth::requireRole('admin');
         $id = (int) $params['id'];
 
-        $category = $this->db->fetchOne('SELECT id FROM category WHERE id = ?', [$id]);
+        $category = $this->db->fetchOne(
+            'SELECT id FROM category WHERE id = ? AND franchise_code = ?',
+            [$id, $this->code]
+        );
         if (!$category) {
             Response::notFound('Category not found');
         }
@@ -117,10 +130,7 @@ class CategoryController
             Response::validationError(['name' => 'Required']);
         }
 
-        $slug = $request->get('slug') !== null
-            ? trim((string) $request->get('slug'))
-            : $this->toSlug($name);
-
+        $slug     = $request->get('slug') !== null ? trim((string) $request->get('slug')) : $this->toSlug($name);
         $parentId = $request->get('parent_id');
 
         $this->db->update('category', [
@@ -130,7 +140,7 @@ class CategoryController
             'parent_id'   => $parentId !== null && $parentId !== '' ? (int) $parentId : null,
             'sort_order'  => (int) ($request->get('sort_order') ?? 0),
             'updated_at'  => date('Y-m-d H:i:s'),
-        ], 'id = ?', [$id]);
+        ], 'id = ? AND franchise_code = ?', [$id, $this->code]);
 
         Response::success(null, 'Category replaced');
     }
@@ -141,12 +151,23 @@ class CategoryController
         Auth::requireRole('admin');
         $id = (int) $params['id'];
 
-        $inUse = $this->db->fetchOne('SELECT id FROM product WHERE category_id = ? AND deleted_at IS NULL LIMIT 1', [$id]);
+        $category = $this->db->fetchOne(
+            'SELECT id FROM category WHERE id = ? AND franchise_code = ?',
+            [$id, $this->code]
+        );
+        if (!$category) {
+            Response::notFound('Category not found');
+        }
+
+        $inUse = $this->db->fetchOne(
+            'SELECT id FROM product WHERE franchise_code = ? AND category_id = ? AND deleted_at IS NULL LIMIT 1',
+            [$this->code, $id]
+        );
         if ($inUse) {
             Response::error('Category is in use by products', 409);
         }
 
-        $this->db->delete('category', 'id = ?', [$id]);
+        $this->db->delete('category', 'id = ? AND franchise_code = ?', [$id, $this->code]);
         Response::success(null, 'Category deleted');
     }
 

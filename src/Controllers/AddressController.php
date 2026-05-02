@@ -6,16 +6,19 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Database;
+use App\Core\Franchise;
 use App\Core\Request;
 use App\Core\Response;
 
 class AddressController
 {
     private Database $db;
+    private string   $code;
 
     public function __construct()
     {
-        $this->db = Database::getInstance();
+        $this->db  = Database::getInstance();
+        $this->code = Franchise::code();
     }
 
     /** GET /users/:userId/addresses */
@@ -29,8 +32,8 @@ class AddressController
         }
 
         $items = $this->db->fetchAll(
-            'SELECT * FROM address WHERE user_id = ? ORDER BY type ASC, created_at DESC',
-            [$userId]
+            'SELECT * FROM address WHERE franchise_code = ? AND user_id = ? ORDER BY type ASC, created_at DESC',
+            [$this->code, $userId]
         );
 
         Response::success($items);
@@ -41,7 +44,7 @@ class AddressController
     {
         Auth::require();
         $id      = (int) $params['id'];
-        $address = $this->db->fetchOne('SELECT * FROM address WHERE id = ?', [$id]);
+        $address = $this->db->fetchOne('SELECT * FROM address WHERE id = ? AND franchise_code = ?', [$id, $this->code]);
 
         if (!$address) {
             Response::notFound('Address not found');
@@ -78,28 +81,29 @@ class AddressController
         }
 
         $id = $this->db->insert('address', [
-            'user_id'    => $userId,
-            'type'       => $request->get('type', 'billing'),
-            'company'    => $request->get('company', ''),
-            'first_name' => $request->get('first_name', ''),
-            'last_name'  => $request->get('last_name',  ''),
-            'street'     => $street,
-            'city'       => $city,
-            'zip'        => $zip,
-            'country'    => $country,
-            'is_default' => (int) ($request->get('is_default', 0)),
-            'created_at' => date('Y-m-d H:i:s'),
+            'franchise_code' => $this->code,
+            'user_id'      => $userId,
+            'type'         => $request->get('type', 'billing'),
+            'company'      => $request->get('company', ''),
+            'first_name'   => $request->get('first_name', ''),
+            'last_name'    => $request->get('last_name',  ''),
+            'street'       => $street,
+            'city'         => $city,
+            'zip'          => $zip,
+            'country'      => $country,
+            'is_default'   => (int) ($request->get('is_default', 0)),
+            'created_at'   => date('Y-m-d H:i:s'),
         ]);
 
         Response::created(['id' => $id], 'Address created');
     }
 
-    /** PATCH /addresses/:id – partial update */
+    /** PATCH /addresses/:id */
     public function update(Request $request, array $params): void
     {
         Auth::require();
         $id      = (int) $params['id'];
-        $address = $this->db->fetchOne('SELECT * FROM address WHERE id = ?', [$id]);
+        $address = $this->db->fetchOne('SELECT * FROM address WHERE id = ? AND franchise_code = ?', [$id, $this->code]);
 
         if (!$address) {
             Response::notFound('Address not found');
@@ -117,16 +121,16 @@ class AddressController
             $set['is_default'] = (int) $v;
         }
 
-        $this->db->update('address', $set, 'id = ?', [$id]);
+        $this->db->update('address', $set, 'id = ? AND franchise_code = ?', [$id, $this->code]);
         Response::success(null, 'Address updated');
     }
 
-    /** PUT /addresses/:id – full replace */
+    /** PUT /addresses/:id */
     public function replace(Request $request, array $params): void
     {
         Auth::require();
         $id      = (int) $params['id'];
-        $address = $this->db->fetchOne('SELECT * FROM address WHERE id = ?', [$id]);
+        $address = $this->db->fetchOne('SELECT * FROM address WHERE id = ? AND franchise_code = ?', [$id, $this->code]);
 
         if (!$address) {
             Response::notFound('Address not found');
@@ -136,7 +140,7 @@ class AddressController
             Response::forbidden();
         }
 
-        $errors = [];
+        $errors  = [];
         $street  = trim((string) $request->get('street',  ''));
         $city    = trim((string) $request->get('city',    ''));
         $zip     = trim((string) $request->get('zip',     ''));
@@ -161,7 +165,7 @@ class AddressController
             'country'    => $country,
             'is_default' => (int) ($request->get('is_default') ?? 0),
             'updated_at' => date('Y-m-d H:i:s'),
-        ], 'id = ?', [$id]);
+        ], 'id = ? AND franchise_code = ?', [$id, $this->code]);
 
         Response::success(null, 'Address replaced');
     }
@@ -171,7 +175,7 @@ class AddressController
     {
         Auth::require();
         $id      = (int) $params['id'];
-        $address = $this->db->fetchOne('SELECT * FROM address WHERE id = ?', [$id]);
+        $address = $this->db->fetchOne('SELECT * FROM address WHERE id = ? AND franchise_code = ?', [$id, $this->code]);
 
         if (!$address) {
             Response::notFound('Address not found');
@@ -181,7 +185,7 @@ class AddressController
             Response::forbidden();
         }
 
-        $this->db->delete('address', 'id = ?', [$id]);
+        $this->db->delete('address', 'id = ? AND franchise_code = ?', [$id, $this->code]);
         Response::success(null, 'Address deleted');
     }
 }

@@ -6,16 +6,19 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Database;
+use App\Core\Franchise;
 use App\Core\Request;
 use App\Core\Response;
 
 class OrderController
 {
     private Database $db;
+    private string   $code;
 
     public function __construct()
     {
-        $this->db = Database::getInstance();
+        $this->db  = Database::getInstance();
+        $this->code = Franchise::code();
     }
 
     /** GET /orders */
@@ -28,10 +31,9 @@ class OrderController
         $offset = ($page - 1) * $limit;
         $status = $request->get('status');
 
-        $where  = ['o.deleted_at IS NULL'];
-        $params = [];
+        $where  = ['o.franchise_code = ?', 'o.deleted_at IS NULL'];
+        $params = [$this->code];
 
-        // Non-admins see only their own orders
         if (!Auth::hasRole('admin')) {
             $where[]  = 'o.user_id = ?';
             $params[] = Auth::id();
@@ -85,8 +87,8 @@ class OrderController
              FROM `order` o
              LEFT JOIN user u ON u.id = o.user_id
              LEFT JOIN address a ON a.id = o.shipping_address_id
-             WHERE o.id = ? AND o.deleted_at IS NULL",
-            [$id]
+             WHERE o.id = ? AND o.franchise_code = ? AND o.deleted_at IS NULL",
+            [$id, $this->code]
         );
 
         if (!$order) {
@@ -97,7 +99,6 @@ class OrderController
             Response::forbidden();
         }
 
-        // Load items
         $order['items'] = $this->db->fetchAll(
             "SELECT oi.*, p.name AS product_name, p.sku
              FROM order_item oi
@@ -126,7 +127,7 @@ class OrderController
         $db->beginTransaction();
 
         try {
-            $totalAmount  = 0;
+            $totalAmount   = 0;
             $preparedItems = [];
 
             foreach ($items as $item) {
@@ -138,8 +139,9 @@ class OrderController
                 }
 
                 $product = $this->db->fetchOne(
-                    'SELECT id, name, price, stock_quantity FROM product WHERE id = ? AND status = ? AND deleted_at IS NULL',
-                    [$productId, 'active']
+                    'SELECT id, name, price, stock_quantity FROM product
+                     WHERE id = ? AND franchise_code = ? AND status = ? AND deleted_at IS NULL',
+                    [$productId, $this->code, 'active']
                 );
 
                 if (!$product) {
@@ -161,16 +163,17 @@ class OrderController
             }
 
             $orderId = $this->db->insert('order', [
-                'order_number'       => $this->generateOrderNumber(),
-                'user_id'            => $userId,
-                'status'             => 'pending',
-                'total_amount'       => $totalAmount,
-                'currency'           => $currency,
-                'payment_method'     => $request->get('payment_method', 'bank_transfer'),
-                'note'               => $request->get('note', ''),
-                'shipping_address_id'=> $request->get('shipping_address_id') ? (int) $request->get('shipping_address_id') : null,
-                'billing_address_id' => $request->get('billing_address_id')  ? (int) $request->get('billing_address_id')  : null,
-                'created_at'         => date('Y-m-d H:i:s'),
+                'franchise_code'        => $this->code,
+                'order_number'        => $this->generateOrderNumber(),
+                'user_id'             => $userId,
+                'status'              => 'pending',
+                'total_amount'        => $totalAmount,
+                'currency'            => $currency,
+                'payment_method'      => $request->get('payment_method', 'bank_transfer'),
+                'note'                => $request->get('note', ''),
+                'shipping_address_id' => $request->get('shipping_address_id') ? (int) $request->get('shipping_address_id') : null,
+                'billing_address_id'  => $request->get('billing_address_id')  ? (int) $request->get('billing_address_id')  : null,
+                'created_at'          => date('Y-m-d H:i:s'),
             ]);
 
             foreach ($preparedItems as $item) {
@@ -179,9 +182,11 @@ class OrderController
                     'created_at' => date('Y-m-d H:i:s'),
                 ]));
 
-                // Decrement stock
                 $this->db->update('product',
-                    ['stock_quantity' => $this->db->fetchOne('SELECT stock_quantity FROM product WHERE id = ?', [$item['product_id']])['stock_quantity'] - $item['quantity']],
+                    ['stock_quantity' => $this->db->fetchOne(
+                        'SELECT stock_quantity FROM product WHERE id = ?',
+                        [$item['product_id']]
+                    )['stock_quantity'] - $item['quantity']],
                     'id = ?',
                     [$item['product_id']]
                 );
@@ -207,7 +212,10 @@ class OrderController
             Response::validationError(['status' => 'Required']);
         }
 
-        $order = $this->db->fetchOne('SELECT id FROM `order` WHERE id = ? AND deleted_at IS NULL', [$id]);
+        $order = $this->db->fetchOne(
+            'SELECT id FROM `order` WHERE id = ? AND franchise_code = ? AND deleted_at IS NULL',
+            [$id, $this->code]
+        );
         if (!$order) {
             Response::notFound('Order not found');
         }
@@ -215,7 +223,7 @@ class OrderController
         $this->db->update('order', [
             'status'     => $status,
             'updated_at' => date('Y-m-d H:i:s'),
-        ], 'id = ?', [$id]);
+        ], 'id = ? AND franchise_code = ?', [$id, $this->code]);
 
         Response::success(null, 'Order status updated');
     }
@@ -226,12 +234,16 @@ class OrderController
         Auth::requireRole('admin');
         $id = (int) $params['id'];
 
-        $order = $this->db->fetchOne('SELECT id FROM `order` WHERE id = ? AND deleted_at IS NULL', [$id]);
+        $order = $this->db->fetchOne(
+            'SELECT id FROM `order` WHERE id = ? AND franchise_code = ? AND deleted_at IS NULL',
+            [$id, $this->code]
+        );
         if (!$order) {
             Response::notFound('Order not found');
         }
 
-        $this->db->update('order', ['deleted_at' => date('Y-m-d H:i:s')], 'id = ?', [$id]);
+        $this->db->update('order', ['deleted_at' => date('Y-m-d H:i:s')],
+            'id = ? AND franchise_code = ?', [$id, $this->code]);
         Response::success(null, 'Order deleted');
     }
 

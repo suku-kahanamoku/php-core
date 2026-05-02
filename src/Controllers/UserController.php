@@ -6,35 +6,35 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Database;
+use App\Core\Franchise;
 use App\Core\Request;
 use App\Core\Response;
 
 class UserController
 {
     private Database $db;
+    private string   $code;
 
     public function __construct()
     {
-        $this->db = Database::getInstance();
+        $this->db  = Database::getInstance();
+        $this->code = Franchise::code();
     }
 
-    /**
-     * GET /users
-     * Admin only
-     */
+    /** GET /users */
     public function list(Request $request): void
     {
         Auth::requireRole('admin');
 
-        $page     = max(1, (int) $request->get('page', 1));
-        $limit    = min(100, max(1, (int) $request->get('limit', 20)));
-        $offset   = ($page - 1) * $limit;
-        $search   = $request->get('search');
-        $role     = $request->get('role');
-        $status   = $request->get('status');
+        $page   = max(1, (int) $request->get('page', 1));
+        $limit  = min(100, max(1, (int) $request->get('limit', 20)));
+        $offset = ($page - 1) * $limit;
+        $search = $request->get('search');
+        $role   = $request->get('role');
+        $status = $request->get('status');
 
-        $where  = ['1=1'];
-        $params = [];
+        $where  = ['franchise_code = ?'];
+        $params = [$this->code];
 
         if ($search) {
             $where[]  = '(first_name LIKE ? OR last_name LIKE ? OR email LIKE ?)';
@@ -68,23 +68,21 @@ class UserController
         ]);
     }
 
-    /**
-     * GET /users/:id
-     */
+    /** GET /users/:id */
     public function get(Request $request, array $params): void
     {
         Auth::require();
         $id = (int) $params['id'];
 
-        // Non-admins can only see themselves
         if (!Auth::hasRole('admin') && Auth::id() !== $id) {
             Response::forbidden();
         }
 
         $user = $this->db->fetchOne(
-            'SELECT id, first_name, last_name, email, role, status, phone, address_id, created_at, updated_at, last_login_at
-             FROM user WHERE id = ?',
-            [$id]
+            'SELECT id, first_name, last_name, email, role, status, phone, address_id,
+                    created_at, updated_at, last_login_at
+             FROM user WHERE id = ? AND franchise_code = ?',
+            [$id, $this->code]
         );
 
         if (!$user) {
@@ -94,10 +92,7 @@ class UserController
         Response::success($user);
     }
 
-    /**
-     * POST /users
-     * Admin only
-     */
+    /** POST /users */
     public function create(Request $request): void
     {
         Auth::requireRole('admin');
@@ -108,28 +103,30 @@ class UserController
             Response::validationError($errors);
         }
 
-        $exists = $this->db->fetchOne('SELECT id FROM user WHERE email = ?', [$data['email']]);
+        $exists = $this->db->fetchOne(
+            'SELECT id FROM user WHERE franchise_code = ? AND email = ?',
+            [$this->code, $data['email']]
+        );
         if ($exists) {
             Response::error('Email already registered', 409);
         }
 
         $id = $this->db->insert('user', [
-            'first_name'    => $data['first_name'],
-            'last_name'     => $data['last_name'],
-            'email'         => $data['email'],
-            'phone'         => $data['phone'] ?? null,
-            'password' => password_hash($data['password'], PASSWORD_BCRYPT, ['cost' => 12]),
-            'role'          => $data['role'] ?? 'user',
-            'status'        => $data['status'] ?? 'active',
-            'created_at'    => date('Y-m-d H:i:s'),
+            'franchise_code' => $this->code,
+            'first_name'   => $data['first_name'],
+            'last_name'    => $data['last_name'],
+            'email'        => $data['email'],
+            'phone'        => $data['phone'] ?? null,
+            'password'     => password_hash($data['password'], PASSWORD_BCRYPT, ['cost' => 12]),
+            'role'         => $data['role'] ?? 'user',
+            'status'       => $data['status'] ?? 'active',
+            'created_at'   => date('Y-m-d H:i:s'),
         ]);
 
         Response::created(['id' => $id], 'User created');
     }
 
-    /**
-     * PATCH /users/:id – partial update (only provided fields)
-     */
+    /** PATCH /users/:id */
     public function update(Request $request, array $params): void
     {
         Auth::require();
@@ -139,7 +136,7 @@ class UserController
             Response::forbidden();
         }
 
-        $user = $this->db->fetchOne('SELECT id FROM user WHERE id = ?', [$id]);
+        $user = $this->db->fetchOne('SELECT id FROM user WHERE id = ? AND franchise_code = ?', [$id, $this->code]);
         if (!$user) {
             Response::notFound('User not found');
         }
@@ -153,7 +150,6 @@ class UserController
             }
         }
 
-        // Only admin can change role/status
         if (Auth::hasRole('admin')) {
             foreach (['role', 'status'] as $field) {
                 $val = $request->get($field);
@@ -164,15 +160,13 @@ class UserController
         }
 
         if (count($set) > 1) {
-            $this->db->update('user', $set, 'id = ?', [$id]);
+            $this->db->update('user', $set, 'id = ? AND franchise_code = ?', [$id, $this->code]);
         }
 
         Response::success(null, 'User updated');
     }
 
-    /**
-     * PUT /users/:id – full replace (all updatable fields required)
-     */
+    /** PUT /users/:id */
     public function replace(Request $request, array $params): void
     {
         Auth::require();
@@ -182,7 +176,7 @@ class UserController
             Response::forbidden();
         }
 
-        $user = $this->db->fetchOne('SELECT id FROM user WHERE id = ?', [$id]);
+        $user = $this->db->fetchOne('SELECT id FROM user WHERE id = ? AND franchise_code = ?', [$id, $this->code]);
         if (!$user) {
             Response::notFound('User not found');
         }
@@ -209,20 +203,17 @@ class UserController
             $set['status'] = (string) ($request->get('status') ?? 'active');
         }
 
-        $this->db->update('user', $set, 'id = ?', [$id]);
+        $this->db->update('user', $set, 'id = ? AND franchise_code = ?', [$id, $this->code]);
         Response::success(null, 'User replaced');
     }
 
-    /**
-     * DELETE /users/:id
-     * Admin only – soft delete
-     */
+    /** DELETE /users/:id */
     public function delete(Request $request, array $params): void
     {
         Auth::requireRole('admin');
         $id = (int) $params['id'];
 
-        $user = $this->db->fetchOne('SELECT id FROM user WHERE id = ?', [$id]);
+        $user = $this->db->fetchOne('SELECT id FROM user WHERE id = ? AND franchise_code = ?', [$id, $this->code]);
         if (!$user) {
             Response::notFound('User not found');
         }
@@ -230,7 +221,7 @@ class UserController
         $this->db->update('user', [
             'status'     => 'deleted',
             'deleted_at' => date('Y-m-d H:i:s'),
-        ], 'id = ?', [$id]);
+        ], 'id = ? AND franchise_code = ?', [$id, $this->code]);
 
         Response::success(null, 'User deleted');
     }

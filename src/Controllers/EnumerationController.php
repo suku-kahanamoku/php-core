@@ -6,22 +6,19 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Database;
+use App\Core\Franchise;
 use App\Core\Request;
 use App\Core\Response;
 
-/**
- * EnumerationController – manages enumeration/codebook values (ciselnik)
- * Table: enumeration (id, type, code, label, sort_order, is_active, created_at, updated_at)
- *
- * Examples of types: order_status, invoice_status, user_role, vat_rate, currency, country, payment_method
- */
 class EnumerationController
 {
     private Database $db;
+    private string   $code;
 
     public function __construct()
     {
-        $this->db = Database::getInstance();
+        $this->db  = Database::getInstance();
+        $this->code = Franchise::code();
     }
 
     /** GET /enumerations */
@@ -30,8 +27,8 @@ class EnumerationController
         $type     = $request->get('type');
         $isActive = $request->get('is_active');
 
-        $where  = ['1=1'];
-        $params = [];
+        $where  = ['franchise_code = ?'];
+        $params = [$this->code];
 
         if ($type) {
             $where[]  = 'type = ?';
@@ -48,7 +45,6 @@ class EnumerationController
             $params
         );
 
-        // Group by type if no filter
         if (!$type) {
             $grouped = [];
             foreach ($items as $item) {
@@ -64,7 +60,8 @@ class EnumerationController
     public function types(Request $request): void
     {
         $types = $this->db->fetchAll(
-            'SELECT DISTINCT type FROM enumeration ORDER BY type ASC'
+            'SELECT DISTINCT type FROM enumeration WHERE franchise_code = ? ORDER BY type ASC',
+            [$this->code]
         );
 
         Response::success(array_column($types, 'type'));
@@ -75,7 +72,10 @@ class EnumerationController
     {
         $id = (int) $params['id'];
 
-        $item = $this->db->fetchOne('SELECT * FROM enumeration WHERE id = ?', [$id]);
+        $item = $this->db->fetchOne(
+            'SELECT * FROM enumeration WHERE id = ? AND franchise_code = ?',
+            [$id, $this->code]
+        );
         if (!$item) {
             Response::notFound('Enumeration not found');
         }
@@ -94,41 +94,45 @@ class EnumerationController
 
         $errors = [];
         if ($type  === '') $errors['type']  = 'Required';
-        if ($code  === '') $errors['code']   = 'Required';
-        if ($label === '') $errors['label']  = 'Required';
+        if ($code  === '') $errors['code']  = 'Required';
+        if ($label === '') $errors['label'] = 'Required';
 
         if (!empty($errors)) {
             Response::validationError($errors);
         }
 
         $exists = $this->db->fetchOne(
-            'SELECT id FROM enumeration WHERE type = ? AND code = ?',
-            [$type, $code]
+            'SELECT id FROM enumeration WHERE franchise_code = ? AND type = ? AND code = ?',
+            [$this->code, $type, $code]
         );
         if ($exists) {
-            Response::error("Code '{$code}' already exists for type '{$type}'", 409);
+            Response::error("Code '$code' already exists for type '$type'", 409);
         }
 
         $id = $this->db->insert('enumeration', [
-            'type'       => $type,
-            'code'       => $code,
-            'label'      => $label,
-            'value'      => $request->get('value') ?? $code,
-            'sort_order' => (int) ($request->get('sort_order') ?? 0),
-            'is_active'  => (int) ($request->get('is_active') ?? 1),
-            'created_at' => date('Y-m-d H:i:s'),
+            'franchise_code' => $this->code,
+            'type'         => $type,
+            'code'         => $code,
+            'label'        => $label,
+            'value'        => $request->get('value') ?? $code,
+            'sort_order'   => (int) ($request->get('sort_order') ?? 0),
+            'is_active'    => (int) ($request->get('is_active') ?? 1),
+            'created_at'   => date('Y-m-d H:i:s'),
         ]);
 
         Response::created(['id' => $id], 'Enumeration created');
     }
 
-    /** PATCH /enumerations/:id – partial update */
+    /** PATCH /enumerations/:id */
     public function update(Request $request, array $params): void
     {
         Auth::requireRole('admin');
         $id = (int) $params['id'];
 
-        $item = $this->db->fetchOne('SELECT id FROM enumeration WHERE id = ?', [$id]);
+        $item = $this->db->fetchOne(
+            'SELECT id FROM enumeration WHERE id = ? AND franchise_code = ?',
+            [$id, $this->code]
+        );
         if (!$item) {
             Response::notFound('Enumeration not found');
         }
@@ -141,17 +145,20 @@ class EnumerationController
             if (($v = $request->get($f)) !== null) $set[$f] = (int) $v;
         }
 
-        $this->db->update('enumeration', $set, 'id = ?', [$id]);
+        $this->db->update('enumeration', $set, 'id = ? AND franchise_code = ?', [$id, $this->code]);
         Response::success(null, 'Enumeration updated');
     }
 
-    /** PUT /enumerations/:id – full replace */
+    /** PUT /enumerations/:id */
     public function replace(Request $request, array $params): void
     {
         Auth::requireRole('admin');
         $id = (int) $params['id'];
 
-        $item = $this->db->fetchOne('SELECT id FROM enumeration WHERE id = ?', [$id]);
+        $item = $this->db->fetchOne(
+            'SELECT id FROM enumeration WHERE id = ? AND franchise_code = ?',
+            [$id, $this->code]
+        );
         if (!$item) {
             Response::notFound('Enumeration not found');
         }
@@ -172,11 +179,11 @@ class EnumerationController
             'type'       => $type,
             'code'       => $code,
             'label'      => $label,
-            'value'      => (string) ($request->get('value') ?? ''),
+            'value'      => (string) ($request->get('value')      ?? $code),
             'sort_order' => (int)    ($request->get('sort_order') ?? 0),
             'is_active'  => (int)    ($request->get('is_active')  ?? 1),
             'updated_at' => date('Y-m-d H:i:s'),
-        ], 'id = ?', [$id]);
+        ], 'id = ? AND franchise_code = ?', [$id, $this->code]);
 
         Response::success(null, 'Enumeration replaced');
     }
@@ -187,12 +194,15 @@ class EnumerationController
         Auth::requireRole('admin');
         $id = (int) $params['id'];
 
-        $item = $this->db->fetchOne('SELECT id FROM enumeration WHERE id = ?', [$id]);
+        $item = $this->db->fetchOne(
+            'SELECT id FROM enumeration WHERE id = ? AND franchise_code = ?',
+            [$id, $this->code]
+        );
         if (!$item) {
             Response::notFound('Enumeration not found');
         }
 
-        $this->db->delete('enumeration', 'id = ?', [$id]);
+        $this->db->delete('enumeration', 'id = ? AND franchise_code = ?', [$id, $this->code]);
         Response::success(null, 'Enumeration deleted');
     }
 }

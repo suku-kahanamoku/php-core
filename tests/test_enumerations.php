@@ -1,0 +1,88 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+if (!function_exists('assert_test')) {
+    require_once __DIR__ . '/bootstrap.php';
+}
+if (!isset($base)) {
+    $base = rtrim($argv[1] ?? 'http://localhost/php/php-core/api', '/');
+}
+if (!isset($runnerMode)) {
+    $passed = 0;
+    $failed = 0;
+}
+$token = null;
+
+// ── Public routes ─────────────────────────────────────────────────────────────
+
+section('Enumerations – public list');
+$r = request('GET', "{$base}/enumerations", [], false);
+assert_test('GET /enumerations 200',        $r['status'] === 200, dump_on_fail($r));
+assert_test('has order_status group',       isset($r['data']['data']['order_status']));
+assert_test('has invoice_status group',     isset($r['data']['data']['invoice_status']));
+
+$firstEnumId = null;
+if (!empty($r['data']['data'])) {
+    $firstGroup  = reset($r['data']['data']);
+    $firstEnumId = $firstGroup[0]['id'] ?? null;
+}
+
+section('Enumerations – public types');
+$r = request('GET', "{$base}/enumerations/types", [], false);
+assert_test('GET /enumerations/types 200',  $r['status'] === 200, dump_on_fail($r));
+assert_test('is array of strings',          is_array($r['data']['data']));
+
+section('Enumerations – public get by id');
+if ($firstEnumId) {
+    $r = request('GET', "{$base}/enumerations/{$firstEnumId}", [], false);
+    assert_test('GET /enumerations/:id 200', $r['status'] === 200, dump_on_fail($r));
+    assert_test('has type + code',           isset($r['data']['data']['type'], $r['data']['data']['code']));
+}
+
+// ── Admin login ───────────────────────────────────────────────────────────────
+
+section('Enumerations – admin login');
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
+assert_test('admin login 200',              $r['status'] === 200, dump_on_fail($r));
+$token = $r['data']['data']['token'] ?? null;
+
+// ── Create ────────────────────────────────────────────────────────────────────
+
+section('Enumerations – CRUD');
+$enumType = 'test_type_' . time();
+$r = request('POST', "{$base}/enumerations", [
+    'type' => $enumType, 'code' => 'code_a', 'label' => 'Code A',
+]);
+assert_test('POST /enumerations 201',       $r['status'] === 201, dump_on_fail($r));
+$enumId = $r['data']['data']['id'] ?? null;
+
+if ($enumId) {
+    $r = request('GET', "{$base}/enumerations/{$enumId}");
+    assert_test('GET /enumerations/:id 200', $r['status'] === 200, dump_on_fail($r));
+    assert_test('code matches',              $r['data']['data']['code'] === 'code_a');
+
+    $r = request('PATCH', "{$base}/enumerations/{$enumId}", ['label' => 'Code A Patched']);
+    assert_test('PATCH /enumerations/:id 200', $r['status'] === 200, dump_on_fail($r));
+
+    $r = request('PUT', "{$base}/enumerations/{$enumId}", [
+        'type' => $enumType, 'code' => 'code_a', 'label' => 'Code A Updated',
+    ]);
+    assert_test('PUT /enumerations/:id 200', $r['status'] === 200, dump_on_fail($r));
+
+    $r = request('PUT', "{$base}/enumerations/{$enumId}", ['type' => $enumType]);
+    assert_test('PUT /enumerations/:id 422 missing code+label', $r['status'] === 422, dump_on_fail($r));
+
+    $r = request('DELETE', "{$base}/enumerations/{$enumId}");
+    assert_test('DELETE /enumerations/:id 200', $r['status'] === 200, dump_on_fail($r));
+}
+
+$token = null;
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+if (!isset($runnerMode)) {
+    print_results();
+    exit($failed > 0 ? 1 : 0);
+}

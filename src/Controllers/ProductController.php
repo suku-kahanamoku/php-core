@@ -6,16 +6,19 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Database;
+use App\Core\Franchise;
 use App\Core\Request;
 use App\Core\Response;
 
 class ProductController
 {
     private Database $db;
+    private string   $code;
 
     public function __construct()
     {
-        $this->db = Database::getInstance();
+        $this->db  = Database::getInstance();
+        $this->code = Franchise::code();
     }
 
     /** GET /products */
@@ -28,8 +31,8 @@ class ProductController
         $categoryId = $request->get('category_id');
         $status     = $request->get('status');
 
-        $where  = ['p.deleted_at IS NULL'];
-        $params = [];
+        $where  = ['p.franchise_code = ?', 'p.deleted_at IS NULL'];
+        $params = [$this->code];
 
         if ($search) {
             $where[]  = '(p.name LIKE ? OR p.sku LIKE ? OR p.description LIKE ?)';
@@ -77,11 +80,11 @@ class ProductController
         $id = (int) $params['id'];
 
         $product = $this->db->fetchOne(
-            "SELECT p.*, c.name AS category_name
+            'SELECT p.*, c.name AS category_name
              FROM product p
              LEFT JOIN category c ON c.id = p.category_id
-             WHERE p.id = ? AND p.deleted_at IS NULL",
-            [$id]
+             WHERE p.id = ? AND p.franchise_code = ? AND p.deleted_at IS NULL',
+            [$id, $this->code]
         );
 
         if (!$product) {
@@ -108,6 +111,7 @@ class ProductController
         }
 
         $id = $this->db->insert('product', [
+            'franchise_code'   => $this->code,
             'sku'            => $request->get('sku') ?? $this->generateSku(),
             'name'           => $name,
             'description'    => $request->get('description') ?? '',
@@ -122,13 +126,16 @@ class ProductController
         Response::created(['id' => $id], 'Product created');
     }
 
-    /** PATCH /products/:id – partial update */
+    /** PATCH /products/:id */
     public function update(Request $request, array $params): void
     {
         Auth::requireRole('admin');
         $id = (int) $params['id'];
 
-        $product = $this->db->fetchOne('SELECT id FROM product WHERE id = ? AND deleted_at IS NULL', [$id]);
+        $product = $this->db->fetchOne(
+            'SELECT id FROM product WHERE id = ? AND franchise_code = ? AND deleted_at IS NULL',
+            [$id, $this->code]
+        );
         if (!$product) {
             Response::notFound('Product not found');
         }
@@ -145,19 +152,22 @@ class ProductController
         }
 
         if (count($set) > 1) {
-            $this->db->update('product', $set, 'id = ?', [$id]);
+            $this->db->update('product', $set, 'id = ? AND franchise_code = ?', [$id, $this->code]);
         }
 
         Response::success(null, 'Product updated');
     }
 
-    /** PUT /products/:id – full replace */
+    /** PUT /products/:id */
     public function replace(Request $request, array $params): void
     {
         Auth::requireRole('admin');
         $id = (int) $params['id'];
 
-        $product = $this->db->fetchOne('SELECT id FROM product WHERE id = ? AND deleted_at IS NULL', [$id]);
+        $product = $this->db->fetchOne(
+            'SELECT id FROM product WHERE id = ? AND franchise_code = ? AND deleted_at IS NULL',
+            [$id, $this->code]
+        );
         if (!$product) {
             Response::notFound('Product not found');
         }
@@ -184,7 +194,7 @@ class ProductController
             'status'         => (string) ($request->get('status')         ?? 'active'),
             'category_id'    => $request->get('category_id')   !== null ? (int)   $request->get('category_id')   : null,
             'updated_at'     => date('Y-m-d H:i:s'),
-        ], 'id = ?', [$id]);
+        ], 'id = ? AND franchise_code = ?', [$id, $this->code]);
 
         Response::success(null, 'Product replaced');
     }
@@ -195,12 +205,16 @@ class ProductController
         Auth::requireRole('admin');
         $id = (int) $params['id'];
 
-        $product = $this->db->fetchOne('SELECT id FROM product WHERE id = ? AND deleted_at IS NULL', [$id]);
+        $product = $this->db->fetchOne(
+            'SELECT id FROM product WHERE id = ? AND franchise_code = ? AND deleted_at IS NULL',
+            [$id, $this->code]
+        );
         if (!$product) {
             Response::notFound('Product not found');
         }
 
-        $this->db->update('product', ['deleted_at' => date('Y-m-d H:i:s')], 'id = ?', [$id]);
+        $this->db->update('product', ['deleted_at' => date('Y-m-d H:i:s')],
+            'id = ? AND franchise_code = ?', [$id, $this->code]);
         Response::success(null, 'Product deleted');
     }
 
@@ -211,7 +225,10 @@ class ProductController
         $id       = (int) $params['id'];
         $quantity = (int) $request->get('quantity', 0);
 
-        $product = $this->db->fetchOne('SELECT id, stock_quantity FROM product WHERE id = ? AND deleted_at IS NULL', [$id]);
+        $product = $this->db->fetchOne(
+            'SELECT id, stock_quantity FROM product WHERE id = ? AND franchise_code = ? AND deleted_at IS NULL',
+            [$id, $this->code]
+        );
         if (!$product) {
             Response::notFound('Product not found');
         }
@@ -221,7 +238,9 @@ class ProductController
             Response::error('Insufficient stock', 422);
         }
 
-        $this->db->update('product', ['stock_quantity' => $newQty, 'updated_at' => date('Y-m-d H:i:s')], 'id = ?', [$id]);
+        $this->db->update('product',
+            ['stock_quantity' => $newQty, 'updated_at' => date('Y-m-d H:i:s')],
+            'id = ? AND franchise_code = ?', [$id, $this->code]);
         Response::success(['stock_quantity' => $newQty], 'Stock adjusted');
     }
 
