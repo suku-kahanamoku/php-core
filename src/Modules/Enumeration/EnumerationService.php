@@ -12,10 +12,12 @@ use App\Modules\Validator\Validator;
 class EnumerationService
 {
     private Enumeration $enum;
+    private Auth $auth;
 
-    public function __construct(Database $db, string $franchiseCode)
+    public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->enum = new Enumeration($db, $franchiseCode);
+        $this->auth = $auth;
     }
 
     public function list(
@@ -53,7 +55,7 @@ class EnumerationService
 
     public function create(string $type, string $code, string $label, array $input): int
     {
-        Auth::requireRole('admin');
+        $this->auth->requireRole('admin');
 
         Validator::make(['type' => $type, 'code' => $code, 'label' => $label])
             ->required(['type', 'code', 'label'])
@@ -75,7 +77,7 @@ class EnumerationService
 
     public function update(int $id, array $input): void
     {
-        Auth::requireRole('admin');
+        $this->auth->requireRole('admin');
 
         if (!$this->enum->findById($id)) {
             Response::notFound('Enumeration not found');
@@ -108,7 +110,7 @@ class EnumerationService
         string $label,
         array $input,
     ): void {
-        Auth::requireRole('admin');
+        $this->auth->requireRole('admin');
 
         if (!$this->enum->findById($id)) {
             Response::notFound('Enumeration not found');
@@ -130,7 +132,7 @@ class EnumerationService
 
     public function delete(int $id): void
     {
-        Auth::requireRole('admin');
+        $this->auth->requireRole('admin');
 
         if (!$this->enum->findById($id)) {
             Response::notFound('Enumeration not found');

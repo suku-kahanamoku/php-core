@@ -12,10 +12,12 @@ use App\Modules\Validator\Validator;
 class ProductService
 {
     private Product $product;
+    private Auth $auth;
 
-    public function __construct(Database $db, string $franchiseCode)
+    public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->product = new Product($db, $franchiseCode);
+        $this->auth = $auth;
     }
 
     public function list(
@@ -50,7 +52,7 @@ class ProductService
 
     public function create(array $input): int
     {
-        Auth::requireRole('admin');
+        $this->auth->requireRole('admin');
 
         Validator::make($input)->required('name')->numeric('price', 0)->validate();
 
@@ -76,7 +78,7 @@ class ProductService
 
     public function update(int $id, array $input): void
     {
-        Auth::requireRole('admin');
+        $this->auth->requireRole('admin');
 
         if (!$this->product->findById($id)) {
             Response::notFound('Product not found');
@@ -110,7 +112,7 @@ class ProductService
 
     public function replace(int $id, array $input): void
     {
-        Auth::requireRole('admin');
+        $this->auth->requireRole('admin');
 
         if (!$this->product->findById($id)) {
             Response::notFound('Product not found');
@@ -145,7 +147,7 @@ class ProductService
 
     public function delete(int $id): void
     {
-        Auth::requireRole('admin');
+        $this->auth->requireRole('admin');
 
         if (!$this->product->findById($id)) {
             Response::notFound('Product not found');
@@ -156,7 +158,7 @@ class ProductService
 
     public function adjustStock(int $id, int $delta): int
     {
-        Auth::requireRole('admin');
+        $this->auth->requireRole('admin');
 
         $newQty = $this->product->adjustStock($id, $delta);
 

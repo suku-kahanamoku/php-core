@@ -11,10 +11,12 @@ use App\Modules\Router\Response;
 class CategoryService
 {
     private Category $category;
+    private Auth $auth;
 
-    public function __construct(Database $db, string $franchiseCode)
+    public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->category = new Category($db, $franchiseCode);
+        $this->auth = $auth;
     }
 
     public function list(string $sortBy, string $sortDir, bool $flat = false): array
@@ -36,7 +38,7 @@ class CategoryService
 
     public function create(string $name, array $input): int
     {
-        Auth::requireRole('admin');
+        $this->auth->requireRole('admin');
 
         if ($name === '') {
             Response::validationError(['name' => 'Required']);
@@ -61,7 +63,7 @@ class CategoryService
 
     public function update(int $id, array $input): void
     {
-        Auth::requireRole('admin');
+        $this->auth->requireRole('admin');
 
         if (!$this->category->findById($id)) {
             Response::notFound('Category not found');
@@ -99,7 +101,7 @@ class CategoryService
 
     public function replace(int $id, string $name, array $input): void
     {
-        Auth::requireRole('admin');
+        $this->auth->requireRole('admin');
 
         if (!$this->category->findById($id)) {
             Response::notFound('Category not found');
@@ -131,7 +133,7 @@ class CategoryService
 
     public function delete(int $id): void
     {
-        Auth::requireRole('admin');
+        $this->auth->requireRole('admin');
 
         if (!$this->category->findById($id)) {
             Response::notFound('Category not found');

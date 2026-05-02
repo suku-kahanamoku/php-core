@@ -11,10 +11,12 @@ use App\Modules\Router\Response;
 class InvoiceService
 {
     private Invoice $invoice;
+    private Auth $auth;
 
-    public function __construct(Database $db, string $franchiseCode)
+    public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->invoice = new Invoice($db, $franchiseCode);
+        $this->auth = $auth;
     }
 
     public function list(
@@ -24,9 +26,9 @@ class InvoiceService
         string $sortBy,
         string $sortDir,
     ): array {
-        Auth::require();
+        $this->auth->require();
 
-        $userId = Auth::hasRole('admin') ? null : Auth::id();
+        $userId = $this->auth->hasRole('admin') ? null : $this->auth->id();
 
         return $this->invoice->findAll(
             $page,
@@ -40,14 +42,14 @@ class InvoiceService
 
     public function get(int $id): array
     {
-        Auth::require();
+        $this->auth->require();
 
         $invoice = $this->invoice->findById($id);
         if (!$invoice) {
             Response::notFound('Invoice not found');
         }
 
-        if (!Auth::hasRole('admin') && (int) $invoice['user_id'] !== Auth::id()) {
+        if (!$this->auth->hasRole('admin') && (int) $invoice['user_id'] !== $this->auth->id()) {
             Response::forbidden();
         }
 
@@ -56,7 +58,7 @@ class InvoiceService
 
     public function create(int $orderId, array $input): int
     {
-        Auth::requireRole('admin');
+        $this->auth->requireRole('admin');
 
         if ($orderId <= 0) {
             Response::validationError(['order_id' => 'Required']);
@@ -114,7 +116,7 @@ class InvoiceService
 
     public function updateStatus(int $id, string $status): void
     {
-        Auth::requireRole('admin');
+        $this->auth->requireRole('admin');
 
         if ($status === '') {
             Response::validationError(['status' => 'Required']);
@@ -130,7 +132,7 @@ class InvoiceService
 
     public function delete(int $id): void
     {
-        Auth::requireRole('admin');
+        $this->auth->requireRole('admin');
 
         $invoice = $this->invoice->findById($id);
         if (!$invoice) {

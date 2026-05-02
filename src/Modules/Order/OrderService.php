@@ -12,10 +12,12 @@ use App\Modules\Validator\Validator;
 class OrderService
 {
     private Order $order;
+    private Auth $auth;
 
-    public function __construct(Database $db, string $franchiseCode)
+    public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->order = new Order($db, $franchiseCode);
+        $this->auth = $auth;
     }
 
     public function list(
@@ -25,9 +27,9 @@ class OrderService
         string $sortBy,
         string $sortDir,
     ): array {
-        Auth::require();
+        $this->auth->require();
 
-        $userId = Auth::hasRole('admin') ? null : Auth::id();
+        $userId = $this->auth->hasRole('admin') ? null : $this->auth->id();
 
         return $this->order->findAll($page, $limit, $userId, $status, $sortBy, $sortDir);
     }
@@ -40,21 +42,21 @@ class OrderService
         string $sortBy,
         string $sortDir,
     ): array {
-        Auth::requireRole('admin');
+        $this->auth->requireRole('admin');
 
         return $this->order->findAll($page, $limit, $userId, $status, $sortBy, $sortDir);
     }
 
     public function get(int $id): array
     {
-        Auth::require();
+        $this->auth->require();
 
         $order = $this->order->findById($id);
         if (!$order) {
             Response::notFound('Order not found');
         }
 
-        if (!Auth::hasRole('admin') && (int) $order['user_id'] !== Auth::id()) {
+        if (!$this->auth->hasRole('admin') && (int) $order['user_id'] !== $this->auth->id()) {
             Response::forbidden();
         }
 
@@ -63,13 +65,13 @@ class OrderService
 
     public function create(array $items, string $currency, array $input): array
     {
-        Auth::require();
+        $this->auth->require();
 
         if (empty($items)) {
             Response::validationError(['items' => 'At least one item required']);
         }
 
-        $userId = Auth::id();
+        $userId = $this->auth->id();
         $pdo    = $this->order->getPdo();
 
         $pdo->beginTransaction();
@@ -143,7 +145,7 @@ class OrderService
 
     public function updateStatus(int $id, string $status): void
     {
-        Auth::requireRole('admin');
+        $this->auth->requireRole('admin');
 
         Validator::make(['status' => $status])->required('status')->validate();
 
@@ -157,7 +159,7 @@ class OrderService
 
     public function delete(int $id): void
     {
-        Auth::requireRole('admin');
+        $this->auth->requireRole('admin');
 
         $order = $this->order->findById($id);
         if (!$order) {

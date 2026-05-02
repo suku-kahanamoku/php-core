@@ -12,11 +12,13 @@ class AuthService
 {
     private Database $db;
     private string   $code;
+    private Auth     $auth;
 
-    public function __construct(Database $db, string $franchiseCode)
+    public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->db   = $db;
         $this->code = $franchiseCode;
+        $this->auth = $auth;
     }
 
     public function login(string $email, string $password): array
@@ -71,14 +73,14 @@ class AuthService
 
     public function logout(): void
     {
-        Auth::require();
-        Auth::logout();
+        $this->auth->require();
+        $this->auth->logout();
     }
 
     public function me(): array
     {
-        Auth::require();
-        return Auth::user();
+        $this->auth->require();
+        return $this->auth->user();
     }
 
     public function register(
@@ -128,7 +130,7 @@ class AuthService
 
     public function changePassword(string $currentPassword, string $newPassword): void
     {
-        Auth::require();
+        $this->auth->require();
 
         Validator::make([
             'current_password' => $currentPassword,
@@ -138,7 +140,7 @@ class AuthService
             ->minLength('new_password', 8)
             ->validate();
 
-        $userId = Auth::id();
+        $userId = $this->auth->id();
         $user   = $this->db->fetchOne(
             'SELECT password FROM user WHERE id = ? AND franchise_code = ?',
             [$userId, $this->code],

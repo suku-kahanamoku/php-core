@@ -12,10 +12,12 @@ use App\Modules\Validator\Validator;
 class RoleService
 {
     private Role $role;
+    private Auth $auth;
 
-    public function __construct(Database $db, string $franchiseCode)
+    public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->role = new Role($db, $franchiseCode);
+        $this->auth = $auth;
     }
 
     public function list(?bool $isActive, string $sortBy, string $sortDir): array
@@ -40,7 +42,7 @@ class RoleService
         int $sortOrder,
         int $isActive,
     ): int {
-        Auth::requireRole('admin');
+        $this->auth->requireRole('admin');
 
         Validator::make(['name' => $name, 'label' => $label])
             ->required(['name', 'label'])
@@ -65,7 +67,7 @@ class RoleService
 
     public function update(int $id, array $fields): void
     {
-        Auth::requireRole('admin');
+        $this->auth->requireRole('admin');
 
         $existing = $this->role->findById($id);
         if (!$existing) {
@@ -109,7 +111,7 @@ class RoleService
         int $sortOrder,
         int $isActive,
     ): void {
-        Auth::requireRole('admin');
+        $this->auth->requireRole('admin');
 
         if (!$this->role->findById($id)) {
             Response::notFound('Role not found');
@@ -138,7 +140,7 @@ class RoleService
 
     public function delete(int $id): void
     {
-        Auth::requireRole('admin');
+        $this->auth->requireRole('admin');
 
         $role = $this->role->findById($id);
         if (!$role) {

@@ -12,10 +12,12 @@ use App\Modules\Validator\Validator;
 class UserService
 {
     private User $user;
+    private Auth $auth;
 
-    public function __construct(Database $db, string $franchiseCode)
+    public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->user = new User($db, $franchiseCode);
+        $this->auth = $auth;
     }
 
     public function list(
@@ -27,7 +29,7 @@ class UserService
         string $sortBy,
         string $sortDir,
     ): array {
-        Auth::requireRole('admin');
+        $this->auth->requireRole('admin');
         return $this->user->findAll(
             $page,
             $limit,
@@ -41,9 +43,9 @@ class UserService
 
     public function get(int $id): array
     {
-        Auth::require();
+        $this->auth->require();
 
-        if (!Auth::hasRole('admin') && Auth::id() !== $id) {
+        if (!$this->auth->hasRole('admin') && $this->auth->id() !== $id) {
             Response::forbidden();
         }
 
@@ -57,7 +59,7 @@ class UserService
 
     public function create(array $input): int
     {
-        Auth::requireRole('admin');
+        $this->auth->requireRole('admin');
 
         Validator::make($input)
             ->required(['first_name', 'last_name', 'email', 'password'])
@@ -96,9 +98,9 @@ class UserService
 
     public function update(int $id, array $input): void
     {
-        Auth::require();
+        $this->auth->require();
 
-        if (!Auth::hasRole('admin') && Auth::id() !== $id) {
+        if (!$this->auth->hasRole('admin') && $this->auth->id() !== $id) {
             Response::forbidden();
         }
 
@@ -115,7 +117,7 @@ class UserService
             }
         }
 
-        if (Auth::hasRole('admin')) {
+        if ($this->auth->hasRole('admin')) {
             if (array_key_exists('role', $input) && $input['role'] !== null) {
                 $roleId = $this->user->resolveRoleId((string) $input['role']);
                 if ($roleId === null) {
@@ -135,9 +137,9 @@ class UserService
 
     public function replace(int $id, array $input): void
     {
-        Auth::require();
+        $this->auth->require();
 
-        if (!Auth::hasRole('admin') && Auth::id() !== $id) {
+        if (!$this->auth->hasRole('admin') && $this->auth->id() !== $id) {
             Response::forbidden();
         }
 
@@ -155,7 +157,7 @@ class UserService
             'phone'      => $input['phone'] ?? null,
         ];
 
-        if (Auth::hasRole('admin')) {
+        if ($this->auth->hasRole('admin')) {
             $roleName = $input['role'] ?? 'user';
             $roleId   = $this->user->resolveRoleId($roleName);
             if ($roleId === null) {
@@ -170,7 +172,7 @@ class UserService
 
     public function delete(int $id): void
     {
-        Auth::requireRole('admin');
+        $this->auth->requireRole('admin');
 
         if (!$this->user->findById($id)) {
             Response::notFound('User not found');

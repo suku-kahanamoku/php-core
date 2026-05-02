@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Role;
 
+use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Request;
 use App\Modules\Router\Response;
@@ -12,9 +13,9 @@ class RoleApi
 {
     private RoleService $service;
 
-    public function __construct(Database $db, string $franchiseCode)
+    public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->service = new RoleService($db, $franchiseCode);
+        $this->service = new RoleService($db, $franchiseCode, $auth);
     }
 
     /** GET /roles */

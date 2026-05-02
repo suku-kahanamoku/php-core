@@ -12,10 +12,12 @@ use App\Modules\Validator\Validator;
 class TextService
 {
     private Text $text;
+    private Auth $auth;
 
-    public function __construct(Database $db, string $franchiseCode)
+    public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->text = new Text($db, $franchiseCode);
+        $this->auth = $auth;
     }
 
     public function list(
@@ -52,7 +54,7 @@ class TextService
         string $language,
         array $input,
     ): int {
-        Auth::requireRole('admin');
+        $this->auth->requireRole('admin');
 
         Validator::make(['key' => $key, 'title' => $title])
             ->required(['key', 'title'])
@@ -68,13 +70,13 @@ class TextService
             'content'    => $input['content'] ?? '',
             'language'   => $language,
             'is_active'  => (int) ($input['is_active'] ?? 1),
-            'created_by' => Auth::id(),
+            'created_by' => $this->auth->id(),
         ]);
     }
 
     public function update(int $id, array $input): void
     {
-        Auth::requireRole('admin');
+        $this->auth->requireRole('admin');
 
         if (!$this->text->findById($id)) {
             Response::notFound('Text not found');
@@ -99,7 +101,7 @@ class TextService
 
     public function replace(int $id, string $key, string $title, array $input): void
     {
-        Auth::requireRole('admin');
+        $this->auth->requireRole('admin');
 
         if (!$this->text->findById($id)) {
             Response::notFound('Text not found');
@@ -120,7 +122,7 @@ class TextService
 
     public function delete(int $id): void
     {
-        Auth::requireRole('admin');
+        $this->auth->requireRole('admin');
 
         if (!$this->text->findById($id)) {
             Response::notFound('Text not found');

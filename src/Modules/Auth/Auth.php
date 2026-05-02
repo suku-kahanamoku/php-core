@@ -10,22 +10,25 @@ use App\Modules\Router\Response;
 
 class Auth
 {
-    private const TOKEN_BYTES    = 32;    // → 64-char hex token
+    private const TOKEN_BYTES    = 32;
     private const TOKEN_LIFETIME = 86400; // 24 hours default
 
-    /** Resolved user for the current request (cached after first check). */
-    private static ?array $currentUser = null;
+    private Database $db;
+    private ?array   $currentUser = null;
 
-    /**
-     * Create a Bearer token for the given user, persist it, and return it.
-     */
-    public static function login(array $user): string
+    public function __construct(Database $db)
+    {
+        $this->db = $db;
+    }
+
+    /** Create a Bearer token for the given user, persist it, and return it. */
+    public function login(array $user): string
     {
         $token     = bin2hex(random_bytes(self::TOKEN_BYTES));
         $lifetime  = (int) ($_ENV['TOKEN_LIFETIME'] ?? self::TOKEN_LIFETIME);
         $expiresAt = date('Y-m-d H:i:s', time() + $lifetime);
 
-        Database::getInstance()->insert('user_token', [
+        $this->db->insert('user_token', [
             'user_id'    => $user['id'],
             'token'      => $token,
             'expires_at' => $expiresAt,
@@ -36,31 +39,28 @@ class Auth
     }
 
     /** Revoke the Bearer token sent with the current request. */
-    public static function logout(): void
+    public function logout(): void
     {
-        $token = self::extractToken();
+        $token = $this->extractToken();
         if ($token !== null) {
-            Database::getInstance()->query(
-                'DELETE FROM user_token WHERE token = ?',
-                [$token],
-            );
+            $this->db->query('DELETE FROM user_token WHERE token = ?', [$token]);
         }
-        self::$currentUser = null;
+        $this->currentUser = null;
     }
 
     /** Return true when a valid, non-expired Bearer token is present. */
-    public static function check(): bool
+    public function check(): bool
     {
-        if (self::$currentUser !== null) {
+        if ($this->currentUser !== null) {
             return true;
         }
 
-        $token = self::extractToken();
+        $token = $this->extractToken();
         if ($token === null) {
             return false;
         }
 
-        $row = Database::getInstance()->fetchOne(
+        $row = $this->db->fetchOne(
             'SELECT u.id, u.email, r.name AS role, u.first_name, u.last_name
              FROM user_token t
              JOIN `user` u ON u.id = t.user_id
@@ -75,7 +75,7 @@ class Auth
             return false;
         }
 
-        self::$currentUser = [
+        $this->currentUser = [
             'id'    => (int) $row['id'],
             'email' => $row['email'],
             'role'  => $row['role'],
@@ -85,55 +85,53 @@ class Auth
         return true;
     }
 
-    public static function user(): ?array
+    public function user(): ?array
     {
-        return self::check() ? self::$currentUser : null;
+        return $this->check() ? $this->currentUser : null;
     }
 
-    public static function id(): ?int
+    public function id(): ?int
     {
-        return self::user()['id'] ?? null;
+        return $this->user()['id'] ?? null;
     }
 
-    public static function role(): ?string
+    public function role(): ?string
     {
-        return self::user()['role'] ?? null;
+        return $this->user()['role'] ?? null;
     }
 
-    public static function hasRole(string $role): bool
+    public function hasRole(string $role): bool
     {
-        return self::role() === $role;
+        return $this->role() === $role;
     }
 
-    public static function hasAnyRole(array $roles): bool
+    public function hasAnyRole(array $roles): bool
     {
-        return in_array(self::role(), $roles, true);
+        return in_array($this->role(), $roles, true);
     }
 
-    public static function require(): void
+    public function require(): void
     {
-        if (!self::check()) {
+        if (!$this->check()) {
             Response::unauthorized('You must be logged in to access this resource.');
         }
     }
 
-    public static function requireRole(string $role): void
+    public function requireRole(string $role): void
     {
-        self::require();
-        if (!self::hasRole($role)) {
+        $this->require();
+        if (!$this->hasRole($role)) {
             Response::forbidden('Insufficient permissions.');
         }
     }
 
-    // ── Internal ─────────────────────────────────────────────────────────────
-
-    private static function extractToken(): ?string
+    private function extractToken(): ?string
     {
         $header = $_SERVER['HTTP_AUTHORIZATION']
             ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION']
             ?? '';
 
-        if (preg_match('/^Bearer\\s+(\\S+)$/i', trim($header), $m)) {
+        if (preg_match('/^Bearer\s+(\S+)$/i', trim($header), $m)) {
             return $m[1];
         }
 

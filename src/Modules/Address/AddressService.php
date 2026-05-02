@@ -12,10 +12,12 @@ use App\Modules\Validator\Validator;
 class AddressService
 {
     private Address $address;
+    private Auth $auth;
 
-    public function __construct(Database $db, string $franchiseCode)
+    public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->address = new Address($db, $franchiseCode);
+        $this->auth = $auth;
     }
 
     public function listByUser(
@@ -24,9 +26,9 @@ class AddressService
         string $sortBy,
         string $sortDir,
     ): array {
-        Auth::require();
+        $this->auth->require();
 
-        if (!Auth::hasRole('admin') && Auth::id() !== $userId) {
+        if (!$this->auth->hasRole('admin') && $this->auth->id() !== $userId) {
             Response::forbidden();
         }
 
@@ -35,14 +37,14 @@ class AddressService
 
     public function get(int $id): array
     {
-        Auth::require();
+        $this->auth->require();
 
         $address = $this->address->findById($id);
         if (!$address) {
             Response::notFound('Address not found');
         }
 
-        if (!Auth::hasRole('admin') && (int) $address['user_id'] !== Auth::id()) {
+        if (!$this->auth->hasRole('admin') && (int) $address['user_id'] !== $this->auth->id()) {
             Response::forbidden();
         }
 
@@ -51,11 +53,11 @@ class AddressService
 
     public function create(array $input, ?int $overrideUserId = null): int
     {
-        Auth::require();
+        $this->auth->require();
 
-        $userId = (Auth::hasRole('admin') && $overrideUserId !== null)
+        $userId = ($this->auth->hasRole('admin') && $overrideUserId !== null)
             ? $overrideUserId
-            : Auth::id();
+            : $this->auth->id();
 
         Validator::make($input)->required(['street', 'city', 'zip'])->validate();
 
@@ -82,14 +84,14 @@ class AddressService
 
     public function update(int $id, array $input): void
     {
-        Auth::require();
+        $this->auth->require();
 
         $address = $this->address->findById($id);
         if (!$address) {
             Response::notFound('Address not found');
         }
 
-        if (!Auth::hasRole('admin') && (int) $address['user_id'] !== Auth::id()) {
+        if (!$this->auth->hasRole('admin') && (int) $address['user_id'] !== $this->auth->id()) {
             Response::forbidden();
         }
 
@@ -120,14 +122,14 @@ class AddressService
 
     public function replace(int $id, array $input): void
     {
-        Auth::require();
+        $this->auth->require();
 
         $address = $this->address->findById($id);
         if (!$address) {
             Response::notFound('Address not found');
         }
 
-        if (!Auth::hasRole('admin') && (int) $address['user_id'] !== Auth::id()) {
+        if (!$this->auth->hasRole('admin') && (int) $address['user_id'] !== $this->auth->id()) {
             Response::forbidden();
         }
 
@@ -156,14 +158,14 @@ class AddressService
 
     public function delete(int $id): void
     {
-        Auth::require();
+        $this->auth->require();
 
         $address = $this->address->findById($id);
         if (!$address) {
             Response::notFound('Address not found');
         }
 
-        if (!Auth::hasRole('admin') && (int) $address['user_id'] !== Auth::id()) {
+        if (!$this->auth->hasRole('admin') && (int) $address['user_id'] !== $this->auth->id()) {
             Response::forbidden();
         }
 

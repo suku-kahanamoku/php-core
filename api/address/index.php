@@ -6,6 +6,7 @@ require_once __DIR__ . '/../../bootstrap.php';
 
 use App\Middleware\CorsMiddleware;
 use App\Modules\Address\AddressApi;
+use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Request;
 use App\Modules\Router\Router;
@@ -13,11 +14,12 @@ use App\Modules\Router\Router;
 $request = new Request();
 $router  = new Router();
 $db      = Database::getInstance();
-
+$code    = $request->franchiseCode;
+$auth    = new Auth($db);
 
 $router->addGlobalMiddleware(new CorsMiddleware());
 
-$address = new AddressApi($db, $request->franchiseCode);
+$address = new AddressApi($db, $code, $auth);
 
 $router->post('/', [$address, 'create']);
 $router->get('/:id', [$address, 'get']);
