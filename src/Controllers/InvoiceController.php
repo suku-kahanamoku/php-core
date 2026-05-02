@@ -19,7 +19,7 @@ class InvoiceController
     }
 
     /** GET /invoices */
-    public function index(Request $request): void
+    public function list(Request $request): void
     {
         Auth::require();
 
@@ -73,7 +73,7 @@ class InvoiceController
     }
 
     /** GET /invoices/:id */
-    public function show(Request $request, array $params): void
+    public function get(Request $request, array $params): void
     {
         Auth::require();
         $id = (int) $params['id'];
@@ -108,7 +108,7 @@ class InvoiceController
     }
 
     /** POST /invoices – generate invoice from order */
-    public function store(Request $request): void
+    public function create(Request $request): void
     {
         Auth::requireRole('admin');
 
@@ -206,7 +206,7 @@ class InvoiceController
     }
 
     /** DELETE /invoices/:id */
-    public function destroy(Request $request, array $params): void
+    public function delete(Request $request, array $params): void
     {
         Auth::requireRole('admin');
         $id = (int) $params['id'];

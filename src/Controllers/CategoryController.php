@@ -19,9 +19,8 @@ class CategoryController
     }
 
     /** GET /categories */
-    public function index(Request $request): void
+    public function list(Request $request): void
     {
-        Auth::require();
 
         $items = $this->db->fetchAll(
             'SELECT id, name, slug, parent_id, description, sort_order, created_at
@@ -34,9 +33,8 @@ class CategoryController
     }
 
     /** GET /categories/:id */
-    public function show(Request $request, array $params): void
+    public function get(Request $request, array $params): void
     {
-        Auth::require();
         $id = (int) $params['id'];
 
         $category = $this->db->fetchOne('SELECT * FROM category WHERE id = ?', [$id]);
@@ -54,7 +52,7 @@ class CategoryController
     }
 
     /** POST /categories */
-    public function store(Request $request): void
+    public function create(Request $request): void
     {
         Auth::requireRole('admin');
 
@@ -77,7 +75,7 @@ class CategoryController
         Response::created(['id' => $id], 'Category created');
     }
 
-    /** PUT /categories/:id */
+    /** PATCH /categories/:id – partial update */
     public function update(Request $request, array $params): void
     {
         Auth::requireRole('admin');
@@ -103,13 +101,47 @@ class CategoryController
         Response::success(null, 'Category updated');
     }
 
-    /** DELETE /categories/:id */
-    public function destroy(Request $request, array $params): void
+    /** PUT /categories/:id – full replace */
+    public function replace(Request $request, array $params): void
     {
         Auth::requireRole('admin');
         $id = (int) $params['id'];
 
-        $inUse = $this->db->fetchOne('SELECT id FROM product WHERE category_id = ? LIMIT 1', [$id]);
+        $category = $this->db->fetchOne('SELECT id FROM category WHERE id = ?', [$id]);
+        if (!$category) {
+            Response::notFound('Category not found');
+        }
+
+        $name = trim((string) $request->get('name', ''));
+        if ($name === '') {
+            Response::validationError(['name' => 'Required']);
+        }
+
+        $slug = $request->get('slug') !== null
+            ? trim((string) $request->get('slug'))
+            : $this->toSlug($name);
+
+        $parentId = $request->get('parent_id');
+
+        $this->db->update('category', [
+            'name'        => $name,
+            'slug'        => $slug,
+            'description' => (string) ($request->get('description') ?? ''),
+            'parent_id'   => $parentId !== null && $parentId !== '' ? (int) $parentId : null,
+            'sort_order'  => (int) ($request->get('sort_order') ?? 0),
+            'updated_at'  => date('Y-m-d H:i:s'),
+        ], 'id = ?', [$id]);
+
+        Response::success(null, 'Category replaced');
+    }
+
+    /** DELETE /categories/:id */
+    public function delete(Request $request, array $params): void
+    {
+        Auth::requireRole('admin');
+        $id = (int) $params['id'];
+
+        $inUse = $this->db->fetchOne('SELECT id FROM product WHERE category_id = ? AND deleted_at IS NULL LIMIT 1', [$id]);
         if ($inUse) {
             Response::error('Category is in use by products', 409);
         }

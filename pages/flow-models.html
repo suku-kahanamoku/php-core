@@ -3,33 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>php-core – Model flows</title>
+<title>Model flows – php-core</title>
 <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-100 min-h-screen font-sans text-slate-800 flex flex-col">
-<header class="bg-slate-900 text-white">
-  <div class="flex items-center gap-3 px-8 py-3">
-    <a href="../index.php" class="font-extrabold tracking-tight text-white hover:text-blue-400 transition-colors no-underline">&#9889; php-core</a>
-    <span class="text-slate-600">/</span>
-    <span class="text-slate-300 text-sm">Model flows</span>
-  </div>
-</header>
-<nav class="bg-white border-b border-slate-200 px-8 py-2 flex gap-2 flex-wrap items-center">
-  <a href="../index.php" class="px-3 py-1.5 rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50 no-underline text-xs transition-colors">&#127968; Rozceštník</a>
-  <a href="flow-login.html" class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128273; Login flow</a>
-  <a href="flow-order-cancel.html" class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128230; Storno</a>
-  <a href="flow-models.html" class="px-3 py-1.5 rounded-md border bg-slate-900 text-white border-slate-900 no-underline text-xs">&#128218; Model flows</a>
-  <a href="db-schema.html" class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128194; ER diagram</a>
-  <a href="db-table.html" class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128203; DB tabulky</a>
-</nav>
+<header class="bg-slate-900 text-white"><div class="flex items-center gap-3 px-6 py-4"><a href="../index.php" class="font-extrabold text-lg tracking-tight text-white no-underline">&#9889; php-core</a><span class="text-slate-600 text-sm select-none">&mdash;</span><span class="text-slate-300 text-sm">Model flows</span></div></header>
+<nav class="bg-white border-b border-slate-100 px-6 py-2 flex gap-2 flex-wrap"><a href="flow-login.html" class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128273; Login flow</a><a href="flow-order-cancel.html" class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128230; Storno</a><a href="flow-models.html" class="px-3 py-1.5 rounded-md border bg-slate-900 text-white border-slate-900 no-underline text-xs">&#128218; Model flows</a><a href="db-schema.html" class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128194; ER diagram</a><a href="db-table.html" class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128203; DB tabulky</a></nav>
 <div class="px-6 py-6 max-w-5xl mx-auto w-full">
-<div class="flex flex-wrap gap-2 mb-6">
-  <span class="text-xs px-3 py-1 rounded-full border-2 border-blue-400 bg-blue-50 text-blue-700">→ request / akce</span>
-  <span class="text-xs px-3 py-1 rounded-full border-2 border-amber-400 bg-amber-50 text-amber-700">⚙ zpracování</span>
-  <span class="text-xs px-3 py-1 rounded-full border-2 border-violet-400 bg-violet-50 text-violet-700">&#128388; SQL</span>
-  <span class="text-xs px-3 py-1 rounded-full border-2 border-red-400 bg-red-50 text-red-700">&#128274; auth</span>
-  <span class="text-xs px-3 py-1 rounded-full border-2 border-emerald-400 bg-emerald-50 text-emerald-700">← response</span>
-</div>
+<div class="flex flex-wrap gap-1.5 mb-4"><span class="text-xs px-2 py-0.5 rounded-full font-semibold bg-blue-100 text-blue-700">Request</span><span class="text-xs px-2 py-0.5 rounded-full font-semibold bg-amber-100 text-amber-700">Logika</span><span class="text-xs px-2 py-0.5 rounded-full font-semibold bg-violet-100 text-violet-700">SQL</span><span class="text-xs px-2 py-0.5 rounded-full font-semibold bg-red-100 text-red-700">Auth/Sec</span><span class="text-xs px-2 py-0.5 rounded-full font-semibold bg-emerald-100 text-emerald-700">Response</span></div>
 <div class="flex flex-wrap gap-2 mb-6">
 <button class="text-xs px-3 py-2 rounded-lg border bg-slate-900 text-white border-slate-900 cursor-pointer font-semibold" onclick="showTab('user')">&#128100; User</button>
 <button class="text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-500 cursor-pointer font-semibold hover:border-slate-400 hover:text-slate-700 transition-colors" onclick="showTab('address')">&#128205; Address</button>
@@ -41,465 +22,781 @@
 <button class="text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-500 cursor-pointer font-semibold hover:border-slate-400 hover:text-slate-700 transition-colors" onclick="showTab('enumeration')">&#128290; Enumeration</button>
 </div>
 <div id="tab-user" class="block">
-<div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>POST /users – Admin vytváří nového uživatele</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-  <div class="h-1 bg-blue-500"></div>
-  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
-    <div class="w-6 h-6 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center shrink-0">1</div>
-    <div class="text-sm font-bold text-slate-900 flex-1">HTTP Request</div>
-    <div class="text-xs text-slate-400 font-mono hidden sm:block">klient</div>
-    <div class="text-xs text-slate-400 ml-2">▼</div>
-  </div>
-  <div class="px-4 pb-4">
-<ul class="flex flex-col gap-1.5 mt-2">
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-blue-400 bg-blue-50 text-blue-700"><span class="shrink-0">→</span><span><code class="font-mono bg-black/10 px-1 rounded">POST /users</code><br>Header: Bearer &lt;admin-token&gt;<br>Body: <code class="font-mono bg-black/10 px-1 rounded">{{ first_name, last_name, email, password, role }}</code></span></li>
-</ul>
-  </div>
-</div><div class="text-center text-slate-300 text-lg leading-none my-0.5">↓</div><div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-  <div class="h-1 bg-red-500"></div>
-  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
-    <div class="w-6 h-6 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center shrink-0">2</div>
-    <div class="text-sm font-bold text-slate-900 flex-1">AuthMiddleware → token ověření</div>
-    <div class="text-xs text-slate-400 font-mono hidden sm:block">src/Core/Auth.php</div>
-    <div class="text-xs text-slate-400 ml-2">▼</div>
-  </div>
-  <div class="px-4 pb-4">
-<ul class="flex flex-col gap-1.5 mt-2">
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-red-400 bg-red-50 text-red-700"><span class="shrink-0">&#128274;</span><span>Extrahuje Bearer token z HTTP_AUTHORIZATION</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span>SELECT user JOIN user_token WHERE token=? AND expires_at&gt;NOW() AND status='active'</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-red-400 bg-red-50 text-red-700"><span class="shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">requireRole('admin')</code> – pouze admin může vytvářet uživatele</span></li>
-</ul>
-  </div>
-</div><div class="text-center text-slate-300 text-lg leading-none my-0.5">↓</div><div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-  <div class="h-1 bg-emerald-500"></div>
-  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
-    <div class="w-6 h-6 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center justify-center shrink-0">3</div>
-    <div class="text-sm font-bold text-slate-900 flex-1">UserController::store()</div>
-    <div class="text-xs text-slate-400 font-mono hidden sm:block">src/Controllers/UserController.php</div>
-    <div class="text-xs text-slate-400 ml-2">▼</div>
-  </div>
-  <div class="px-4 pb-4">
-<ul class="flex flex-col gap-1.5 mt-2">
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>Validace: first_name, last_name povinné; email formát; password min 8 znaků</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span>SELECT id FROM user WHERE email=? → kontrola duplicity → HTTP 409</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span><code class="font-mono bg-black/10 px-1 rounded">password_hash($password, PASSWORD_BCRYPT, ['cost'=>12])</code></span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span>INSERT INTO user (first_name, last_name, email, password, role, status, created_at)</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-emerald-400 bg-emerald-50 text-emerald-700"><span class="shrink-0">←</span><span>HTTP 201 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ id, email, role }}</code></span></li>
-</ul>
-  </div>
-</div></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>DELETE /users/:id – Soft-delete uživatele</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-  <div class="h-1 bg-amber-500"></div>
-  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
-    <div class="w-6 h-6 rounded-full bg-amber-500 text-white text-xs font-bold flex items-center justify-center shrink-0">1</div>
-    <div class="text-sm font-bold text-slate-900 flex-1">UserController::destroy()</div>
-    <div class="text-xs text-slate-400 font-mono hidden sm:block">src/Controllers/UserController.php</div>
-    <div class="text-xs text-slate-400 ml-2">▶</div>
-  </div>
-  <div class="px-4 pb-4 hidden">
-<ul class="flex flex-col gap-1.5 mt-2">
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-red-400 bg-red-50 text-red-700"><span class="shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">requireRole('admin')</code></span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span>SELECT id FROM user WHERE id=? AND status != 'deleted'</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>Nelze smazat sebe sama (Auth::id() === $id → HTTP 422)</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span>UPDATE user SET status='deleted', deleted_at=NOW() WHERE id=? <em>(soft delete)</em></span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-emerald-400 bg-emerald-50 text-emerald-700"><span class="shrink-0">←</span><span>HTTP 200 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ message: "User deleted" }}</code></span></li>
-</ul>
-  </div>
-</div></div>
-</div><div id="tab-address" class="hidden">
-<div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>POST /addresses – Vytvoření adresy uživatele</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-  <div class="h-1 bg-blue-500"></div>
-  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
-    <div class="w-6 h-6 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center shrink-0">1</div>
-    <div class="text-sm font-bold text-slate-900 flex-1">HTTP Request</div>
-    <div class="text-xs text-slate-400 font-mono hidden sm:block">klient</div>
-    <div class="text-xs text-slate-400 ml-2">▼</div>
-  </div>
-  <div class="px-4 pb-4">
-<ul class="flex flex-col gap-1.5 mt-2">
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-blue-400 bg-blue-50 text-blue-700"><span class="shrink-0">→</span><span><code class="font-mono bg-black/10 px-1 rounded">POST /addresses</code><br>Body: <code class="font-mono bg-black/10 px-1 rounded">{{ type, street, city, zip, country, first_name, last_name }}</code></span></li>
-</ul>
-  </div>
-</div><div class="text-center text-slate-300 text-lg leading-none my-0.5">↓</div><div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-  <div class="h-1 bg-emerald-500"></div>
-  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
-    <div class="w-6 h-6 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center justify-center shrink-0">2</div>
-    <div class="text-sm font-bold text-slate-900 flex-1">AddressController::store()</div>
-    <div class="text-xs text-slate-400 font-mono hidden sm:block">src/Controllers/AddressController.php</div>
-    <div class="text-xs text-slate-400 ml-2">▼</div>
-  </div>
-  <div class="px-4 pb-4">
-<ul class="flex flex-col gap-1.5 mt-2">
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-red-400 bg-red-50 text-red-700"><span class="shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">Auth::require()</code></span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>Validace: street, city, zip, country povinné; type ∈ ['billing','shipping']</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>Admin může vytvářet pro jiného uživatele (user_id v body), ostatní jen pro sebe</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span>INSERT INTO address (user_id, type, street, city, zip, country, first_name, last_name, is_default, created_at)</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span>Pokud is_default=1: UPDATE address SET is_default=0 WHERE user_id=? AND id != $newId</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-emerald-400 bg-emerald-50 text-emerald-700"><span class="shrink-0">←</span><span>HTTP 201 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ id, type, street, city, ... }}</code></span></li>
-</ul>
-  </div>
-</div></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>GET /users/:userId/addresses – Adresy uživatele</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-  <div class="h-1 bg-violet-500"></div>
-  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
-    <div class="w-6 h-6 rounded-full bg-violet-500 text-white text-xs font-bold flex items-center justify-center shrink-0">1</div>
-    <div class="text-sm font-bold text-slate-900 flex-1">AddressController::index()</div>
-    <div class="text-xs text-slate-400 font-mono hidden sm:block">src/Controllers/AddressController.php</div>
-    <div class="text-xs text-slate-400 ml-2">▶</div>
-  </div>
-  <div class="px-4 pb-4 hidden">
-<ul class="flex flex-col gap-1.5 mt-2">
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-red-400 bg-red-50 text-red-700"><span class="shrink-0">&#128274;</span><span>Neadmin může vidět jen své vlastní adresy ($userId === Auth::id())</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span>SELECT * FROM address WHERE user_id=? ORDER BY is_default DESC, created_at DESC</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-emerald-400 bg-emerald-50 text-emerald-700"><span class="shrink-0">←</span><span>HTTP 200 &middot; pole adres</span></li>
-</ul>
-  </div>
-</div></div>
-</div><div id="tab-category" class="hidden">
-<div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>GET /categories – Stromová struktura kategorií</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-  <div class="h-1 bg-cyan-500"></div>
-  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
-    <div class="w-6 h-6 rounded-full bg-cyan-500 text-white text-xs font-bold flex items-center justify-center shrink-0">1</div>
-    <div class="text-sm font-bold text-slate-900 flex-1">CategoryController::index()</div>
-    <div class="text-xs text-slate-400 font-mono hidden sm:block">src/Controllers/CategoryController.php</div>
-    <div class="text-xs text-slate-400 ml-2">▼</div>
-  </div>
-  <div class="px-4 pb-4">
-<ul class="flex flex-col gap-1.5 mt-2">
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-red-400 bg-red-50 text-red-700"><span class="shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">Auth::require()</code></span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span>SELECT id, parent_id, name, slug, description, sort_order FROM category ORDER BY sort_order, name</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>Buildtree v PHP: $map[$row['id']] = $row → přiřazuje children[] podle parent_id</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-emerald-400 bg-emerald-50 text-emerald-700"><span class="shrink-0">←</span><span>HTTP 200 &middot; strom kategorií jako JSON</span></li>
-</ul>
-  </div>
-</div></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>POST /categories – Vytvoření kategorie (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-  <div class="h-1 bg-emerald-500"></div>
-  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
-    <div class="w-6 h-6 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center justify-center shrink-0">1</div>
-    <div class="text-sm font-bold text-slate-900 flex-1">CategoryController::store()</div>
-    <div class="text-xs text-slate-400 font-mono hidden sm:block">src/Controllers/CategoryController.php</div>
-    <div class="text-xs text-slate-400 ml-2">▶</div>
-  </div>
-  <div class="px-4 pb-4 hidden">
-<ul class="flex flex-col gap-1.5 mt-2">
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-red-400 bg-red-50 text-red-700"><span class="shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">requireRole('admin')</code></span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>Validace: name povinný; slug povinný (nebo auto-generovaný z name)</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span>SELECT id FROM category WHERE slug=? → kontrola unikátnosti slugu → HTTP 409</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span>INSERT INTO category (parent_id, name, slug, description, sort_order, created_at)</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-emerald-400 bg-emerald-50 text-emerald-700"><span class="shrink-0">←</span><span>HTTP 201 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ id, name, slug }}</code></span></li>
-</ul>
-  </div>
-</div></div>
-</div><div id="tab-product" class="hidden">
-<div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>POST /products – Vytvoření produktu (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-  <div class="h-1 bg-blue-500"></div>
-  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
-    <div class="w-6 h-6 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center shrink-0">1</div>
-    <div class="text-sm font-bold text-slate-900 flex-1">HTTP Request</div>
-    <div class="text-xs text-slate-400 font-mono hidden sm:block">klient</div>
-    <div class="text-xs text-slate-400 ml-2">▼</div>
-  </div>
-  <div class="px-4 pb-4">
-<ul class="flex flex-col gap-1.5 mt-2">
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-blue-400 bg-blue-50 text-blue-700"><span class="shrink-0">→</span><span><code class="font-mono bg-black/10 px-1 rounded">POST /products</code><br>Body: <code class="font-mono bg-black/10 px-1 rounded">{{ name, sku, price, category_id, stock_quantity, vat_rate }}</code></span></li>
-</ul>
-  </div>
-</div><div class="text-center text-slate-300 text-lg leading-none my-0.5">↓</div><div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-  <div class="h-1 bg-emerald-500"></div>
-  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
-    <div class="w-6 h-6 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center justify-center shrink-0">2</div>
-    <div class="text-sm font-bold text-slate-900 flex-1">ProductController::store()</div>
-    <div class="text-xs text-slate-400 font-mono hidden sm:block">src/Controllers/ProductController.php</div>
-    <div class="text-xs text-slate-400 ml-2">▼</div>
-  </div>
-  <div class="px-4 pb-4">
-<ul class="flex flex-col gap-1.5 mt-2">
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-red-400 bg-red-50 text-red-700"><span class="shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">requireRole('admin')</code></span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>Validace: name, sku povinné; price &gt;= 0; stock_quantity &gt;= 0</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span>SELECT id FROM product WHERE sku=? → kontrola unikátnosti SKU → HTTP 409</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span>INSERT INTO product (category_id, sku, name, description, price, vat_rate, stock_quantity, status, created_at)</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-emerald-400 bg-emerald-50 text-emerald-700"><span class="shrink-0">←</span><span>HTTP 201 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ id, sku, name, price, stock_quantity }}</code></span></li>
-</ul>
-  </div>
-</div></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>PATCH /products/:id/stock – Úprava skladu (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-  <div class="h-1 bg-amber-500"></div>
-  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
-    <div class="w-6 h-6 rounded-full bg-amber-500 text-white text-xs font-bold flex items-center justify-center shrink-0">1</div>
-    <div class="text-sm font-bold text-slate-900 flex-1">ProductController::adjustStock()</div>
-    <div class="text-xs text-slate-400 font-mono hidden sm:block">src/Controllers/ProductController.php</div>
-    <div class="text-xs text-slate-400 ml-2">▼</div>
-  </div>
-  <div class="px-4 pb-4">
-<ul class="flex flex-col gap-1.5 mt-2">
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-red-400 bg-red-50 text-red-700"><span class="shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">requireRole('admin')</code></span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>Body: <code class="font-mono bg-black/10 px-1 rounded">{{ quantity: 5 }}</code> – kladné přidá, záporné odebere</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span>SELECT id, stock_quantity FROM product WHERE id=? AND deleted_at IS NULL</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>Nová hodnota = current + quantity; pokud &lt; 0 → HTTP 422 "Insufficient stock"</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span>UPDATE product SET stock_quantity=?, updated_at=NOW() WHERE id=?</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-emerald-400 bg-emerald-50 text-emerald-700"><span class="shrink-0">←</span><span>HTTP 200 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ id, stock_quantity: &lt;nová hodnota&gt; }}</code></span></li>
-</ul>
-  </div>
-</div></div>
-</div><div id="tab-order" class="hidden">
-<div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>POST /orders – Vytvoření objednávky (transakce)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-  <div class="h-1 bg-blue-500"></div>
-  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
-    <div class="w-6 h-6 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center shrink-0">1</div>
-    <div class="text-sm font-bold text-slate-900 flex-1">HTTP Request</div>
-    <div class="text-xs text-slate-400 font-mono hidden sm:block">klient</div>
-    <div class="text-xs text-slate-400 ml-2">▼</div>
-  </div>
-  <div class="px-4 pb-4">
-<ul class="flex flex-col gap-1.5 mt-2">
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-blue-400 bg-blue-50 text-blue-700"><span class="shrink-0">→</span><span><code class="font-mono bg-black/10 px-1 rounded">POST /orders</code><br>Body: <code class="font-mono bg-black/10 px-1 rounded">{{ items: [{{ product_id:1, quantity:2 }}, ...], currency, payment_method }}</code></span></li>
-</ul>
-  </div>
-</div><div class="text-center text-slate-300 text-lg leading-none my-0.5">↓</div><div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-  <div class="h-1 bg-red-500"></div>
-  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
-    <div class="w-6 h-6 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center shrink-0">2</div>
-    <div class="text-sm font-bold text-slate-900 flex-1">Auth ověření</div>
-    <div class="text-xs text-slate-400 font-mono hidden sm:block">src/Core/Auth.php</div>
-    <div class="text-xs text-slate-400 ml-2">▼</div>
-  </div>
-  <div class="px-4 pb-4">
-<ul class="flex flex-col gap-1.5 mt-2">
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-red-400 bg-red-50 text-red-700"><span class="shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">Auth::require()</code> – každý přihlášený může objednávat</span></li>
-</ul>
-  </div>
-</div><div class="text-center text-slate-300 text-lg leading-none my-0.5">↓</div><div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-  <div class="h-1 bg-emerald-500"></div>
-  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
-    <div class="w-6 h-6 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center justify-center shrink-0">3</div>
-    <div class="text-sm font-bold text-slate-900 flex-1">OrderController::store() – validace položek</div>
-    <div class="text-xs text-slate-400 font-mono hidden sm:block">src/Controllers/OrderController.php</div>
-    <div class="text-xs text-slate-400 ml-2">▼</div>
-  </div>
-  <div class="px-4 pb-4">
-<ul class="flex flex-col gap-1.5 mt-2">
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>Kontrola: items není prázdné pole → HTTP 422</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>Pro každou položku: product_id &gt; 0, quantity &gt; 0</span></li>
-</ul>
-  </div>
-</div><div class="text-center text-slate-300 text-lg leading-none my-0.5">↓</div><div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-  <div class="h-1 bg-violet-500"></div>
-  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
-    <div class="w-6 h-6 rounded-full bg-violet-500 text-white text-xs font-bold flex items-center justify-center shrink-0">4</div>
-    <div class="text-sm font-bold text-slate-900 flex-1">$db→beginTransaction() – START TRANSACTION</div>
-    <div class="text-xs text-slate-400 font-mono hidden sm:block">PDO transakce</div>
-    <div class="text-xs text-slate-400 ml-2">▼</div>
-  </div>
-  <div class="px-4 pb-4">
-<ul class="flex flex-col gap-1.5 mt-2">
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-orange-400 bg-orange-50 text-orange-800"><span class="shrink-0">&#9888;</span><span>Vše níže je atomické – při jakékoliv chybě ROLLBACK + HTTP 422</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span><strong>Pro každou položku:</strong> SELECT id, name, price, stock_quantity FROM product WHERE id=? AND status='active' AND deleted_at IS NULL</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>Kontrola: stock_quantity &gt;= quantity? → ROLLBACK + HTTP 422 "Insufficient stock"</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>Výpočet: lineTotal = price × quantity, kumuluje totalAmount</span></li>
-</ul>
-  </div>
-</div><div class="text-center text-slate-300 text-lg leading-none my-0.5">↓</div><div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-  <div class="h-1 bg-emerald-500"></div>
-  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
-    <div class="w-6 h-6 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center justify-center shrink-0">5</div>
-    <div class="text-sm font-bold text-slate-900 flex-1">INSERT objednávky + položek + decrement skladu</div>
-    <div class="text-xs text-slate-400 font-mono hidden sm:block">src/Controllers/OrderController.php</div>
-    <div class="text-xs text-slate-400 ml-2">▼</div>
-  </div>
-  <div class="px-4 pb-4">
-<ul class="flex flex-col gap-1.5 mt-2">
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span>INSERT INTO `order` (order_number, user_id, status='pending', total_amount, currency, payment_method, ...)</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>order_number = auto-generovaný formát ORD-YYYYMMDD-XXXX</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span><strong>Pro každou položku:</strong> INSERT INTO order_item (order_id, product_id, quantity, unit_price, total_price)</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span><strong>Pro každou položku:</strong> UPDATE product SET stock_quantity = stock_quantity - ? WHERE id=?</span></li>
-</ul>
-  </div>
-</div><div class="text-center text-slate-300 text-lg leading-none my-0.5">↓</div><div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-  <div class="h-1 bg-amber-500"></div>
-  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
-    <div class="w-6 h-6 rounded-full bg-amber-500 text-white text-xs font-bold flex items-center justify-center shrink-0">6</div>
-    <div class="text-sm font-bold text-slate-900 flex-1">$db→commit() – COMMIT</div>
-    <div class="text-xs text-slate-400 font-mono hidden sm:block">PDO transakce</div>
-    <div class="text-xs text-slate-400 ml-2">▼</div>
-  </div>
-  <div class="px-4 pb-4">
-<ul class="flex flex-col gap-1.5 mt-2">
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>Všechno proběhlo → COMMIT, změny jsou trvalé</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-emerald-400 bg-emerald-50 text-emerald-700"><span class="shrink-0">←</span><span>HTTP 201 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ id, total_amount }}</code></span></li>
-</ul>
-  </div>
-</div></div>
-</div><div id="tab-invoice" class="hidden">
-<div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>POST /invoices – Generování faktury z objednávky (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-  <div class="h-1 bg-blue-500"></div>
-  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
-    <div class="w-6 h-6 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center shrink-0">1</div>
-    <div class="text-sm font-bold text-slate-900 flex-1">HTTP Request</div>
-    <div class="text-xs text-slate-400 font-mono hidden sm:block">klient</div>
-    <div class="text-xs text-slate-400 ml-2">▼</div>
-  </div>
-  <div class="px-4 pb-4">
-<ul class="flex flex-col gap-1.5 mt-2">
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-blue-400 bg-blue-50 text-blue-700"><span class="shrink-0">→</span><span><code class="font-mono bg-black/10 px-1 rounded">POST /invoices</code><br>Body: <code class="font-mono bg-black/10 px-1 rounded">{{ order_id: 42, due_at: "2026-05-16", note: "..." }}</code></span></li>
-</ul>
-  </div>
-</div><div class="text-center text-slate-300 text-lg leading-none my-0.5">↓</div><div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-  <div class="h-1 bg-red-500"></div>
-  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
-    <div class="w-6 h-6 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center shrink-0">2</div>
-    <div class="text-sm font-bold text-slate-900 flex-1">Auth + validace vstupů</div>
-    <div class="text-xs text-slate-400 font-mono hidden sm:block">src/Controllers/InvoiceController.php</div>
-    <div class="text-xs text-slate-400 ml-2">▼</div>
-  </div>
-  <div class="px-4 pb-4">
-<ul class="flex flex-col gap-1.5 mt-2">
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-red-400 bg-red-50 text-red-700"><span class="shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">requireRole('admin')</code></span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span>SELECT * FROM `order` WHERE id=? AND deleted_at IS NULL → HTTP 404 pokud neexistuje</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span>SELECT id FROM invoice WHERE order_id=? AND deleted_at IS NULL → HTTP 409 "Invoice already exists"</span></li>
-</ul>
-  </div>
-</div><div class="text-center text-slate-300 text-lg leading-none my-0.5">↓</div><div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-  <div class="h-1 bg-amber-500"></div>
-  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
-    <div class="w-6 h-6 rounded-full bg-amber-500 text-white text-xs font-bold flex items-center justify-center shrink-0">3</div>
-    <div class="text-sm font-bold text-slate-900 flex-1">Načtení položek objednávky</div>
-    <div class="text-xs text-slate-400 font-mono hidden sm:block">src/Controllers/InvoiceController.php</div>
-    <div class="text-xs text-slate-400 ml-2">▼</div>
-  </div>
-  <div class="px-4 pb-4">
-<ul class="flex flex-col gap-1.5 mt-2">
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span>SELECT oi.*, p.name AS product_name FROM order_item oi LEFT JOIN product p ON p.id=oi.product_id WHERE oi.order_id=?</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>due_at = zadané datum nebo auto NOW() + 14 dní</span></li>
-</ul>
-  </div>
-</div><div class="text-center text-slate-300 text-lg leading-none my-0.5">↓</div><div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-  <div class="h-1 bg-violet-500"></div>
-  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
-    <div class="w-6 h-6 rounded-full bg-violet-500 text-white text-xs font-bold flex items-center justify-center shrink-0">4</div>
-    <div class="text-sm font-bold text-slate-900 flex-1">Transakce – INSERT faktury + položek</div>
-    <div class="text-xs text-slate-400 font-mono hidden sm:block">PDO transakce</div>
-    <div class="text-xs text-slate-400 ml-2">▼</div>
-  </div>
-  <div class="px-4 pb-4">
-<ul class="flex flex-col gap-1.5 mt-2">
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span>INSERT INTO invoice (invoice_number, order_id, user_id, status='issued', total_amount, currency, issued_at, due_at, ...)</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>invoice_number = auto INV-YYYY-XXXX</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span><strong>Pro každou položku:</strong> INSERT INTO invoice_item (invoice_id, product_id, description, quantity, unit_price, total_price)</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-emerald-400 bg-emerald-50 text-emerald-700"><span class="shrink-0">←</span><span>HTTP 201 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ id }}</code></span></li>
-</ul>
-  </div>
-</div></div>
-</div><div id="tab-text" class="hidden">
-<div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>GET /texts/by-key/:key – CMS blok podle klíče</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-  <div class="h-1 bg-cyan-500"></div>
-  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
-    <div class="w-6 h-6 rounded-full bg-cyan-500 text-white text-xs font-bold flex items-center justify-center shrink-0">1</div>
-    <div class="text-sm font-bold text-slate-900 flex-1">HTTP Request</div>
-    <div class="text-xs text-slate-400 font-mono hidden sm:block">klient</div>
-    <div class="text-xs text-slate-400 ml-2">▼</div>
-  </div>
-  <div class="px-4 pb-4">
-<ul class="flex flex-col gap-1.5 mt-2">
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-blue-400 bg-blue-50 text-blue-700"><span class="shrink-0">→</span><span><code class="font-mono bg-black/10 px-1 rounded">GET /texts/by-key/homepage_hero?lang=cs</code></span></li>
-</ul>
-  </div>
-</div><div class="text-center text-slate-300 text-lg leading-none my-0.5">↓</div><div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-  <div class="h-1 bg-emerald-500"></div>
-  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
-    <div class="w-6 h-6 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center justify-center shrink-0">2</div>
-    <div class="text-sm font-bold text-slate-900 flex-1">TextController::showByKey()</div>
-    <div class="text-xs text-slate-400 font-mono hidden sm:block">src/Controllers/TextController.php</div>
-    <div class="text-xs text-slate-400 ml-2">▼</div>
-  </div>
-  <div class="px-4 pb-4">
-<ul class="flex flex-col gap-1.5 mt-2">
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-red-400 bg-red-50 text-red-700"><span class="shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">Auth::require()</code></span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>Query param ?lang=cs (default: 'cs')</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span>SELECT * FROM text WHERE `key`=? AND language=? AND is_active=1 LIMIT 1<br><em>(backticky kolem key – rezervované slovo SQL)</em></span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-emerald-400 bg-emerald-50 text-emerald-700"><span class="shrink-0">←</span><span>HTTP 200 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ id, key, title, content, language }}</code></span></li>
-</ul>
-  </div>
-</div></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>POST /texts – Vytvoření CMS bloku (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-  <div class="h-1 bg-amber-500"></div>
-  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
-    <div class="w-6 h-6 rounded-full bg-amber-500 text-white text-xs font-bold flex items-center justify-center shrink-0">1</div>
-    <div class="text-sm font-bold text-slate-900 flex-1">TextController::store()</div>
-    <div class="text-xs text-slate-400 font-mono hidden sm:block">src/Controllers/TextController.php</div>
-    <div class="text-xs text-slate-400 ml-2">▶</div>
-  </div>
-  <div class="px-4 pb-4 hidden">
-<ul class="flex flex-col gap-1.5 mt-2">
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-red-400 bg-red-50 text-red-700"><span class="shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">requireRole('admin')</code></span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>Validace: key a title povinné</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span>SELECT id FROM text WHERE `key`=? AND language=? → HTTP 409 pokud kombinace key+lang existuje</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span>INSERT INTO text (`key`, title, content, language, is_active, created_by, created_at)</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-emerald-400 bg-emerald-50 text-emerald-700"><span class="shrink-0">←</span><span>HTTP 201 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ id, key, title }}</code></span></li>
-</ul>
-  </div>
-</div></div>
-</div><div id="tab-enumeration" class="hidden">
-<div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>GET /enumerations – Výpis číselníků seskupených podle type</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-  <div class="h-1 bg-rose-500"></div>
-  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
-    <div class="w-6 h-6 rounded-full bg-rose-500 text-white text-xs font-bold flex items-center justify-center shrink-0">1</div>
-    <div class="text-sm font-bold text-slate-900 flex-1">HTTP Request</div>
-    <div class="text-xs text-slate-400 font-mono hidden sm:block">klient</div>
-    <div class="text-xs text-slate-400 ml-2">▼</div>
-  </div>
-  <div class="px-4 pb-4">
-<ul class="flex flex-col gap-1.5 mt-2">
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-blue-400 bg-blue-50 text-blue-700"><span class="shrink-0">→</span><span><code class="font-mono bg-black/10 px-1 rounded">GET /enumerations</code> nebo <code class="font-mono bg-black/10 px-1 rounded">GET /enumerations?type=order_status</code></span></li>
-</ul>
-  </div>
-</div><div class="text-center text-slate-300 text-lg leading-none my-0.5">↓</div><div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-  <div class="h-1 bg-emerald-500"></div>
-  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
-    <div class="w-6 h-6 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center justify-center shrink-0">2</div>
-    <div class="text-sm font-bold text-slate-900 flex-1">EnumerationController::index()</div>
-    <div class="text-xs text-slate-400 font-mono hidden sm:block">src/Controllers/EnumerationController.php</div>
-    <div class="text-xs text-slate-400 ml-2">▼</div>
-  </div>
-  <div class="px-4 pb-4">
-<ul class="flex flex-col gap-1.5 mt-2">
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-red-400 bg-red-50 text-red-700"><span class="shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">Auth::require()</code></span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>Volitelný filtr: ?type=order_status</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span>SELECT * FROM enumeration WHERE is_active=1 [AND type=?] ORDER BY type, sort_order</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>Grupování v PHP: $grouped[$row['type']][] = $row</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-emerald-400 bg-emerald-50 text-emerald-700"><span class="shrink-0">←</span><span>HTTP 200 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ order_status: [...], invoice_status: [...], ... }}</code></span></li>
-</ul>
-  </div>
-</div></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>POST /enumerations – Přidání nové hodnoty (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-  <div class="h-1 bg-amber-500"></div>
-  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors" onclick="tog(this)">
-    <div class="w-6 h-6 rounded-full bg-amber-500 text-white text-xs font-bold flex items-center justify-center shrink-0">1</div>
-    <div class="text-sm font-bold text-slate-900 flex-1">EnumerationController::store()</div>
-    <div class="text-xs text-slate-400 font-mono hidden sm:block">src/Controllers/EnumerationController.php</div>
-    <div class="text-xs text-slate-400 ml-2">▶</div>
-  </div>
-  <div class="px-4 pb-4 hidden">
-<ul class="flex flex-col gap-1.5 mt-2">
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-red-400 bg-red-50 text-red-700"><span class="shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">requireRole('admin')</code></span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-700"><span class="shrink-0">⚙</span><span>Body: <code class="font-mono bg-black/10 px-1 rounded">{{ type, code, label, value, sort_order }}</code></span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span>SELECT id FROM enumeration WHERE type=? AND code=? → HTTP 409</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono"><span class="shrink-0">&#128388;</span><span>INSERT INTO enumeration (type, code, label, value, sort_order, is_active, created_at)</span></li>
-<li class="flex items-start gap-2 text-xs p-2 rounded-lg border-2 border-emerald-400 bg-emerald-50 text-emerald-700"><span class="shrink-0">←</span><span>HTTP 201 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ id, type, code, label }}</code></span></li>
-</ul>
-  </div>
-</div></div>
+<div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>GET /users &ndash; seznam u&#382;ivatel&#367; (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-blue-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">Auth + filtrov&#225;n&#237;</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">UserController::index()</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">requireRole('admin')</code> &ndash; pouze admin vid&#237; seznam</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>Voliteln&#233; filtry: <code class="font-mono bg-black/10 px-1 rounded">?search=&role=&status=&page=&limit=</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT id, first_name, last_name, email, role, status, phone, created_at, last_login_at FROM user WHERE &hellip; ORDER BY created_at DESC LIMIT ? OFFSET ?</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ items:[], total, page, limit, totalPages }}</code></span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>GET /users/:id &ndash; detail u&#382;ivatele</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">Auth + opr&#225;vn&#283;n&#237;</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">UserController::show()</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">Auth::require()</code> &ndash; p&#345;ihl&#225;&#353;en&#253; u&#382;ivatel</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span>Ne-admin m&#367;&#382;e vid&#283;t pouze sebe: <code class="font-mono bg-black/10 px-1 rounded">Auth::id() !== $id</code> &rarr; HTTP 403</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT id, first_name, last_name, email, role, status, phone, address_id, created_at, updated_at, last_login_at FROM user WHERE id = ?</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; objekt u&#382;ivatele</span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>POST /users &ndash; vytvo&#345;en&#237; u&#382;ivatele (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-blue-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">HTTP Request</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">klient</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-blue-400 bg-blue-50 text-blue-700"><span class="mt-0.5 shrink-0">&rarr;</span><span>POST /users &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ first_name, last_name, email, password, phone?, role?, status? }}</code></span></li>
+</ul></div>
+</details><div class="text-center text-slate-300 text-lg leading-none my-0.5">&darr;</div><details class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-emerald-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#2</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">Validace + unik&#225;tnost emailu</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">UserController::store()</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">requireRole('admin')</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>first_name, last_name povinn&#233;; email form&#225;t; password min 8 znak&#367;</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT id FROM user WHERE email = ? &rarr; HTTP 409 pokud existuje</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span><code class="font-mono bg-black/10 px-1 rounded">password_hash($password, PASSWORD_BCRYPT, ['cost'=>12])</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>INSERT INTO user (first_name, last_name, email, phone, password, role, status, created_at)</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 201 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ id }}</code></span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>PUT /users/:id &ndash; &#250;prava u&#382;ivatele</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-amber-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">Auth + opr&#225;vn&#283;n&#237;</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">UserController::update()</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">Auth::require()</code> &ndash; ne-admin m&#367;&#382;e upravovat pouze sebe</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>Editovateln&#225; pole: <code class="font-mono bg-black/10 px-1 rounded">first_name, last_name, phone</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>Pouze admin m&#367;&#382;e m&#283;nit: <code class="font-mono bg-black/10 px-1 rounded">role, status</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>UPDATE user SET first_name=?, last_name=?, phone=?, updated_at=? WHERE id=?</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; User updated</span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>DELETE /users/:id &ndash; soft-delete (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-red-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">UserController::destroy()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">soft delete</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">requireRole('admin')</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT id FROM user WHERE id = ? &rarr; HTTP 404</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>UPDATE user SET status=<code class="font-mono bg-black/10 px-1 rounded">'deleted'</code> , deleted_at=NOW() WHERE id=? <em>(z&#225;znam z&#367;st&#225;v&#225; v DB)</em></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; User deleted</span></li>
+</ul></div>
+</details></div>
+</div>
+<div id="tab-address" class="hidden">
+<div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>GET /users/:userId/addresses &ndash; adresy u&#382;ivatele</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">AddressController::index()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">AddressController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">Auth::require()</code> &middot; ne-admin vid&#237; pouze sv&#233; adresy &rarr; HTTP 403</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT * FROM address WHERE user_id = ? ORDER BY type ASC, created_at DESC</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; pole adres</span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>GET /addresses/:id &ndash; detail adresy</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">AddressController::show()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">AddressController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">Auth::require()</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT * FROM address WHERE id = ? &rarr; HTTP 404</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span>Ne-admin m&#367;&#382;e vid&#283;t pouze sv&#233; adresy &rarr; HTTP 403</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; objekt adresy</span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>POST /addresses &ndash; vytvo&#345;en&#237; adresy</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-blue-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">HTTP Request</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">klient</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-blue-400 bg-blue-50 text-blue-700"><span class="mt-0.5 shrink-0">&rarr;</span><span>POST /addresses &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ type, street, city, zip, country, first_name?, last_name?, is_default? }}</code></span></li>
+</ul></div>
+</details><div class="text-center text-slate-300 text-lg leading-none my-0.5">&darr;</div><details class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-emerald-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#2</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">AddressController::store()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">AddressController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">Auth::require()</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>Admin m&#367;&#382;e zadat <code class="font-mono bg-black/10 px-1 rounded">user_id</code> v body, ostatn&#237; vlo&#382;&#237; adresu pro sebe</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>Validace: street, city, zip povinn&#233;</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>INSERT INTO address (user_id, type, company, first_name, last_name, street, city, zip, country, is_default, created_at)</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 201 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ id }}</code></span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>PUT /addresses/:id &ndash; &#250;prava adresy</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-amber-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">AddressController::update()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">AddressController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">Auth::require()</code> &middot; ne-admin m&#367;&#382;e upravovat pouze sv&#233; &rarr; HTTP 403</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT * FROM address WHERE id = ? &rarr; HTTP 404</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>Editovateln&#225; pole: <code class="font-mono bg-black/10 px-1 rounded">type, company, first_name, last_name, street, city, zip, country, is_default</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>UPDATE address SET &hellip; WHERE id=?</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; Address updated</span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>DELETE /addresses/:id &ndash; smaz&#225;n&#237; adresy</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-red-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">AddressController::destroy()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">AddressController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">Auth::require()</code> &middot; ne-admin m&#367;&#382;e smazat pouze sv&#233; &rarr; HTTP 403</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT * FROM address WHERE id = ? &rarr; HTTP 404</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>DELETE FROM address WHERE id=? <em>(hard delete)</em></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; Address deleted</span></li>
+</ul></div>
+</details></div>
+</div>
+<div id="tab-category" class="hidden">
+<div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>GET /categories &ndash; strom kategori&#237;</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">CategoryController::index()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">CategoryController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">Auth::require()</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT id, name, slug, parent_id, description, sort_order, created_at FROM category ORDER BY sort_order, name</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>buildTree() v PHP: p&#345;i&#345;azuje children[] podle parent_id &rarr; vno&#345;en&#225; JSON struktura</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; strom kategori&#237;</span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>GET /categories/:id &ndash; detail kategorie + produkty</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">CategoryController::show()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">CategoryController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">Auth::require()</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT * FROM category WHERE id = ? &rarr; HTTP 404</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT id, sku, name, price, status FROM product WHERE category_id = ? AND deleted_at IS NULL</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; kategorie + <code class="font-mono bg-black/10 px-1 rounded">products:[]</code></span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>POST /categories &ndash; vytvo&#345;en&#237; kategorie (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-blue-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">HTTP Request</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">klient</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-blue-400 bg-blue-50 text-blue-700"><span class="mt-0.5 shrink-0">&rarr;</span><span>POST /categories &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ name, slug?, description?, parent_id?, sort_order? }}</code></span></li>
+</ul></div>
+</details><div class="text-center text-slate-300 text-lg leading-none my-0.5">&darr;</div><details class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-emerald-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#2</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">CategoryController::store()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">CategoryController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">requireRole('admin')</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>name povinn&#233;; slug = zadan&#253; nebo auto-generovan&#253; z name</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>INSERT INTO category (name, slug, description, parent_id, sort_order, created_at)</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 201 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ id }}</code></span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>PUT /categories/:id &ndash; &#250;prava kategorie (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-amber-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">CategoryController::update()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">CategoryController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">requireRole('admin')</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT id FROM category WHERE id = ? &rarr; HTTP 404</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>Editovateln&#225; pole: <code class="font-mono bg-black/10 px-1 rounded">name, slug, description, parent_id, sort_order</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>UPDATE category SET &hellip;, updated_at=NOW() WHERE id=?</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; Category updated</span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>DELETE /categories/:id &ndash; smaz&#225;n&#237; kategorie (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-red-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">CategoryController::destroy()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">CategoryController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">requireRole('admin')</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT id FROM product WHERE category_id = ? LIMIT 1 &rarr; HTTP 409 <code class="font-mono bg-black/10 px-1 rounded">'Category is in use by products'</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>DELETE FROM category WHERE id=? <em>(hard delete, pouze pokud nen&#237; pou&#382;&#237;v&#225;na)</em></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; Category deleted</span></li>
+</ul></div>
+</details></div>
+</div>
+<div id="tab-product" class="hidden">
+<div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>GET /products &ndash; seznam produkt&#367; (ve&#345;ejn&#233;)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">ProductController::index()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">ProductController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>Bez auth &ndash; ve&#345;ejn&#233; API &middot; filtry: <code class="font-mono bg-black/10 px-1 rounded">?search=&category_id=&status=&page=&limit=</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT p.*, c.name AS category_name FROM product p LEFT JOIN category c ON c.id = p.category_id WHERE p.deleted_at IS NULL [AND &hellip;] ORDER BY created_at DESC LIMIT ? OFFSET ?</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ items:[], total, page, limit, totalPages }}</code></span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>GET /products/:id &ndash; detail produktu (ve&#345;ejn&#233;)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">ProductController::show()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">ProductController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>Bez auth &ndash; ve&#345;ejn&#233;</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT p.*, c.name AS category_name FROM product p LEFT JOIN category c &hellip; WHERE p.id = ? AND p.deleted_at IS NULL</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; objekt produktu</span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>POST /products &ndash; vytvo&#345;en&#237; produktu (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-blue-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">HTTP Request</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">klient</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-blue-400 bg-blue-50 text-blue-700"><span class="mt-0.5 shrink-0">&rarr;</span><span>POST /products &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ name, sku, price, category_id?, stock_quantity?, vat_rate?, description?, status? }}</code></span></li>
+</ul></div>
+</details><div class="text-center text-slate-300 text-lg leading-none my-0.5">&darr;</div><details class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-emerald-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#2</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">ProductController::store()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">ProductController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">requireRole('admin')</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>name, sku povinn&#233;; price &ge; 0; stock_quantity &ge; 0</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT id FROM product WHERE sku = ? &rarr; HTTP 409 "SKU already exists"</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>INSERT INTO product (category_id, sku, name, description, price, vat_rate, stock_quantity, status, created_at)</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 201 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ id }}</code></span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>PUT /products/:id &ndash; &#250;prava produktu (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-amber-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">ProductController::update()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">ProductController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">requireRole('admin')</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT id FROM product WHERE id = ? AND deleted_at IS NULL &rarr; HTTP 404</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>Editovateln&#225; pole: <code class="font-mono bg-black/10 px-1 rounded">name, description, price, vat_rate, stock_quantity, status, category_id</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>UPDATE product SET &hellip;, updated_at=NOW() WHERE id=?</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; Product updated</span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>DELETE /products/:id &ndash; soft-delete (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-red-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">ProductController::destroy()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">soft delete</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">requireRole('admin')</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT id FROM product WHERE id = ? AND deleted_at IS NULL &rarr; HTTP 404</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>UPDATE product SET deleted_at=NOW() WHERE id=? <em>(soft delete)</em></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; Product deleted</span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>PATCH /products/:id/stock &ndash; &#250;prava skladu (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-violet-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">ProductController::adjustStock()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">ProductController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">requireRole('admin')</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>Body: <code class="font-mono bg-black/10 px-1 rounded">{{ quantity: 5 }}</code> &ndash; kladn&#233; p&#345;id&#225;, z&#225;porn&#233; odebere</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT id, stock_quantity FROM product WHERE id = ? AND deleted_at IS NULL &rarr; HTTP 404</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>Nov&#225; hodnota = current + quantity; pokud &lt; 0 &rarr; HTTP 422 "Insufficient stock"</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>UPDATE product SET stock_quantity=?, updated_at=NOW() WHERE id=?</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ id, stock_quantity: <nová hodnota> }}</code></span></li>
+</ul></div>
+</details></div>
+</div>
+<div id="tab-order" class="hidden">
+<div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>GET /orders &ndash; seznam objedn&#225;vek</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">OrderController::index()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">OrderController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">Auth::require()</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>Admin vid&#237; v&#353;echny objedn&#225;vky; b&#283;&#382;n&#253; u&#382;ivatel vid&#237; pouze sv&#233; (WHERE user_id = ?)</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT o.*, u.first_name, u.last_name FROM `order` o LEFT JOIN user u &hellip; WHERE &hellip; ORDER BY o.created_at DESC LIMIT ? OFFSET ?</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ items:[], total, page, limit, totalPages }}</code></span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>GET /orders/:id &ndash; detail objedn&#225;vky + polo&#382;ky</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">OrderController::show()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">OrderController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">Auth::require()</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT o.* FROM `order` o WHERE o.id = ? AND o.deleted_at IS NULL &rarr; HTTP 404</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span>Ne-admin m&#367;&#382;e vid&#283;t pouze sv&#233; objedn&#225;vky &rarr; HTTP 403</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT oi.*, p.name AS product_name FROM order_item oi LEFT JOIN product p &hellip; WHERE oi.order_id = ?</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; objedn&#225;vka + <code class="font-mono bg-black/10 px-1 rounded">items:[]</code></span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>POST /orders &ndash; vytvo&#345;en&#237; objedn&#225;vky (transakce)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-blue-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">HTTP Request</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">klient</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-blue-400 bg-blue-50 text-blue-700"><span class="mt-0.5 shrink-0">&rarr;</span><span>POST /orders &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ items:[{{ product_id, quantity }}, …], currency?, payment_method? }}</code></span></li>
+</ul></div>
+</details><div class="text-center text-slate-300 text-lg leading-none my-0.5">&darr;</div><details class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-red-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#2</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">Auth + validace polo&#382;ek</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">OrderController::store()</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">Auth::require()</code> &ndash; ka&#382;d&#253; p&#345;ihl&#225;&#353;en&#253; m&#367;&#382;e objedn&#225;vat</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>items nesm&#237; b&#253;t pr&#225;zdn&#233;; pro ka&#382;dou polo&#382;ku: product_id &gt; 0, quantity &gt; 0</span></li>
+</ul></div>
+</details><div class="text-center text-slate-300 text-lg leading-none my-0.5">&darr;</div><details class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-violet-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#3</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">BEGIN TRANSACTION</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">PDO transakce</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-orange-400 bg-orange-50 text-orange-700"><span class="mt-0.5 shrink-0">&#9888;</span><span>V&#353;e n&#237;&#382;e je atomick&#233; &ndash; p&#345;i jak&#233;koliv chyb&#283; ROLLBACK + HTTP 422</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>Pro ka&#382;dou polo&#382;ku: SELECT id, price, stock_quantity FROM product WHERE id = ? AND status = 'active' AND deleted_at IS NULL</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>stock_quantity &ge; quantity? &rarr; ROLLBACK + HTTP 422 "Insufficient stock"</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>INSERT INTO `order` (order_number, user_id, status='pending', total_amount, &hellip;)</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>INSERT INTO order_item (order_id, product_id, quantity, unit_price, total_price) pro ka&#382;dou polo&#382;ku</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>UPDATE product SET stock_quantity = stock_quantity - ? pro ka&#382;dou polo&#382;ku</span></li>
+</ul></div>
+</details><div class="text-center text-slate-300 text-lg leading-none my-0.5">&darr;</div><details class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-emerald-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#4</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">COMMIT</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">PDO transakce</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>V&#353;echno prob&#283;hlo &rarr; COMMIT</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 201 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ id, order_number, total_amount }}</code></span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>PATCH /orders/:id/status &ndash; zm&#283;na stavu (admin) &rarr; viz Storno flow</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-amber-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">Detailn&#237; flow na samostatn&#233; str&#225;nce</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">OrderController::updateStatus()</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>Viz <a href="flow-order-cancel.html" class="underline text-blue-600">&#128230; Storno flow</a> &ndash; 9-krokovan&#253; pipeline v&#269;etn&#283; validace p&#345;echod&#367;</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">requireRole('admin')</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>Povolen&#233; p&#345;echody: <code class="font-mono bg-black/10 px-1 rounded">pending→confirmed→shipped→delivered</code> nebo <code class="font-mono bg-black/10 px-1 rounded">pending/confirmed→cancelled</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>UPDATE `order` SET status=?, updated_at=NOW() WHERE id=?</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; Order status updated</span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>DELETE /orders/:id &ndash; soft-delete (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-red-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">OrderController::destroy()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">soft delete</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">requireRole('admin')</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT id FROM `order` WHERE id = ? AND deleted_at IS NULL &rarr; HTTP 404</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>UPDATE `order` SET deleted_at=NOW() WHERE id=? <em>(soft delete)</em></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; Order deleted</span></li>
+</ul></div>
+</details></div>
+</div>
+<div id="tab-invoice" class="hidden">
+<div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>GET /invoices &ndash; seznam faktur</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">InvoiceController::index()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">InvoiceController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">Auth::require()</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>Admin vid&#237; v&#353;echny; b&#283;&#382;n&#253; u&#382;ivatel vid&#237; pouze sv&#233; (WHERE user_id = ?)</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT i.*, o.order_number FROM invoice i LEFT JOIN `order` o &hellip; WHERE i.deleted_at IS NULL ORDER BY i.created_at DESC LIMIT ? OFFSET ?</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ items:[], total, page, limit, totalPages }}</code></span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>GET /invoices/:id &ndash; detail faktury + polo&#382;ky</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">InvoiceController::show()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">InvoiceController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">Auth::require()</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT i.* FROM invoice i WHERE i.id = ? AND i.deleted_at IS NULL &rarr; HTTP 404</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span>Ne-admin m&#367;&#382;e vid&#283;t pouze sv&#233; faktury &rarr; HTTP 403</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT ii.*, p.name AS product_name FROM invoice_item ii LEFT JOIN product p &hellip; WHERE ii.invoice_id = ?</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; faktura + <code class="font-mono bg-black/10 px-1 rounded">items:[]</code></span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>POST /invoices &ndash; generov&#225;n&#237; faktury z objedn&#225;vky (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-blue-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">HTTP Request</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">klient</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-blue-400 bg-blue-50 text-blue-700"><span class="mt-0.5 shrink-0">&rarr;</span><span>POST /invoices &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ order_id, due_at?, note? }}</code></span></li>
+</ul></div>
+</details><div class="text-center text-slate-300 text-lg leading-none my-0.5">&darr;</div><details class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-red-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#2</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">Validace + duplikace</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">InvoiceController::store()</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">requireRole('admin')</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT * FROM `order` WHERE id = ? AND deleted_at IS NULL &rarr; HTTP 404</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT id FROM invoice WHERE order_id = ? AND deleted_at IS NULL &rarr; HTTP 409 "Invoice already exists"</span></li>
+</ul></div>
+</details><div class="text-center text-slate-300 text-lg leading-none my-0.5">&darr;</div><details class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-violet-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#3</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">Na&#269;ten&#237; polo&#382;ek + transakce</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">InvoiceController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT oi.*, p.name AS product_name FROM order_item oi LEFT JOIN product p &hellip; WHERE oi.order_id = ?</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>due_at = zadan&#233; datum nebo auto NOW() + 14 dn&#237;; invoice_number = <code class="font-mono bg-black/10 px-1 rounded">INV-YYYY-XXXX</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>INSERT INTO invoice (invoice_number, order_id, user_id, status='issued', total_amount, currency, issued_at, due_at)</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>INSERT INTO invoice_item (invoice_id, product_id, description, quantity, unit_price, total_price) pro ka&#382;dou polo&#382;ku</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 201 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ id, invoice_number }}</code></span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>PATCH /invoices/:id/status &ndash; zm&#283;na stavu faktury (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-amber-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">InvoiceController::updateStatus()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">InvoiceController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">requireRole('admin')</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT * FROM invoice WHERE id = ? AND deleted_at IS NULL &rarr; HTTP 404</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>Povolen&#233; stavy: <code class="font-mono bg-black/10 px-1 rounded">issued, paid, overdue, cancelled</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>UPDATE invoice SET status=?, updated_at=NOW() WHERE id=?</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; Invoice status updated</span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>DELETE /invoices/:id &ndash; soft-delete (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-red-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">InvoiceController::destroy()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">soft delete</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">requireRole('admin')</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT id FROM invoice WHERE id = ? AND deleted_at IS NULL &rarr; HTTP 404</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>UPDATE invoice SET deleted_at=NOW() WHERE id=? <em>(soft delete)</em></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; Invoice deleted</span></li>
+</ul></div>
+</details></div>
+</div>
+<div id="tab-text" class="hidden">
+<div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>GET /texts &ndash; seznam CMS blok&#367; (ve&#345;ejn&#233;)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">TextController::index()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">TextController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>Bez auth &ndash; ve&#345;ejn&#233; &middot; filtry: <code class="font-mono bg-black/10 px-1 rounded">?language=cs&is_active=1&search=</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT id, `key`, title, language, is_active, created_at, updated_at FROM text WHERE language=? [AND &hellip;] ORDER BY `key` ASC</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; pole text&#367;</span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>GET /texts/:id &ndash; detail CMS bloku (ve&#345;ejn&#233;)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">TextController::show()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">TextController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>Bez auth &ndash; ve&#345;ejn&#233;</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT * FROM text WHERE id = ? &rarr; HTTP 404</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; objekt textu v&#269;etn&#283; content</span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>GET /texts/by-key/:key &ndash; CMS blok podle kl&#237;&#269;e (ve&#345;ejn&#233;)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">TextController::showByKey()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">TextController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>Bez auth &middot; URL param: <code class="font-mono bg-black/10 px-1 rounded">/texts/by-key/homepage_hero?language=cs</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT * FROM text WHERE `key` = ? AND language = ? &rarr; HTTP 404</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ id, key, title, content, language }}</code></span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>POST /texts &ndash; vytvo&#345;en&#237; CMS bloku (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-blue-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">HTTP Request</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">klient</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-blue-400 bg-blue-50 text-blue-700"><span class="mt-0.5 shrink-0">&rarr;</span><span>POST /texts &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ key, title, content?, language?, is_active? }}</code></span></li>
+</ul></div>
+</details><div class="text-center text-slate-300 text-lg leading-none my-0.5">&darr;</div><details class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-emerald-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#2</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">TextController::store()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">TextController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">requireRole('admin')</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>key a title povinn&#233;</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT id FROM text WHERE `key` = ? AND language = ? &rarr; HTTP 409 "Key+language combination exists"</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>created_by = <code class="font-mono bg-black/10 px-1 rounded">Auth::id()</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>INSERT INTO text (`key`, title, content, language, is_active, created_by, created_at)</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 201 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ id }}</code></span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>PUT /texts/:id &ndash; &#250;prava CMS bloku (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-amber-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">TextController::update()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">TextController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">requireRole('admin')</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT id FROM text WHERE id = ? &rarr; HTTP 404</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>Editovateln&#225; pole: <code class="font-mono bg-black/10 px-1 rounded">key, title, content, language, is_active</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>UPDATE text SET &hellip;, updated_at=NOW() WHERE id=?</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; Text updated</span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>DELETE /texts/:id &ndash; smaz&#225;n&#237; CMS bloku (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-red-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">TextController::destroy()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">TextController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">requireRole('admin')</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT id FROM text WHERE id = ? &rarr; HTTP 404</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>DELETE FROM text WHERE id=? <em>(hard delete)</em></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; Text deleted</span></li>
+</ul></div>
+</details></div>
+</div>
+<div id="tab-enumeration" class="hidden">
+<div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>GET /enumerations &ndash; v&#253;pis &#269;&#237;seln&#237;k&#367; (ve&#345;ejn&#233;)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">EnumerationController::index()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">EnumerationController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>Bez auth &ndash; ve&#345;ejn&#233; &middot; filtr: <code class="font-mono bg-black/10 px-1 rounded">?type=order_status&is_active=1</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT * FROM enumeration WHERE &hellip; ORDER BY type ASC, sort_order ASC, label ASC</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>Bez filtru type: grupov&#225;n&#237; v PHP &rarr; <code class="font-mono bg-black/10 px-1 rounded">{{ order_status:[], invoice_status:[], … }}</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; seskupen&#233; nebo filtrovan&#233; polo&#382;ky</span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>GET /enumerations/types &ndash; seznam typ&#367; &#269;&#237;seln&#237;k&#367; (ve&#345;ejn&#233;)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">EnumerationController::types()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">EnumerationController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>Bez auth &ndash; ve&#345;ejn&#233;</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT DISTINCT type FROM enumeration ORDER BY type ASC</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; <code class="font-mono bg-black/10 px-1 rounded">['order_status', 'invoice_status', 'vat_rate', …]</code></span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>GET /enumerations/:id &ndash; detail polo&#382;ky &#269;&#237;seln&#237;ku (ve&#345;ejn&#233;)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-cyan-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">EnumerationController::show()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">EnumerationController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>Bez auth &ndash; ve&#345;ejn&#233;</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT * FROM enumeration WHERE id = ? &rarr; HTTP 404</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; objekt polo&#382;ky</span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>POST /enumerations &ndash; p&#345;id&#225;n&#237; nov&#233; hodnoty (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-blue-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">HTTP Request</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">klient</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-blue-400 bg-blue-50 text-blue-700"><span class="mt-0.5 shrink-0">&rarr;</span><span>POST /enumerations &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ type, code, label, value?, sort_order?, is_active? }}</code></span></li>
+</ul></div>
+</details><div class="text-center text-slate-300 text-lg leading-none my-0.5">&darr;</div><details class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-emerald-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#2</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">EnumerationController::store()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">EnumerationController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">requireRole('admin')</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>type a code povinn&#233;</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT id FROM enumeration WHERE type = ? AND code = ? &rarr; HTTP 409</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>INSERT INTO enumeration (type, code, label, value, sort_order, is_active, created_at)</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 201 &middot; <code class="font-mono bg-black/10 px-1 rounded">{{ id, type, code, label }}</code></span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>PUT /enumerations/:id &ndash; &#250;prava polo&#382;ky (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-amber-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">EnumerationController::update()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">EnumerationController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">requireRole('admin')</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT id FROM enumeration WHERE id = ? &rarr; HTTP 404</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-amber-400 bg-amber-50 text-amber-700"><span class="mt-0.5 shrink-0">&#9881;</span><span>Editovateln&#225; pole: <code class="font-mono bg-black/10 px-1 rounded">label, value, sort_order, is_active</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>UPDATE enumeration SET &hellip;, updated_at=NOW() WHERE id=?</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; Enumeration updated</span></li>
+</ul></div>
+</details></div><div class="flex items-center gap-3 text-sm font-bold text-slate-900 mt-8 mb-4"><span>DELETE /enumerations/:id &ndash; smaz&#225;n&#237; polo&#382;ky (admin)</span><span class="flex-1 h-px bg-slate-200 block"></span></div><div class="flex flex-col gap-1.5"><details open class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm group">
+  <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none hover:bg-slate-50">
+    <div class="w-1.5 self-stretch rounded-full shrink-0 bg-red-500"></div>
+    <span class="text-xs font-bold text-slate-400 shrink-0">#1</span>
+    <span class="text-sm font-semibold text-slate-800 flex-1">EnumerationController::destroy()</span>
+    <span class="text-xs text-slate-400 font-mono shrink-0">EnumerationController.php</span>
+    <span class="text-slate-400 group-open:rotate-90 transition-transform">&#9654;</span>
+  </summary>
+  <div class="px-4 pb-4 pt-1"><ul class="flex flex-col gap-1.5 mt-2">
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-red-400 bg-red-50 text-red-700"><span class="mt-0.5 shrink-0">&#128274;</span><span><code class="font-mono bg-black/10 px-1 rounded">requireRole('admin')</code></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>SELECT id FROM enumeration WHERE id = ? &rarr; HTTP 404</span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-violet-400 bg-violet-50 text-violet-700 font-mono text-xs"><span class="mt-0.5 shrink-0">&#128388;</span><span>DELETE FROM enumeration WHERE id=? <em>(hard delete)</em></span></li>
+<li class="flex items-start gap-2 border-2 rounded-lg px-3 py-2 text-xs leading-relaxed border-emerald-400 bg-emerald-50 text-emerald-700"><span class="mt-0.5 shrink-0">&larr;</span><span>HTTP 200 &middot; Enumeration deleted</span></li>
+</ul></div>
+</details></div>
 </div>
 </div>
 <script>
 function showTab(id){
-  document.querySelectorAll("[id^='tab-']").forEach(p=>p.classList.replace("block","hidden")||p.classList.add("hidden"));
-  document.getElementById("tab-"+id).classList.replace("hidden","block");
+  document.querySelectorAll("[id^='tab-']").forEach(p=>{p.className=p.className.replace('block','hidden');});
+  document.getElementById("tab-"+id).className=document.getElementById("tab-"+id).className.replace('hidden','block');
   document.querySelectorAll("button[onclick]").forEach(b=>{
-    const active = b.getAttribute("onclick").includes("'"+id+"'");
-    b.className = active
-      ? "text-xs px-3 py-2 rounded-lg border bg-slate-900 text-white border-slate-900 cursor-pointer font-semibold"
-      : "text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-500 cursor-pointer font-semibold hover:border-slate-400 hover:text-slate-700 transition-colors";
+    const active=b.getAttribute("onclick").includes("'"+id+"'");
+    b.className=active
+      ?"text-xs px-3 py-2 rounded-lg border bg-slate-900 text-white border-slate-900 cursor-pointer font-semibold"
+      :"text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-500 cursor-pointer font-semibold hover:border-slate-400 hover:text-slate-700 transition-colors";
   });
-}
-function tog(el){
-  const body=el.nextElementSibling;
-  const arrow=el.querySelector("div:last-child");
-  const open=body.classList.toggle("hidden");
-  arrow.textContent=open?"&#9654;":"&#9660;";
 }
 </script>
 </body>

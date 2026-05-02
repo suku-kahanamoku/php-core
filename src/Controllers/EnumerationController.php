@@ -25,7 +25,7 @@ class EnumerationController
     }
 
     /** GET /enumerations */
-    public function index(Request $request): void
+    public function list(Request $request): void
     {
         $type     = $request->get('type');
         $isActive = $request->get('is_active');
@@ -71,7 +71,7 @@ class EnumerationController
     }
 
     /** GET /enumerations/:id */
-    public function show(Request $request, array $params): void
+    public function get(Request $request, array $params): void
     {
         $id = (int) $params['id'];
 
@@ -84,7 +84,7 @@ class EnumerationController
     }
 
     /** POST /enumerations */
-    public function store(Request $request): void
+    public function create(Request $request): void
     {
         Auth::requireRole('admin');
 
@@ -122,7 +122,7 @@ class EnumerationController
         Response::created(['id' => $id], 'Enumeration created');
     }
 
-    /** PUT /enumerations/:id */
+    /** PATCH /enumerations/:id – partial update */
     public function update(Request $request, array $params): void
     {
         Auth::requireRole('admin');
@@ -145,8 +145,44 @@ class EnumerationController
         Response::success(null, 'Enumeration updated');
     }
 
+    /** PUT /enumerations/:id – full replace */
+    public function replace(Request $request, array $params): void
+    {
+        Auth::requireRole('admin');
+        $id = (int) $params['id'];
+
+        $item = $this->db->fetchOne('SELECT id FROM enumeration WHERE id = ?', [$id]);
+        if (!$item) {
+            Response::notFound('Enumeration not found');
+        }
+
+        $errors = [];
+        $type  = trim((string) $request->get('type',  ''));
+        $code  = trim((string) $request->get('code',  ''));
+        $label = trim((string) $request->get('label', ''));
+
+        if ($type  === '') $errors['type']  = 'Required';
+        if ($code  === '') $errors['code']  = 'Required';
+        if ($label === '') $errors['label'] = 'Required';
+        if (!empty($errors)) {
+            Response::validationError($errors);
+        }
+
+        $this->db->update('enumeration', [
+            'type'       => $type,
+            'code'       => $code,
+            'label'      => $label,
+            'value'      => (string) ($request->get('value') ?? ''),
+            'sort_order' => (int)    ($request->get('sort_order') ?? 0),
+            'is_active'  => (int)    ($request->get('is_active')  ?? 1),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ], 'id = ?', [$id]);
+
+        Response::success(null, 'Enumeration replaced');
+    }
+
     /** DELETE /enumerations/:id */
-    public function destroy(Request $request, array $params): void
+    public function delete(Request $request, array $params): void
     {
         Auth::requireRole('admin');
         $id = (int) $params['id'];

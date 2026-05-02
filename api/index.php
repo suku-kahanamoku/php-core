@@ -40,44 +40,48 @@ $router->post('/auth/change-password', [$auth, 'changePassword']);
 // ────────────────────────────────────────────────────────────────────────────
 $users = new UserController();
 
-$router->get('/users',          [$users, 'index']);
-$router->post('/users',         [$users, 'store']);
-$router->get('/users/:id',      [$users, 'show']);
-$router->put('/users/:id',      [$users, 'update']);
-$router->delete('/users/:id',   [$users, 'destroy']);
+$router->get('/users',          [$users, 'list']);
+$router->post('/users',         [$users, 'create']);
+$router->get('/users/:id',      [$users, 'get']);
+$router->put('/users/:id',      [$users, 'replace']);
+$router->patch('/users/:id',    [$users, 'update']);
+$router->delete('/users/:id',   [$users, 'delete']);
 
 // ────────────────────────────────────────────────────────────────────────────
 // ADDRESS ENDPOINTS
 // ────────────────────────────────────────────────────────────────────────────
 $addresses = new AddressController();
 
-$router->get('/users/:userId/addresses', [$addresses, 'index']);
-$router->post('/addresses',              [$addresses, 'store']);
-$router->get('/addresses/:id',           [$addresses, 'show']);
-$router->put('/addresses/:id',           [$addresses, 'update']);
-$router->delete('/addresses/:id',        [$addresses, 'destroy']);
+$router->get('/users/:userId/addresses', [$addresses, 'list']);
+$router->post('/addresses',              [$addresses, 'create']);
+$router->get('/addresses/:id',           [$addresses, 'get']);
+$router->put('/addresses/:id',           [$addresses, 'replace']);
+$router->patch('/addresses/:id',         [$addresses, 'update']);
+$router->delete('/addresses/:id',        [$addresses, 'delete']);
 
 // ────────────────────────────────────────────────────────────────────────────
 // CATEGORY ENDPOINTS
 // ────────────────────────────────────────────────────────────────────────────
 $categories = new CategoryController();
 
-$router->get('/categories',        [$categories, 'index']);
-$router->post('/categories',       [$categories, 'store']);
-$router->get('/categories/:id',    [$categories, 'show']);
-$router->put('/categories/:id',    [$categories, 'update']);
-$router->delete('/categories/:id', [$categories, 'destroy']);
+$router->get('/categories',        [$categories, 'list']);
+$router->post('/categories',       [$categories, 'create']);
+$router->get('/categories/:id',    [$categories, 'get']);
+$router->put('/categories/:id',    [$categories, 'replace']);
+$router->patch('/categories/:id',  [$categories, 'update']);
+$router->delete('/categories/:id', [$categories, 'delete']);
 
 // ────────────────────────────────────────────────────────────────────────────
 // PRODUCT ENDPOINTS
 // ────────────────────────────────────────────────────────────────────────────
 $products = new ProductController();
 
-$router->get('/products',              [$products, 'index']);
-$router->post('/products',             [$products, 'store']);
-$router->get('/products/:id',          [$products, 'show']);
-$router->put('/products/:id',          [$products, 'update']);
-$router->delete('/products/:id',       [$products, 'destroy']);
+$router->get('/products',              [$products, 'list']);
+$router->post('/products',             [$products, 'create']);
+$router->get('/products/:id',          [$products, 'get']);
+$router->put('/products/:id',          [$products, 'replace']);
+$router->patch('/products/:id',        [$products, 'update']);
+$router->delete('/products/:id',       [$products, 'delete']);
 $router->patch('/products/:id/stock',  [$products, 'adjustStock']);
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -85,46 +89,48 @@ $router->patch('/products/:id/stock',  [$products, 'adjustStock']);
 // ────────────────────────────────────────────────────────────────────────────
 $texts = new TextController();
 
-$router->get('/texts',                  [$texts, 'index']);
-$router->post('/texts',                 [$texts, 'store']);
-$router->get('/texts/by-key/:key',      [$texts, 'showByKey']);
-$router->get('/texts/:id',              [$texts, 'show']);
-$router->put('/texts/:id',              [$texts, 'update']);
-$router->delete('/texts/:id',           [$texts, 'destroy']);
+$router->get('/texts',                  [$texts, 'list']);
+$router->post('/texts',                 [$texts, 'create']);
+$router->get('/texts/by-key/:key',      [$texts, 'getByKey']);
+$router->get('/texts/:id',              [$texts, 'get']);
+$router->put('/texts/:id',              [$texts, 'replace']);
+$router->patch('/texts/:id',            [$texts, 'update']);
+$router->delete('/texts/:id',           [$texts, 'delete']);
 
 // ────────────────────────────────────────────────────────────────────────────
 // ENUMERATION / CODEBOOK ENDPOINTS
 // ────────────────────────────────────────────────────────────────────────────
 $enums = new EnumerationController();
 
-$router->get('/enumerations',         [$enums, 'index']);
-$router->get('/enumerations/types',   [$enums, 'types']);
-$router->post('/enumerations',        [$enums, 'store']);
-$router->get('/enumerations/:id',     [$enums, 'show']);
-$router->put('/enumerations/:id',     [$enums, 'update']);
-$router->delete('/enumerations/:id',  [$enums, 'destroy']);
+$router->get('/enumerations',          [$enums, 'list']);
+$router->get('/enumerations/types',    [$enums, 'types']);
+$router->post('/enumerations',         [$enums, 'create']);
+$router->get('/enumerations/:id',      [$enums, 'get']);
+$router->put('/enumerations/:id',      [$enums, 'replace']);
+$router->patch('/enumerations/:id',    [$enums, 'update']);
+$router->delete('/enumerations/:id',   [$enums, 'delete']);
 
 // ────────────────────────────────────────────────────────────────────────────
 // ORDER ENDPOINTS
 // ────────────────────────────────────────────────────────────────────────────
 $orders = new OrderController();
 
-$router->get('/orders',                    [$orders, 'index']);
-$router->post('/orders',                   [$orders, 'store']);
-$router->get('/orders/:id',                [$orders, 'show']);
+$router->get('/orders',                    [$orders, 'list']);
+$router->post('/orders',                   [$orders, 'create']);
+$router->get('/orders/:id',                [$orders, 'get']);
 $router->patch('/orders/:id/status',       [$orders, 'updateStatus']);
-$router->delete('/orders/:id',             [$orders, 'destroy']);
+$router->delete('/orders/:id',             [$orders, 'delete']);
 
 // ────────────────────────────────────────────────────────────────────────────
 // INVOICE ENDPOINTS
 // ────────────────────────────────────────────────────────────────────────────
 $invoices = new InvoiceController();
 
-$router->get('/invoices',                  [$invoices, 'index']);
-$router->post('/invoices',                 [$invoices, 'store']);
-$router->get('/invoices/:id',              [$invoices, 'show']);
+$router->get('/invoices',                  [$invoices, 'list']);
+$router->post('/invoices',                 [$invoices, 'create']);
+$router->get('/invoices/:id',              [$invoices, 'get']);
 $router->patch('/invoices/:id/status',     [$invoices, 'updateStatus']);
-$router->delete('/invoices/:id',           [$invoices, 'destroy']);
+$router->delete('/invoices/:id',           [$invoices, 'delete']);
 
 // ────────────────────────────────────────────────────────────────────────────
 // INDEX – API info (always JSON)

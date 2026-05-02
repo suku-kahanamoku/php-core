@@ -19,7 +19,7 @@ class ProductController
     }
 
     /** GET /products */
-    public function index(Request $request): void
+    public function list(Request $request): void
     {
         $page       = max(1, (int) $request->get('page', 1));
         $limit      = min(100, max(1, (int) $request->get('limit', 20)));
@@ -72,7 +72,7 @@ class ProductController
     }
 
     /** GET /products/:id */
-    public function show(Request $request, array $params): void
+    public function get(Request $request, array $params): void
     {
         $id = (int) $params['id'];
 
@@ -92,7 +92,7 @@ class ProductController
     }
 
     /** POST /products */
-    public function store(Request $request): void
+    public function create(Request $request): void
     {
         Auth::requireRole('admin');
 
@@ -122,7 +122,7 @@ class ProductController
         Response::created(['id' => $id], 'Product created');
     }
 
-    /** PUT /products/:id */
+    /** PATCH /products/:id – partial update */
     public function update(Request $request, array $params): void
     {
         Auth::requireRole('admin');
@@ -151,8 +151,46 @@ class ProductController
         Response::success(null, 'Product updated');
     }
 
+    /** PUT /products/:id – full replace */
+    public function replace(Request $request, array $params): void
+    {
+        Auth::requireRole('admin');
+        $id = (int) $params['id'];
+
+        $product = $this->db->fetchOne('SELECT id FROM product WHERE id = ? AND deleted_at IS NULL', [$id]);
+        if (!$product) {
+            Response::notFound('Product not found');
+        }
+
+        $errors = [];
+        $name  = trim((string) $request->get('name', ''));
+        $sku   = trim((string) $request->get('sku',  ''));
+        $price = $request->get('price');
+
+        if ($name  === '') $errors['name']  = 'Required';
+        if ($sku   === '') $errors['sku']   = 'Required';
+        if ($price === null || !is_numeric($price) || (float) $price < 0) $errors['price'] = 'Required, must be >= 0';
+        if (!empty($errors)) {
+            Response::validationError($errors);
+        }
+
+        $this->db->update('product', [
+            'name'           => $name,
+            'sku'            => $sku,
+            'price'          => (float) $price,
+            'description'    => (string) ($request->get('description')    ?? ''),
+            'vat_rate'       => $request->get('vat_rate')       !== null ? (float) $request->get('vat_rate')       : 21.0,
+            'stock_quantity' => $request->get('stock_quantity') !== null ? (int)   $request->get('stock_quantity') : 0,
+            'status'         => (string) ($request->get('status')         ?? 'active'),
+            'category_id'    => $request->get('category_id')   !== null ? (int)   $request->get('category_id')   : null,
+            'updated_at'     => date('Y-m-d H:i:s'),
+        ], 'id = ?', [$id]);
+
+        Response::success(null, 'Product replaced');
+    }
+
     /** DELETE /products/:id */
-    public function destroy(Request $request, array $params): void
+    public function delete(Request $request, array $params): void
     {
         Auth::requireRole('admin');
         $id = (int) $params['id'];
@@ -180,7 +218,7 @@ class ProductController
 
         $newQty = $product['stock_quantity'] + $quantity;
         if ($newQty < 0) {
-            Response::error('Insufficient stock', 400);
+            Response::error('Insufficient stock', 422);
         }
 
         $this->db->update('product', ['stock_quantity' => $newQty, 'updated_at' => date('Y-m-d H:i:s')], 'id = ?', [$id]);

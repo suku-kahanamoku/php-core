@@ -19,7 +19,7 @@ class OrderController
     }
 
     /** GET /orders */
-    public function index(Request $request): void
+    public function list(Request $request): void
     {
         Auth::require();
 
@@ -74,7 +74,7 @@ class OrderController
     }
 
     /** GET /orders/:id */
-    public function show(Request $request, array $params): void
+    public function get(Request $request, array $params): void
     {
         Auth::require();
         $id = (int) $params['id'];
@@ -110,7 +110,7 @@ class OrderController
     }
 
     /** POST /orders */
-    public function store(Request $request): void
+    public function create(Request $request): void
     {
         Auth::require();
 
@@ -221,7 +221,7 @@ class OrderController
     }
 
     /** DELETE /orders/:id */
-    public function destroy(Request $request, array $params): void
+    public function delete(Request $request, array $params): void
     {
         Auth::requireRole('admin');
         $id = (int) $params['id'];

@@ -23,7 +23,7 @@ class TextController
     }
 
     /** GET /texts */
-    public function index(Request $request): void
+    public function list(Request $request): void
     {
         $lang     = $request->get('language', 'cs');
         $isActive = $request->get('is_active');
@@ -53,7 +53,7 @@ class TextController
     }
 
     /** GET /texts/:id */
-    public function show(Request $request, array $params): void
+    public function get(Request $request, array $params): void
     {
         $id = (int) $params['id'];
 
@@ -66,7 +66,7 @@ class TextController
     }
 
     /** GET /texts/by-key/:key */
-    public function showByKey(Request $request, array $params): void
+    public function getByKey(Request $request, array $params): void
     {
         $key  = $params['key'];
         $lang = $request->get('language', 'cs');
@@ -84,7 +84,7 @@ class TextController
     }
 
     /** POST /texts */
-    public function store(Request $request): void
+    public function create(Request $request): void
     {
         Auth::requireRole('admin');
 
@@ -118,7 +118,7 @@ class TextController
         Response::created(['id' => $id], 'Text created');
     }
 
-    /** PUT /texts/:id */
+    /** PATCH /texts/:id – partial update */
     public function update(Request $request, array $params): void
     {
         Auth::requireRole('admin');
@@ -141,8 +141,41 @@ class TextController
         Response::success(null, 'Text updated');
     }
 
+    /** PUT /texts/:id – full replace */
+    public function replace(Request $request, array $params): void
+    {
+        Auth::requireRole('admin');
+        $id = (int) $params['id'];
+
+        $text = $this->db->fetchOne('SELECT id FROM text WHERE id = ?', [$id]);
+        if (!$text) {
+            Response::notFound('Text not found');
+        }
+
+        $errors = [];
+        $key   = trim((string) $request->get('key',   ''));
+        $title = trim((string) $request->get('title', ''));
+
+        if ($key   === '') $errors['key']   = 'Required';
+        if ($title === '') $errors['title'] = 'Required';
+        if (!empty($errors)) {
+            Response::validationError($errors);
+        }
+
+        $this->db->update('text', [
+            'key'        => $key,
+            'title'      => $title,
+            'content'    => (string) ($request->get('content')  ?? ''),
+            'language'   => (string) ($request->get('language') ?? 'cs'),
+            'is_active'  => (int)    ($request->get('is_active') ?? 1),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ], 'id = ?', [$id]);
+
+        Response::success(null, 'Text replaced');
+    }
+
     /** DELETE /texts/:id */
-    public function destroy(Request $request, array $params): void
+    public function delete(Request $request, array $params): void
     {
         Auth::requireRole('admin');
         $id = (int) $params['id'];

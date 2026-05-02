@@ -19,7 +19,7 @@ class AddressController
     }
 
     /** GET /users/:userId/addresses */
-    public function index(Request $request, array $params): void
+    public function list(Request $request, array $params): void
     {
         Auth::require();
         $userId = (int) $params['userId'];
@@ -37,7 +37,7 @@ class AddressController
     }
 
     /** GET /addresses/:id */
-    public function show(Request $request, array $params): void
+    public function get(Request $request, array $params): void
     {
         Auth::require();
         $id      = (int) $params['id'];
@@ -55,7 +55,7 @@ class AddressController
     }
 
     /** POST /addresses */
-    public function store(Request $request): void
+    public function create(Request $request): void
     {
         Auth::require();
 
@@ -94,7 +94,7 @@ class AddressController
         Response::created(['id' => $id], 'Address created');
     }
 
-    /** PUT /addresses/:id */
+    /** PATCH /addresses/:id – partial update */
     public function update(Request $request, array $params): void
     {
         Auth::require();
@@ -121,8 +121,53 @@ class AddressController
         Response::success(null, 'Address updated');
     }
 
+    /** PUT /addresses/:id – full replace */
+    public function replace(Request $request, array $params): void
+    {
+        Auth::require();
+        $id      = (int) $params['id'];
+        $address = $this->db->fetchOne('SELECT * FROM address WHERE id = ?', [$id]);
+
+        if (!$address) {
+            Response::notFound('Address not found');
+        }
+
+        if (!Auth::hasRole('admin') && (int) $address['user_id'] !== Auth::id()) {
+            Response::forbidden();
+        }
+
+        $errors = [];
+        $street  = trim((string) $request->get('street',  ''));
+        $city    = trim((string) $request->get('city',    ''));
+        $zip     = trim((string) $request->get('zip',     ''));
+        $country = trim((string) $request->get('country', ''));
+
+        if ($street  === '') $errors['street']  = 'Required';
+        if ($city    === '') $errors['city']    = 'Required';
+        if ($zip     === '') $errors['zip']     = 'Required';
+        if ($country === '') $errors['country'] = 'Required';
+        if (!empty($errors)) {
+            Response::validationError($errors);
+        }
+
+        $this->db->update('address', [
+            'type'       => (string) ($request->get('type')       ?? 'billing'),
+            'company'    => (string) ($request->get('company')    ?? ''),
+            'first_name' => (string) ($request->get('first_name') ?? ''),
+            'last_name'  => (string) ($request->get('last_name')  ?? ''),
+            'street'     => $street,
+            'city'       => $city,
+            'zip'        => $zip,
+            'country'    => $country,
+            'is_default' => (int) ($request->get('is_default') ?? 0),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ], 'id = ?', [$id]);
+
+        Response::success(null, 'Address replaced');
+    }
+
     /** DELETE /addresses/:id */
-    public function destroy(Request $request, array $params): void
+    public function delete(Request $request, array $params): void
     {
         Auth::require();
         $id      = (int) $params['id'];

@@ -22,7 +22,7 @@ class UserController
      * GET /users
      * Admin only
      */
-    public function index(Request $request): void
+    public function list(Request $request): void
     {
         Auth::requireRole('admin');
 
@@ -71,7 +71,7 @@ class UserController
     /**
      * GET /users/:id
      */
-    public function show(Request $request, array $params): void
+    public function get(Request $request, array $params): void
     {
         Auth::require();
         $id = (int) $params['id'];
@@ -98,7 +98,7 @@ class UserController
      * POST /users
      * Admin only
      */
-    public function store(Request $request): void
+    public function create(Request $request): void
     {
         Auth::requireRole('admin');
 
@@ -128,7 +128,7 @@ class UserController
     }
 
     /**
-     * PUT /users/:id
+     * PATCH /users/:id – partial update (only provided fields)
      */
     public function update(Request $request, array $params): void
     {
@@ -171,10 +171,53 @@ class UserController
     }
 
     /**
+     * PUT /users/:id – full replace (all updatable fields required)
+     */
+    public function replace(Request $request, array $params): void
+    {
+        Auth::require();
+        $id = (int) $params['id'];
+
+        if (!Auth::hasRole('admin') && Auth::id() !== $id) {
+            Response::forbidden();
+        }
+
+        $user = $this->db->fetchOne('SELECT id FROM user WHERE id = ?', [$id]);
+        if (!$user) {
+            Response::notFound('User not found');
+        }
+
+        $firstName = trim((string) $request->get('first_name', ''));
+        $lastName  = trim((string) $request->get('last_name',  ''));
+
+        $errors = [];
+        if ($firstName === '') $errors['first_name'] = 'Required';
+        if ($lastName  === '') $errors['last_name']  = 'Required';
+        if (!empty($errors)) {
+            Response::validationError($errors);
+        }
+
+        $set = [
+            'first_name' => $firstName,
+            'last_name'  => $lastName,
+            'phone'      => $request->get('phone') !== null ? trim((string) $request->get('phone')) : null,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ];
+
+        if (Auth::hasRole('admin')) {
+            $set['role']   = (string) ($request->get('role')   ?? 'user');
+            $set['status'] = (string) ($request->get('status') ?? 'active');
+        }
+
+        $this->db->update('user', $set, 'id = ?', [$id]);
+        Response::success(null, 'User replaced');
+    }
+
+    /**
      * DELETE /users/:id
      * Admin only – soft delete
      */
-    public function destroy(Request $request, array $params): void
+    public function delete(Request $request, array $params): void
     {
         Auth::requireRole('admin');
         $id = (int) $params['id'];
