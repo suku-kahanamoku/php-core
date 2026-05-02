@@ -1,0 +1,97 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\Text;
+
+use App\Core\Request;
+use App\Core\Response;
+
+class TextApi
+{
+    private TextService $service;
+
+    public function __construct()
+    {
+        $this->service = new TextService();
+    }
+
+    /** GET /texts */
+    public function list(Request $request): void
+    {
+        $isActive = $request->get('is_active');
+        Response::success($this->service->list(
+            (string) $request->get('language', 'cs'),
+            $isActive !== null ? (bool)(int) $isActive : null,
+            $request->get('search'),
+            (string) $request->get('sort_by', 'key'),
+            (string) $request->get('sort_dir', 'ASC')
+        ));
+    }
+
+    /** GET /texts/:id */
+    public function get(Request $request, array $params): void
+    {
+        Response::success($this->service->get((int) $params['id']));
+    }
+
+    /** GET /texts/by-key/:key */
+    public function getByKey(Request $request, array $params): void
+    {
+        Response::success($this->service->getByKey(
+            $params['key'],
+            (string) $request->get('language', 'cs')
+        ));
+    }
+
+    /** POST /texts */
+    public function create(Request $request): void
+    {
+        $id = $this->service->create(
+            trim((string) $request->get('key',   '')),
+            trim((string) $request->get('title', '')),
+            trim((string) $request->get('language', 'cs')),
+            [
+                'content'   => $request->get('content'),
+                'is_active' => $request->get('is_active', 1),
+            ]
+        );
+        Response::created(['id' => $id], 'Text created');
+    }
+
+    /** PATCH /texts/:id */
+    public function update(Request $request, array $params): void
+    {
+        $this->service->update((int) $params['id'], [
+            'key'       => $request->get('key'),
+            'title'     => $request->get('title'),
+            'content'   => $request->get('content'),
+            'language'  => $request->get('language'),
+            'is_active' => $request->get('is_active'),
+        ]);
+        Response::success(null, 'Text updated');
+    }
+
+    /** PUT /texts/:id */
+    public function replace(Request $request, array $params): void
+    {
+        $this->service->replace(
+            (int) $params['id'],
+            trim((string) $request->get('key',   '')),
+            trim((string) $request->get('title', '')),
+            [
+                'content'   => $request->get('content'),
+                'language'  => $request->get('language', 'cs'),
+                'is_active' => $request->get('is_active', 1),
+            ]
+        );
+        Response::success(null, 'Text replaced');
+    }
+
+    /** DELETE /texts/:id */
+    public function delete(Request $request, array $params): void
+    {
+        $this->service->delete((int) $params['id']);
+        Response::success(null, 'Text deleted');
+    }
+}

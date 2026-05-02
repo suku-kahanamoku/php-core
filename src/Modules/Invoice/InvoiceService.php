@@ -1,0 +1,131 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\Invoice;
+
+use App\Core\Auth;
+use App\Core\Database;
+use App\Core\Franchise;
+use App\Core\Response;
+
+class InvoiceService
+{
+    private Invoice $invoice;
+
+    public function __construct()
+    {
+        $this->invoice = new Invoice(Database::getInstance(), Franchise::code());
+    }
+
+    public function list(int $page, int $limit, ?string $status, string $sortBy, string $sortDir): array
+    {
+        Auth::require();
+
+        $userId = Auth::hasRole('admin') ? null : Auth::id();
+
+        return $this->invoice->findAll($page, $limit, $userId, $status, $sortBy, $sortDir);
+    }
+
+    public function get(int $id): array
+    {
+        Auth::require();
+
+        $invoice = $this->invoice->findById($id);
+        if (!$invoice) {
+            Response::notFound('Invoice not found');
+        }
+
+        if (!Auth::hasRole('admin') && (int) $invoice['user_id'] !== Auth::id()) {
+            Response::forbidden();
+        }
+
+        return $invoice;
+    }
+
+    public function create(int $orderId, array $input): int
+    {
+        Auth::requireRole('admin');
+
+        if ($orderId <= 0) {
+            Response::validationError(['order_id' => 'Required']);
+        }
+
+        $order = $this->invoice->getOrder($orderId);
+        if (!$order) {
+            Response::notFound('Order not found');
+        }
+
+        if ($this->invoice->findByOrder($orderId)) {
+            Response::error('Invoice already exists for this order', 409);
+        }
+
+        $orderItems = $this->invoice->getOrderItems($orderId);
+        $issuedAt   = date('Y-m-d H:i:s');
+        $dueAt      = $input['due_at'] ?? date('Y-m-d', strtotime('+14 days'));
+
+        $pdo = $this->invoice->getPdo();
+        $pdo->beginTransaction();
+
+        try {
+            $invoiceId = $this->invoice->create([
+                'invoice_number'     => $this->invoice->generateNumber(),
+                'order_id'           => $orderId,
+                'user_id'            => $order['user_id'],
+                'status'             => 'issued',
+                'total_amount'       => $order['total_amount'],
+                'currency'           => $order['currency'],
+                'issued_at'          => $issuedAt,
+                'due_at'             => $dueAt,
+                'billing_address_id' => $order['billing_address_id'] ?? null,
+                'note'               => $input['note'] ?? '',
+            ]);
+
+            foreach ($orderItems as $item) {
+                $this->invoice->createItem([
+                    'invoice_id'  => $invoiceId,
+                    'product_id'  => $item['product_id'],
+                    'description' => $item['product_name'] ?? '',
+                    'quantity'    => $item['quantity'],
+                    'unit_price'  => $item['unit_price'],
+                    'total_price' => $item['total_price'],
+                ]);
+            }
+
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            Response::error($e->getMessage(), 500);
+        }
+
+        return $invoiceId ?? 0;
+    }
+
+    public function updateStatus(int $id, string $status): void
+    {
+        Auth::requireRole('admin');
+
+        if ($status === '') {
+            Response::validationError(['status' => 'Required']);
+        }
+
+        $invoice = $this->invoice->findById($id);
+        if (!$invoice) {
+            Response::notFound('Invoice not found');
+        }
+
+        $this->invoice->updateStatus($id, $status);
+    }
+
+    public function delete(int $id): void
+    {
+        Auth::requireRole('admin');
+
+        $invoice = $this->invoice->findById($id);
+        if (!$invoice) {
+            Response::notFound('Invoice not found');
+        }
+
+        $this->invoice->softDelete($id);
+    }
+}
