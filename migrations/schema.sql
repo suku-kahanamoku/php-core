@@ -303,30 +303,3 @@ INSERT INTO `user` (`franchise_code`, `first_name`, `last_name`, `email`, `passw
    (SELECT id FROM role WHERE franchise_code = 'default' AND name = 'admin'),
    'active');
 
--- ── Migrations: add updated_at to tables that were missing it ─────────
--- Run these on existing databases (safe to re-run via information_schema check)
-SET @db = DATABASE();
-
-SET @s1 = IF(
-  (SELECT COUNT(*) FROM information_schema.COLUMNS
-   WHERE TABLE_SCHEMA=@db AND TABLE_NAME='user_token' AND COLUMN_NAME='updated_at') = 0,
-  'ALTER TABLE `user_token` ADD COLUMN `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP AFTER `created_at`',
-  'SELECT 1'
-);
-PREPARE stmt FROM @s1; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @s2 = IF(
-  (SELECT COUNT(*) FROM information_schema.COLUMNS
-   WHERE TABLE_SCHEMA=@db AND TABLE_NAME='order_item' AND COLUMN_NAME='updated_at') = 0,
-  'ALTER TABLE `order_item` ADD COLUMN `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP AFTER `created_at`',
-  'SELECT 1'
-);
-PREPARE stmt FROM @s2; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
-SET @s3 = IF(
-  (SELECT COUNT(*) FROM information_schema.COLUMNS
-   WHERE TABLE_SCHEMA=@db AND TABLE_NAME='invoice_item' AND COLUMN_NAME='updated_at') = 0,
-  'ALTER TABLE `invoice_item` ADD COLUMN `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP AFTER `created_at`',
-  'SELECT 1'
-);
-PREPARE stmt FROM @s3; EXECUTE stmt; DEALLOCATE PREPARE stmt;
