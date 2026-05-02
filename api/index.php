@@ -10,6 +10,7 @@ use App\Core\Router;
 use App\Middleware\CorsMiddleware;
 use App\Controllers\AuthController;
 use App\Controllers\UserController;
+use App\Controllers\RoleController;
 use App\Controllers\ProductController;
 use App\Controllers\CategoryController;
 use App\Controllers\TextController;
@@ -34,6 +35,18 @@ $router->post('/auth/logout',          [$auth, 'logout']);
 $router->get('/auth/me',               [$auth, 'me']);
 $router->post('/auth/register',        [$auth, 'register']);
 $router->post('/auth/change-password', [$auth, 'changePassword']);
+
+// ────────────────────────────────────────────────────────────────────────────
+// ROLE ENDPOINTS
+// ────────────────────────────────────────────────────────────────────────────
+$roles = new RoleController();
+
+$router->get('/roles',          [$roles, 'list']);
+$router->post('/roles',         [$roles, 'create']);
+$router->get('/roles/:id',      [$roles, 'get']);
+$router->put('/roles/:id',      [$roles, 'replace']);
+$router->patch('/roles/:id',    [$roles, 'update']);
+$router->delete('/roles/:id',   [$roles, 'delete']);
 
 // ────────────────────────────────────────────────────────────────────────────
 // USER ENDPOINTS

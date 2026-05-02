@@ -25,7 +25,8 @@
 <button class="text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-500 hover:border-slate-400 hover:text-slate-700 cursor-pointer font-semibold transition-colors" onclick="showTab('order')">&#128722; Order</button>
 <button class="text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-500 hover:border-slate-400 hover:text-slate-700 cursor-pointer font-semibold transition-colors" onclick="showTab('invoice')">&#129534; Invoice</button>
 <button class="text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-500 hover:border-slate-400 hover:text-slate-700 cursor-pointer font-semibold transition-colors" onclick="showTab('text')">&#128221; Text (CMS)</button>
-<button class="text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-500 hover:border-slate-400 hover:text-slate-700 cursor-pointer font-semibold transition-colors" onclick="showTab('enumeration')">&#128290; Enumeration</button></div>
+<button class="text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-500 hover:border-slate-400 hover:text-slate-700 cursor-pointer font-semibold transition-colors" onclick="showTab('enumeration')">&#128290; Enumeration</button>
+<button class="text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-500 hover:border-slate-400 hover:text-slate-700 cursor-pointer font-semibold transition-colors" onclick="showTab('role')">&#128737; Role</button></div>
 <div id="tab-auth" class="block"><div class="overflow-x-auto"><div class="min-w-[860px]"><div class="grid sticky top-0 z-10 bg-slate-100 pt-3 pb-2" style="grid-template-columns:200px 1fr 160px 1fr 220px">
   <div class="p-2.5 rounded-xl text-center text-xs font-bold border-2 border-blue-500 bg-blue-50 text-blue-700">&#128187; Klient<small class="block font-normal text-xs mt-0.5 opacity-80">frontend / curl</small></div>
   <div></div>
@@ -2072,6 +2073,95 @@
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
 </div></div></div></div>
 </div>
+<div id="tab-role" class="hidden"><div class="overflow-x-auto"><div class="min-w-[860px]"><div class="grid sticky top-0 z-10 bg-slate-100 pt-3 pb-2" style="grid-template-columns:200px 1fr 160px 1fr 220px">
+  <div class="p-2.5 rounded-xl text-center text-xs font-bold border-2 border-blue-500 bg-blue-50 text-blue-700">&#128187; Klient<small class="block font-normal text-xs mt-0.5 opacity-80">frontend / curl</small></div>
+  <div></div>
+  <div class="p-2.5 rounded-xl text-center text-xs font-bold border-2 border-amber-500 bg-amber-50 text-amber-700">&#8644; Apache<small class="block font-normal text-xs mt-0.5 opacity-80">.htaccess</small></div>
+  <div></div>
+  <div class="p-2.5 rounded-xl text-center text-xs font-bold border-2 border-emerald-500 bg-emerald-50 text-emerald-700">&#9881; PHP + DB<small class="block font-normal text-xs mt-0.5 opacity-80">router → controller</small></div>
+</div>
+
+<div class="flex items-center gap-2 text-sm font-bold text-slate-900 mt-6 mb-2"><span class="px-2 py-0.5 rounded text-white text-xs font-bold bg-blue-600">GET</span><span class="font-mono text-slate-700">/roles</span><span class="text-xs font-normal normal-case px-1.5 py-0.5 rounded bg-green-100 text-green-700 ml-1">&#128275; public</span><span class="text-xs text-slate-400 font-normal ml-2">seznam všech rolí</span><span class="flex-1 h-px bg-slate-200 block ml-2"></span></div>
+<div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">GET /roles</div></div>
+  <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
+  <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
+  <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-emerald-400 bg-emerald-50 text-emerald-700">SELECT * FROM role<br><small>WHERE franchise_code=?</small></div></div>
+</div>
+<div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-green-400 bg-green-50 text-green-700">200 [ {id, name, label, sort_order, is_active} ]</div></div>
+  <div class="flex items-center"><div class="w-0 h-0 border-y-[4px] border-y-transparent border-r-[8px] border-r-green-500"></div><div class="flex-1 h-0.5 bg-green-500"></div></div>
+  <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
+  <div class="flex items-center"><div class="w-0 h-0 border-y-[4px] border-y-transparent border-r-[8px] border-r-green-500"></div><div class="flex-1 h-0.5 bg-green-500"></div></div>
+  <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
+</div>
+
+<div class="flex items-center gap-2 text-sm font-bold text-slate-900 mt-6 mb-2"><span class="px-2 py-0.5 rounded text-white text-xs font-bold bg-blue-600">GET</span><span class="font-mono text-slate-700">/roles/:id</span><span class="text-xs font-normal normal-case px-1.5 py-0.5 rounded bg-green-100 text-green-700 ml-1">&#128275; public</span><span class="text-xs text-slate-400 font-normal ml-2">detail role + počet uživatelů</span><span class="flex-1 h-px bg-slate-200 block ml-2"></span></div>
+<div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">GET /roles/5</div></div>
+  <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
+  <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
+  <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-emerald-400 bg-emerald-50 text-emerald-700">SELECT role + COUNT(users)<br><small>WHERE id=? AND franchise_code=?</small></div></div>
+</div>
+<div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-green-400 bg-green-50 text-green-700">200 {id, name, label, user_count}</div></div>
+  <div class="flex items-center"><div class="w-0 h-0 border-y-[4px] border-y-transparent border-r-[8px] border-r-green-500"></div><div class="flex-1 h-0.5 bg-green-500"></div></div>
+  <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
+  <div class="flex items-center"><div class="w-0 h-0 border-y-[4px] border-y-transparent border-r-[8px] border-r-green-500"></div><div class="flex-1 h-0.5 bg-green-500"></div></div>
+  <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
+</div>
+
+<div class="flex items-center gap-2 text-sm font-bold text-slate-900 mt-6 mb-2"><span class="px-2 py-0.5 rounded text-white text-xs font-bold bg-green-600">POST</span><span class="font-mono text-slate-700">/roles</span><span class="text-xs font-normal normal-case px-1.5 py-0.5 rounded bg-red-100 text-red-700 ml-1">&#128274; admin</span><span class="text-xs text-slate-400 font-normal ml-2">vytvoření nové role</span><span class="flex-1 h-px bg-slate-200 block ml-2"></span></div>
+<div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">POST /roles<br><small>{ name, label, sort_order }</small></div></div>
+  <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
+  <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
+  <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-emerald-400 bg-emerald-50 text-emerald-700">check Bearer token (admin)<br>validate name (a-z0-9_)<br>check duplicate<br>INSERT INTO role</div></div>
+</div>
+<div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-green-400 bg-green-50 text-green-700">201 {id}</div></div>
+  <div class="flex items-center"><div class="w-0 h-0 border-y-[4px] border-y-transparent border-r-[8px] border-r-green-500"></div><div class="flex-1 h-0.5 bg-green-500"></div></div>
+  <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
+  <div class="flex items-center"><div class="w-0 h-0 border-y-[4px] border-y-transparent border-r-[8px] border-r-green-500"></div><div class="flex-1 h-0.5 bg-green-500"></div></div>
+  <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
+</div>
+
+<div class="flex items-center gap-2 text-sm font-bold text-slate-900 mt-6 mb-2"><span class="px-2 py-0.5 rounded text-white text-xs font-bold bg-orange-500">PATCH</span><span class="font-mono text-slate-700">/roles/:id</span><span class="text-xs font-normal normal-case px-1.5 py-0.5 rounded bg-red-100 text-red-700 ml-1">&#128274; admin</span><span class="text-xs text-slate-400 font-normal ml-2">částečná aktualizace role</span><span class="flex-1 h-px bg-slate-200 block ml-2"></span></div>
+<div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">PATCH /roles/5<br><small>{ label? }</small></div></div>
+  <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
+  <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
+  <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-emerald-400 bg-emerald-50 text-emerald-700">UPDATE role SET …<br><small>WHERE id=? AND franchise_code=?</small></div></div>
+</div>
+<div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-green-400 bg-green-50 text-green-700">200 OK</div></div>
+  <div class="flex items-center"><div class="w-0 h-0 border-y-[4px] border-y-transparent border-r-[8px] border-r-green-500"></div><div class="flex-1 h-0.5 bg-green-500"></div></div>
+  <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
+  <div class="flex items-center"><div class="w-0 h-0 border-y-[4px] border-y-transparent border-r-[8px] border-r-green-500"></div><div class="flex-1 h-0.5 bg-green-500"></div></div>
+  <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
+</div>
+
+<div class="flex items-center gap-2 text-sm font-bold text-slate-900 mt-6 mb-2"><span class="px-2 py-0.5 rounded text-white text-xs font-bold bg-red-600">DELETE</span><span class="font-mono text-slate-700">/roles/:id</span><span class="text-xs font-normal normal-case px-1.5 py-0.5 rounded bg-red-100 text-red-700 ml-1">&#128274; admin</span><span class="text-xs text-slate-400 font-normal ml-2">smazání role (zakázáno pro admin/user a role s uživateli)</span><span class="flex-1 h-px bg-slate-200 block ml-2"></span></div>
+<div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">DELETE /roles/5</div></div>
+  <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
+  <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
+  <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-emerald-400 bg-emerald-50 text-emerald-700">guard: built-in? users assigned?<br>DELETE FROM role<br><small>WHERE id=? AND franchise_code=?</small></div></div>
+</div>
+<div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-green-400 bg-green-50 text-green-700">200 OK <small>/ 409 has users</small></div></div>
+  <div class="flex items-center"><div class="w-0 h-0 border-y-[4px] border-y-transparent border-r-[8px] border-r-green-500"></div><div class="flex-1 h-0.5 bg-green-500"></div></div>
+  <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
+  <div class="flex items-center"><div class="w-0 h-0 border-y-[4px] border-y-transparent border-r-[8px] border-r-green-500"></div><div class="flex-1 h-0.5 bg-green-500"></div></div>
+  <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
+</div>
+
+</div></div></div></div>
 <script>
 function showTab(id) {
   document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.replace('block','hidden'));

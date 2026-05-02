@@ -22,7 +22,7 @@
   <a href="db-table.html" class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128203; DB tabulky</a>
 </nav>
 <div class="bg-white border-b border-slate-200 px-8 py-2 flex items-center justify-between flex-wrap gap-2">
-  <span class="text-sm text-slate-500">11 tabulek &middot; Entity-Relationship Diagram</span>
+  <span class="text-sm text-slate-500">12 tabulek &middot; Entity-Relationship Diagram</span>
   <div class="flex gap-2">
     <button onclick="exportSvg()" class="text-xs px-3 py-1.5 rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors">&#8595; Export SVG</button>
     <button onclick="zoomIn()"    class="text-xs px-3 py-1.5 rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors">&#65291; Zoom in</button>
@@ -34,13 +34,19 @@
   <p id="loading" class="text-slate-400 text-sm mt-16">Načítám diagram…</p>
   <div class="mermaid" id="mermaid-src" style="display:none">
 erDiagram
+    role { int id PK
+        varchar name
+        varchar label
+        smallint sort_order
+        tinyint is_active
+        datetime created_at }
     user { int id PK
         varchar first_name
         varchar last_name
         varchar email
         varchar phone
         varchar password
-        varchar role
+        int role_id FK
         varchar status
         int address_id FK
         datetime last_login_at
@@ -137,6 +143,7 @@ erDiagram
         decimal unit_price
         decimal total_price
         datetime created_at }
+    role ||--o{ user : "assigned to"
     user ||--o{ user_token : "has tokens"
     user ||--o{ address : "has addresses"
     user ||--o| address : "default billing"

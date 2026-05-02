@@ -35,6 +35,7 @@ assert_test('success = false',          $r['data']['success'] === false);
 
 $tests = [
     'test_auth.php',
+    'test_roles.php',
     'test_users.php',
     'test_addresses.php',
     'test_categories.php',

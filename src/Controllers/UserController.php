@@ -33,29 +33,35 @@ class UserController
         $role   = $request->get('role');
         $status = $request->get('status');
 
-        $where  = ['franchise_code = ?'];
+        $where  = ['u.franchise_code = ?'];
         $params = [$this->code];
 
         if ($search) {
-            $where[]  = '(first_name LIKE ? OR last_name LIKE ? OR email LIKE ?)';
+            $where[]  = '(u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ?)';
             $s = '%' . $search . '%';
             $params = [...$params, $s, $s, $s];
         }
         if ($role) {
-            $where[]  = 'role = ?';
+            $where[]  = 'r.name = ?';
             $params[] = $role;
         }
         if ($status) {
-            $where[]  = 'status = ?';
+            $where[]  = 'u.status = ?';
             $params[] = $status;
         }
 
         $whereStr = implode(' AND ', $where);
 
-        $total = $this->db->fetchOne("SELECT COUNT(*) as cnt FROM user WHERE {$whereStr}", $params)['cnt'] ?? 0;
+        $total = $this->db->fetchOne(
+            "SELECT COUNT(*) as cnt FROM user u JOIN role r ON r.id = u.role_id WHERE {$whereStr}",
+            $params
+        )['cnt'] ?? 0;
         $users = $this->db->fetchAll(
-            "SELECT id, first_name, last_name, email, role, status, phone, created_at, last_login_at
-             FROM user WHERE {$whereStr} ORDER BY created_at DESC LIMIT {$limit} OFFSET {$offset}",
+            "SELECT u.id, u.first_name, u.last_name, u.email, r.name AS role, r.id AS role_id,
+                    u.status, u.phone, u.created_at, u.last_login_at
+             FROM user u
+             JOIN role r ON r.id = u.role_id
+             WHERE {$whereStr} ORDER BY u.created_at DESC LIMIT {$limit} OFFSET {$offset}",
             $params
         );
 
@@ -79,9 +85,12 @@ class UserController
         }
 
         $user = $this->db->fetchOne(
-            'SELECT id, first_name, last_name, email, role, status, phone, address_id,
-                    created_at, updated_at, last_login_at
-             FROM user WHERE id = ? AND franchise_code = ?',
+            'SELECT u.id, u.first_name, u.last_name, u.email, r.name AS role, r.id AS role_id,
+                    u.status, u.phone, u.address_id,
+                    u.created_at, u.updated_at, u.last_login_at
+             FROM user u
+             JOIN role r ON r.id = u.role_id
+             WHERE u.id = ? AND u.franchise_code = ?',
             [$id, $this->code]
         );
 
@@ -111,6 +120,24 @@ class UserController
             Response::error('Email already registered', 409);
         }
 
+        $roleId = null;
+        if (isset($data['role']) && $data['role'] !== null) {
+            $roleRow = $this->db->fetchOne(
+                'SELECT id FROM role WHERE franchise_code = ? AND name = ?',
+                [$this->code, $data['role']]
+            );
+            if (!$roleRow) {
+                Response::validationError(['role' => 'Unknown role']);
+            }
+            $roleId = $roleRow['id'];
+        } else {
+            $roleRow = $this->db->fetchOne(
+                'SELECT id FROM role WHERE franchise_code = ? AND name = ?',
+                [$this->code, 'user']
+            );
+            $roleId = $roleRow['id'] ?? null;
+        }
+
         $id = $this->db->insert('user', [
             'franchise_code' => $this->code,
             'first_name'   => $data['first_name'],
@@ -118,7 +145,7 @@ class UserController
             'email'        => $data['email'],
             'phone'        => $data['phone'] ?? null,
             'password'     => password_hash($data['password'], PASSWORD_BCRYPT, ['cost' => 12]),
-            'role'         => $data['role'] ?? 'user',
+            'role_id'      => $roleId,
             'status'       => $data['status'] ?? 'active',
             'created_at'   => date('Y-m-d H:i:s'),
         ]);
@@ -151,11 +178,18 @@ class UserController
         }
 
         if (Auth::hasRole('admin')) {
-            foreach (['role', 'status'] as $field) {
-                $val = $request->get($field);
-                if ($val !== null) {
-                    $set[$field] = (string) $val;
+            if (($v = $request->get('role')) !== null) {
+                $roleRow = $this->db->fetchOne(
+                    'SELECT id FROM role WHERE franchise_code = ? AND name = ?',
+                    [$this->code, (string) $v]
+                );
+                if (!$roleRow) {
+                    Response::validationError(['role' => 'Unknown role']);
                 }
+                $set['role_id'] = $roleRow['id'];
+            }
+            if (($v = $request->get('status')) !== null) {
+                $set['status'] = (string) $v;
             }
         }
 
@@ -199,8 +233,16 @@ class UserController
         ];
 
         if (Auth::hasRole('admin')) {
-            $set['role']   = (string) ($request->get('role')   ?? 'user');
-            $set['status'] = (string) ($request->get('status') ?? 'active');
+            $roleName = (string) ($request->get('role') ?? 'user');
+            $roleRow  = $this->db->fetchOne(
+                'SELECT id FROM role WHERE franchise_code = ? AND name = ?',
+                [$this->code, $roleName]
+            );
+            if (!$roleRow) {
+                Response::validationError(['role' => 'Unknown role']);
+            }
+            $set['role_id'] = $roleRow['id'];
+            $set['status']  = (string) ($request->get('status') ?? 'active');
         }
 
         $this->db->update('user', $set, 'id = ? AND franchise_code = ?', [$id, $this->code]);

@@ -36,8 +36,10 @@ class AuthController
         }
 
         $user = $this->db->fetchOne(
-            'SELECT id, email, password, role, first_name, last_name, status
-             FROM user WHERE franchise_code = ? AND email = ? LIMIT 1',
+            'SELECT u.id, u.email, u.password, r.name AS role, u.first_name, u.last_name, u.status
+             FROM user u
+             JOIN role r ON r.id = u.role_id
+             WHERE u.franchise_code = ? AND u.email = ? LIMIT 1',
             [$this->code, $email]
         );
 
@@ -111,13 +113,21 @@ class AuthController
             Response::error('Email already registered', 409);
         }
 
+        $roleRow = $this->db->fetchOne(
+            'SELECT id FROM role WHERE franchise_code = ? AND name = ?',
+            [$this->code, 'user']
+        );
+        if (!$roleRow) {
+            Response::error('Default role not configured', 500);
+        }
+
         $id = $this->db->insert('user', [
             'franchise_code' => $this->code,
             'first_name'   => $data['first_name'],
             'last_name'    => $data['last_name'],
             'email'        => $data['email'],
             'password'     => password_hash($data['password'], PASSWORD_BCRYPT, ['cost' => 12]),
-            'role'         => 'user',
+            'role_id'      => $roleRow['id'],
             'status'       => 'active',
             'created_at'   => date('Y-m-d H:i:s'),
         ]);

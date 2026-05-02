@@ -9,7 +9,7 @@ SET foreign_key_checks = 0;
 CREATE TABLE IF NOT EXISTS `enumeration` (
     `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `franchise_code` VARCHAR(64)  NOT NULL DEFAULT 'default' COMMENT 'multi-tenant project key',
-    `type`         VARCHAR(64)  NOT NULL COMMENT 'e.g. order_status, invoice_status, user_role',
+    `type`         VARCHAR(64)  NOT NULL COMMENT 'e.g. order_status, invoice_status, payment_method',
     `code`         VARCHAR(64)  NOT NULL,
     `label`        VARCHAR(255) NOT NULL,
     `value`        VARCHAR(255) NOT NULL DEFAULT '',
@@ -23,6 +23,21 @@ CREATE TABLE IF NOT EXISTS `enumeration` (
     KEY `idx_enum_type`      (`type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ── role ──────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS `role` (
+    `id`             INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `franchise_code` VARCHAR(64)  NOT NULL DEFAULT 'default',
+    `name`           VARCHAR(64)  NOT NULL COMMENT 'e.g. admin, user, manager',
+    `label`          VARCHAR(255) NOT NULL,
+    `sort_order`     SMALLINT     NOT NULL DEFAULT 0,
+    `is_active`      TINYINT(1)   NOT NULL DEFAULT 1,
+    `created_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`     DATETIME              DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_role_franchise_name` (`franchise_code`, `name`),
+    KEY `idx_role_franchise` (`franchise_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ── user ─────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS `user` (
     `id`            INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -32,7 +47,7 @@ CREATE TABLE IF NOT EXISTS `user` (
     `email`         VARCHAR(255) NOT NULL,
     `phone`         VARCHAR(30)           DEFAULT NULL,
     `password`      VARCHAR(255) NOT NULL,
-    `role`          VARCHAR(32)  NOT NULL DEFAULT 'user' COMMENT 'admin | user | manager',
+    `role_id`       INT UNSIGNED NOT NULL COMMENT 'FK → role.id',
     `status`        VARCHAR(32)  NOT NULL DEFAULT 'active' COMMENT 'active | inactive | deleted',
     `address_id`    INT UNSIGNED          DEFAULT NULL COMMENT 'default billing address',
     `last_login_at` DATETIME              DEFAULT NULL,
@@ -43,7 +58,8 @@ CREATE TABLE IF NOT EXISTS `user` (
     UNIQUE KEY `uq_user_franchise_email` (`franchise_code`, `email`),
     KEY `idx_user_franchise` (`franchise_code`),
     KEY `idx_user_status`    (`status`),
-    KEY `idx_user_role`      (`role`)
+    KEY `idx_user_role_id`   (`role_id`),
+    CONSTRAINT `fk_user_role` FOREIGN KEY (`role_id`) REFERENCES `role` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── address ───────────────────────────────────────────────
@@ -239,6 +255,12 @@ CREATE TABLE IF NOT EXISTS `invoice_item` (
 
 SET foreign_key_checks = 1;
 
+-- ── Seed: default roles ───────────────────────────────────
+INSERT INTO `role` (`franchise_code`, `name`, `label`, `sort_order`) VALUES
+  ('default', 'admin',   'Admin',   10),
+  ('default', 'manager', 'Manager', 20),
+  ('default', 'user',    'User',    30);
+
 -- ── Seed: default enumerations ────────────────────────────
 INSERT INTO `enumeration` (`franchise_code`, `type`, `code`, `label`, `value`, `sort_order`) VALUES
   -- Order statuses
@@ -256,10 +278,6 @@ INSERT INTO `enumeration` (`franchise_code`, `type`, `code`, `label`, `value`, `
   ('default', 'invoice_status', 'overdue',   'Overdue',   'overdue',   40),
   ('default', 'invoice_status', 'cancelled', 'Cancelled', 'cancelled', 50),
   ('default', 'invoice_status', 'refunded',  'Refunded',  'refunded',  60),
-  -- User roles
-  ('default', 'user_role', 'admin',   'Admin',   'admin',   10),
-  ('default', 'user_role', 'manager', 'Manager', 'manager', 20),
-  ('default', 'user_role', 'user',    'User',    'user',    30),
   -- Payment methods
   ('default', 'payment_method', 'bank_transfer', 'Bank Transfer', 'bank_transfer', 10),
   ('default', 'payment_method', 'cash',          'Cash',          'cash',          20),
@@ -275,8 +293,9 @@ INSERT INTO `enumeration` (`franchise_code`, `type`, `code`, `label`, `value`, `
   ('default', 'vat_rate', '12', '12%', '12', 30),
   ('default', 'vat_rate', '21', '21%', '21', 40);
 
--- ── Seed: admin user (password: Admin1234!) ───────────────
-INSERT INTO `user` (`franchise_code`, `first_name`, `last_name`, `email`, `password`, `role`, `status`) VALUES
+-- ── Seed: admin user (password: password) ────────────────
+INSERT INTO `user` (`franchise_code`, `first_name`, `last_name`, `email`, `password`, `role_id`, `status`) VALUES
   ('default', 'Admin', 'User', 'admin@example.com',
    '$2y$12$ubNeYmIWTWs4hXG6OQWQdO5rRStAzqrHM1C/xxU9H7vZx0LvMKI5q',
-   'admin', 'active');
+   (SELECT id FROM role WHERE franchise_code = 'default' AND name = 'admin'),
+   'active');

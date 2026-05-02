@@ -57,9 +57,10 @@ class Auth
         }
 
         $row = Database::getInstance()->fetchOne(
-            'SELECT u.id, u.email, u.role, u.first_name, u.last_name
+            'SELECT u.id, u.email, r.name AS role, u.first_name, u.last_name
              FROM user_token t
              JOIN `user` u ON u.id = t.user_id
+             JOIN `role` r ON r.id = u.role_id
              WHERE t.token = ? AND t.expires_at > NOW()
                AND u.status = "active" AND u.franchise_code = ?
              LIMIT 1',
