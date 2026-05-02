@@ -31,30 +31,12 @@ header('Content-Type: text/html; charset=utf-8');
         <h2 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">&#128196; Dokumentace &amp; vizualizace</h2>
         <div class="grid grid-cols-[repeat(auto-fill,minmax(210px,1fr))] gap-3 mb-8">
 
-            <a href="<?php echo $base; ?>/pages/flow-login.html"
+            <a href="<?php echo $base; ?>/pages/flows.html"
                 class="bg-white border-[1.5px] border-slate-200 rounded-xl p-5 no-underline text-slate-800 flex flex-col gap-2
               hover:border-blue-500 hover:shadow-lg transition-all duration-150 group">
-                <span class="text-2xl leading-none">&#128273;</span>
-                <span class="text-sm font-bold text-slate-900">Login flow</span>
-                <span class="text-xs text-slate-500 leading-relaxed">Sekven&#269;n&#237; diagram p&#345;ihl&#225;&#353;en&#237; a z&#237;sk&#225;n&#237; Bearer tokenu</span>
-                <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 w-fit">flow diagram</span>
-            </a>
-
-            <a href="<?php echo $base; ?>/pages/flow-order-cancel.html"
-                class="bg-white border-[1.5px] border-slate-200 rounded-xl p-5 no-underline text-slate-800 flex flex-col gap-2
-              hover:border-blue-500 hover:shadow-lg transition-all duration-150 group">
-                <span class="text-2xl leading-none">&#128230;</span>
-                <span class="text-sm font-bold text-slate-900">Storno objedn&#225;vky</span>
-                <span class="text-xs text-slate-500 leading-relaxed">Krok za krokem: auth &rarr; router &rarr; controller &rarr; SQL &rarr; response</span>
-                <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 w-fit">flow diagram</span>
-            </a>
-
-            <a href="<?php echo $base; ?>/pages/flow-models.html"
-                class="bg-white border-[1.5px] border-slate-200 rounded-xl p-5 no-underline text-slate-800 flex flex-col gap-2
-              hover:border-blue-500 hover:shadow-lg transition-all duration-150 group">
-                <span class="text-2xl leading-none">&#128218;</span>
-                <span class="text-sm font-bold text-slate-900">Model flows</span>
-                <span class="text-xs text-slate-500 leading-relaxed">Hlavn&#237; operace v&#353;ech model&#367;: User, Product, Order, Invoice&hellip;</span>
+                <span class="text-2xl leading-none">&#128257;</span>
+                <span class="text-sm font-bold text-slate-900">Controller flows</span>
+                <span class="text-xs text-slate-500 leading-relaxed">Sekven&#269;n&#237; diagramy v&#353;ech controller&#367;: Auth, User, Order, Invoice&hellip;</span>
                 <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 w-fit">flow diagram</span>
             </a>
 
