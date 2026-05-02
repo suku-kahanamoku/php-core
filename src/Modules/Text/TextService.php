@@ -56,16 +56,16 @@ class TextService
     ): int {
         $this->auth->requireRole('admin');
 
-        Validator::make(['key' => $key, 'title' => $title])
-            ->required(['key', 'title'])
+        Validator::make(['syscode' => $key, 'title' => $title])
+            ->required(['syscode', 'title'])
             ->validate();
 
         if ($this->text->keyExists($key, $language)) {
-            Response::error("Key '$key' already exists for language '$language'", 409);
+            Response::error("Syscode '$key' already exists for language '$language'", 409);
         }
 
         return $this->text->create([
-            'key'        => $key,
+            'syscode'    => $key,
             'title'      => $title,
             'content'    => $input['content'] ?? '',
             'language'   => $language,
@@ -83,7 +83,7 @@ class TextService
         }
 
         $set        = [];
-        $textFields = ['key', 'title', 'content', 'language'];
+        $textFields = ['syscode', 'title', 'content', 'language'];
 
         foreach ($textFields as $f) {
             if (array_key_exists($f, $input) && $input[$f] !== null) {
@@ -107,12 +107,12 @@ class TextService
             Response::notFound('Text not found');
         }
 
-        Validator::make(['key' => $key, 'title' => $title])
-            ->required(['key', 'title'])
+        Validator::make(['syscode' => $key, 'title' => $title])
+            ->required(['syscode', 'title'])
             ->validate();
 
         $this->text->update($id, [
-            'key'       => $key,
+            'syscode'   => $key,
             'title'     => $title,
             'content'   => (string) ($input['content'] ?? ''),
             'language'  => (string) ($input['language'] ?? 'cs'),

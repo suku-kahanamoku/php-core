@@ -44,7 +44,7 @@ section('Enumerations – public get by id');
 if ($firstEnumId) {
     $r = request('GET', "{$base}/enumerations/{$firstEnumId}", [], false);
     assert_test('GET /enumerations/:id 200', $r['status'] === 200, dump_on_fail($r));
-    assert_test('has type + code', isset($r['data']['data']['type'], $r['data']['data']['code']));
+    assert_test('has type + syscode', isset($r['data']['data']['type'], $r['data']['data']['syscode']));
 }
 
 // ── Admin login ───────────────────────────────────────────────────────────────
@@ -59,7 +59,7 @@ $token = $r['data']['data']['token'] ?? null;
 section('Enumerations – CRUD');
 $enumType = 'test_type_' . time();
 $r        = request('POST', "{$base}/enumerations", [
-    'type' => $enumType, 'code' => 'code_a', 'label' => 'Code A',
+    'type' => $enumType, 'syscode' => 'syscode_a', 'label' => 'Code A',
 ]);
 assert_test('POST /enumerations 201', $r['status'] === 201, dump_on_fail($r));
 $enumId = $r['data']['data']['id'] ?? null;
@@ -67,18 +67,18 @@ $enumId = $r['data']['data']['id'] ?? null;
 if ($enumId) {
     $r = request('GET', "{$base}/enumerations/{$enumId}");
     assert_test('GET /enumerations/:id 200', $r['status'] === 200, dump_on_fail($r));
-    assert_test('code matches', $r['data']['data']['code'] === 'code_a');
+    assert_test('syscode matches', $r['data']['data']['syscode'] === 'syscode_a');
 
     $r = request('PATCH', "{$base}/enumerations/{$enumId}", ['label' => 'Code A Patched']);
     assert_test('PATCH /enumerations/:id 200', $r['status'] === 200, dump_on_fail($r));
 
     $r = request('PUT', "{$base}/enumerations/{$enumId}", [
-        'type' => $enumType, 'code' => 'code_a', 'label' => 'Code A Updated',
+        'type' => $enumType, 'syscode' => 'syscode_a', 'label' => 'Code A Updated',
     ]);
     assert_test('PUT /enumerations/:id 200', $r['status'] === 200, dump_on_fail($r));
 
     $r = request('PUT', "{$base}/enumerations/{$enumId}", ['type' => $enumType]);
-    assert_test('PUT /enumerations/:id 422 missing code+label', $r['status'] === 422, dump_on_fail($r));
+    assert_test('PUT /enumerations/:id 422 missing syscode+label', $r['status'] === 422, dump_on_fail($r));
 
     $r = request('DELETE', "{$base}/enumerations/{$enumId}");
     assert_test('DELETE /enumerations/:id 200', $r['status'] === 200, dump_on_fail($r));

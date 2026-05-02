@@ -29,7 +29,6 @@ class ProductApi
             $request->get('category_id') !== null
                 ? (int) $request->get('category_id')
                 : null,
-            $request->get('status'),
             (string) $request->get('sort_by', 'created_at'),
             (string) $request->get('sort_dir', 'DESC'),
         ));
@@ -52,7 +51,6 @@ class ProductApi
             'vat_rate'       => $request->get('vat_rate'),
             'stock_quantity' => $request->get('stock_quantity'),
             'category_id'    => $request->get('category_id'),
-            'status'         => $request->get('status'),
         ]);
         Response::created(['id' => $id], 'Product created');
     }
@@ -68,7 +66,6 @@ class ProductApi
             'vat_rate'       => $request->get('vat_rate'),
             'stock_quantity' => $request->get('stock_quantity'),
             'category_id'    => $request->get('category_id'),
-            'status'         => $request->get('status'),
         ]);
         Response::success(null, 'Product updated');
     }
@@ -83,7 +80,6 @@ class ProductApi
             'description'    => $request->get('description'),
             'vat_rate'       => $request->get('vat_rate'),
             'stock_quantity' => $request->get('stock_quantity'),
-            'status'         => $request->get('status'),
             'category_id'    => $request->get('category_id'),
         ]);
         Response::success(null, 'Product replaced');

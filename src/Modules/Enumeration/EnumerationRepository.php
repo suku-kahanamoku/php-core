@@ -26,7 +26,7 @@ class EnumerationRepository
         string $sortBy = 'position',
         string $sortDir = 'ASC',
     ): array {
-        $allowed = ['position', 'label', 'code', 'type', 'created_at'];
+        $allowed = ['position', 'label', 'syscode', 'type', 'created_at'];
         $sortBy  = in_array($sortBy, $allowed, true) ? $sortBy : 'position';
         $sortDir = strtoupper($sortDir) === 'DESC' ? 'DESC' : 'ASC';
 
@@ -78,13 +78,13 @@ class EnumerationRepository
         if ($excludeId !== null) {
             $row = $this->db->fetchOne(
                 'SELECT id FROM enumeration
-                 WHERE franchise_code = ? AND type = ? AND code = ? AND id != ?',
+                 WHERE franchise_code = ? AND type = ? AND syscode = ? AND id != ?',
                 [$this->code, $type, $code, $excludeId],
             );
         } else {
             $row = $this->db->fetchOne(
                 'SELECT id FROM enumeration
-                 WHERE franchise_code = ? AND type = ? AND code = ?',
+                 WHERE franchise_code = ? AND type = ? AND syscode = ?',
                 [$this->code, $type, $code],
             );
         }

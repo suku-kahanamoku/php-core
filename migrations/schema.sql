@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS `enumeration` (
     `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `franchise_code` VARCHAR(64)  NOT NULL DEFAULT 'default' COMMENT 'multi-tenant project key',
     `type`         VARCHAR(64)  NOT NULL COMMENT 'e.g. order_status, invoice_status, payment_method',
-    `code`         VARCHAR(64)  NOT NULL,
+    `syscode`       VARCHAR(64)  NOT NULL,
     `label`        VARCHAR(255) NOT NULL,
     `value`        VARCHAR(255) NOT NULL DEFAULT '',
     `position`   SMALLINT     NOT NULL DEFAULT 0,
@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS `enumeration` (
     `created_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`   DATETIME              DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_enum_franchise_type_code` (`franchise_code`, `type`, `code`),
+    UNIQUE KEY `uq_enum_franchise_type_syscode` (`franchise_code`, `type`, `syscode`),
     KEY `idx_enum_franchise` (`franchise_code`),
     KEY `idx_enum_type`      (`type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS `address` (
     `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `franchise_code` VARCHAR(64)  NOT NULL DEFAULT 'default',
     `user_id`      INT UNSIGNED NOT NULL,
-    `type`         VARCHAR(20)  NOT NULL DEFAULT 'billing' COMMENT 'billing | shipping',
+    `type`         ENUM('billing','shipping') NOT NULL DEFAULT 'billing',
     `company`      VARCHAR(255)          DEFAULT NULL,
     `first_name`   VARCHAR(100) NOT NULL DEFAULT '',
     `last_name`    VARCHAR(100) NOT NULL DEFAULT '',
@@ -121,14 +121,12 @@ CREATE TABLE IF NOT EXISTS `product` (
     `price`          DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
     `vat_rate`       DECIMAL(5, 2)  NOT NULL DEFAULT 21.00 COMMENT 'VAT percentage',
     `stock_quantity` INT            NOT NULL DEFAULT 0,
-    `status`         VARCHAR(32)    NOT NULL DEFAULT 'active' COMMENT 'active | inactive | archived',
     `created_at`     DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`     DATETIME                DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_product_franchise_sku` (`franchise_code`, `sku`),
     KEY `idx_product_franchise` (`franchise_code`),
     KEY `idx_product_cat`       (`category_id`),
-    KEY `idx_product_status`    (`status`),
     CONSTRAINT `fk_product_cat` FOREIGN KEY (`category_id`) REFERENCES `category` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -136,7 +134,7 @@ CREATE TABLE IF NOT EXISTS `product` (
 CREATE TABLE IF NOT EXISTS `text` (
     `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `franchise_code` VARCHAR(64)  NOT NULL DEFAULT 'default',
-    `key`          VARCHAR(128) NOT NULL,
+    `syscode`      VARCHAR(128) NOT NULL,
     `title`        VARCHAR(255) NOT NULL,
     `content`      LONGTEXT              DEFAULT NULL,
     `language`     VARCHAR(10)  NOT NULL DEFAULT 'cs',
@@ -145,7 +143,7 @@ CREATE TABLE IF NOT EXISTS `text` (
     `created_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`   DATETIME              DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_text_franchise_key_lang` (`franchise_code`, `key`, `language`),
+    UNIQUE KEY `uq_text_franchise_syscode_lang` (`franchise_code`, `syscode`, `language`),
     KEY `idx_text_franchise` (`franchise_code`),
     KEY `idx_text_lang`      (`language`),
     CONSTRAINT `fk_text_user` FOREIGN KEY (`created_by`) REFERENCES `user` (`id`) ON DELETE SET NULL
@@ -157,8 +155,7 @@ CREATE TABLE IF NOT EXISTS `order` (
     `franchise_code`        VARCHAR(64)    NOT NULL DEFAULT 'default',
     `order_number`        VARCHAR(64)    NOT NULL,
     `user_id`             INT UNSIGNED            DEFAULT NULL,
-    `status`              VARCHAR(32)    NOT NULL DEFAULT 'pending'
-                              COMMENT 'pending | confirmed | processing | shipped | delivered | cancelled | refunded',
+    `status`              ENUM('pending','confirmed','processing','shipped','delivered','cancelled','refunded') NOT NULL DEFAULT 'pending',
     `total_amount`        DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
     `currency`            VARCHAR(3)     NOT NULL DEFAULT 'CZK',
     `payment_method`      VARCHAR(64)             DEFAULT 'bank_transfer',
@@ -201,8 +198,7 @@ CREATE TABLE IF NOT EXISTS `invoice` (
     `invoice_number`     VARCHAR(64)    NOT NULL,
     `order_id`           INT UNSIGNED            DEFAULT NULL,
     `user_id`            INT UNSIGNED            DEFAULT NULL,
-    `status`             VARCHAR(32)    NOT NULL DEFAULT 'issued'
-                             COMMENT 'draft | issued | paid | overdue | cancelled | refunded',
+    `status`             ENUM('draft','issued','paid','overdue','cancelled','refunded') NOT NULL DEFAULT 'issued',
     `total_amount`       DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
     `currency`           VARCHAR(3)     NOT NULL DEFAULT 'CZK',
     `billing_address_id` INT UNSIGNED            DEFAULT NULL,
@@ -250,7 +246,7 @@ INSERT INTO `role` (`franchise_code`, `name`, `label`, `position`) VALUES
   ('default', 'user',    'User',    30);
 
 -- ── Seed: default enumerations ────────────────────────────
-INSERT INTO `enumeration` (`franchise_code`, `type`, `code`, `label`, `value`, `position`) VALUES
+INSERT INTO `enumeration` (`franchise_code`, `type`, `syscode`, `label`, `value`, `position`) VALUES
   -- Order statuses
   ('default', 'order_status', 'pending',    'Pending',    'pending',    10),
   ('default', 'order_status', 'confirmed',  'Confirmed',  'confirmed',  20),

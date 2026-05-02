@@ -27,7 +27,7 @@ class TextApi
             (string) $request->get('language', 'cs'),
             $isActive !== null ? (bool)(int) $isActive : null,
             $request->get('search'),
-            (string) $request->get('sort_by', 'key'),
+            (string) $request->get('sort_by', 'syscode'),
             (string) $request->get('sort_dir', 'ASC'),
         ));
     }
@@ -51,7 +51,7 @@ class TextApi
     public function create(Request $request): void
     {
         $id = $this->service->create(
-            trim((string) $request->get('key', '')),
+            trim((string) $request->get('syscode', '')),
             trim((string) $request->get('title', '')),
             trim((string) $request->get('language', 'cs')),
             [
@@ -66,7 +66,7 @@ class TextApi
     public function update(Request $request, array $params): void
     {
         $this->service->update((int) $params['id'], [
-            'key'       => $request->get('key'),
+            'syscode'   => $request->get('syscode'),
             'title'     => $request->get('title'),
             'content'   => $request->get('content'),
             'language'  => $request->get('language'),
@@ -80,7 +80,7 @@ class TextApi
     {
         $this->service->replace(
             (int) $params['id'],
-            trim((string) $request->get('key', '')),
+            trim((string) $request->get('syscode', '')),
             trim((string) $request->get('title', '')),
             [
                 'content'   => $request->get('content'),

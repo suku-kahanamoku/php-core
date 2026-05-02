@@ -108,8 +108,8 @@ class OrderRepository
     {
         return $this->db->fetchOne(
             'SELECT id, name, price, stock_quantity FROM product
-             WHERE id = ? AND franchise_code = ? AND status = ?',
-            [$productId, $this->code, 'active'],
+             WHERE id = ? AND franchise_code = ?',
+            [$productId, $this->code],
         ) ?: null;
     }
 

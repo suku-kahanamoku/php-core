@@ -25,11 +25,10 @@ class ProductRepository
         int $limit = 20,
         ?string $search = null,
         ?int $categoryId = null,
-        ?string $status = null,
         string $sortBy = 'created_at',
         string $sortDir = 'DESC',
     ): array {
-        $allowed = ['created_at', 'name', 'price', 'sku', 'stock_quantity', 'status'];
+        $allowed = ['created_at', 'name', 'price', 'sku', 'stock_quantity'];
         $sortBy  = in_array($sortBy, $allowed, true) ? $sortBy : 'created_at';
         $sortDir = strtoupper($sortDir) === 'ASC' ? 'ASC' : 'DESC';
 
@@ -48,10 +47,6 @@ class ProductRepository
             $where[]  = 'p.category_id = ?';
             $params[] = $categoryId;
         }
-        if ($status !== null) {
-            $where[]  = 'p.status = ?';
-            $params[] = $status;
-        }
 
         $whereStr = implode(' AND ', $where);
 
@@ -63,7 +58,7 @@ class ProductRepository
         $items = $this->db->fetchAll(
             "SELECT p.id, p.sku, p.name, p.description,
                     p.price, p.vat_rate, p.stock_quantity,
-                    p.status, p.category_id,
+                    p.category_id,
                     c.name AS category_name,
                     p.created_at, p.updated_at
              FROM product p

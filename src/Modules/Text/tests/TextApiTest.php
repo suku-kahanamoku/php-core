@@ -38,14 +38,14 @@ $token = $r['data']['data']['token'] ?? null;
 // ── Create ────────────────────────────────────────────────────────────────────
 
 section('Texts – CRUD');
-$textKey = 'test_key_' . time();
+$textKey = 'test_syscode_' . time();
 $r       = request('POST', "{$base}/texts", [
-    'key' => $textKey, 'title' => 'Test Title', 'content' => 'Test content', 'language' => 'cs',
+    'syscode' => $textKey, 'title' => 'Test Title', 'content' => 'Test content', 'language' => 'cs',
 ]);
 assert_test('POST /texts 201', $r['status'] === 201, dump_on_fail($r));
 $textId = $r['data']['data']['id'] ?? null;
 
-$r = request('POST', "{$base}/texts", ['key' => $textKey, 'title' => 'Dup', 'language' => 'cs']);
+$r = request('POST', "{$base}/texts", ['syscode' => $textKey, 'title' => 'Dup', 'language' => 'cs']);
 assert_test('POST /texts 409 duplicate key+lang', $r['status'] === 409, dump_on_fail($r));
 
 if ($textId) {
@@ -63,7 +63,7 @@ if ($textId) {
     $r = request('PATCH', "{$base}/texts/{$textId}", ['title' => 'Patched Title']);
     assert_test('PATCH /texts/:id 200', $r['status'] === 200, dump_on_fail($r));
 
-    $r = request('PUT', "{$base}/texts/{$textId}", ['key' => $textKey, 'title' => 'Replaced Title']);
+    $r = request('PUT', "{$base}/texts/{$textId}", ['syscode' => $textKey, 'title' => 'Replaced Title']);
     assert_test('PUT /texts/:id 200', $r['status'] === 200, dump_on_fail($r));
 
     $r = request('PUT', "{$base}/texts/{$textId}", ['key' => '', 'title' => 'x']);

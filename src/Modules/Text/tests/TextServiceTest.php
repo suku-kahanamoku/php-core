@@ -29,24 +29,24 @@ $token = $r['data']['data']['token'] ?? null;
 
 section('TextService – create() validation');
 $r = request('POST', "{$base}/texts", ['title' => 'x', 'language' => 'cs']);
-assert_test('missing key → 422', $r['status'] === 422, dump_on_fail($r));
+assert_test('missing syscode → 422', $r['status'] === 422, dump_on_fail($r));
 
 $r = request('POST', "{$base}/texts", ['key' => '', 'title' => 'x', 'language' => 'cs']);
-assert_test('empty key → 422', $r['status'] === 422, dump_on_fail($r));
+assert_test('empty syscode → 422', $r['status'] === 422, dump_on_fail($r));
 
 // ── TextService – duplicate key+language prevention ───────────────────────────
 
 section('TextService – duplicate key+language prevention');
-$svcKey = 'svc_key_' . time();
-$r      = request('POST', "{$base}/texts", ['key' => $svcKey, 'title' => 'Svc Title', 'language' => 'cs']);
+$svcKey = 'svc_syscode_' . time();
+$r      = request('POST', "{$base}/texts", ['syscode' => $svcKey, 'title' => 'Svc Title', 'language' => 'cs']);
 assert_test('create text 201', $r['status'] === 201, dump_on_fail($r));
 $svcTextId = $r['data']['data']['id'] ?? null;
 
-$r = request('POST', "{$base}/texts", ['key' => $svcKey, 'title' => 'Dup', 'language' => 'cs']);
+$r = request('POST', "{$base}/texts", ['syscode' => $svcKey, 'title' => 'Dup', 'language' => 'cs']);
 assert_test('duplicate key+lang → 409', $r['status'] === 409, dump_on_fail($r));
 
 // Different language should succeed
-$r = request('POST', "{$base}/texts", ['key' => $svcKey, 'title' => 'EN Title', 'language' => 'en']);
+$r = request('POST', "{$base}/texts", ['syscode' => $svcKey, 'title' => 'EN Title', 'language' => 'en']);
 assert_test('same key different language → 201', $r['status'] === 201, dump_on_fail($r));
 $svcTextEnId = $r['data']['data']['id'] ?? null;
 
@@ -54,8 +54,8 @@ $svcTextEnId = $r['data']['data']['id'] ?? null;
 
 section('TextService – update() validation');
 if ($svcTextId) {
-    $r = request('PUT', "{$base}/texts/{$svcTextId}", ['key' => '', 'title' => 'x']);
-    assert_test('PUT empty key → 422', $r['status'] === 422, dump_on_fail($r));
+    $r = request('PUT', "{$base}/texts/{$svcTextId}", ['syscode' => '', 'title' => 'x']);
+    assert_test('PUT empty syscode → 422', $r['status'] === 422, dump_on_fail($r));
 }
 
 // ── Cleanup ───────────────────────────────────────────────────────────────────

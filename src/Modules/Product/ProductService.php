@@ -25,7 +25,6 @@ class ProductService
         int $limit,
         ?string $search,
         ?int $categoryId,
-        ?string $status,
         string $sortBy,
         string $sortDir,
     ): array {
@@ -34,7 +33,6 @@ class ProductService
             $limit,
             $search,
             $categoryId,
-            $status,
             $sortBy,
             $sortDir,
         );
@@ -72,7 +70,6 @@ class ProductService
             'category_id'    => isset($input['category_id'])
                 ? (int) $input['category_id']
                 : null,
-            'status' => (string) ($input['status'] ?? 'active'),
         ]);
     }
 
@@ -85,7 +82,7 @@ class ProductService
         }
 
         $set         = [];
-        $textFields  = ['sku', 'name', 'description', 'status'];
+        $textFields  = ['sku', 'name', 'description'];
         $floatFields = ['price', 'vat_rate'];
         $intFields   = ['stock_quantity', 'category_id'];
 
@@ -138,7 +135,6 @@ class ProductService
             'stock_quantity' => isset($input['stock_quantity'])
                 ? (int) $input['stock_quantity']
                 : 0,
-            'status'      => (string) ($input['status'] ?? 'active'),
             'category_id' => !empty($input['category_id'])
                 ? (int) $input['category_id']
                 : null,

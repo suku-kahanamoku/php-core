@@ -24,11 +24,11 @@ class TextRepository
         string $language = 'cs',
         ?bool $isActive = null,
         ?string $search = null,
-        string $sortBy = 'key',
+        string $sortBy = 'syscode',
         string $sortDir = 'ASC',
     ): array {
-        $allowed = ['key', 'title', 'created_at', 'updated_at'];
-        $sortBy  = in_array($sortBy, $allowed, true) ? $sortBy : 'key';
+        $allowed = ['syscode', 'title', 'created_at', 'updated_at'];
+        $sortBy  = in_array($sortBy, $allowed, true) ? $sortBy : 'syscode';
         $sortDir = strtoupper($sortDir) === 'DESC' ? 'DESC' : 'ASC';
 
         $where  = ['franchise_code = ?', 'language = ?'];
@@ -39,7 +39,7 @@ class TextRepository
             $params[] = (int) $isActive;
         }
         if ($search) {
-            $where[] = '(`key` LIKE ? OR title LIKE ? OR content LIKE ?)';
+            $where[] = '(syscode LIKE ? OR title LIKE ? OR content LIKE ?)';
             $s       = '%' . $search . '%';
             array_push($params, $s, $s, $s);
         }
@@ -47,8 +47,8 @@ class TextRepository
         $whereStr = implode(' AND ', $where);
 
         return $this->db->fetchAll(
-            "SELECT id, `key`, title, language, is_active, created_at, updated_at
-             FROM text WHERE {$whereStr} ORDER BY `{$sortBy}` {$sortDir}",
+            "SELECT id, syscode, title, language, is_active, created_at, updated_at
+             FROM text WHERE {$whereStr} ORDER BY {$sortBy} {$sortDir}",
             $params,
         );
     }
@@ -66,7 +66,7 @@ class TextRepository
     public function findByKey(string $key, string $language): ?array
     {
         $row = $this->db->fetchOne(
-            'SELECT * FROM text WHERE franchise_code = ? AND `key` = ? AND language = ?',
+            'SELECT * FROM text WHERE franchise_code = ? AND syscode = ? AND language = ?',
             [$this->code, $key, $language],
         );
 
@@ -78,13 +78,13 @@ class TextRepository
         if ($excludeId !== null) {
             $row = $this->db->fetchOne(
                 'SELECT id FROM text
-                 WHERE franchise_code = ? AND `key` = ? AND language = ? AND id != ?',
+                 WHERE franchise_code = ? AND syscode = ? AND language = ? AND id != ?',
                 [$this->code, $key, $language, $excludeId],
             );
         } else {
             $row = $this->db->fetchOne(
                 'SELECT id FROM text
-                 WHERE franchise_code = ? AND `key` = ? AND language = ?',
+                 WHERE franchise_code = ? AND syscode = ? AND language = ?',
                 [$this->code, $key, $language],
             );
         }

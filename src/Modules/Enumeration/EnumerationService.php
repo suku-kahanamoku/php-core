@@ -57,21 +57,21 @@ class EnumerationService
     {
         $this->auth->requireRole('admin');
 
-        Validator::make(['type' => $type, 'code' => $code, 'label' => $label])
-            ->required(['type', 'code', 'label'])
+        Validator::make(['type' => $type, 'syscode' => $code, 'label' => $label])
+            ->required(['type', 'syscode', 'label'])
             ->validate();
 
         if ($this->enum->codeExists($type, $code)) {
-            Response::error("Code '$code' already exists for type '$type'", 409);
+            Response::error("Syscode '$code' already exists for type '$type'", 409);
         }
 
         return $this->enum->create([
-            'type'       => $type,
-            'code'       => $code,
-            'label'      => $label,
-            'value'      => $input['value'] ?? $code,
-            'position' => (int) ($input['position'] ?? 0),
-            'is_active'  => (int) ($input['is_active'] ?? 1),
+            'type'      => $type,
+            'syscode'   => $code,
+            'label'     => $label,
+            'value'     => $input['value'] ?? $code,
+            'position'  => (int) ($input['position'] ?? 0),
+            'is_active' => (int) ($input['is_active'] ?? 1),
         ]);
     }
 
@@ -84,7 +84,7 @@ class EnumerationService
         }
 
         $set        = [];
-        $textFields = ['type', 'code', 'label', 'value'];
+        $textFields = ['type', 'syscode', 'label', 'value'];
         $intFields  = ['position', 'is_active'];
 
         foreach ($textFields as $f) {
@@ -116,17 +116,17 @@ class EnumerationService
             Response::notFound('Enumeration not found');
         }
 
-        Validator::make(['type' => $type, 'code' => $code, 'label' => $label])
-            ->required(['type', 'code', 'label'])
+        Validator::make(['type' => $type, 'syscode' => $code, 'label' => $label])
+            ->required(['type', 'syscode', 'label'])
             ->validate();
 
         $this->enum->update($id, [
-            'type'       => $type,
-            'code'       => $code,
-            'label'      => $label,
-            'value'      => (string) ($input['value'] ?? $code),
-            'position' => (int)    ($input['position'] ?? 0),
-            'is_active'  => (int)    ($input['is_active'] ?? 1),
+            'type'      => $type,
+            'syscode'   => $code,
+            'label'     => $label,
+            'value'     => (string) ($input['value'] ?? $code),
+            'position'  => (int)    ($input['position'] ?? 0),
+            'is_active' => (int)    ($input['is_active'] ?? 1),
         ]);
     }
 

@@ -34,9 +34,9 @@ $token = $r['data']['data']['token'] ?? null;
 // ── Text model – create() ────────────────────────────────────────────────────
 
 section('Text model – create()');
-$textKey = 'model_key_' . time();
+$textKey = 'model_syscode_' . time();
 $r       = request('POST', "{$base}/texts", [
-    'key' => $textKey, 'title' => 'Model Title', 'content' => 'Model content', 'language' => 'cs',
+    'syscode' => $textKey, 'title' => 'Model Title', 'content' => 'Model content', 'language' => 'cs',
 ]);
 assert_test('create text 201', $r['status'] === 201, dump_on_fail($r));
 $textId = $r['data']['data']['id'] ?? null;
@@ -73,7 +73,7 @@ if ($textId) {
     $r = request('PATCH', "{$base}/texts/{$textId}", ['title' => 'Model Title Patched']);
     assert_test('PATCH text 200', $r['status'] === 200, dump_on_fail($r));
 
-    $r = request('PUT', "{$base}/texts/{$textId}", ['key' => $textKey, 'title' => 'Model Title Updated']);
+    $r = request('PUT', "{$base}/texts/{$textId}", ['syscode' => $textKey, 'title' => 'Model Title Updated']);
     assert_test('PUT text 200', $r['status'] === 200, dump_on_fail($r));
 }
 

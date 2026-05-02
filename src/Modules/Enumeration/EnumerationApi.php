@@ -48,12 +48,12 @@ class EnumerationApi
     {
         $id = $this->service->create(
             trim((string) $request->get('type', '')),
-            trim((string) $request->get('code', '')),
+            trim((string) $request->get('syscode', '')),
             trim((string) $request->get('label', '')),
             [
-                'value'      => $request->get('value'),
-                'position' => $request->get('position', 0),
-                'is_active'  => $request->get('is_active', 1),
+                'value'     => $request->get('value'),
+                'position'  => $request->get('position', 0),
+                'is_active' => $request->get('is_active', 1),
             ],
         );
         Response::created(['id' => $id], 'Enumeration created');
@@ -63,12 +63,12 @@ class EnumerationApi
     public function update(Request $request, array $params): void
     {
         $this->service->update((int) $params['id'], [
-            'type'       => $request->get('type'),
-            'code'       => $request->get('code'),
-            'label'      => $request->get('label'),
-            'value'      => $request->get('value'),
-            'position' => $request->get('position'),
-            'is_active'  => $request->get('is_active'),
+            'type'      => $request->get('type'),
+            'syscode'   => $request->get('syscode'),
+            'label'     => $request->get('label'),
+            'value'     => $request->get('value'),
+            'position'  => $request->get('position'),
+            'is_active' => $request->get('is_active'),
         ]);
         Response::success(null, 'Enumeration updated');
     }
@@ -79,12 +79,12 @@ class EnumerationApi
         $this->service->replace(
             (int) $params['id'],
             trim((string) $request->get('type', '')),
-            trim((string) $request->get('code', '')),
+            trim((string) $request->get('syscode', '')),
             trim((string) $request->get('label', '')),
             [
-                'value'      => $request->get('value'),
-                'position' => $request->get('position', 0),
-                'is_active'  => $request->get('is_active', 1),
+                'value'     => $request->get('value'),
+                'position'  => $request->get('position', 0),
+                'is_active' => $request->get('is_active', 1),
             ],
         );
         Response::success(null, 'Enumeration replaced');

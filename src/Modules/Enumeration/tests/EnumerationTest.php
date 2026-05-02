@@ -51,7 +51,7 @@ section('Enumeration model – getById()');
 if ($firstEnumId) {
     $r = request('GET', "{$base}/enumerations/{$firstEnumId}", [], false);
     assert_test('getById 200', $r['status'] === 200, dump_on_fail($r));
-    assert_test('has type + code', isset($r['data']['data']['type'], $r['data']['data']['code']));
+    assert_test('has type + syscode', isset($r['data']['data']['type'], $r['data']['data']['syscode']));
 }
 
 $r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
@@ -61,7 +61,7 @@ $token = $r['data']['data']['token'] ?? null;
 
 section('Enumeration model – create()');
 $enumType = 'model_type_' . time();
-$r        = request('POST', "{$base}/enumerations", ['type' => $enumType, 'code' => 'code_m', 'label' => 'Code M']);
+$r        = request('POST', "{$base}/enumerations", ['type' => $enumType, 'syscode' => 'syscode_m', 'label' => 'Code M']);
 assert_test('create enumeration 201', $r['status'] === 201, dump_on_fail($r));
 $enumId = $r['data']['data']['id'] ?? null;
 
@@ -73,7 +73,7 @@ if ($enumId) {
     assert_test('PATCH enumeration 200', $r['status'] === 200, dump_on_fail($r));
 
     $r = request('PUT', "{$base}/enumerations/{$enumId}", [
-        'type' => $enumType, 'code' => 'code_m', 'label' => 'Code M Updated',
+        'type' => $enumType, 'syscode' => 'syscode_m', 'label' => 'Code M Updated',
     ]);
     assert_test('PUT enumeration 200', $r['status'] === 200, dump_on_fail($r));
 }

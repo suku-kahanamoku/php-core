@@ -29,9 +29,9 @@ $token = $r['data']['data']['token'] ?? null;
 
 section('EnumerationService – create() validation');
 $r = request('POST', "{$base}/enumerations", ['type' => 'x']);
-assert_test('missing code + label → 422', $r['status'] === 422, dump_on_fail($r));
+assert_test('missing syscode + label → 422', $r['status'] === 422, dump_on_fail($r));
 
-$r = request('POST', "{$base}/enumerations", ['code' => 'x', 'label' => 'x']);
+$r = request('POST', "{$base}/enumerations", ['syscode' => 'x', 'label' => 'x']);
 assert_test('missing type → 422', $r['status'] === 422, dump_on_fail($r));
 
 // ── EnumerationService – PUT validation ──────────────────────────────────────
@@ -39,14 +39,14 @@ assert_test('missing type → 422', $r['status'] === 422, dump_on_fail($r));
 section('EnumerationService – update() validation');
 $svcEnumType = 'svc_enum_' . time();
 $r           = request('POST', "{$base}/enumerations", [
-    'type' => $svcEnumType, 'code' => 'code_s', 'label' => 'Code S',
+    'type' => $svcEnumType, 'syscode' => 'syscode_s', 'label' => 'Code S',
 ]);
 assert_test('create enumeration 201', $r['status'] === 201, dump_on_fail($r));
 $svcEnumId = $r['data']['data']['id'] ?? null;
 
 if ($svcEnumId) {
     $r = request('PUT', "{$base}/enumerations/{$svcEnumId}", ['type' => $svcEnumType]);
-    assert_test('PUT missing code+label → 422', $r['status'] === 422, dump_on_fail($r));
+    assert_test('PUT missing syscode+label → 422', $r['status'] === 422, dump_on_fail($r));
 }
 
 // ── Cleanup ───────────────────────────────────────────────────────────────────

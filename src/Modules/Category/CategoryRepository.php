@@ -59,7 +59,7 @@ class CategoryRepository
     public function getProducts(int $id): array
     {
         return $this->db->fetchAll(
-            'SELECT id, sku, name, price, status FROM product
+            'SELECT id, sku, name, price FROM product
              WHERE franchise_code = ? AND category_id = ?',
             [$this->code, $id],
         );
