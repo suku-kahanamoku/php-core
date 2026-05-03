@@ -6,7 +6,7 @@ namespace App\Modules\Auth;
 
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
-use App\Modules\Validator\Validator;
+
 
 class AuthService
 {
@@ -23,7 +23,7 @@ class AuthService
 
     public function login(string $email, string $password): array
     {
-        Validator::make(['email' => $email])->email('email')->validate();
+        VALIDATOR(['email' => $email])->email('email')->validate();
 
         $user = $this->db->fetchOne(
             'SELECT u.id, u.email, u.password,
@@ -89,7 +89,7 @@ class AuthService
         string $email,
         string $password,
     ): int {
-        Validator::make([
+        VALIDATOR([
             'first_name' => $firstName,
             'last_name'  => $lastName,
             'email'      => $email,
@@ -132,7 +132,7 @@ class AuthService
     {
         $this->auth->require();
 
-        Validator::make([
+        VALIDATOR([
             'current_password' => $currentPassword,
             'new_password'     => $newPassword,
         ])

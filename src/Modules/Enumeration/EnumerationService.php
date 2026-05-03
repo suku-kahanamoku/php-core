@@ -7,7 +7,7 @@ namespace App\Modules\Enumeration;
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
-use App\Modules\Validator\Validator;
+
 
 class EnumerationService
 {
@@ -56,7 +56,7 @@ class EnumerationService
     {
         $this->auth->requireRole('admin');
 
-        Validator::make(['type' => $type, 'syscode' => $code, 'label' => $label])
+        VALIDATOR(['type' => $type, 'syscode' => $code, 'label' => $label])
             ->required(['type', 'syscode', 'label'])
             ->validate();
 
@@ -115,7 +115,7 @@ class EnumerationService
             Response::notFound('Enumeration not found');
         }
 
-        Validator::make(['type' => $type, 'syscode' => $code, 'label' => $label])
+        VALIDATOR(['type' => $type, 'syscode' => $code, 'label' => $label])
             ->required(['type', 'syscode', 'label'])
             ->validate();
 

@@ -7,7 +7,7 @@ namespace App\Modules\User;
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
-use App\Modules\Validator\Validator;
+
 
 class UserService
 {
@@ -57,7 +57,7 @@ class UserService
     {
         $this->auth->requireRole('admin');
 
-        Validator::make($input)
+        VALIDATOR($input)
             ->required(['first_name', 'last_name', 'email', 'password'])
             ->email('email')
             ->minLength('password', 8)
@@ -139,7 +139,7 @@ class UserService
             Response::notFound('User not found');
         }
 
-        Validator::make($input)
+        VALIDATOR($input)
             ->required(['first_name', 'last_name'])
             ->validate();
 

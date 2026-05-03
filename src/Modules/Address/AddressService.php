@@ -7,7 +7,7 @@ namespace App\Modules\Address;
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
-use App\Modules\Validator\Validator;
+
 
 class AddressService
 {
@@ -58,7 +58,7 @@ class AddressService
             ? $overrideUserId
             : $this->auth->id();
 
-        Validator::make($input)->required(['street', 'city', 'zip'])->validate();
+        VALIDATOR($input)->required(['street', 'city', 'zip'])->validate();
 
         $isDefault = (int) ($input['is_default'] ?? 0);
 
@@ -131,7 +131,7 @@ class AddressService
             Response::forbidden();
         }
 
-        Validator::make($input)
+        VALIDATOR($input)
             ->required(['street', 'city', 'zip', 'country'])
             ->validate();
 

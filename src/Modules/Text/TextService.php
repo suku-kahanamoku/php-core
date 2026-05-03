@@ -7,7 +7,7 @@ namespace App\Modules\Text;
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
-use App\Modules\Validator\Validator;
+
 
 class TextService
 {
@@ -55,7 +55,7 @@ class TextService
     ): int {
         $this->auth->requireRole('admin');
 
-        Validator::make(['syscode' => $key, 'title' => $title])
+        VALIDATOR(['syscode' => $key, 'title' => $title])
             ->required(['syscode', 'title'])
             ->validate();
 
@@ -106,7 +106,7 @@ class TextService
             Response::notFound('Text not found');
         }
 
-        Validator::make(['syscode' => $key, 'title' => $title])
+        VALIDATOR(['syscode' => $key, 'title' => $title])
             ->required(['syscode', 'title'])
             ->validate();
 

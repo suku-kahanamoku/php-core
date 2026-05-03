@@ -7,7 +7,7 @@ namespace App\Modules\Role;
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
-use App\Modules\Validator\Validator;
+
 
 class RoleService
 {
@@ -43,7 +43,7 @@ class RoleService
     ): int {
         $this->auth->requireRole('admin');
 
-        Validator::make(['name' => $name, 'label' => $label])
+        VALIDATOR(['name' => $name, 'label' => $label])
             ->required(['name', 'label'])
             ->pattern(
                 'name',
@@ -111,7 +111,7 @@ class RoleService
             Response::notFound('Role not found');
         }
 
-        Validator::make(['name' => $name, 'label' => $label])
+        VALIDATOR(['name' => $name, 'label' => $label])
             ->required(['name', 'label'])
             ->pattern(
                 'name',

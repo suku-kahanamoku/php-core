@@ -11,7 +11,8 @@
             "App\\": "src/"
         },
         "files": [
-            "src/Utils/sort.functions.php"
+            "src/Utils/sort.functions.php",
+            "src/Utils/validator.functions.php"
         ]
     },
     "scripts": {

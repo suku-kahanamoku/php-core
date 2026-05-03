@@ -7,7 +7,7 @@ namespace App\Modules\Product;
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
-use App\Modules\Validator\Validator;
+
 
 class ProductService
 {
@@ -50,7 +50,7 @@ class ProductService
     {
         $this->auth->requireRole('admin');
 
-        Validator::make($input)->required('name')->numeric('price', 0)->validate();
+        VALIDATOR($input)->required('name')->numeric('price', 0)->validate();
 
         $name  = trim((string) ($input['name'] ?? ''));
         $price = $input['price'] ?? null;
@@ -113,7 +113,7 @@ class ProductService
             Response::notFound('Product not found');
         }
 
-        Validator::make($input)
+        VALIDATOR($input)
             ->required(['name', 'sku'])
             ->numeric('price', 0)
             ->validate();
