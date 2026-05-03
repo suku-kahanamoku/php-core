@@ -24,14 +24,14 @@ $token = null;
 // ── Role model – read operations ─────────────────────────────────────────────
 
 section('Role model – getAll()');
-$r = request('GET', "{$base}/roles", [], false);
+$r = request('GET', "{$base}/roles?limit=100", [], false);
 assert_test('returns 200', $r['status'] === 200, dump_on_fail($r));
-assert_test('data is array', is_array($r['data']['data']));
-assert_test('at least 3 default roles', count($r['data']['data']) >= 3);
+assert_test('data is array', is_array($r['data']['data']['items']));
+assert_test('at least 3 default roles', ($r['data']['data']['total'] ?? 0) >= 3);
 
 section('Role model – getById()');
 $adminRoleId = null;
-foreach ($r['data']['data'] ?? [] as $row) {
+foreach ($r['data']['data']['items'] ?? [] as $row) {
     if ($row['name'] === 'admin') {
         $adminRoleId = $row['id'];
         break;

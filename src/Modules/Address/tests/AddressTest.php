@@ -48,8 +48,8 @@ section('Address model – getAllByUser()');
 if ($addrModelUserId) {
     $r = request('GET', "{$base}/users/{$addrModelUserId}/address");
     assert_test('list by user 200', $r['status'] === 200, dump_on_fail($r));
-    assert_test('returns array', is_array($r['data']['data']));
-    assert_test('contains created address', count(array_filter($r['data']['data'], fn ($a) => $a['id'] === $addrModelId)) > 0);
+    assert_test('returns array', is_array($r['data']['data']['items']));
+    assert_test('contains created address', count(array_filter($r['data']['data']['items'], fn ($a) => $a['id'] === $addrModelId)) > 0);
 }
 
 // ── Address model – getById() ─────────────────────────────────────────────────

@@ -8,7 +8,6 @@ use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
 
-
 class AddressService
 {
     private AddressRepository $address;
@@ -24,6 +23,8 @@ class AddressService
         int $userId,
         ?string $type,
         string $sort = '',
+        int $page = 1,
+        int $limit = 20,
     ): array {
         $this->auth->require();
 
@@ -31,7 +32,7 @@ class AddressService
             Response::forbidden();
         }
 
-        return $this->address->findByUser($userId, $type, $sort);
+        return $this->address->findByUser($userId, $type, $sort, $page, $limit);
     }
 
     public function get(int $id): array

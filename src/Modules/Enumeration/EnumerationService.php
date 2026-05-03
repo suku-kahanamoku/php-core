@@ -8,7 +8,6 @@ use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
 
-
 class EnumerationService
 {
     private EnumerationRepository $enum;
@@ -24,18 +23,10 @@ class EnumerationService
         ?string $type,
         ?bool $isActive,
         string $sort = '',
+        int $page = 1,
+        int $limit = 20,
     ): array {
-        $items = $this->enum->findAll($type, $isActive, $sort);
-
-        if ($type === null) {
-            $grouped = [];
-            foreach ($items as $item) {
-                $grouped[$item['type']][] = $item;
-            }
-            return $grouped;
-        }
-
-        return $items;
+        return $this->enum->findAll($type, $isActive, $sort, $page, $limit);
     }
 
     public function types(): array

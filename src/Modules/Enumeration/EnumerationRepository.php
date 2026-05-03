@@ -24,8 +24,13 @@ class EnumerationRepository
         ?string $type = null,
         ?bool $isActive = null,
         string $sort = '',
+        int $page = 1,
+        int $limit = 20,
     ): array {
         $orderBy = SQL_SORT($sort, 'type ASC, position ASC, label ASC');
+
+        $limit  = min(100, max(1, $limit));
+        $offset = ($page - 1) * $limit;
 
         $where  = ['franchise_code = ?'];
         $params = [$this->code];
@@ -41,12 +46,26 @@ class EnumerationRepository
 
         $whereStr = implode(' AND ', $where);
 
-        return $this->db->fetchAll(
+        $total = (int) $this->db->fetchOne(
+            "SELECT COUNT(*) AS cnt FROM enumeration WHERE {$whereStr}",
+            $params,
+        )['cnt'];
+
+        $items = $this->db->fetchAll(
             "SELECT * FROM enumeration
              WHERE {$whereStr}
-             ORDER BY {$orderBy}",
+             ORDER BY {$orderBy}
+             LIMIT {$limit} OFFSET {$offset}",
             $params,
         );
+
+        return [
+            'items'      => $items,
+            'total'      => $total,
+            'page'       => $page,
+            'limit'      => $limit,
+            'totalPages' => (int) ceil($total / $limit),
+        ];
     }
 
     public function findById(int $id): ?array

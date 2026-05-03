@@ -8,7 +8,6 @@ use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
 
-
 class RoleService
 {
     private RoleRepository $role;
@@ -20,9 +19,9 @@ class RoleService
         $this->auth = $auth;
     }
 
-    public function list(string $sort = ''): array
+    public function list(int $page = 1, int $limit = 20, string $sort = ''): array
     {
-        return $this->role->findAll($sort);
+        return $this->role->findAll($page, $limit, $sort);
     }
 
     public function get(int $id): array

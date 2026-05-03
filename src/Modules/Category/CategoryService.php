@@ -19,10 +19,9 @@ class CategoryService
         $this->auth     = $auth;
     }
 
-    public function list(string $sort = '', bool $flat = false): array
+    public function list(int $page = 1, int $limit = 20, string $sort = ''): array
     {
-        $items = $this->category->findAll($sort);
-        return $flat ? $items : $this->buildTree($items);
+        return $this->category->findAll($page, $limit, $sort);
     }
 
     public function get(int $id): array

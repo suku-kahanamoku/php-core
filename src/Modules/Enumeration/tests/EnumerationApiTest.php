@@ -26,13 +26,14 @@ $token = null;
 section('Enumerations – public list');
 $r = request('GET', "{$base}/enumerations", [], false);
 assert_test('GET /enumerations 200', $r['status'] === 200, dump_on_fail($r));
-assert_test('has order_status group', isset($r['data']['data']['order_status']));
-assert_test('has invoice_status group', isset($r['data']['data']['invoice_status']));
+assert_test('has items array', is_array($r['data']['data']['items']));
+assert_test('has order_status group', count(array_filter($r['data']['data']['items'], fn ($x) => $x['type'] === 'order_status')) > 0);
+assert_test('has invoice_status group', count(array_filter($r['data']['data']['items'], fn ($x) => $x['type'] === 'invoice_status')) > 0);
 
 $firstEnumId = null;
-if (!empty($r['data']['data'])) {
-    $firstGroup  = reset($r['data']['data']);
-    $firstEnumId = $firstGroup[0]['id'] ?? null;
+if (!empty($r['data']['data']['items'])) {
+    $firstGroup  = $r['data']['data']['items'][0];
+    $firstEnumId = $firstGroup['id'] ?? null;
 }
 
 section('Enumerations – public types');

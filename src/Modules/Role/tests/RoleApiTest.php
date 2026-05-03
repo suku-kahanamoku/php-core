@@ -24,16 +24,16 @@ $token = null;
 // ── Public: list roles ────────────────────────────────────────────────────────
 
 section('Roles – public list');
-$r = request('GET', "{$base}/roles", [], false);
+$r = request('GET', "{$base}/roles?limit=100", [], false);
 assert_test('GET /roles 200', $r['status'] === 200, dump_on_fail($r));
-assert_test('data is array', is_array($r['data']['data']));
-assert_test('contains admin role', count(array_filter($r['data']['data'], fn ($x) => $x['name'] === 'admin')) > 0);
+assert_test('data is array', is_array($r['data']['data']['items']));
+assert_test('contains admin role', count(array_filter($r['data']['data']['items'], fn ($x) => $x['name'] === 'admin')) > 0);
 
-// ── Public: get by id ─────────────────────────────────────────────────────────
+// ── Public: get by id ────────────────────────────────────────────────────────
 
 section('Roles – public get by id');
 $adminRoleId = null;
-foreach ($r['data']['data'] ?? [] as $row) {
+foreach ($r['data']['data']['items'] ?? [] as $row) {
     if ($row['name'] === 'admin') {
         $adminRoleId = $row['id'];
         break;

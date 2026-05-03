@@ -21,18 +21,19 @@ if (!isset($runnerMode)) {
 }
 $token = null;
 
-// ── Enumeration model – getAll() (public, grouped) ───────────────────────────
+// ── Enumeration model – getAll() (public, paginated) ─────────────────────────────
 
 section('Enumeration model – getAll()');
 $r = request('GET', "{$base}/enumerations", [], false);
 assert_test('returns 200', $r['status'] === 200, dump_on_fail($r));
-assert_test('has order_status group', isset($r['data']['data']['order_status']));
-assert_test('has invoice_status group', isset($r['data']['data']['invoice_status']));
+assert_test('has items array', is_array($r['data']['data']['items']));
+assert_test('has order_status group', count(array_filter($r['data']['data']['items'], fn ($x) => $x['type'] === 'order_status')) > 0);
+assert_test('has invoice_status group', count(array_filter($r['data']['data']['items'], fn ($x) => $x['type'] === 'invoice_status')) > 0);
 
 $firstEnumId = null;
-foreach ($r['data']['data'] as $group) {
-    if (!empty($group)) {
-        $firstEnumId = $group[0]['id'] ?? null;
+foreach ($r['data']['data']['items'] as $item) {
+    if (!empty($item['id'])) {
+        $firstEnumId = $item['id'];
         break;
     }
 }

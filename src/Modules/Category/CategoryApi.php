@@ -23,8 +23,9 @@ class CategoryApi
     public function list(Request $request): void
     {
         Response::success($this->service->list(
+            max(1, (int) $request->get('page', 1)),
+            min(100, max(1, (int) $request->get('limit', 20))),
             (string) $request->get('sort', ''),
-            (bool) $request->get('flat', false),
         ));
     }
 

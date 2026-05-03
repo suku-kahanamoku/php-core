@@ -8,7 +8,6 @@ use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
 
-
 class TextService
 {
     private TextRepository $text;
@@ -25,8 +24,10 @@ class TextService
         ?bool $isActive,
         ?string $search,
         string $sort = '',
+        int $page = 1,
+        int $limit = 20,
     ): array {
-        return $this->text->findAll($language, $isActive, $search, $sort);
+        return $this->text->findAll($language, $isActive, $search, $sort, $page, $limit);
     }
 
     public function get(int $id): array

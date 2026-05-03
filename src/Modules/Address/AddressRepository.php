@@ -25,8 +25,13 @@ class AddressRepository
         int $userId,
         ?string $type = null,
         string $sort = '',
+        int $page = 1,
+        int $limit = 20,
     ): array {
         $orderBy = SQL_SORT($sort, 'is_default DESC');
+
+        $limit  = min(100, max(1, $limit));
+        $offset = ($page - 1) * $limit;
 
         $where  = ['franchise_code = ?', 'user_id = ?'];
         $params = [$this->code, $userId];
@@ -38,12 +43,26 @@ class AddressRepository
 
         $whereStr = implode(' AND ', $where);
 
-        return $this->db->fetchAll(
+        $total = (int) $this->db->fetchOne(
+            "SELECT COUNT(*) AS cnt FROM address WHERE {$whereStr}",
+            $params,
+        )['cnt'];
+
+        $items = $this->db->fetchAll(
             "SELECT id, user_id, type, company, name,
                     street, city, zip, country, is_default, created_at, updated_at
-             FROM address WHERE {$whereStr} ORDER BY {$orderBy}",
+             FROM address WHERE {$whereStr} ORDER BY {$orderBy}
+             LIMIT {$limit} OFFSET {$offset}",
             $params,
         );
+
+        return [
+            'items'      => $items,
+            'total'      => $total,
+            'page'       => $page,
+            'limit'      => $limit,
+            'totalPages' => (int) ceil($total / $limit),
+        ];
     }
 
     /** Find single address by ID. */
