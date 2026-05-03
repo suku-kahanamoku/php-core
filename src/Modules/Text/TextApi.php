@@ -59,7 +59,7 @@ class TextApi
                 'is_active' => $request->get('is_active', 1),
             ],
         );
-        Response::created(['id' => $id], 'Text created');
+        Response::created($this->service->get($id), 'Text created');
     }
 
     /** PATCH /texts/:id */
@@ -72,7 +72,7 @@ class TextApi
             'language'  => $request->get('language'),
             'is_active' => $request->get('is_active'),
         ]);
-        Response::success(null, 'Text updated');
+        Response::success($this->service->get((int) $params['id']), 'Text updated');
     }
 
     /** PUT /texts/:id */
@@ -88,7 +88,7 @@ class TextApi
                 'is_active' => $request->get('is_active', 1),
             ],
         );
-        Response::success(null, 'Text replaced');
+        Response::success($this->service->get((int) $params['id']), 'Text replaced');
     }
 
     /** DELETE /texts/:id */

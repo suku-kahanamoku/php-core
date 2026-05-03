@@ -46,7 +46,7 @@ class CategoryApi
                 'position'    => $request->get('position', 0),
             ],
         );
-        Response::created(['id' => $id], 'Category created');
+        Response::created($this->service->get($id), 'Category created');
     }
 
     /** PATCH /categories/:id */
@@ -58,7 +58,7 @@ class CategoryApi
             'parent_id'   => $request->get('parent_id'),
             'position'    => $request->get('position'),
         ]);
-        Response::success(null, 'Category updated');
+        Response::success($this->service->get((int) $params['id']), 'Category updated');
     }
 
     /** PUT /categories/:id */
@@ -73,7 +73,7 @@ class CategoryApi
                 'position'    => $request->get('position', 0),
             ],
         );
-        Response::success(null, 'Category replaced');
+        Response::success($this->service->get((int) $params['id']), 'Category replaced');
     }
 
     /** DELETE /categories/:id */

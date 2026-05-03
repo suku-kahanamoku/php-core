@@ -60,7 +60,7 @@ class OrderApi
             (int) $params['id'],
             trim((string) $request->get('status', '')),
         );
-        Response::success(null, 'Order status updated');
+        Response::success($this->service->get((int) $params['id']), 'Order status updated');
     }
 
     /** DELETE /orders/:id */

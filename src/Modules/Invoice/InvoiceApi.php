@@ -47,7 +47,7 @@ class InvoiceApi
                 'note'   => $request->get('note', ''),
             ],
         );
-        Response::created(['id' => $id], 'Invoice created');
+        Response::created($this->service->get($id), 'Invoice created');
     }
 
     /** PATCH /invoices/:id/status */
@@ -57,7 +57,7 @@ class InvoiceApi
             (int) $params['id'],
             trim((string) $request->get('status', '')),
         );
-        Response::success(null, 'Invoice status updated');
+        Response::success($this->service->get((int) $params['id']), 'Invoice status updated');
     }
 
     /** DELETE /invoices/:id */

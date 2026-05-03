@@ -43,7 +43,7 @@ class RoleApi
             trim((string) $request->get('label', '')),
             (int) $request->get('position', 0),
         );
-        Response::created(['id' => $id], 'Role created');
+        Response::created($this->service->get($id), 'Role created');
     }
 
     /** PATCH /roles/:id */
@@ -58,7 +58,7 @@ class RoleApi
             }
         }
         $this->service->update((int) $params['id'], $fields);
-        Response::success(null, 'Role updated');
+        Response::success($this->service->get((int) $params['id']), 'Role updated');
     }
 
     /** PUT /roles/:id */
@@ -70,7 +70,7 @@ class RoleApi
             trim((string) $request->get('label', '')),
             (int) $request->get('position', 0),
         );
-        Response::success(null, 'Role replaced');
+        Response::success($this->service->get((int) $params['id']), 'Role replaced');
     }
 
     /** DELETE /roles/:id */

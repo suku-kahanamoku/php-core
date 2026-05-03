@@ -52,7 +52,7 @@ class ProductApi
             'stock_quantity' => $request->get('stock_quantity'),
             'category_id'    => $request->get('category_id'),
         ]);
-        Response::created(['id' => $id], 'Product created');
+        Response::created($this->service->get($id), 'Product created');
     }
 
     /** PATCH /products/:id */
@@ -67,7 +67,7 @@ class ProductApi
             'stock_quantity' => $request->get('stock_quantity'),
             'category_id'    => $request->get('category_id'),
         ]);
-        Response::success(null, 'Product updated');
+        Response::success($this->service->get((int) $params['id']), 'Product updated');
     }
 
     /** PUT /products/:id */
@@ -82,7 +82,7 @@ class ProductApi
             'stock_quantity' => $request->get('stock_quantity'),
             'category_id'    => $request->get('category_id'),
         ]);
-        Response::success(null, 'Product replaced');
+        Response::success($this->service->get((int) $params['id']), 'Product replaced');
     }
 
     /** DELETE /products/:id */

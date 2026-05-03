@@ -56,7 +56,7 @@ class EnumerationApi
                 'is_active' => $request->get('is_active', 1),
             ],
         );
-        Response::created(['id' => $id], 'Enumeration created');
+        Response::created($this->service->get($id), 'Enumeration created');
     }
 
     /** PATCH /enumerations/:id */
@@ -70,7 +70,7 @@ class EnumerationApi
             'position'  => $request->get('position'),
             'is_active' => $request->get('is_active'),
         ]);
-        Response::success(null, 'Enumeration updated');
+        Response::success($this->service->get((int) $params['id']), 'Enumeration updated');
     }
 
     /** PUT /enumerations/:id */
@@ -87,7 +87,7 @@ class EnumerationApi
                 'is_active' => $request->get('is_active', 1),
             ],
         );
-        Response::success(null, 'Enumeration replaced');
+        Response::success($this->service->get((int) $params['id']), 'Enumeration replaced');
     }
 
     /** DELETE /enumerations/:id */

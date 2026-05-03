@@ -50,7 +50,7 @@ class AddressApi
             'is_default' => $request->get('is_default', 0),
         ], $request->get('user_id') !== null ? (int) $request->get('user_id') : null);
 
-        Response::created(['id' => $id], 'Address created');
+        Response::created($this->service->get($id), 'Address created');
     }
 
     /** PATCH /addresses/:id */
@@ -66,7 +66,7 @@ class AddressApi
             'country'    => $request->get('country'),
             'is_default' => $request->get('is_default'),
         ]);
-        Response::success(null, 'Address updated');
+        Response::success($this->service->get((int) $params['id']), 'Address updated');
     }
 
     /** PUT /addresses/:id */
@@ -82,7 +82,7 @@ class AddressApi
             'country'    => trim((string) $request->get('country', '')),
             'is_default' => $request->get('is_default', 0),
         ]);
-        Response::success(null, 'Address replaced');
+        Response::success($this->service->get((int) $params['id']), 'Address replaced');
     }
 
     /** DELETE /addresses/:id */

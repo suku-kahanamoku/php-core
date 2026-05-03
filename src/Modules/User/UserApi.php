@@ -50,7 +50,7 @@ class UserApi
             'phone'      => $request->get('phone'),
             'role'       => $request->get('role'),
         ]);
-        Response::created(['id' => $id], 'User created');
+        Response::created($this->service->get($id), 'User created');
     }
 
     /** PATCH /users/:id */
@@ -62,7 +62,7 @@ class UserApi
             'phone'      => $request->get('phone'),
             'role'       => $request->get('role'),
         ]);
-        Response::success(null, 'User updated');
+        Response::success($this->service->get((int) $params['id']), 'User updated');
     }
 
     /** PUT /users/:id */
@@ -74,7 +74,7 @@ class UserApi
             'phone'      => $request->get('phone'),
             'role'       => $request->get('role'),
         ]);
-        Response::success(null, 'User replaced');
+        Response::success($this->service->get((int) $params['id']), 'User replaced');
     }
 
     /** DELETE /users/:id */
