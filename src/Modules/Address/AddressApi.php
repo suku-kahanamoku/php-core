@@ -25,8 +25,7 @@ class AddressApi
         Response::success($this->service->listByUser(
             (int) $params['userId'],
             $request->get('type'),
-            (string) $request->get('sort_by', 'is_default'),
-            (string) $request->get('sort_dir', 'DESC'),
+            (string) $request->get('sort', ''),
         ));
     }
 

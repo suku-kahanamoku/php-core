@@ -20,17 +20,15 @@ class CategoryRepository
         $this->code = $franchiseCode;
     }
 
-    public function findAll(string $sortBy = 'position', string $sortDir = 'ASC'): array
+    public function findAll(string $sort = ''): array
     {
-        $allowed = ['position', 'name', 'created_at'];
-        $sortBy  = in_array($sortBy, $allowed, true) ? $sortBy : 'position';
-        $sortDir = strtoupper($sortDir) === 'DESC' ? 'DESC' : 'ASC';
+        $orderBy = SQL_SORT($sort, 'position ASC');
 
         return $this->db->fetchAll(
             "SELECT id, name, parent_id,
                     description, position, created_at, updated_at
              FROM category WHERE franchise_code = ?
-             ORDER BY {$sortBy} {$sortDir}",
+             ORDER BY {$orderBy}",
             [$this->code],
         );
     }

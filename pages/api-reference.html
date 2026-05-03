@@ -610,7 +610,9 @@
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
-                ><code>// žádné</code></pre>
+                ><code>?sort=[{"position":1}]
+// víceúrovňový sort:
+?sort=[{"position":1},{"name":-1}]</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">
@@ -975,7 +977,10 @@
                 <div class="text-xs font-bold text-slate-500 mb-1">Query</div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
-                ><code>?role_id=1</code></pre>
+                ><code>?page=1&limit=20
+?role=admin
+?search=jan
+?sort=[{"created_at":-1}]</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">
@@ -1252,10 +1257,12 @@
               class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4"
             >
               <div>
-                <div class="text-xs font-bold text-slate-500 mb-1">URL</div>
+                <div class="text-xs font-bold text-slate-500 mb-1">URL / Query</div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
-                ><code>:userId → ID uživatele</code></pre>
+                ><code>:userId → ID uživatele
+?type=billing
+?sort=[{"is_default":-1}]</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">
@@ -1577,11 +1584,12 @@
             >
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">
-                  Bez auth
+                  Query
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
-                ><code>// Vrátí strom s children[]</code></pre>
+                ><code>?flat=1  (volitelné, vrátí pole místo stromu)
+?sort=[{"position":1},{"name":1}]</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">
@@ -1822,7 +1830,9 @@
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
                 ><code>?category_id=1
-?search=iphone</code></pre>
+?search=iphone
+?page=1&limit=20
+?sort=[{"price":-1},{"name":1}]</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">
@@ -2019,7 +2029,9 @@ curl "$BASE/products?category_id=1"</code></pre>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
                 ><code>?language=cs
-?is_active=1</code></pre>
+?is_active=1
+?search=homepage
+?sort=[{"syscode":1}]</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">
@@ -2211,6 +2223,8 @@ curl "$BASE/products?category_id=1"</code></pre>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
                 ><code>?type=order_status
+?is_active=1
+?sort=[{"position":1},{"label":1}]</code></pre>
 // Bez type → vše grouped</code></pre>
               </div>
               <div>
@@ -2607,7 +2621,9 @@ curl "$BASE/enumerations?type=order_status"</code></pre>
                 <div class="text-xs font-bold text-slate-500 mb-1">Query</div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
-                ><code>?status=issued</code></pre>
+                ><code>?status=issued
+?page=1&limit=20
+?sort=[{"issued_at":-1}]</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">

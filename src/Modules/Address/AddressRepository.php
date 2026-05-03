@@ -24,12 +24,9 @@ class AddressRepository
     public function findByUser(
         int $userId,
         ?string $type = null,
-        string $sortBy = 'is_default',
-        string $sortDir = 'DESC',
+        string $sort = '',
     ): array {
-        $allowed = ['is_default', 'type', 'created_at'];
-        $sortBy  = in_array($sortBy, $allowed, true) ? $sortBy : 'is_default';
-        $sortDir = strtoupper($sortDir) === 'ASC' ? 'ASC' : 'DESC';
+        $orderBy = SQL_SORT($sort, 'is_default DESC');
 
         $where  = ['franchise_code = ?', 'user_id = ?'];
         $params = [$this->code, $userId];
@@ -44,7 +41,7 @@ class AddressRepository
         return $this->db->fetchAll(
             "SELECT id, user_id, type, company, name,
                     street, city, zip, country, is_default, created_at, updated_at
-             FROM address WHERE {$whereStr} ORDER BY {$sortBy} {$sortDir}",
+             FROM address WHERE {$whereStr} ORDER BY {$orderBy}",
             $params,
         );
     }

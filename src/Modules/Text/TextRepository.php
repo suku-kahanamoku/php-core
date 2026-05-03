@@ -24,12 +24,9 @@ class TextRepository
         string $language = 'cs',
         ?bool $isActive = null,
         ?string $search = null,
-        string $sortBy = 'syscode',
-        string $sortDir = 'ASC',
+        string $sort = '',
     ): array {
-        $allowed = ['syscode', 'title', 'created_at', 'updated_at'];
-        $sortBy  = in_array($sortBy, $allowed, true) ? $sortBy : 'syscode';
-        $sortDir = strtoupper($sortDir) === 'DESC' ? 'DESC' : 'ASC';
+        $orderBy = SQL_SORT($sort, 'syscode ASC');
 
         $where  = ['franchise_code = ?', 'language = ?'];
         $params = [$this->code, $language];
@@ -48,7 +45,7 @@ class TextRepository
 
         return $this->db->fetchAll(
             "SELECT id, syscode, title, language, is_active, created_at, updated_at
-             FROM text WHERE {$whereStr} ORDER BY {$sortBy} {$sortDir}",
+             FROM text WHERE {$whereStr} ORDER BY {$orderBy}",
             $params,
         );
     }

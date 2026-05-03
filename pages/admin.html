@@ -671,6 +671,28 @@
    LIST VIEW
 ═══════════════════════════════════════════════════════════ */
       const listParams = {};
+      // sortState[key] = [{col: 'name', dir: 1}]  (1=ASC, -1=DESC)
+      const sortState = {};
+
+      function toggleSort(key, col) {
+        if (!sortState[key]) sortState[key] = [];
+        const existing = sortState[key].find(s => s.col === col);
+        if (!existing) {
+          sortState[key] = [{ col, dir: 1 }];
+        } else if (existing.dir === 1) {
+          sortState[key] = [{ col, dir: -1 }];
+        } else {
+          sortState[key] = sortState[key].filter(s => s.col !== col);
+        }
+        renderList(key);
+      }
+
+      function buildSortParam(key) {
+        const s = sortState[key];
+        if (!s || s.length === 0) return '';
+        const arr = s.map(({ col, dir }) => ({ [col]: dir }));
+        return encodeURIComponent(JSON.stringify(arr));
+      }
 
       async function renderList(key) {
         const m = MODELS[key];
@@ -693,6 +715,12 @@
           class="border border-slate-200 rounded-lg px-2 py-1 w-20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
           onchange="listParams['${key}']['${pKey}']=this.value;renderList('${key}')" />
       </div>`;
+        }
+
+        // Append sort param
+        const sp = buildSortParam(key);
+        if (sp) {
+          url += (url.includes('?') ? '&' : '?') + 'sort=' + sp;
         }
 
         let rows = [];
@@ -732,7 +760,13 @@
         <table class="w-full text-sm">
           <thead>
             <tr class="bg-slate-50 border-b border-slate-200">
-              ${cols.map((c) => `<th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">${c}</th>`).join("")}
+              ${cols.map((c) => {
+                const s = sortState[key]?.find(x => x.col === c);
+                const icon = s ? (s.dir === 1 ? ' \u25b2' : ' \u25bc') : ' \u25bd';
+                const activeClass = s ? 'text-blue-600' : 'text-slate-500';
+                return `<th class="text-left px-4 py-3 text-xs font-semibold ${activeClass} uppercase tracking-wide whitespace-nowrap cursor-pointer select-none hover:text-blue-600 transition"
+                    onclick="toggleSort('${key}','${c}')">${c}<span class="opacity-50 text-xs">${icon}</span></th>`;
+              }).join("")}
               <th class="w-10 px-3 py-3"></th>
             </tr>
           </thead>

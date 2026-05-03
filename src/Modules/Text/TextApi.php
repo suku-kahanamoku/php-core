@@ -27,8 +27,7 @@ class TextApi
             (string) $request->get('language', 'cs'),
             $isActive !== null ? (bool)(int) $isActive : null,
             $request->get('search'),
-            (string) $request->get('sort_by', 'syscode'),
-            (string) $request->get('sort_dir', 'ASC'),
+            (string) $request->get('sort', ''),
         ));
     }
 

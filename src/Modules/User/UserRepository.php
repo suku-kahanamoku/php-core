@@ -26,12 +26,9 @@ class UserRepository
         int $limit = 20,
         ?string $search = null,
         ?string $role = null,
-        string $sortBy = 'created_at',
-        string $sortDir = 'DESC',
+        string $sort = '',
     ): array {
-        $allowed = ['created_at', 'last_name', 'email'];
-        $sortBy  = in_array($sortBy, $allowed, true) ? $sortBy : 'created_at';
-        $sortDir = strtoupper($sortDir) === 'ASC' ? 'ASC' : 'DESC';
+        $orderBy = SQL_SORT($sort, 'u.created_at DESC', 'u');
 
         $limit  = min(100, max(1, $limit));
         $offset = ($page - 1) * $limit;
@@ -65,7 +62,7 @@ class UserRepository
              FROM user u
              JOIN role r ON r.id = u.role_id
              WHERE {$whereStr}
-             ORDER BY u.{$sortBy} {$sortDir}
+             ORDER BY {$orderBy}
              LIMIT {$limit} OFFSET {$offset}",
             $params,
         );

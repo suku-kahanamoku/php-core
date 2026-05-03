@@ -26,8 +26,7 @@ class EnumerationApi
         Response::success($this->service->list(
             $request->get('type'),
             $isActive !== null ? (bool)(int) $isActive : null,
-            (string) $request->get('sort_by', 'position'),
-            (string) $request->get('sort_dir', 'ASC'),
+            (string) $request->get('sort', ''),
         ));
     }
 

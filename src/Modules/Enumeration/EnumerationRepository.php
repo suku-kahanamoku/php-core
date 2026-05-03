@@ -23,12 +23,9 @@ class EnumerationRepository
     public function findAll(
         ?string $type = null,
         ?bool $isActive = null,
-        string $sortBy = 'position',
-        string $sortDir = 'ASC',
+        string $sort = '',
     ): array {
-        $allowed = ['position', 'label', 'syscode', 'type', 'created_at'];
-        $sortBy  = in_array($sortBy, $allowed, true) ? $sortBy : 'position';
-        $sortDir = strtoupper($sortDir) === 'DESC' ? 'DESC' : 'ASC';
+        $orderBy = SQL_SORT($sort, 'type ASC, position ASC, label ASC');
 
         $where  = ['franchise_code = ?'];
         $params = [$this->code];
@@ -47,7 +44,7 @@ class EnumerationRepository
         return $this->db->fetchAll(
             "SELECT * FROM enumeration
              WHERE {$whereStr}
-             ORDER BY type ASC, {$sortBy} {$sortDir}, label ASC",
+             ORDER BY {$orderBy}",
             $params,
         );
     }

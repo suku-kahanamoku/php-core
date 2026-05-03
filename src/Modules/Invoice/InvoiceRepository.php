@@ -25,12 +25,9 @@ class InvoiceRepository
         int $limit = 20,
         ?int $userId = null,
         ?string $status = null,
-        string $sortBy = 'issued_at',
-        string $sortDir = 'DESC',
+        string $sort = '',
     ): array {
-        $allowed = ['issued_at', 'due_at', 'total_amount', 'status', 'invoice_number'];
-        $sortBy  = in_array($sortBy, $allowed, true) ? $sortBy : 'issued_at';
-        $sortDir = strtoupper($sortDir) === 'ASC' ? 'ASC' : 'DESC';
+        $orderBy = SQL_SORT($sort, 'i.issued_at DESC', 'i');
 
         $limit  = min(100, max(1, $limit));
         $offset = ($page - 1) * $limit;
@@ -62,7 +59,7 @@ class InvoiceRepository
              FROM invoice i
              LEFT JOIN user u ON u.id = i.user_id
              WHERE {$whereStr}
-             ORDER BY i.{$sortBy} {$sortDir}
+             ORDER BY {$orderBy}
              LIMIT {$limit} OFFSET {$offset}",
             $params,
         );

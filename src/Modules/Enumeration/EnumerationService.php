@@ -23,10 +23,9 @@ class EnumerationService
     public function list(
         ?string $type,
         ?bool $isActive,
-        string $sortBy,
-        string $sortDir,
+        string $sort = '',
     ): array {
-        $items = $this->enum->findAll($type, $isActive, $sortBy, $sortDir);
+        $items = $this->enum->findAll($type, $isActive, $sort);
 
         if ($type === null) {
             $grouped = [];

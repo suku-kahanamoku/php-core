@@ -23,8 +23,7 @@ class CategoryApi
     public function list(Request $request): void
     {
         Response::success($this->service->list(
-            (string) $request->get('sort_by', 'position'),
-            (string) $request->get('sort_dir', 'ASC'),
+            (string) $request->get('sort', ''),
             (bool) $request->get('flat', false),
         ));
     }

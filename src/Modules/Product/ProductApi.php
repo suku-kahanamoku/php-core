@@ -29,8 +29,7 @@ class ProductApi
             $request->get('category_id') !== null
                 ? (int) $request->get('category_id')
                 : null,
-            (string) $request->get('sort_by', 'created_at'),
-            (string) $request->get('sort_dir', 'DESC'),
+            (string) $request->get('sort', ''),
         ));
     }
 

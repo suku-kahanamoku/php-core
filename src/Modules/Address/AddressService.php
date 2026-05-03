@@ -23,8 +23,7 @@ class AddressService
     public function listByUser(
         int $userId,
         ?string $type,
-        string $sortBy,
-        string $sortDir,
+        string $sort = '',
     ): array {
         $this->auth->require();
 
@@ -32,7 +31,7 @@ class AddressService
             Response::forbidden();
         }
 
-        return $this->address->findByUser($userId, $type, $sortBy, $sortDir);
+        return $this->address->findByUser($userId, $type, $sort);
     }
 
     public function get(int $id): array

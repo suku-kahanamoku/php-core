@@ -19,9 +19,9 @@ class CategoryService
         $this->auth     = $auth;
     }
 
-    public function list(string $sortBy, string $sortDir, bool $flat = false): array
+    public function list(string $sort = '', bool $flat = false): array
     {
-        $items = $this->category->findAll($sortBy, $sortDir);
+        $items = $this->category->findAll($sort);
         return $flat ? $items : $this->buildTree($items);
     }
 

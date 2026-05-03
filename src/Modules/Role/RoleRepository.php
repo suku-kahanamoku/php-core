@@ -22,17 +22,13 @@ class RoleRepository
     }
 
     /** Return all roles, optionally filtered and sorted. */
-    public function findAll(
-        string $sortBy = 'position',
-        string $sortDir = 'ASC',
-    ): array {
-        $allowed = ['position', 'name', 'label', 'created_at'];
-        $sortBy  = in_array($sortBy, $allowed, true) ? $sortBy : 'position';
-        $sortDir = strtoupper($sortDir) === 'DESC' ? 'DESC' : 'ASC';
+    public function findAll(string $sort = ''): array
+    {
+        $orderBy = SQL_SORT($sort, 'position ASC');
 
         return $this->db->fetchAll(
             "SELECT id, name, label, position, created_at, updated_at
-             FROM role WHERE franchise_code = ? ORDER BY {$sortBy} {$sortDir}",
+             FROM role WHERE franchise_code = ? ORDER BY {$orderBy}",
             [$this->code],
         );
     }

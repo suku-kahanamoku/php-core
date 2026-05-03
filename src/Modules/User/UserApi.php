@@ -28,8 +28,7 @@ class UserApi
             min(100, max(1, (int) $request->get('limit', 20))),
             $request->get('search'),
             $request->get('role'),
-            (string) $request->get('sort_by', 'created_at'),
-            (string) $request->get('sort_dir', 'DESC'),
+            (string) $request->get('sort', ''),
         ));
     }
 

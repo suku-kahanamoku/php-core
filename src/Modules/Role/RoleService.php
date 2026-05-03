@@ -20,9 +20,9 @@ class RoleService
         $this->auth = $auth;
     }
 
-    public function list(string $sortBy, string $sortDir): array
+    public function list(string $sort = ''): array
     {
-        return $this->role->findAll($sortBy, $sortDir);
+        return $this->role->findAll($sort);
     }
 
     public function get(int $id): array

@@ -24,14 +24,13 @@ class OrderService
         int $page,
         int $limit,
         ?string $status,
-        string $sortBy,
-        string $sortDir,
+        string $sort = '',
     ): array {
         $this->auth->require();
 
         $userId = $this->auth->hasRole('admin') ? null : $this->auth->id();
 
-        return $this->order->findAll($page, $limit, $userId, $status, $sortBy, $sortDir);
+        return $this->order->findAll($page, $limit, $userId, $status, $sort);
     }
 
     public function get(int $id): array

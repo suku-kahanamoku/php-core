@@ -25,8 +25,7 @@ class UserService
         int $limit,
         ?string $search,
         ?string $role,
-        string $sortBy,
-        string $sortDir,
+        string $sort = '',
     ): array {
         $this->auth->requireRole('admin');
         return $this->user->findAll(
@@ -34,8 +33,7 @@ class UserService
             $limit,
             $search,
             $role,
-            $sortBy,
-            $sortDir,
+            $sort,
         );
     }
 

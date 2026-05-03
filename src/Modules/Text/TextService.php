@@ -24,10 +24,9 @@ class TextService
         string $language,
         ?bool $isActive,
         ?string $search,
-        string $sortBy,
-        string $sortDir,
+        string $sort = '',
     ): array {
-        return $this->text->findAll($language, $isActive, $search, $sortBy, $sortDir);
+        return $this->text->findAll($language, $isActive, $search, $sort);
     }
 
     public function get(int $id): array

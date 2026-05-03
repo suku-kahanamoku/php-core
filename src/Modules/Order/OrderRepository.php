@@ -25,12 +25,9 @@ class OrderRepository
         int $limit = 20,
         ?int $userId = null,
         ?string $status = null,
-        string $sortBy = 'created_at',
-        string $sortDir = 'DESC',
+        string $sort = '',
     ): array {
-        $allowed = ['created_at', 'total_amount', 'status', 'order_number'];
-        $sortBy  = in_array($sortBy, $allowed, true) ? $sortBy : 'created_at';
-        $sortDir = strtoupper($sortDir) === 'ASC' ? 'ASC' : 'DESC';
+        $orderBy = SQL_SORT($sort, 'o.created_at DESC', 'o');
 
         $limit  = min(100, max(1, $limit));
         $offset = ($page - 1) * $limit;
@@ -62,7 +59,7 @@ class OrderRepository
              FROM `order` o
              LEFT JOIN user u ON u.id = o.user_id
              WHERE {$whereStr}
-             ORDER BY o.{$sortBy} {$sortDir}
+             ORDER BY {$orderBy}
              LIMIT {$limit} OFFSET {$offset}",
             $params,
         );

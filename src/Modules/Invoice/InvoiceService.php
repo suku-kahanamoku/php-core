@@ -23,8 +23,7 @@ class InvoiceService
         int $page,
         int $limit,
         ?string $status,
-        string $sortBy,
-        string $sortDir,
+        string $sort = '',
     ): array {
         $this->auth->require();
 
@@ -35,8 +34,7 @@ class InvoiceService
             $limit,
             $userId,
             $status,
-            $sortBy,
-            $sortDir,
+            $sort,
         );
     }
 

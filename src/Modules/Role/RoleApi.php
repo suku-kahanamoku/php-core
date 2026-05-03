@@ -22,11 +22,9 @@ class RoleApi
     /** GET /roles */
     public function list(Request $request): void
     {
-        $items = $this->service->list(
-            (string) $request->get('sort_by', 'position'),
-            (string) $request->get('sort_dir', 'ASC'),
-        );
-        Response::success($items);
+        Response::success($this->service->list(
+            (string) $request->get('sort', ''),
+        ));
     }
 
     /** GET /roles/:id */

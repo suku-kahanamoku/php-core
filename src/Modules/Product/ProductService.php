@@ -25,16 +25,14 @@ class ProductService
         int $limit,
         ?string $search,
         ?int $categoryId,
-        string $sortBy,
-        string $sortDir,
+        string $sort = '',
     ): array {
         return $this->product->findAll(
             $page,
             $limit,
             $search,
             $categoryId,
-            $sortBy,
-            $sortDir,
+            $sort,
         );
     }
 
