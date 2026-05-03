@@ -29,6 +29,8 @@ assert_test('success = false', $r['data']['success'] === false);
 $modulesDir = __DIR__ . '/../src/Modules';
 
 $tests = [
+    // Utils
+    __DIR__ . '/test_utils.php',
     // Auth
     "{$modulesDir}/Auth/tests/AuthTest.php",
     "{$modulesDir}/Auth/tests/AuthServiceTest.php",
