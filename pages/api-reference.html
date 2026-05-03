@@ -548,7 +548,10 @@
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
-                ><code>{"success": true, "data": null}</code></pre>
+                ><code>{
+  "success": true,
+  "data": null
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -615,11 +618,17 @@
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
-                ><code>{"success":true,"data":[
-  {"id":1,"name":"admin",
-   "label":"Admin","position":10,
-   "is_active":1}
-]}</code></pre>
+                ><code>{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "admin",
+      "label": "Admin",
+      "position": 10
+    }
+  ]
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -666,8 +675,7 @@
                 ><code>{
   "name": "editor",
   "label": "Editor",
-  "position": 25,
-  "is_active": 1
+  "position": 25
 }</code></pre>
               </div>
               <div>
@@ -676,11 +684,15 @@
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
-                ><code>{"success":true,"data":{
-  "id":4,"name":"editor",
-  "label":"Editor","position":25,
-  "is_active":1
-}}</code></pre>
+                ><code>{
+  "success": true,
+  "data": {
+    "id": 4,
+    "name": "editor",
+    "label": "Editor",
+    "position": 25
+  }
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -732,10 +744,15 @@
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
-                ><code>{"success":true,"data":{
-  "id":1,"name":"admin",
-  "label":"Admin","position":10
-}}</code></pre>
+                ><code>{
+  "success": true,
+  "data": {
+    "id": 1,
+    "name": "admin",
+    "label": "Admin",
+    "position": 10
+  }
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -787,7 +804,10 @@
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
-                ><code>{"success":true,"data":{...}}</code></pre>
+                ><code>{
+  "success": true,
+  "data": { "..." }
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -833,7 +853,11 @@
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
-                ><code>{"name":"admin","label":"Admin","position":10,"is_active":1}</code></pre>
+                ><code>{
+  "name": "admin",
+  "label": "Admin",
+  "position": 10
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">
@@ -841,7 +865,10 @@
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
-                ><code>{"success":true,"data":{...}}</code></pre>
+                ><code>{
+  "success": true,
+  "data": { "..." }
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -896,7 +923,10 @@
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
-                ><code>{"success":true,"data":null}</code></pre>
+                ><code>{
+  "success": true,
+  "data": null
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -945,8 +975,7 @@
                 <div class="text-xs font-bold text-slate-500 mb-1">Query</div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
-                ><code>?status=active
-?role_id=1</code></pre>
+                ><code>?role_id=1</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">
@@ -954,11 +983,18 @@
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
-                ><code>{"success":true,"data":[
-  {"id":1,"email":"admin@...",
-   "first_name":"Admin",
-   "role":"admin","status":"active"}
-]}</code></pre>
+                ><code>{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "email": "admin@example.com",
+      "first_name": "Admin",
+      "last_name": "User",
+      "role": "admin"
+    }
+  ]
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -1013,10 +1049,14 @@
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
-                ><code>{"success":true,"data":{
-  "id":5,"email":"jan@example.com",
-  "role":"user","status":"active"
-}}</code></pre>
+                ><code>{
+  "success": true,
+  "data": {
+    "id": 5,
+    "email": "jan@example.com",
+    "role": "user"
+  }
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -1063,13 +1103,16 @@
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
-                ><code>{"success":true,"data":{
-  "id":1,"email":"...",
-  "first_name":"Admin",
-  "last_name":"User",
-  "role":"admin",
-  "status":"active"
-}}</code></pre>
+                ><code>{
+  "success": true,
+  "data": {
+    "id": 1,
+    "email": "admin@example.com",
+    "first_name": "Admin",
+    "last_name": "User",
+    "role": "admin"
+  }
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -1117,7 +1160,10 @@
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
-                ><code>{"success":true,"data":{...}}</code></pre>
+                ><code>{
+  "success": true,
+  "data": { "..." }
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -1133,7 +1179,7 @@
           <div
             class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden"
             data-module="users"
-            data-search="delete users id soft-delete smazání"
+            data-search="delete users id smazání"
           >
             <div
               class="ep-row flex items-center gap-3 px-4 py-3"
@@ -1147,7 +1193,7 @@
                 class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded font-bold ml-1"
                 >&#128737; admin</span
               ><span class="text-xs text-slate-500 ml-2"
-                >Soft-delete uživatele (nastaví deleted_at)</span
+                >Smazání uživatele</span
               ><span class="ml-auto text-slate-400 text-xs">&#9660;</span>
             </div>
             <div
@@ -1159,8 +1205,7 @@
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
-                ><code>// Nastaví status='deleted'
-// a deleted_at=NOW()</code></pre>
+                ><code>// Tvrdé smazání z DB</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">
@@ -1168,7 +1213,10 @@
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
-                ><code>{"success":true,"data":null}</code></pre>
+                ><code>{
+  "success": true,
+  "data": null
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -1215,12 +1263,20 @@
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
-                ><code>{"success":true,"data":[
-  {"id":1,"type":"billing",
-   "street":"Hlavní 1",
-   "city":"Praha","zip":"110 00",
-   "country":"CZ","is_default":1}
-]}</code></pre>
+                ><code>{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "type": "billing",
+      "street": "Hlavní 1",
+      "city": "Praha",
+      "zip": "110 00",
+      "country": "CZ",
+      "is_default": 1
+    }
+  ]
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -1277,6 +1333,7 @@
                 ><code>{
   "user_id": 1,
   "type": "billing",
+  "name": "Jan Novák",
   "street": "Hlavní 1",
   "city": "Praha",
   "zip": "110 00",
@@ -1290,13 +1347,20 @@
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
-                ><code>{"success":true,"data":{
-  "id":3,"user_id":1,
-  "type":"billing",
-  "street":"Hlavní 1",
-  "city":"Praha","zip":"110 00",
-  "country":"CZ","is_default":1
-}}</code></pre>
+                ><code>{
+  "success": true,
+  "data": {
+    "id": 3,
+    "user_id": 1,
+    "type": "billing",
+    "name": "Jan Novák",
+    "street": "Hlavní 1",
+    "city": "Praha",
+    "zip": "110 00",
+    "country": "CZ",
+    "is_default": 1
+  }
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -1346,7 +1410,10 @@
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
-                ><code>{"success":true,"data":{...}}</code></pre>
+                ><code>{
+  "success": true,
+  "data": { "..." }
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -1407,7 +1474,10 @@
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
-                ><code>{"success":true,"data":{...}}</code></pre>
+                ><code>{
+  "success": true,
+  "data": { "..." }
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -1456,7 +1526,10 @@
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
-                ><code>{"success":true,"data":null}</code></pre>
+                ><code>{
+  "success": true,
+  "data": null
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -1516,14 +1589,19 @@
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
-                ><code>{"success":true,"data":[
-  {"id":1,"name":"Elektronika",
-   "slug":"elektronika",
-   "position":10,
-   "children":[
-     {"id":2,"name":"Mobily",...}
-   ]}
-]}</code></pre>
+                ><code>{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "Elektronika",
+      "position": 10,
+      "children": [
+        { "id": 2, "name": "Mobily", "position": 20 }
+      ]
+    }
+  ]
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -1564,7 +1642,6 @@
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
                 ><code>{
   "name": "Elektronika",
-  "slug": "elektronika",
   "description": "...",
   "parent_id": null,
   "position": 10
@@ -1576,11 +1653,14 @@
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
-                ><code>{"success":true,"data":{
-  "id":1,"name":"Elektronika",
-  "slug":"elektronika",
-  "position":10
-}}</code></pre>
+                ><code>{
+  "success": true,
+  "data": {
+    "id": 1,
+    "name": "Elektronika",
+    "position": 10
+  }
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -1629,12 +1709,16 @@
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
-                ><code>{"success":true,"data":{
-  "id":1,"name":"Elektronika",
-  "products":[
-    {"id":1,"name":"iPhone","price":25000}
-  ]
-}}</code></pre>
+                ><code>{
+  "success": true,
+  "data": {
+    "id": 1,
+    "name": "Elektronika",
+    "products": [
+      { "id": 1, "name": "iPhone", "price": 25000 }
+    ]
+  }
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -1683,7 +1767,10 @@
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
-                ><code>{"success":true,"data":null}</code></pre>
+                ><code>{
+  "success": true,
+  "data": null
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -1735,7 +1822,6 @@
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
                 ><code>?category_id=1
-?status=active
 ?search=iphone</code></pre>
               </div>
               <div>
@@ -1744,14 +1830,19 @@
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
-                ><code>{"success":true,"data":[
-  {"id":1,"name":"iPhone 15",
-   "sku":"IPHONE-15",
-   "price":"25000.00",
-   "vat_rate":"21.00",
-   "stock_quantity":10,
-   "status":"active"}
-]}</code></pre>
+                ><code>{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "iPhone 15",
+      "sku": "IPHONE-15",
+      "price": "25000.00",
+      "vat_rate": "21.00",
+      "stock_quantity": 10
+    }
+  ]
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -1807,11 +1898,15 @@ curl "$BASE/products?category_id=1"</code></pre>
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
-                ><code>{"success":true,"data":{
-  "id":1,"name":"iPhone 15",
-  "sku":"IPHONE-15",
-  "price":"25000.00"
-}}</code></pre>
+                ><code>{
+  "success": true,
+  "data": {
+    "id": 1,
+    "name": "iPhone 15",
+    "sku": "IPHONE-15",
+    "price": "25000.00"
+  }
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -1866,9 +1961,13 @@ curl "$BASE/products?category_id=1"</code></pre>
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
-                ><code>{"success":true,"data":{
-  "id":1,"stock_quantity":15
-}}</code></pre>
+                ><code>{
+  "success": true,
+  "data": {
+    "id": 1,
+    "stock_quantity": 15
+  }
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -1928,12 +2027,18 @@ curl "$BASE/products?category_id=1"</code></pre>
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
-                ><code>{"success":true,"data":[
-  {"id":1,"key":"homepage_hero",
-   "title":"Vítejte",
-   "language":"cs",
-   "is_active":1}
-]}</code></pre>
+                ><code>{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "syscode": "homepage_hero",
+      "title": "Vítejte",
+      "language": "cs",
+      "is_active": 1
+    }
+  ]
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -1956,12 +2061,12 @@ curl "$BASE/products?category_id=1"</code></pre>
                 class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold"
                 >GET</span
               ><code class="text-sm font-mono text-slate-700"
-                >/texts/by-key/:key</code
+                >/texts/by-key/:syscode</code
               ><span
                 class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1"
                 >&#128275; public</span
               ><span class="text-xs text-slate-500 ml-2"
-                >Text dle klíče + jazyk z query</span
+                >Text dle syscode + jazyk z query</span
               ><span class="ml-auto text-slate-400 text-xs">&#9660;</span>
             </div>
             <div
@@ -1973,7 +2078,7 @@ curl "$BASE/products?category_id=1"</code></pre>
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
-                ><code>:key → text klíč
+                ><code>:syscode → text syscode
 ?language=cs   (výchozí: cs)</code></pre>
               </div>
               <div>
@@ -1982,13 +2087,16 @@ curl "$BASE/products?category_id=1"</code></pre>
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
-                ><code>{"success":true,"data":{
-  "id":1,
-  "key":"homepage_hero",
-  "title":"Vítejte",
-  "content":"&lt;h1&gt;Vítejte!&lt;/h1&gt;",
-  "language":"cs"
-}}</code></pre>
+                ><code>{
+  "success": true,
+  "data": {
+    "id": 1,
+    "syscode": "homepage_hero",
+    "title": "Vítejte",
+    "content": "&lt;h1&gt;Vítejte!&lt;/h1&gt;",
+    "language": "cs"
+  }
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -2028,7 +2136,7 @@ curl "$BASE/products?category_id=1"</code></pre>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
                 ><code>{
-  "key": "about_page",
+  "syscode": "about_page",
   "title": "O nás",
   "content": "&lt;p&gt;Jsme firma...&lt;/p&gt;",
   "language": "cs",
@@ -2041,10 +2149,15 @@ curl "$BASE/products?category_id=1"</code></pre>
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
-                ><code>{"success":true,"data":{
-  "id":5,"key":"about_page",
-  "title":"O nás","language":"cs"
-}}</code></pre>
+                ><code>{
+  "success": true,
+  "data": {
+    "id": 5,
+    "syscode": "about_page",
+    "title": "O nás",
+    "language": "cs"
+  }
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -2106,15 +2219,21 @@ curl "$BASE/products?category_id=1"</code></pre>
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
-                ><code>{"success":true,"data":{
-  "order_status":[
-    {"id":1,"code":"pending",
-     "label":"Pending",
-     "value":"pending",
-     "position":10}
-  ],
-  "invoice_status":[...]
-}}</code></pre>
+                ><code>{
+  "success": true,
+  "data": {
+    "order_status": [
+      {
+        "id": 1,
+        "syscode": "pending",
+        "label": "Pending",
+        "value": "pending",
+        "position": 10
+      }
+    ],
+    "invoice_status": [ "..." ]
+  }
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -2163,13 +2282,16 @@ curl "$BASE/enumerations?type=order_status"</code></pre>
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
-                ><code>{"success":true,"data":[
-  "order_status",
-  "invoice_status",
-  "payment_method",
-  "currency",
-  "vat_rate"
-]}</code></pre>
+                ><code>{
+  "success": true,
+  "data": [
+    "order_status",
+    "invoice_status",
+    "payment_method",
+    "currency",
+    "vat_rate"
+  ]
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -2211,7 +2333,7 @@ curl "$BASE/enumerations?type=order_status"</code></pre>
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
                 ><code>{
   "type": "order_status",
-  "code": "processing",
+  "syscode": "processing",
   "label": "Processing",
   "value": "processing",
   "position": 30,
@@ -2224,11 +2346,15 @@ curl "$BASE/enumerations?type=order_status"</code></pre>
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
-                ><code>{"success":true,"data":{
-  "id":8,"type":"order_status",
-  "code":"processing",
-  "label":"Processing"
-}}</code></pre>
+                ><code>{
+  "success": true,
+  "data": {
+    "id": 8,
+    "type": "order_status",
+    "syscode": "processing",
+    "label": "Processing"
+  }
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -2289,13 +2415,18 @@ curl "$BASE/enumerations?type=order_status"</code></pre>
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
-                ><code>{"success":true,"data":[
-  {"id":1,
-   "order_number":"ORD-2024-001",
-   "status":"pending",
-   "total_amount":"1299.00",
-   "currency":"CZK"}
-]}</code></pre>
+                ><code>{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "order_number": "ORD-2024-001",
+      "status": "pending",
+      "total_amount": "1299.00",
+      "currency": "CZK"
+    }
+  ]
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -2353,13 +2484,16 @@ curl "$BASE/enumerations?type=order_status"</code></pre>
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
-                ><code>{"success":true,"data":{
-  "id":5,
-  "order_number":"ORD-2024-005",
-  "status":"pending",
-  "total_amount":"51300.00",
-  "items":[...]
-}}</code></pre>
+                ><code>{
+  "success": true,
+  "data": {
+    "id": 5,
+    "order_number": "ORD-2024-005",
+    "status": "pending",
+    "total_amount": "51300.00",
+    "items": [ "..." ]
+  }
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -2415,10 +2549,13 @@ curl "$BASE/enumerations?type=order_status"</code></pre>
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
-                ><code>{"success":true,"data":{
-  "id":5,
-  "status":"confirmed"
-}}</code></pre>
+                ><code>{
+  "success": true,
+  "data": {
+    "id": 5,
+    "status": "confirmed"
+  }
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -2478,13 +2615,18 @@ curl "$BASE/enumerations?type=order_status"</code></pre>
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
-                ><code>{"success":true,"data":[
-  {"id":1,
-   "invoice_number":"INV-2024-001",
-   "status":"issued",
-   "total_amount":"1299.00",
-   "due_at":"2024-02-15"}
-]}</code></pre>
+                ><code>{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "invoice_number": "INV-2024-001",
+      "status": "issued",
+      "total_amount": "1299.00",
+      "due_at": "2024-02-15"
+    }
+  ]
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -2536,13 +2678,16 @@ curl "$BASE/enumerations?type=order_status"</code></pre>
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
-                ><code>{"success":true,"data":{
-  "id":3,
-  "invoice_number":"INV-2024-003",
-  "order_id":5,
-  "status":"issued",
-  "items":[...]
-}}</code></pre>
+                ><code>{
+  "success": true,
+  "data": {
+    "id": 3,
+    "invoice_number": "INV-2024-003",
+    "order_id": 5,
+    "status": "issued",
+    "items": [ "..." ]
+  }
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
@@ -2597,10 +2742,14 @@ curl "$BASE/enumerations?type=order_status"</code></pre>
                 </div>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
-                ><code>{"success":true,"data":{
-  "id":3,"status":"paid",
-  "paid_at":"2024-01-20 12:00:00"
-}}</code></pre>
+                ><code>{
+  "success": true,
+  "data": {
+    "id": 3,
+    "status": "paid",
+    "paid_at": "2024-01-20 12:00:00"
+  }
+}</code></pre>
               </div>
               <div>
                 <div class="text-xs font-bold text-slate-500 mb-1">curl</div>

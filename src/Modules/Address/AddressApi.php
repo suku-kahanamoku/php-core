@@ -42,8 +42,7 @@ class AddressApi
         $id = $this->service->create([
             'type'       => $request->get('type', 'billing'),
             'company'    => $request->get('company', ''),
-            'first_name' => $request->get('first_name', ''),
-            'last_name'  => $request->get('last_name', ''),
+            'name'       => $request->get('name'),
             'street'     => trim((string) $request->get('street', '')),
             'city'       => trim((string) $request->get('city', '')),
             'zip'        => trim((string) $request->get('zip', '')),
@@ -60,8 +59,7 @@ class AddressApi
         $this->service->update((int) $params['id'], [
             'type'       => $request->get('type'),
             'company'    => $request->get('company'),
-            'first_name' => $request->get('first_name'),
-            'last_name'  => $request->get('last_name'),
+            'name'       => $request->get('name'),
             'street'     => $request->get('street'),
             'city'       => $request->get('city'),
             'zip'        => $request->get('zip'),
@@ -77,8 +75,7 @@ class AddressApi
         $this->service->replace((int) $params['id'], [
             'type'       => $request->get('type', 'billing'),
             'company'    => $request->get('company', ''),
-            'first_name' => $request->get('first_name', ''),
-            'last_name'  => $request->get('last_name', ''),
+            'name'       => $request->get('name'),
             'street'     => trim((string) $request->get('street', '')),
             'city'       => trim((string) $request->get('city', '')),
             'zip'        => trim((string) $request->get('zip', '')),

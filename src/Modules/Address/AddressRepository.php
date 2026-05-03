@@ -42,7 +42,7 @@ class AddressRepository
         $whereStr = implode(' AND ', $where);
 
         return $this->db->fetchAll(
-            "SELECT id, user_id, type, company, first_name, last_name,
+            "SELECT id, user_id, type, company, name,
                     street, city, zip, country, is_default, created_at, updated_at
              FROM address WHERE {$whereStr} ORDER BY {$sortBy} {$sortDir}",
             $params,

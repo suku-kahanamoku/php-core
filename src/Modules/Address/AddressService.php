@@ -17,7 +17,7 @@ class AddressService
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->address = new AddressRepository($db, $franchiseCode);
-        $this->auth = $auth;
+        $this->auth    = $auth;
     }
 
     public function listByUser(
@@ -70,10 +70,9 @@ class AddressService
 
         return $this->address->create([
             'user_id'    => $userId,
-            'type'       => $input['type']       ?? 'billing',
-            'company'    => $input['company']    ?? '',
-            'first_name' => $input['first_name'] ?? '',
-            'last_name'  => $input['last_name']  ?? '',
+            'type'       => $input['type']    ?? 'billing',
+            'company'    => $input['company'] ?? '',
+            'name'       => $input['name']    ?? null,
             'street'     => $input['street'],
             'city'       => $input['city'],
             'zip'        => $input['zip'],
@@ -97,7 +96,7 @@ class AddressService
 
         $set        = [];
         $textFields = [
-            'type', 'company', 'first_name', 'last_name',
+            'type', 'company', 'name',
             'street', 'city', 'zip', 'country',
         ];
 
@@ -144,10 +143,9 @@ class AddressService
         }
 
         $this->address->update($id, [
-            'type'       => $input['type']       ?? 'billing',
-            'company'    => $input['company']    ?? '',
-            'first_name' => $input['first_name'] ?? '',
-            'last_name'  => $input['last_name']  ?? '',
+            'type'       => $input['type']    ?? 'billing',
+            'company'    => $input['company'] ?? '',
+            'name'       => $input['name']    ?? null,
             'street'     => $input['street'],
             'city'       => $input['city'],
             'zip'        => $input['zip'],
