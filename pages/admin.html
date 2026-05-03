@@ -674,6 +674,106 @@
       // sortState[key] = [{col: 'name', dir: 1}]  (1=ASC, -1=DESC)
       const sortState = {};
 
+      // ── Filter state ──────────────────────────────────────────────────────────
+      // filterState[key][col] = { op: 'eq', val: '' }
+      const filterState = {};
+
+      const FILTER_OPERATORS = [
+        { v: '',        l: '— vše' },
+        { v: 'eq',      l: '= rovná se' },
+        { v: 'neq',     l: '≠ nerovná se' },
+        { v: 'lt',      l: '< menší' },
+        { v: 'lte',     l: '≤ menší nebo rovno' },
+        { v: 'gt',      l: '> větší' },
+        { v: 'gte',     l: '≥ větší nebo rovno' },
+        { v: 'range',   l: '↔ rozsah (min,max)' },
+        { v: 'regex',   l: '~ obsahuje' },
+        { v: 'start',   l: '^ začíná na' },
+        { v: 'end',     l: '$ končí na' },
+        { v: 'in',      l: '∈ výčet (a,b,c)' },
+        { v: 'null',    l: '∅ je NULL' },
+        { v: 'notnull', l: '◉ není NULL' },
+      ];
+
+      function isNoValueOp(op) { return op === 'null' || op === 'notnull'; }
+
+      function filterPlaceholder(op) {
+        if (op === 'range') return 'min,max';
+        if (op === 'in')    return 'a,b,c';
+        return 'hodnota';
+      }
+
+      function buildFilterParam(key) {
+        const fs = filterState[key];
+        if (!fs) return '';
+        const obj = {};
+        for (const [col, spec] of Object.entries(fs)) {
+          if (!spec.op) continue;
+          if (isNoValueOp(spec.op)) { obj[col] = { operator: spec.op }; continue; }
+          const raw = String(spec.val ?? '').trim();
+          if (raw === '') continue;
+          let value;
+          if (spec.op === 'range') {
+            const p = raw.split(',').map(x => x.trim());
+            if (p.length !== 2 || p[0] === '' || p[1] === '') continue;
+            value = [p[0], p[1]];
+          } else if (spec.op === 'in') {
+            value = raw.split(',').map(x => x.trim()).filter(Boolean);
+            if (!value.length) continue;
+          } else {
+            value = raw;
+          }
+          obj[col] = { value, operator: spec.op };
+        }
+        if (!Object.keys(obj).length) return '';
+        return encodeURIComponent(JSON.stringify(obj));
+      }
+
+      function hasActiveFilter(key) {
+        const fs = filterState[key];
+        if (!fs) return false;
+        return Object.values(fs).some(s => s.op && (isNoValueOp(s.op) || String(s.val ?? '').trim() !== ''));
+      }
+
+      function clearFilters(key) { filterState[key] = {}; renderList(key); }
+
+      const _filterTimers = {};
+      function updateFilter(key, col, field, value) {
+        if (!filterState[key]) filterState[key] = {};
+        if (!filterState[key][col]) filterState[key][col] = { op: '', val: '' };
+        filterState[key][col][field] = value;
+        clearTimeout(_filterTimers[key]);
+        if (field === 'op') { renderList(key); }
+        else { _filterTimers[key] = setTimeout(() => renderList(key), 450); }
+      }
+
+      function filterRowHtml(key, cols) {
+        const cells = cols.map(c => {
+          const spec = filterState[key]?.[c] ?? { op: '', val: '' };
+          const noVal = !spec.op || isNoValueOp(spec.op);
+          const opOpts = FILTER_OPERATORS.map(o =>
+            `<option value="${esc(o.v)}" ${o.v === (spec.op || '') ? 'selected' : ''}>${esc(o.l)}</option>`
+          ).join('');
+          const dot = spec.op
+            ? `<span class="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-blue-500 pointer-events-none"></span>`
+            : '';
+          return `<th class="px-2 pt-1.5 pb-2 align-top relative min-w-[120px]">
+              <select onchange="updateFilter('${key}','${c}','op',this.value)"
+                class="w-full text-xs border border-slate-200 rounded px-1 py-0.5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400 text-slate-600 cursor-pointer">${opOpts}</select>
+              ${noVal ? '' : `<input type="text" value="${esc(spec.val ?? '')}"
+                placeholder="${esc(filterPlaceholder(spec.op))}"
+                oninput="updateFilter('${key}','${c}','val',this.value)"
+                class="w-full mt-0.5 text-xs border border-slate-200 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-400 min-w-0" />`}
+              ${dot}
+            </th>`;
+        }).join('');
+        const clearBtn = hasActiveFilter(key)
+          ? `<button onclick="clearFilters('${key}')" title="Smazat všechny filtry"
+              class="text-slate-400 hover:text-red-500 transition text-sm leading-none px-1 py-0.5 rounded hover:bg-red-50">✕</button>`
+          : '';
+        return `<tr class="bg-blue-50/30 border-b-2 border-blue-100">${cells}<th class="px-2 py-1.5 align-middle text-center">${clearBtn}</th></tr>`;
+      }
+
       function toggleSort(key, col) {
         if (!sortState[key]) sortState[key] = [];
         const existing = sortState[key].find(s => s.col === col);
@@ -722,6 +822,11 @@
         if (sp) {
           url += (url.includes('?') ? '&' : '?') + 'sort=' + sp;
         }
+        // Append filter param
+        const fp = buildFilterParam(key);
+        if (fp) {
+          url += (url.includes('?') ? '&' : '?') + 'filter=' + fp;
+        }
 
         let rows = [];
         try {
@@ -749,6 +854,7 @@
         <h1 class="text-xl font-bold text-slate-800">${m.icon} ${m.label}</h1>
         ${paramHtml}
         <span class="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">${rows.length} záznamů</span>
+        ${hasActiveFilter(key) ? `<span class="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full font-medium">⚡ filtr aktivní</span>` : ''}
       </div>
       <a href="#/${key}/new"
          class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition inline-flex items-center gap-1">
@@ -769,6 +875,7 @@
               }).join("")}
               <th class="w-10 px-3 py-3"></th>
             </tr>
+            ${filterRowHtml(key, cols)}
           </thead>
           <tbody>
             ${
