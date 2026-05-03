@@ -26,6 +26,7 @@ class OrderRepository
         ?int $userId = null,
         ?string $status = null,
         string $sort = '',
+        string $filter = '',
     ): array {
         $orderBy = SQL_SORT($sort, 'o.created_at DESC', 'o');
 
@@ -42,6 +43,12 @@ class OrderRepository
         if ($status !== null) {
             $where[]  = 'o.status = ?';
             $params[] = $status;
+        }
+
+        $f = SQL_FILTER($filter, 'o');
+        if ($f['sql'] !== '') {
+            $where[] = $f['sql'];
+            array_push($params, ...$f['params']);
         }
 
         $whereStr = implode(' AND ', $where);

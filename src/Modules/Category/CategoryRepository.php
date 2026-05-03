@@ -20,25 +20,36 @@ class CategoryRepository
         $this->code = $franchiseCode;
     }
 
-    public function findAll(int $page = 1, int $limit = 20, string $sort = ''): array
+    public function findAll(int $page = 1, int $limit = 20, string $sort = '', string $filter = ''): array
     {
         $orderBy = SQL_SORT($sort, 'position ASC');
 
         $limit  = min(100, max(1, $limit));
         $offset = ($page - 1) * $limit;
 
+        $where  = ['franchise_code = ?'];
+        $params = [$this->code];
+
+        $f = SQL_FILTER($filter);
+        if ($f['sql'] !== '') {
+            $where[] = $f['sql'];
+            array_push($params, ...$f['params']);
+        }
+
+        $whereStr = implode(' AND ', $where);
+
         $total = (int) $this->db->fetchOne(
-            'SELECT COUNT(*) AS cnt FROM category WHERE franchise_code = ?',
-            [$this->code],
+            "SELECT COUNT(*) AS cnt FROM category WHERE {$whereStr}",
+            $params,
         )['cnt'];
 
         $items = $this->db->fetchAll(
             "SELECT id, name, parent_id,
                     description, position, created_at, updated_at
-             FROM category WHERE franchise_code = ?
+             FROM category WHERE {$whereStr}
              ORDER BY {$orderBy}
              LIMIT {$limit} OFFSET {$offset}",
-            [$this->code],
+            $params,
         );
 
         return [

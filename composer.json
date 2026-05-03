@@ -12,7 +12,8 @@
         },
         "files": [
             "src/Utils/sort.functions.php",
-            "src/Utils/validator.functions.php"
+            "src/Utils/validator.functions.php",
+            "src/Utils/filter.functions.php"
         ]
     },
     "scripts": {

@@ -26,6 +26,7 @@ class InvoiceRepository
         ?int $userId = null,
         ?string $status = null,
         string $sort = '',
+        string $filter = '',
     ): array {
         $orderBy = SQL_SORT($sort, 'i.issued_at DESC', 'i');
 
@@ -42,6 +43,12 @@ class InvoiceRepository
         if ($status !== null) {
             $where[]  = 'i.status = ?';
             $params[] = $status;
+        }
+
+        $f = SQL_FILTER($filter, 'i');
+        if ($f['sql'] !== '') {
+            $where[] = $f['sql'];
+            array_push($params, ...$f['params']);
         }
 
         $whereStr = implode(' AND ', $where);

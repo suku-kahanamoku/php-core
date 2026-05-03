@@ -24,6 +24,7 @@ class InvoiceService
         int $limit,
         ?string $status,
         string $sort = '',
+        string $filter = '',
     ): array {
         $this->auth->require();
 
@@ -35,6 +36,7 @@ class InvoiceService
             $userId,
             $status,
             $sort,
+            $filter,
         );
     }
 

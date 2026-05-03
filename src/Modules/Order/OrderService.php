@@ -8,7 +8,6 @@ use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
 
-
 class OrderService
 {
     private OrderRepository $order;
@@ -25,12 +24,13 @@ class OrderService
         int $limit,
         ?string $status,
         string $sort = '',
+        string $filter = '',
     ): array {
         $this->auth->require();
 
         $userId = $this->auth->hasRole('admin') ? null : $this->auth->id();
 
-        return $this->order->findAll($page, $limit, $userId, $status, $sort);
+        return $this->order->findAll($page, $limit, $userId, $status, $sort, $filter);
     }
 
     public function get(int $id): array

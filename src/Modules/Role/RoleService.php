@@ -19,9 +19,9 @@ class RoleService
         $this->auth = $auth;
     }
 
-    public function list(int $page = 1, int $limit = 20, string $sort = ''): array
+    public function list(int $page = 1, int $limit = 20, string $sort = '', string $filter = ''): array
     {
-        return $this->role->findAll($page, $limit, $sort);
+        return $this->role->findAll($page, $limit, $sort, $filter);
     }
 
     public function get(int $id): array

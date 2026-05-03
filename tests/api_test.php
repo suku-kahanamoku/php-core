@@ -31,6 +31,8 @@ $modulesDir = __DIR__ . '/../src/Modules';
 $tests = [
     // Utils
     __DIR__ . '/test_utils.php',
+    // Filter
+    __DIR__ . '/test_filter.php',
     // Auth
     "{$modulesDir}/Auth/tests/AuthTest.php",
     "{$modulesDir}/Auth/tests/AuthServiceTest.php",

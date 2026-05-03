@@ -27,6 +27,7 @@ class TextRepository
         string $sort = '',
         int $page = 1,
         int $limit = 20,
+        string $filter = '',
     ): array {
         $orderBy = SQL_SORT($sort, 'syscode ASC');
 
@@ -44,6 +45,12 @@ class TextRepository
             $where[] = '(syscode LIKE ? OR title LIKE ? OR content LIKE ?)';
             $s       = '%' . $search . '%';
             array_push($params, $s, $s, $s);
+        }
+
+        $f = SQL_FILTER($filter);
+        if ($f['sql'] !== '') {
+            $where[] = $f['sql'];
+            array_push($params, ...$f['params']);
         }
 
         $whereStr = implode(' AND ', $where);

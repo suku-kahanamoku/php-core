@@ -27,6 +27,7 @@ class UserRepository
         ?string $search = null,
         ?string $role = null,
         string $sort = '',
+        string $filter = '',
     ): array {
         $orderBy = SQL_SORT($sort, 'u.created_at DESC', 'u');
 
@@ -44,6 +45,12 @@ class UserRepository
         if ($role) {
             $where[]  = 'r.name = ?';
             $params[] = $role;
+        }
+
+        $f = SQL_FILTER($filter, 'u');
+        if ($f['sql'] !== '') {
+            $where[] = $f['sql'];
+            array_push($params, ...$f['params']);
         }
 
         $whereStr = implode(' AND ', $where);

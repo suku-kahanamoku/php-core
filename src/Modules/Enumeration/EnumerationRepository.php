@@ -26,6 +26,7 @@ class EnumerationRepository
         string $sort = '',
         int $page = 1,
         int $limit = 20,
+        string $filter = '',
     ): array {
         $orderBy = SQL_SORT($sort, 'type ASC, position ASC, label ASC');
 
@@ -42,6 +43,12 @@ class EnumerationRepository
         if ($isActive !== null) {
             $where[]  = 'is_active = ?';
             $params[] = (int) $isActive;
+        }
+
+        $f = SQL_FILTER($filter);
+        if ($f['sql'] !== '') {
+            $where[] = $f['sql'];
+            array_push($params, ...$f['params']);
         }
 
         $whereStr = implode(' AND ', $where);

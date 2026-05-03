@@ -30,6 +30,7 @@ class ProductApi
                 ? (int) $request->get('category_id')
                 : null,
             (string) $request->get('sort', ''),
+            (string) $request->get('filter', ''),
         ));
     }
 

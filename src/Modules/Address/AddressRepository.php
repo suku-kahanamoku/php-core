@@ -27,6 +27,7 @@ class AddressRepository
         string $sort = '',
         int $page = 1,
         int $limit = 20,
+        string $filter = '',
     ): array {
         $orderBy = SQL_SORT($sort, 'is_default DESC');
 
@@ -39,6 +40,12 @@ class AddressRepository
         if ($type !== null) {
             $where[]  = 'type = ?';
             $params[] = $type;
+        }
+
+        $f = SQL_FILTER($filter);
+        if ($f['sql'] !== '') {
+            $where[] = $f['sql'];
+            array_push($params, ...$f['params']);
         }
 
         $whereStr = implode(' AND ', $where);

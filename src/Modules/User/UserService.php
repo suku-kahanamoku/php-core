@@ -8,7 +8,6 @@ use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
 
-
 class UserService
 {
     private UserRepository $user;
@@ -26,6 +25,7 @@ class UserService
         ?string $search,
         ?string $role,
         string $sort = '',
+        string $filter = '',
     ): array {
         $this->auth->requireRole('admin');
         return $this->user->findAll(
@@ -34,6 +34,7 @@ class UserService
             $search,
             $role,
             $sort,
+            $filter,
         );
     }
 

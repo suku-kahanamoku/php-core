@@ -25,8 +25,9 @@ class EnumerationService
         string $sort = '',
         int $page = 1,
         int $limit = 20,
+        string $filter = '',
     ): array {
-        return $this->enum->findAll($type, $isActive, $sort, $page, $limit);
+        return $this->enum->findAll($type, $isActive, $sort, $page, $limit, $filter);
     }
 
     public function types(): array

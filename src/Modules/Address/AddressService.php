@@ -25,6 +25,7 @@ class AddressService
         string $sort = '',
         int $page = 1,
         int $limit = 20,
+        string $filter = '',
     ): array {
         $this->auth->require();
 
@@ -32,7 +33,7 @@ class AddressService
             Response::forbidden();
         }
 
-        return $this->address->findByUser($userId, $type, $sort, $page, $limit);
+        return $this->address->findByUser($userId, $type, $sort, $page, $limit, $filter);
     }
 
     public function get(int $id): array

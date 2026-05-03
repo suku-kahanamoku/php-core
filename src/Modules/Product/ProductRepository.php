@@ -26,6 +26,7 @@ class ProductRepository
         ?string $search = null,
         ?int $categoryId = null,
         string $sort = '',
+        string $filter = '',
     ): array {
         $orderBy = SQL_SORT($sort, 'p.created_at DESC', 'p');
 
@@ -43,6 +44,12 @@ class ProductRepository
         if ($categoryId !== null) {
             $where[]  = 'p.category_id = ?';
             $params[] = $categoryId;
+        }
+
+        $f = SQL_FILTER($filter, 'p');
+        if ($f['sql'] !== '') {
+            $where[] = $f['sql'];
+            array_push($params, ...$f['params']);
         }
 
         $whereStr = implode(' AND ', $where);

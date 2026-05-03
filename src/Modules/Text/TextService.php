@@ -26,8 +26,9 @@ class TextService
         string $sort = '',
         int $page = 1,
         int $limit = 20,
+        string $filter = '',
     ): array {
-        return $this->text->findAll($language, $isActive, $search, $sort, $page, $limit);
+        return $this->text->findAll($language, $isActive, $search, $sort, $page, $limit, $filter);
     }
 
     public function get(int $id): array

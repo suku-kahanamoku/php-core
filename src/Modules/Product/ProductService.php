@@ -8,7 +8,6 @@ use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
 
-
 class ProductService
 {
     private ProductRepository $product;
@@ -26,6 +25,7 @@ class ProductService
         ?string $search,
         ?int $categoryId,
         string $sort = '',
+        string $filter = '',
     ): array {
         return $this->product->findAll(
             $page,
@@ -33,6 +33,7 @@ class ProductService
             $search,
             $categoryId,
             $sort,
+            $filter,
         );
     }
 
