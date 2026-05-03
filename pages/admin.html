@@ -1,0 +1,987 @@
+<!doctype html>
+<html lang="cs">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>php-core Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-slate-100 min-h-screen text-slate-800">
+    <!-- ── Login overlay ──────────────────────────────────────── -->
+    <div
+      id="loginOverlay"
+      class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center"
+    >
+      <div
+        class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 space-y-3"
+      >
+        <h1 class="text-xl font-bold">🔑 Přihlášení</h1>
+        <div>
+          <label class="text-xs font-semibold text-slate-500">Base URL</label>
+          <input
+            id="cfgBase"
+            type="text"
+            class="w-full mt-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-500">Email</label>
+          <input
+            id="cfgEmail"
+            type="email"
+            class="w-full mt-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-500">Heslo</label>
+          <input
+            id="cfgPwd"
+            type="password"
+            class="w-full mt-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            onkeydown="if (event.key === 'Enter') doLogin();"
+          />
+        </div>
+        <div id="loginErr" class="text-red-500 text-xs hidden"></div>
+        <button
+          onclick="doLogin()"
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg py-2 text-sm transition"
+        >
+          Přihlásit
+        </button>
+        <div class="pt-2 border-t border-slate-100">
+          <label class="text-xs font-semibold text-slate-500"
+            >Nebo vložte token přímo</label
+          >
+          <div class="flex gap-2 mt-1">
+            <input
+              id="cfgToken"
+              type="text"
+              placeholder="Bearer token…"
+              class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+            <button
+              onclick="useToken()"
+              class="bg-slate-600 hover:bg-slate-700 text-white rounded-lg px-3 py-2 text-sm font-medium transition"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Toast ──────────────────────────────────────────────── -->
+    <div
+      id="toast"
+      class="fixed top-4 right-4 z-50 pointer-events-none transition-opacity duration-300 opacity-0"
+    >
+      <div
+        id="toastInner"
+        class="rounded-xl shadow-lg px-4 py-2 text-sm text-white font-medium"
+      ></div>
+    </div>
+
+    <!-- ── Confirm dialog ─────────────────────────────────────── -->
+    <div
+      id="confirmDlg"
+      class="fixed inset-0 bg-black/40 z-40 hidden items-center justify-center"
+    >
+      <div class="bg-white rounded-xl shadow-xl p-6 w-80">
+        <p id="confirmMsg" class="text-slate-700 mb-5 text-sm"></p>
+        <div class="flex gap-2 justify-end">
+          <button
+            onclick="confirmReject()"
+            class="px-4 py-2 text-sm rounded-lg bg-slate-100 hover:bg-slate-200 font-medium"
+          >
+            Zrušit
+          </button>
+          <button
+            onclick="confirmAccept()"
+            class="px-4 py-2 text-sm rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium"
+          >
+            Smazat
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex min-h-screen">
+      <!-- ── Sidebar ──────────────────────────────────────────── -->
+      <aside
+        class="w-56 bg-white border-r border-slate-200 fixed inset-y-0 left-0 flex flex-col z-30"
+      >
+        <div class="px-4 py-4 border-b border-slate-100">
+          <div class="font-bold text-slate-800 text-sm">⚙️ php-core Admin</div>
+          <div id="sidebarUser" class="text-xs text-slate-400 truncate mt-0.5">
+            —
+          </div>
+        </div>
+        <nav id="nav" class="flex-1 overflow-y-auto p-2 space-y-0.5"></nav>
+        <div class="p-2 border-t border-slate-100">
+          <button
+            onclick="showLogin()"
+            class="w-full text-left text-xs text-slate-500 hover:text-slate-700 px-2 py-1.5 rounded hover:bg-slate-50"
+          >
+            🔑 Změnit přihlášení
+          </button>
+        </div>
+      </aside>
+
+      <!-- ── Main ─────────────────────────────────────────────── -->
+      <main class="ml-56 flex-1">
+        <div id="app" class="p-6 max-w-screen-xl mx-auto"></div>
+      </main>
+    </div>
+
+    <script>
+      /* ═══════════════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════════════ */
+      const S = {
+        baseUrl: localStorage.getItem("adm_base") || "http://localhost/php/php-core",
+        token: localStorage.getItem("adm_token") || "",
+        email: localStorage.getItem("adm_email") || "admin@example.com",
+      };
+
+      /* ═══════════════════════════════════════════════════════════
+   MODEL DEFINITIONS
+   Fields: k=key, l=label, t=type, def=default, req=required,
+           opts=select options, ro=readonly in edit,
+           createOnly=only shown on create, step=number step
+═══════════════════════════════════════════════════════════ */
+      const MODELS = {
+        roles: {
+          label: "Role",
+          icon: "🏷️",
+          listEndpoint: "/api/roles",
+          endpoint: "/api/roles",
+          listColumns: ["id", "franchise_code", "name", "label", "position"],
+          fields: [
+            {
+              k: "franchise_code",
+              l: "Franchise Code",
+              t: "text",
+              def: "default",
+            },
+            { k: "name", l: "Name", t: "text", req: true },
+            { k: "label", l: "Label", t: "text", req: true },
+            { k: "position", l: "Position", t: "number", def: 0 },
+          ],
+        },
+        users: {
+          label: "Uživatelé",
+          icon: "👤",
+          listEndpoint: "/api/users",
+          endpoint: "/api/users",
+          listColumns: ["id", "first_name", "last_name", "email", "role"],
+          fields: [
+            {
+              k: "franchise_code",
+              l: "Franchise Code",
+              t: "text",
+              def: "default",
+            },
+            { k: "first_name", l: "First Name", t: "text", req: true },
+            { k: "last_name", l: "Last Name", t: "text", req: true },
+            { k: "email", l: "Email", t: "email", req: true },
+            { k: "phone", l: "Phone", t: "text" },
+            {
+              k: "password",
+              l: "Password",
+              t: "password",
+              req: true,
+              createOnly: true,
+            },
+            { k: "role_id", l: "Role ID", t: "number", req: true },
+          ],
+        },
+        addresses: {
+          label: "Adresy",
+          icon: "📍",
+          listEndpoint: "/api/users/{user_id}/address",
+          listParam: { k: "user_id", l: "User ID", def: "1" },
+          endpoint: "/api/address",
+          listColumns: [
+            "id",
+            "user_id",
+            "type",
+            "name",
+            "street",
+            "city",
+            "zip",
+          ],
+          fields: [
+            { k: "user_id", l: "User ID", t: "number", req: true },
+            {
+              k: "type",
+              l: "Type",
+              t: "select",
+              opts: ["billing", "shipping"],
+              def: "billing",
+            },
+            { k: "company", l: "Company", t: "text" },
+            { k: "name", l: "Name", t: "text" },
+            { k: "street", l: "Street", t: "text", req: true },
+            { k: "city", l: "City", t: "text", req: true },
+            { k: "zip", l: "ZIP", t: "text", req: true },
+            { k: "country", l: "Country", t: "text", def: "CZ" },
+            { k: "is_default", l: "Is Default", t: "checkbox" },
+          ],
+        },
+        categories: {
+          label: "Kategorie",
+          icon: "📁",
+          listEndpoint: "/api/categories",
+          endpoint: "/api/categories",
+          listColumns: [
+            "id",
+            "franchise_code",
+            "parent_id",
+            "name",
+            "position",
+          ],
+          fields: [
+            {
+              k: "franchise_code",
+              l: "Franchise Code",
+              t: "text",
+              def: "default",
+            },
+            { k: "parent_id", l: "Parent ID", t: "number" },
+            { k: "name", l: "Name", t: "text", req: true },
+            { k: "description", l: "Description", t: "textarea" },
+            { k: "position", l: "Position", t: "number", def: 0 },
+          ],
+        },
+        products: {
+          label: "Produkty",
+          icon: "📦",
+          listEndpoint: "/api/products",
+          endpoint: "/api/products",
+          listColumns: [
+            "id",
+            "sku",
+            "name",
+            "price",
+            "vat_rate",
+            "stock_quantity",
+          ],
+          fields: [
+            {
+              k: "franchise_code",
+              l: "Franchise Code",
+              t: "text",
+              def: "default",
+            },
+            { k: "category_id", l: "Category ID", t: "number" },
+            { k: "sku", l: "SKU", t: "text", req: true },
+            { k: "name", l: "Name", t: "text", req: true },
+            { k: "description", l: "Description", t: "textarea" },
+            { k: "price", l: "Price", t: "number", step: "0.01", def: 0 },
+            {
+              k: "vat_rate",
+              l: "VAT Rate (%)",
+              t: "number",
+              step: "0.01",
+              def: 21,
+            },
+            { k: "stock_quantity", l: "Stock Quantity", t: "number", def: 0 },
+          ],
+        },
+        texts: {
+          label: "Texty",
+          icon: "📝",
+          listEndpoint: "/api/texts",
+          endpoint: "/api/texts",
+          listColumns: ["id", "syscode", "title", "language", "is_active"],
+          fields: [
+            {
+              k: "franchise_code",
+              l: "Franchise Code",
+              t: "text",
+              def: "default",
+            },
+            { k: "syscode", l: "Syscode", t: "text", req: true },
+            { k: "title", l: "Title", t: "text", req: true },
+            { k: "content", l: "Content", t: "textarea" },
+            { k: "language", l: "Language", t: "text", def: "cs" },
+            { k: "is_active", l: "Is Active", t: "checkbox", def: true },
+          ],
+        },
+        enumerations: {
+          label: "Číselníky",
+          icon: "🔢",
+          listEndpoint: "/api/enumerations",
+          endpoint: "/api/enumerations",
+          flattenObject: true,
+          listColumns: [
+            "id",
+            "type",
+            "syscode",
+            "label",
+            "value",
+            "position",
+            "is_active",
+          ],
+          fields: [
+            {
+              k: "franchise_code",
+              l: "Franchise Code",
+              t: "text",
+              def: "default",
+            },
+            { k: "type", l: "Type", t: "text", req: true },
+            { k: "syscode", l: "Syscode", t: "text", req: true },
+            { k: "label", l: "Label", t: "text", req: true },
+            { k: "value", l: "Value", t: "text", def: "" },
+            { k: "position", l: "Position", t: "number", def: 0 },
+            { k: "is_active", l: "Is Active", t: "checkbox", def: true },
+          ],
+        },
+        orders: {
+          label: "Objednávky",
+          icon: "🛒",
+          listEndpoint: "/api/orders",
+          endpoint: "/api/orders",
+          patchStatus: true,
+          listColumns: [
+            "id",
+            "order_number",
+            "user_id",
+            "status",
+            "total_amount",
+            "currency",
+          ],
+          fields: [
+            {
+              k: "franchise_code",
+              l: "Franchise Code",
+              t: "text",
+              def: "default",
+              ro: true,
+            },
+            { k: "order_number", l: "Order Number", t: "text", req: true },
+            { k: "user_id", l: "User ID", t: "number" },
+            {
+              k: "status",
+              l: "Status",
+              t: "select",
+              opts: [
+                "pending",
+                "confirmed",
+                "processing",
+                "shipped",
+                "delivered",
+                "cancelled",
+                "refunded",
+              ],
+              def: "pending",
+            },
+            {
+              k: "total_amount",
+              l: "Total Amount",
+              t: "number",
+              step: "0.01",
+              def: 0,
+              ro: true,
+            },
+            { k: "currency", l: "Currency", t: "text", def: "CZK", ro: true },
+            {
+              k: "payment_method",
+              l: "Payment Method",
+              t: "text",
+              def: "bank_transfer",
+              ro: true,
+            },
+            {
+              k: "shipping_address_id",
+              l: "Shipping Address ID",
+              t: "number",
+              ro: true,
+            },
+            {
+              k: "billing_address_id",
+              l: "Billing Address ID",
+              t: "number",
+              ro: true,
+            },
+            { k: "note", l: "Note", t: "textarea" },
+          ],
+        },
+        invoices: {
+          label: "Faktury",
+          icon: "🧾",
+          listEndpoint: "/api/invoices",
+          endpoint: "/api/invoices",
+          patchStatus: true,
+          listColumns: [
+            "id",
+            "invoice_number",
+            "order_id",
+            "status",
+            "total_amount",
+            "currency",
+          ],
+          fields: [
+            {
+              k: "franchise_code",
+              l: "Franchise Code",
+              t: "text",
+              def: "default",
+              ro: true,
+            },
+            { k: "invoice_number", l: "Invoice Number", t: "text", req: true },
+            { k: "order_id", l: "Order ID", t: "number", ro: true },
+            { k: "user_id", l: "User ID", t: "number", ro: true },
+            {
+              k: "status",
+              l: "Status",
+              t: "select",
+              opts: [
+                "draft",
+                "issued",
+                "paid",
+                "overdue",
+                "cancelled",
+                "refunded",
+              ],
+              def: "issued",
+            },
+            {
+              k: "total_amount",
+              l: "Total Amount",
+              t: "number",
+              step: "0.01",
+              ro: true,
+            },
+            { k: "currency", l: "Currency", t: "text", def: "CZK", ro: true },
+            {
+              k: "billing_address_id",
+              l: "Billing Address ID",
+              t: "number",
+              ro: true,
+            },
+            { k: "note", l: "Note", t: "textarea" },
+            { k: "due_at", l: "Due At", t: "date" },
+            { k: "issued_at", l: "Issued At", t: "datetime-local", ro: true },
+            { k: "paid_at", l: "Paid At", t: "datetime-local", ro: true },
+          ],
+        },
+      };
+
+      /* ═══════════════════════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════════════════════ */
+      function esc(v) {
+        if (v === null || v === undefined) return "";
+        return String(v)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      // MySQL datetime "2024-01-15 10:30:00" → "2024-01-15T10:30:00"
+      function toDatetimeLocal(v) {
+        if (!v) return "";
+        return String(v).replace(" ", "T").slice(0, 16);
+      }
+
+      /* ═══════════════════════════════════════════════════════════
+   API
+═══════════════════════════════════════════════════════════ */
+      async function api(method, path, body = null) {
+        const opts = {
+          method,
+          headers: {
+            "Content-Type": "application/json",
+            ...(S.token ? { Authorization: `Bearer ${S.token}` } : {}),
+          },
+        };
+        if (body !== null) opts.body = JSON.stringify(body);
+        const res = await fetch(S.baseUrl + path, opts);
+        const json = await res
+          .json()
+          .catch(() => ({ success: false, message: res.statusText }));
+        if (!json.success)
+          throw new Error(json.message || `HTTP ${res.status}`);
+        return json.data;
+      }
+
+      /* ═══════════════════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════════════════ */
+      let _toastTimer;
+      function toast(msg, ok = true) {
+        const el = document.getElementById("toast");
+        const inner = document.getElementById("toastInner");
+        inner.textContent = msg;
+        inner.className = `rounded-xl shadow-lg px-4 py-2 text-sm text-white font-medium ${ok ? "bg-emerald-600" : "bg-red-600"}`;
+        el.classList.remove("opacity-0");
+        el.classList.add("opacity-100");
+        clearTimeout(_toastTimer);
+        _toastTimer = setTimeout(() => {
+          el.classList.remove("opacity-100");
+          el.classList.add("opacity-0");
+        }, 2800);
+      }
+
+      /* ═══════════════════════════════════════════════════════════
+   CONFIRM DIALOG
+═══════════════════════════════════════════════════════════ */
+      let _confirmResolve;
+      function askConfirm(msg) {
+        return new Promise((resolve) => {
+          _confirmResolve = resolve;
+          document.getElementById("confirmMsg").textContent = msg;
+          const dlg = document.getElementById("confirmDlg");
+          dlg.classList.remove("hidden");
+          dlg.classList.add("flex");
+        });
+      }
+      function confirmAccept() {
+        _confirmResolve(true);
+        closeConfirmDlg();
+      }
+      function confirmReject() {
+        _confirmResolve(false);
+        closeConfirmDlg();
+      }
+      function closeConfirmDlg() {
+        const dlg = document.getElementById("confirmDlg");
+        dlg.classList.add("hidden");
+        dlg.classList.remove("flex");
+      }
+
+      /* ═══════════════════════════════════════════════════════════
+   LOGIN
+═══════════════════════════════════════════════════════════ */
+      function showLogin() {
+        document.getElementById("cfgBase").value = S.baseUrl;
+        document.getElementById("cfgEmail").value = S.email;
+        document.getElementById("cfgPwd").value = "";
+        document.getElementById("cfgToken").value = "";
+        document.getElementById("loginErr").classList.add("hidden");
+        document.getElementById("loginOverlay").classList.remove("hidden");
+        document.getElementById("loginOverlay").classList.add("flex");
+      }
+      function hideLogin() {
+        document.getElementById("loginOverlay").classList.add("hidden");
+        document.getElementById("loginOverlay").classList.remove("flex");
+      }
+
+      async function doLogin() {
+        const base = document
+          .getElementById("cfgBase")
+          .value.trim()
+          .replace(/\/$/, "");
+        const email = document.getElementById("cfgEmail").value.trim();
+        const pwd = document.getElementById("cfgPwd").value;
+        const err = document.getElementById("loginErr");
+        try {
+          const res = await fetch(`${base}/api/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password: pwd }),
+          });
+          const json = await res.json();
+          if (!json.success || !json.data?.token)
+            throw new Error(json.message || "Přihlášení selhalo");
+          S.baseUrl = base;
+          S.token = json.data.token;
+          S.email = email;
+          saveState();
+          document.getElementById("sidebarUser").textContent = email;
+          hideLogin();
+          router();
+        } catch (e) {
+          err.textContent = e.message;
+          err.classList.remove("hidden");
+        }
+      }
+
+      function useToken() {
+        const base = document
+          .getElementById("cfgBase")
+          .value.trim()
+          .replace(/\/$/, "");
+        const token = document.getElementById("cfgToken").value.trim();
+        if (!token) return;
+        S.baseUrl = base || S.baseUrl;
+        S.token = token;
+        saveState();
+        document.getElementById("sidebarUser").textContent = "token";
+        hideLogin();
+        router();
+      }
+
+      function saveState() {
+        localStorage.setItem("adm_base", S.baseUrl);
+        localStorage.setItem("adm_token", S.token);
+        localStorage.setItem("adm_email", S.email);
+      }
+
+      /* ═══════════════════════════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════════════════════════ */
+      function buildNav() {
+        document.getElementById("nav").innerHTML = Object.entries(MODELS)
+          .map(
+            ([key, m]) => `
+    <a href="#/${key}"
+       class="nav-item flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-800 transition"
+       data-key="${key}">
+      <span>${m.icon}</span><span>${m.label}</span>
+    </a>
+  `,
+          )
+          .join("");
+      }
+
+      function updateNav(activeKey) {
+        document.querySelectorAll(".nav-item").forEach((el) => {
+          const active = el.dataset.key === activeKey;
+          el.classList.toggle("bg-blue-50", active);
+          el.classList.toggle("text-blue-700", active);
+          el.classList.toggle("font-semibold", active);
+        });
+      }
+
+      /* ═══════════════════════════════════════════════════════════
+   ROUTER
+═══════════════════════════════════════════════════════════ */
+      function router() {
+        const raw = location.hash.replace(/^#\/?/, "") || "roles";
+        const parts = raw.split("/").filter(Boolean);
+        const key = parts[0];
+        const sub = parts[1];
+
+        if (!MODELS[key]) {
+          location.hash = "#/roles";
+          return;
+        }
+        updateNav(key);
+
+        if (!sub) renderList(key);
+        else if (sub === "new") renderForm(key, null, null);
+        else loadAndRenderForm(key, sub);
+      }
+
+      /* ═══════════════════════════════════════════════════════════
+   LIST VIEW
+═══════════════════════════════════════════════════════════ */
+      const listParams = {};
+
+      async function renderList(key) {
+        const m = MODELS[key];
+        const app = document.getElementById("app");
+        app.innerHTML = `<div class="text-slate-400 text-sm py-8 text-center">Načítám…</div>`;
+
+        // Build URL (handle parameterised endpoints like addresses)
+        let url = m.listEndpoint;
+        let paramHtml = "";
+        if (m.listParam) {
+          if (!listParams[key]) listParams[key] = {};
+          const pKey = m.listParam.k;
+          if (listParams[key][pKey] === undefined)
+            listParams[key][pKey] = m.listParam.def;
+          url = url.replace(`{${pKey}}`, listParams[key][pKey]);
+          paramHtml = `
+      <div class="flex items-center gap-2 text-sm">
+        <label class="text-slate-500 text-xs font-semibold">${m.listParam.l}:</label>
+        <input type="text" value="${esc(listParams[key][pKey])}"
+          class="border border-slate-200 rounded-lg px-2 py-1 w-20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          onchange="listParams['${key}']['${pKey}']=this.value;renderList('${key}')" />
+      </div>`;
+        }
+
+        let rows = [];
+        try {
+          const raw = await api("GET", url);
+          if (Array.isArray(raw)) {
+            rows = raw;
+          } else if (m.flattenObject && raw && typeof raw === 'object') {
+            // e.g. enumerations returns { currency: [...], order_status: [...] }
+            rows = Object.values(raw).flat();
+          } else if (Array.isArray(raw?.items)) {
+            rows = raw.items;
+          } else {
+            rows = [];
+          }
+        } catch (err) {
+          app.innerHTML = `<div class="text-red-500 text-sm bg-red-50 border border-red-200 rounded-xl px-4 py-3">Chyba: ${esc(err.message)}</div>`;
+          return;
+        }
+
+        const cols = m.listColumns;
+
+        app.innerHTML = `
+    <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+      <div class="flex items-center gap-3 flex-wrap">
+        <h1 class="text-xl font-bold text-slate-800">${m.icon} ${m.label}</h1>
+        ${paramHtml}
+        <span class="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">${rows.length} záznamů</span>
+      </div>
+      <a href="#/${key}/new"
+         class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition inline-flex items-center gap-1">
+        + Vytvořit
+      </a>
+    </div>
+    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200">
+              ${cols.map((c) => `<th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">${c}</th>`).join("")}
+              <th class="w-10 px-3 py-3"></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${
+              rows.length === 0
+                ? `<tr><td colspan="${cols.length + 1}" class="px-4 py-10 text-center text-slate-400">Žádné záznamy</td></tr>`
+                : rows
+                    .map(
+                      (row) => `
+                  <tr class="border-b border-slate-100 hover:bg-blue-50/40 cursor-pointer transition"
+                      onclick="location.hash='#/${key}/${row.id}'">
+                    ${cols
+                      .map((c) => {
+                        const v = row[c];
+                        const display =
+                          v === null || v === undefined
+                            ? '<span class="text-slate-300">—</span>'
+                            : esc(String(v));
+                        return `<td class="px-4 py-3 text-slate-700 max-w-[180px] truncate">${display}</td>`;
+                      })
+                      .join("")}
+                    <td class="px-3 py-3 text-right" onclick="event.stopPropagation()">
+                      <button onclick="deleteRecord('${key}', ${row.id}, false)"
+                              class="text-slate-300 hover:text-red-500 transition text-base leading-none"
+                              title="Smazat">🗑️</button>
+                    </td>
+                  </tr>`,
+                    )
+                    .join("")
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+      }
+
+      /* ═══════════════════════════════════════════════════════════
+   FORM VIEW
+═══════════════════════════════════════════════════════════ */
+      async function loadAndRenderForm(key, id) {
+        const app = document.getElementById("app");
+        app.innerHTML = `<div class="text-slate-400 text-sm py-8 text-center">Načítám…</div>`;
+        try {
+          const m = MODELS[key];
+          const data = await api("GET", `${m.endpoint}/${id}`);
+          renderForm(key, id, data);
+        } catch (err) {
+          app.innerHTML = `<div class="text-red-500 text-sm bg-red-50 border border-red-200 rounded-xl px-4 py-3">Chyba: ${esc(err.message)}</div>`;
+        }
+      }
+
+      function renderForm(key, id, data) {
+        const m = MODELS[key];
+        const isNew = id === null;
+
+        const fieldsHtml = m.fields
+          .map((f) => {
+            if (!isNew && f.createOnly) return "";
+
+            const raw = data?.[f.k];
+            const isRO = !isNew && f.ro;
+            const roAttr = isRO ? "readonly disabled" : "";
+            const roClass = isRO
+              ? "bg-slate-50 text-slate-400 cursor-not-allowed"
+              : "focus:ring-2 focus:ring-blue-400 bg-white";
+            const base = `border border-slate-200 rounded-lg px-3 py-2 text-sm w-full focus:outline-none ${roClass}`;
+
+            // Compute display value
+            let val =
+              raw !== null && raw !== undefined
+                ? raw
+                : f.def !== undefined
+                  ? f.def
+                  : "";
+            if (f.t === "datetime-local") val = toDatetimeLocal(val);
+
+            let input;
+            if (f.t === "checkbox") {
+              const checked =
+                val === true || val === 1 || val === "1" ? "checked" : "";
+              const disAttr = isRO ? "disabled" : "";
+              return `
+        <div class="flex items-center gap-2 pt-6">
+          <input type="checkbox" id="f_${f.k}" name="${f.k}" value="1" ${checked} ${disAttr}
+                 class="w-4 h-4 rounded border-slate-300 text-blue-600" />
+          <label for="f_${f.k}" class="text-sm text-slate-700 font-medium">${f.l}
+            ${isRO ? '<span class="text-slate-300 text-xs font-normal ml-1">(readonly)</span>' : ""}
+          </label>
+        </div>`;
+            } else if (f.t === "select") {
+              if (isRO) {
+                input = `<input type="text" value="${esc(String(val))}" class="${base}" readonly disabled />`;
+              } else {
+                input = `<select name="${f.k}" class="${base}">
+          ${(f.opts || []).map((o) => `<option value="${esc(o)}" ${o === String(val) ? "selected" : ""}>${esc(o)}</option>`).join("")}
+        </select>`;
+              }
+            } else if (f.t === "textarea") {
+              input = `<textarea name="${f.k}" rows="3" class="${base}" ${roAttr}>${esc(String(val))}</textarea>`;
+            } else {
+              input = `<input type="${f.t}" name="${f.k}" value="${esc(String(val))}"
+        ${f.step ? `step="${f.step}"` : ""}
+        class="${base}" ${roAttr} />`;
+            }
+
+            const reqMark =
+              f.req && (isNew || !f.createOnly)
+                ? '<span class="text-red-400">*</span>'
+                : "";
+            const roNote = isRO
+              ? '<span class="text-slate-300 text-xs font-normal ml-1">(readonly)</span>'
+              : "";
+
+            return `
+      <div>
+        <label class="block text-xs font-semibold text-slate-500 mb-1">${f.l} ${reqMark}${roNote}</label>
+        ${input}
+      </div>`;
+          })
+          .join("");
+
+        const title = isNew
+          ? `Nový záznam – ${m.label}`
+          : `Editace #${id} – ${m.label}`;
+        const btnLabel = isNew ? "Vytvořit" : "Uložit";
+        const noteAboutPatch =
+          !isNew && m.patchStatus
+            ? `<div class="sm:col-span-2 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+         ℹ️ Pro tento model se ukládá pouze pole <strong>status</strong> (a note) přes endpoint /status.
+       </div>`
+            : "";
+
+        document.getElementById("app").innerHTML = `
+    <div class="flex items-center gap-3 mb-5 flex-wrap">
+      <a href="#/${key}" class="text-slate-400 hover:text-slate-600 transition text-sm">← zpět</a>
+      <h1 class="text-xl font-bold text-slate-800">${title}</h1>
+    </div>
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 max-w-2xl">
+      <form id="recForm" class="grid grid-cols-1 sm:grid-cols-2 gap-4"
+            onsubmit="saveRecord(event,'${key}','${id ?? ""}')">
+        ${noteAboutPatch}
+        ${fieldsHtml}
+        <div class="sm:col-span-2 flex gap-3 pt-3 border-t border-slate-100 flex-wrap">
+          <button type="submit"
+                  class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-lg text-sm transition">
+            ${btnLabel}
+          </button>
+          <a href="#/${key}"
+             class="px-5 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-100 font-medium transition">
+            Zrušit
+          </a>
+          ${
+            !isNew
+              ? `<button type="button" onclick="deleteRecord('${key}','${id}',true)"
+                       class="ml-auto text-sm text-red-500 hover:text-red-700 font-medium transition">
+                 🗑️ Smazat
+               </button>`
+              : ""
+          }
+        </div>
+      </form>
+    </div>
+  `;
+      }
+
+      /* ═══════════════════════════════════════════════════════════
+   SAVE (CREATE / PATCH)
+═══════════════════════════════════════════════════════════ */
+      async function saveRecord(e, key, id) {
+        e.preventDefault();
+        const m = MODELS[key];
+        const isNew = !id;
+        const form = document.getElementById("recForm");
+        const fd = new FormData(form);
+        const body = {};
+
+        m.fields.forEach((f) => {
+          if (!isNew && f.createOnly) return;
+          if (!isNew && f.ro) return; // skip readonly in edit
+          if (f.t === "checkbox") {
+            body[f.k] = fd.has(f.k) ? 1 : 0;
+          } else if (f.t === "number") {
+            const v = fd.get(f.k);
+            body[f.k] = v !== "" && v !== null ? Number(v) : null;
+          } else {
+            const v = fd.get(f.k);
+            body[f.k] = v !== "" && v !== null ? v : null;
+          }
+        });
+
+        try {
+          if (isNew) {
+            const data = await api("POST", m.endpoint, body);
+            const newId = data?.id ?? data;
+            toast(`Vytvořeno${newId ? ` (ID: ${newId})` : ""}`);
+            location.hash = `#/${key}`;
+          } else {
+            let patchPath = `${m.endpoint}/${id}`;
+            let patchBody = body;
+            if (m.patchStatus) {
+              patchPath = `${m.endpoint}/${id}/status`;
+              patchBody = { status: body.status };
+              if (body.note !== undefined) patchBody.note = body.note;
+            }
+            await api("PATCH", patchPath, patchBody);
+            toast("Uloženo");
+            location.hash = `#/${key}`;
+          }
+        } catch (err) {
+          toast(`Chyba: ${err.message}`, false);
+        }
+      }
+
+      /* ═══════════════════════════════════════════════════════════
+   DELETE
+═══════════════════════════════════════════════════════════ */
+      async function deleteRecord(key, id, redirect) {
+        const ok = await askConfirm(`Opravdu smazat záznam #${id}?`);
+        if (!ok) return;
+        const m = MODELS[key];
+        try {
+          await api("DELETE", `${m.endpoint}/${id}`);
+          toast("Smazáno");
+          if (redirect) {
+            location.hash = `#/${key}`;
+          } else {
+            renderList(key);
+          }
+        } catch (err) {
+          toast(`Chyba: ${err.message}`, false);
+        }
+      }
+
+      /* ═══════════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════════ */
+      buildNav();
+      if (S.token) {
+        document.getElementById("loginOverlay").classList.add("hidden");
+        document.getElementById("loginOverlay").classList.remove("flex");
+        document.getElementById("sidebarUser").textContent =
+          S.email || "přihlášen";
+        router();
+      } else {
+        showLogin();
+      }
+      window.addEventListener("hashchange", router);
+    </script>
+  </body>
+</html>
