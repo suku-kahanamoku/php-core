@@ -23,7 +23,7 @@ $token = null;
 
 // ── register() ────────────────────────────────────────────────────────────────
 
-$svcEmail    = 'auth_svc_' . time() . '@example.com';
+$svcEmail    = TEST_PREFIX . 'auth_svc_' . time() . '@example.com';
 $svcPassword = 'TestPass123';
 $svcUserId   = null;
 

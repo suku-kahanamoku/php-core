@@ -40,7 +40,7 @@ assert_test('empty name → 422', $r['status'] === 422, dump_on_fail($r));
 // ── ProductService – create() success ────────────────────────────────────────
 
 section('ProductService – create() success');
-$svcSku = 'SVC-PROD-' . time();
+$svcSku = TEST_PREFIX . 'svc_prod_' . time();
 $r      = request('POST', "{$base}/products", [
     'name'  => 'Svc Product', 'sku' => $svcSku,
     'price' => 100.0, 'category_ids' => [$svcCatId], 'stock_quantity' => 10,

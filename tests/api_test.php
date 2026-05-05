@@ -16,6 +16,11 @@ require_once __DIR__ . '/bootstrap.php';
 $base       = rtrim($argv[1] ?? 'http://localhost/php/php-core/api', '/');
 $runnerMode = true;
 
+// ── Pre-test cleanup: remove any leftover test data ──────────────────────────
+echo "\033[1;33m[setup] Cleaning test data...\033[0m\n";
+cleanup_test_data();
+echo "\033[1;33m[setup] Done.\033[0m\n";
+
 // ── Misc: 404 ────────────────────────────────────────────────────────────────
 
 section('Non-existent endpoint');
@@ -81,6 +86,11 @@ foreach ($tests as $file) {
 }
 
 // ── Summary ───────────────────────────────────────────────────────────────────
+
+// Post-test cleanup: remove all test data created during this run
+echo "\n\033[1;33m[teardown] Cleaning test data...\033[0m\n";
+cleanup_test_data();
+echo "\033[1;33m[teardown] Done.\033[0m\n";
 
 print_results();
 exit($failed > 0 ? 1 : 0);

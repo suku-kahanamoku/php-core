@@ -55,7 +55,7 @@ section('Role model – create()');
 $r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
 $token = $r['data']['data']['token'] ?? null;
 
-$r = request('POST', "{$base}/roles", ['name' => 'model_role_' . time(), 'label' => 'Model Role']);
+$r = request('POST', "{$base}/roles", ['name' => TEST_PREFIX . 'model_role_' . time(), 'label' => 'Model Role']);
 assert_test('create role 201', $r['status'] === 201, dump_on_fail($r));
 $modelRoleId = $r['data']['data']['id'] ?? null;
 

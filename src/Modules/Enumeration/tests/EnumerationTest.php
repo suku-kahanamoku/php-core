@@ -61,7 +61,7 @@ $token = $r['data']['data']['token'] ?? null;
 // ── Enumeration model – create() ─────────────────────────────────────────────
 
 section('Enumeration model – create()');
-$enumType = 'model_type_' . time();
+$enumType = TEST_PREFIX . 'model_type_' . time();
 $r        = request('POST', "{$base}/enumerations", ['type' => $enumType, 'syscode' => 'syscode_m', 'label' => 'Code M']);
 assert_test('create enumeration 201', $r['status'] === 201, dump_on_fail($r));
 $enumId = $r['data']['data']['id'] ?? null;

@@ -36,7 +36,7 @@ assert_test('has pagination fields', isset($r['data']['data']['page'], $r['data'
 // ── User model – getById() ────────────────────────────────────────────────────
 
 section('User model – getById()');
-$userEmail = 'user_model_' . time() . '@example.com';
+$userEmail = TEST_PREFIX . 'user_model_' . time() . '@example.com';
 $r         = request('POST', "{$base}/users", [
     'first_name' => 'Model', 'last_name' => 'Test',
     'email'      => $userEmail, 'password' => 'Password123',

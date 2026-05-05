@@ -471,6 +471,15 @@ if ($token !== null) {
 
     // ── Texts ─────────────────────────────────────────────────────────────────
     section('SQL_FILTER integration – GET /texts');
+    // Ensure at least one active text exists for the filter assertions below
+    $filterTextKey = TEST_PREFIX . 'filter_text_' . time();
+    $rSetupText    = request('POST', "{$base}/texts", [
+        'syscode' => $filterTextKey, 'title' => 'Filter Test Text',
+        'content' => 'content', 'language' => 'cs', 'is_active' => 1,
+    ]);
+    $filterTextId = $rSetupText['data']['data']['id'] ?? null;
+    assert_test('filter texts setup: created', $rSetupText['status'] === 201, dump_on_fail($rSetupText));
+
     $r = request('GET', $base . '/texts?limit=100&filter=' . urlencode('{"is_active":{"value":1}}'));
     assert_test('texts eq is_active=1 filter: 200', $r['status'] === 200, dump_on_fail($r));
     assert_test('texts eq is_active=1 filter: has items', count($r['data']['data']['items']) >= 1);

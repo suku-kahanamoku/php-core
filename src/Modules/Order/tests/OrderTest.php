@@ -30,14 +30,14 @@ $token = $r['data']['data']['token'] ?? null;
 $r            = request('POST', "{$base}/categories", ['name' => 'Model Order Cat']);
 $modelCatId   = $r['data']['data']['id'] ?? null;
 
-$modelSku = 'MODEL-ORD-PROD-' . time();
+$modelSku = TEST_PREFIX . 'model_ord_prod_' . time();
 $r        = request('POST', "{$base}/products", [
     'name'  => 'Model Order Prod', 'sku' => $modelSku,
     'price' => 199.0, 'category_id' => $modelCatId, 'stock_quantity' => 10,
 ]);
 $modelProdId = $r['data']['data']['id'] ?? null;
 
-$modelUserEmail = 'model_ord_user_' . time() . '@example.com';
+$modelUserEmail = TEST_PREFIX . 'model_ord_user_' . time() . '@example.com';
 $r              = request('POST', "{$base}/auth/register", [
     'first_name' => 'Model', 'last_name' => 'OrdUser',
     'email'      => $modelUserEmail, 'password' => 'TestPass123',

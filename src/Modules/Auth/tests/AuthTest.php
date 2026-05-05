@@ -32,7 +32,7 @@ assert_test('success = false', $r['data']['success'] === false);
 
 section('Auth model – authenticated state');
 
-$testEmail    = 'auth_model_' . time() . '@example.com';
+$testEmail    = TEST_PREFIX . 'auth_model_' . time() . '@example.com';
 $testPassword = 'TestPass123';
 $testUserId   = null;
 

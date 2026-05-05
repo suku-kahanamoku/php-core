@@ -62,7 +62,7 @@ if ($prodRegId) {
 // ── Create ────────────────────────────────────────────────────────────────────
 
 section('Products – create');
-$prodSku = 'PROD-' . time();
+$prodSku = TEST_PREFIX . 'prod_' . time();
 $r       = request('POST', "{$base}/products", [
     'name'         => 'Test Product', 'sku' => $prodSku,
     'price'        => 199.0, 'category_ids' => [$prodCatId], 'stock_quantity' => 10,

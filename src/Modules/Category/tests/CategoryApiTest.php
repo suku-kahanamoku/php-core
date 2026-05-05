@@ -44,7 +44,7 @@ $r        = request('POST', "{$base}/categories", ['name' => 'x']);
 assert_test('POST /categories → 401 without token', $r['status'] === 401, dump_on_fail($r));
 $token = $tmpToken;
 
-$catRegEmail = 'cat_reg_' . time() . '@example.com';
+$catRegEmail = TEST_PREFIX . 'cat_reg_' . time() . '@example.com';
 $r           = request('POST', "{$base}/users", [
     'first_name' => 'Reg', 'last_name' => 'User',
     'email'      => $catRegEmail, 'password' => 'Password123',
@@ -66,11 +66,11 @@ if ($catRegId) {
 
 section('Categories – create');
 
-$r = request('POST', "{$base}/categories", ['name' => 'Test Category']);
+$r = request('POST', "{$base}/categories", ['name' => TEST_PREFIX . 'category_' . time()]);
 assert_test('POST /categories 201', $r['status'] === 201, dump_on_fail($r));
 $catId = $r['data']['data']['id'] ?? null;
 
-$r = request('POST', "{$base}/categories", ['name' => 'Empty Category']);
+$r = request('POST', "{$base}/categories", ['name' => TEST_PREFIX . 'category_empty_' . time()]);
 assert_test('POST /categories 201 (empty)', $r['status'] === 201, dump_on_fail($r));
 $emptyCatId = $r['data']['data']['id'] ?? null;
 
@@ -90,7 +90,7 @@ if ($catId) {
     $r = request('PATCH', "{$base}/categories/{$catId}", ['description' => 'Updated desc']);
     assert_test('PATCH /categories/:id 200', $r['status'] === 200, dump_on_fail($r));
 
-    $r = request('PUT', "{$base}/categories/{$catId}", ['name' => 'Test Category Updated']);
+    $r = request('PUT', "{$base}/categories/{$catId}", ['name' => TEST_PREFIX . 'category_upd_' . time()]);
     assert_test('PUT /categories/:id 200', $r['status'] === 200, dump_on_fail($r));
 
     $r = request('PUT', "{$base}/categories/{$catId}", ['name' => '']);
@@ -101,7 +101,7 @@ if ($catId) {
 
 section('Categories – delete with product → 409');
 if ($catId) {
-    $catProdSku = 'CAT-PROD-' . time();
+    $catProdSku = TEST_PREFIX . 'cat_prod_' . time();
     $r          = request('POST', "{$base}/products", [
         'name'  => 'Cat Test Product', 'sku' => $catProdSku,
         'price' => 10.0, 'category_ids' => [$catId], 'stock_quantity' => 1,

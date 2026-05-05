@@ -58,7 +58,7 @@ $token = $r['data']['data']['token'] ?? null;
 // ── Create ────────────────────────────────────────────────────────────────────
 
 section('Enumerations – CRUD');
-$enumType = 'test_type_' . time();
+$enumType = TEST_PREFIX . 'type_' . time();
 $r        = request('POST', "{$base}/enumerations", [
     'type' => $enumType, 'syscode' => 'syscode_a', 'label' => 'Code A',
 ]);

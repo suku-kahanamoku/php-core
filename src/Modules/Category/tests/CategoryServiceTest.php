@@ -31,18 +31,26 @@ section('CategoryService – create() validation');
 $r = request('POST', "{$base}/categories", ['name' => '']);
 assert_test('empty name → 422', $r['status'] === 422, dump_on_fail($r));
 
-$r = request('PUT', "{$base}/categories/1", ['name' => '']);
+// Create a temporary category to test PUT validation on a real existing ID
+$rTmp       = request('POST', "{$base}/categories", ['name' => TEST_PREFIX . 'svc_val_' . time()]);
+$tmpValCatId = $rTmp['data']['data']['id'] ?? null;
+$r           = $tmpValCatId
+    ? request('PUT', "{$base}/categories/{$tmpValCatId}", ['name' => ''])
+    : ['status' => 0, 'data' => [], 'raw' => 'no category'];
 assert_test('PUT empty name → 422', $r['status'] === 422, dump_on_fail($r));
+if ($tmpValCatId) {
+    request('DELETE', "{$base}/categories/{$tmpValCatId}");
+}
 
 // ── CategoryService – cannot delete if has products ──────────────────────────
 
 section('CategoryService – delete blocked by products');
-$r          = request('POST', "{$base}/categories", ['name' => 'Svc Category']);
+$r          = request('POST', "{$base}/categories", ['name' => TEST_PREFIX . 'svc_category_' . time()]);
 assert_test('create category 201', $r['status'] === 201, dump_on_fail($r));
 $svcCatId = $r['data']['data']['id'] ?? null;
 
 if ($svcCatId) {
-    $svcProdSku = 'SVC-CAT-PROD-' . time();
+    $svcProdSku = TEST_PREFIX . 'svc_cat_prod_' . time();
     $r          = request('POST', "{$base}/products", [
         'name'  => 'Svc Cat Product', 'sku' => $svcProdSku,
         'price' => 10.0, 'category_ids' => [$svcCatId], 'stock_quantity' => 1,

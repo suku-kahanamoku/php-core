@@ -38,7 +38,7 @@ $token = $r['data']['data']['token'] ?? null;
 // ── Create ────────────────────────────────────────────────────────────────────
 
 section('Texts – CRUD');
-$textKey = 'test_syscode_' . time();
+$textKey = TEST_PREFIX . 'syscode_' . time();
 $r       = request('POST', "{$base}/texts", [
     'syscode' => $textKey, 'title' => 'Test Title', 'content' => 'Test content', 'language' => 'cs',
 ]);

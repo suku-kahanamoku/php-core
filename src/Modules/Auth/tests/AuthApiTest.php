@@ -23,7 +23,7 @@ $token = null;
 
 // ── Setup: register a fresh test user ────────────────────────────────────────
 
-$authEmail    = 'auth_test_' . time() . '@example.com';
+$authEmail    = TEST_PREFIX . 'auth_' . time() . '@example.com';
 $authPassword = 'TestPass123';
 $authUserId   = null;
 

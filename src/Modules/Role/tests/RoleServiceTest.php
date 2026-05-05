@@ -29,7 +29,7 @@ $token = $r['data']['data']['token'] ?? null;
 // ── RoleService – duplicate prevention ───────────────────────────────────────
 
 section('RoleService – duplicate name prevention');
-$svcRoleName = 'svc_role_' . time();
+$svcRoleName = TEST_PREFIX . 'svc_role_' . time();
 $r           = request('POST', "{$base}/roles", ['name' => $svcRoleName, 'label' => 'Svc Role']);
 assert_test('create role 201', $r['status'] === 201, dump_on_fail($r));
 $svcRoleId = $r['data']['data']['id'] ?? null;
@@ -52,7 +52,7 @@ assert_test('PUT empty name → 422', $r['status'] === 422, dump_on_fail($r));
 // ── RoleService – role-in-use protection ─────────────────────────────────────
 
 section('RoleService – cannot delete role assigned to user');
-$svcUserEmail = 'role_svc_user_' . time() . '@example.com';
+$svcUserEmail = TEST_PREFIX . 'role_svc_user_' . time() . '@example.com';
 $r            = request('POST', "{$base}/users", [
     'first_name' => 'Role', 'last_name' => 'SvcUser',
     'email'      => $svcUserEmail, 'password' => 'Password123',

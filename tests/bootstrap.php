@@ -7,6 +7,58 @@ declare(strict_types=1);
  * Included by every test_*.php and by the api_test.php runner.
  */
 
+// ── Test prefix – all dynamic test data identifiers use this prefix ──────────
+const TEST_PREFIX = 'test_';
+
+// ── Load .env so cleanup_test_data() can connect to the DB ──────────────────
+if (!isset($_ENV['DB_HOST'])) {
+    $envFile = __DIR__ . '/../.env';
+    if (file_exists($envFile)) {
+        foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+            if (str_starts_with(trim($line), '#') || !str_contains($line, '=')) {
+                continue;
+            }
+            [$k, $v]    = explode('=', $line, 2);
+            $_ENV[trim($k)] = trim($v);
+        }
+    }
+}
+
+/**
+ * Delete all rows whose identifying column starts with TEST_PREFIX.
+ * Safe to call before and after the test suite.
+ */
+function cleanup_test_data(): void
+{
+    $host    = $_ENV['DB_HOST']    ?? 'localhost';
+    $port    = $_ENV['DB_PORT']    ?? '3306';
+    $dbName  = $_ENV['DB_NAME']    ?? 'php_core';
+    $user    = $_ENV['DB_USER']    ?? 'admin';
+    $pass    = $_ENV['DB_PASSWORD'] ?? '';
+    $charset = $_ENV['DB_CHARSET'] ?? 'utf8mb4';
+
+    try {
+        $pdo = new PDO(
+            "mysql:host={$host};port={$port};dbname={$dbName};charset={$charset}",
+            $user,
+            $pass,
+            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION],
+        );
+
+        $prefix = TEST_PREFIX . '%';
+
+        // Order of deletion matters (FK constraints)
+        $pdo->prepare('DELETE FROM user        WHERE email   LIKE ?')->execute([$prefix]);
+        $pdo->prepare('DELETE FROM role        WHERE name    LIKE ?')->execute([$prefix]);
+        $pdo->prepare('DELETE FROM product     WHERE sku     LIKE ?')->execute([$prefix]);
+        $pdo->prepare('DELETE FROM category    WHERE name    LIKE ?')->execute([$prefix]);
+        $pdo->prepare('DELETE FROM enumeration WHERE type    LIKE ?')->execute([$prefix]);
+        $pdo->prepare('DELETE FROM text        WHERE syscode LIKE ?')->execute([$prefix]);
+    } catch (\PDOException $e) {
+        echo "\033[33m  [cleanup] DB error: {$e->getMessage()}\033[0m\n";
+    }
+}
+
 $passed = 0;
 $failed = 0;
 $token  = null;

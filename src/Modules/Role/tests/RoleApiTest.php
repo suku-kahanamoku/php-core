@@ -62,7 +62,7 @@ $token = $r['data']['data']['token'] ?? null;
 section('Roles – non-admin protection');
 $tmpToken = $token;
 
-$roleRegEmail = 'role_reg_' . time() . '@example.com';
+$roleRegEmail = TEST_PREFIX . 'role_reg_' . time() . '@example.com';
 $r            = request('POST', "{$base}/auth/register", [
     'first_name' => 'Reg', 'last_name' => 'User',
     'email'      => $roleRegEmail, 'password' => 'Password123',
@@ -124,13 +124,13 @@ if ($adminRoleId) {
 // ── Cannot delete role with users ─────────────────────────────────────────────
 
 section('Roles – cannot delete role with users');
-$tempRoleName = 'temp_role_' . time();
+$tempRoleName = TEST_PREFIX . 'temp_role_' . time();
 $r            = request('POST', "{$base}/roles", ['name' => $tempRoleName, 'label' => 'Temp Role']);
 assert_test('POST /roles 201 (temp)', $r['status'] === 201, dump_on_fail($r));
 $tempRoleId = $r['data']['data']['id'] ?? null;
 
 if ($tempRoleId) {
-    $tempUserEmail = 'role_user_' . time() . '@example.com';
+    $tempUserEmail = TEST_PREFIX . 'role_user_' . time() . '@example.com';
     $r             = request('POST', "{$base}/users", [
         'first_name' => 'Temp', 'last_name' => 'User',
         'email'      => $tempUserEmail, 'password' => 'Password123',

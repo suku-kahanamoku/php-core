@@ -31,7 +31,7 @@ $modelCatId   = $r['data']['data']['id'] ?? null;
 // ── Product model – create() ──────────────────────────────────────────────────
 
 section('Product model – create()');
-$modelSku = 'MODEL-PROD-' . time();
+$modelSku = TEST_PREFIX . 'model_prod_' . time();
 $r        = request('POST', "{$base}/products", [
     'name'         => 'Model Product', 'sku' => $modelSku,
     'price'        => 299.0, 'category_id' => $modelCatId, 'stock_quantity' => 5,
@@ -55,7 +55,7 @@ section('Product model – getById()');
 if ($modelProdId) {
     $r = request('GET', "{$base}/products/{$modelProdId}", [], false);
     assert_test('getById 200', $r['status'] === 200, dump_on_fail($r));
-    assert_test('name matches', $r['data']['data']['name'] === 'Model Product');
+    assert_test('name matches', $r['data']['data']['name'] === 'Model Product', dump_on_fail($r));
     assert_test('has category_names', isset($r['data']['data']['category_names']));
     assert_test('stock_quantity = 5', $r['data']['data']['stock_quantity'] === 5);
     assert_test('kind = dry', $r['data']['data']['kind'] === 'dry', dump_on_fail($r));

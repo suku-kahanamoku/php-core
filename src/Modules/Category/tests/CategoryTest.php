@@ -34,7 +34,7 @@ $token = $r['data']['data']['token'] ?? null;
 // ── Category model – create() ────────────────────────────────────────────────
 
 section('Category model – create()');
-$r       = request('POST', "{$base}/categories", ['name' => 'Model Category']);
+$r       = request('POST', "{$base}/categories", ['name' => TEST_PREFIX . 'model_category_' . time()]);
 assert_test('create category 201', $r['status'] === 201, dump_on_fail($r));
 $catId = $r['data']['data']['id'] ?? null;
 
@@ -45,7 +45,7 @@ if ($catId) {
     $r = request('GET', "{$base}/categories/{$catId}", [], false);
     assert_test('getById 200', $r['status'] === 200, dump_on_fail($r));
     assert_test('has products array', isset($r['data']['data']['products']));
-    assert_test('name matches', $r['data']['data']['name'] === 'Model Category');
+    assert_test('name matches', str_starts_with($r['data']['data']['name'], TEST_PREFIX . 'model_category_'), dump_on_fail($r));
 
     $r = request('GET', "{$base}/categories/999999", [], false);
     assert_test('unknown id → 404', $r['status'] === 404, dump_on_fail($r));

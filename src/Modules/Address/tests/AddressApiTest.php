@@ -28,7 +28,7 @@ $r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'pas
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
-$addrUserEmail = 'addr_user_' . time() . '@example.com';
+$addrUserEmail = TEST_PREFIX . 'addr_user_' . time() . '@example.com';
 $r             = request('POST', "{$base}/users", [
     'first_name' => 'Addr', 'last_name' => 'User',
     'email'      => $addrUserEmail, 'password' => 'Password123',

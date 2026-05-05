@@ -37,7 +37,7 @@ assert_test('invalid email → 422', $r['status'] === 422, dump_on_fail($r));
 // ── UserService – duplicate email ─────────────────────────────────────────────
 
 section('UserService – duplicate email prevention');
-$dupEmail = 'user_svc_dup_' . time() . '@example.com';
+$dupEmail = TEST_PREFIX . 'user_svc_dup_' . time() . '@example.com';
 $r        = request('POST', "{$base}/users", [
     'first_name' => 'Dup', 'last_name' => 'User',
     'email'      => $dupEmail, 'password' => 'Password123',

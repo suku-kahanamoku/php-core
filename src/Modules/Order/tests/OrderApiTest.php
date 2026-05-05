@@ -32,7 +32,7 @@ $r          = request('POST', "{$base}/categories", ['name' => 'Orders Cat']);
 assert_test('create category 201', $r['status'] === 201, dump_on_fail($r));
 $ordCatId = $r['data']['data']['id'] ?? null;
 
-$ordSku = 'ORD-PROD-' . time();
+$ordSku = TEST_PREFIX . 'ord_prod_' . time();
 $r      = request('POST', "{$base}/products", [
     'name'  => 'Orders Product', 'sku' => $ordSku,
     'price' => 199.0, 'category_id' => $ordCatId, 'stock_quantity' => 10,
@@ -40,7 +40,7 @@ $r      = request('POST', "{$base}/products", [
 assert_test('create product 201', $r['status'] === 201, dump_on_fail($r));
 $ordProductId = $r['data']['data']['id'] ?? null;
 
-$ordUserEmail = 'ord_user_' . time() . '@example.com';
+$ordUserEmail = TEST_PREFIX . 'ord_user_' . time() . '@example.com';
 $ordPassword  = 'TestPass123';
 $r            = request('POST', "{$base}/auth/register", [
     'first_name' => 'Order', 'last_name' => 'User',

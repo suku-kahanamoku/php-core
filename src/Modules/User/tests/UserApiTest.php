@@ -48,7 +48,7 @@ assert_test('has items + total', isset($r['data']['data']['items'], $r['data']['
 // ── Create ────────────────────────────────────────────────────────────────────
 
 section('Users – create');
-$userEmail = 'users_test_' . time() . '@example.com';
+$userEmail = TEST_PREFIX . 'user_' . time() . '@example.com';
 $r         = request('POST', "{$base}/users", [
     'first_name' => 'Created', 'last_name' => 'ByAdmin',
     'email'      => $userEmail, 'password' => 'Password123',

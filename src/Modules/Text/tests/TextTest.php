@@ -34,7 +34,7 @@ $token = $r['data']['data']['token'] ?? null;
 // ── Text model – create() ────────────────────────────────────────────────────
 
 section('Text model – create()');
-$textKey = 'model_syscode_' . time();
+$textKey = TEST_PREFIX . 'model_syscode_' . time();
 $r       = request('POST', "{$base}/texts", [
     'syscode' => $textKey, 'title' => 'Model Title', 'content' => 'Model content', 'language' => 'cs',
 ]);
