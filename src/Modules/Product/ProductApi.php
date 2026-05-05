@@ -31,6 +31,9 @@ class ProductApi
                 : null,
             (string) $request->get('sort', ''),
             (string) $request->get('filter', ''),
+            $request->get('category_syscode') !== null
+                ? (string) $request->get('category_syscode')
+                : null,
         ));
     }
 

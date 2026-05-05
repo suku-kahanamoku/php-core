@@ -26,6 +26,7 @@ class ProductService
         ?int $categoryId,
         string $sort = '',
         string $filter = '',
+        ?string $categorySyscode = null,
     ): array {
         return $this->product->findAll(
             $page,
@@ -34,6 +35,7 @@ class ProductService
             $categoryId,
             $sort,
             $filter,
+            $categorySyscode,
         );
     }
 

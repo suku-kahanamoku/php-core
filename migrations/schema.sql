@@ -97,6 +97,7 @@ CREATE TABLE IF NOT EXISTS `category` (
     `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `franchise_code` VARCHAR(64)  NOT NULL DEFAULT 'default',
     `parent_id`    INT UNSIGNED          DEFAULT NULL,
+    `syscode`      VARCHAR(64)           DEFAULT NULL COMMENT 'machine-readable identifier, e.g. top, new, favourite',
     `name`         VARCHAR(255) NOT NULL,
     `description`  TEXT                  DEFAULT NULL,
     `position`   SMALLINT     NOT NULL DEFAULT 0,
@@ -104,6 +105,7 @@ CREATE TABLE IF NOT EXISTS `category` (
     `updated_at`   DATETIME              DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_cat_franchise_syscode` (`franchise_code`, `syscode`),
     KEY `idx_cat_franchise` (`franchise_code`),
     KEY `idx_cat_parent`    (`parent_id`),
     CONSTRAINT `fk_cat_parent` FOREIGN KEY (`parent_id`) REFERENCES `category` (`id`) ON DELETE SET NULL

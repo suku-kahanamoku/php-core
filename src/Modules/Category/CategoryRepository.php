@@ -44,7 +44,7 @@ class CategoryRepository
         )['cnt'];
 
         $items = $this->db->fetchAll(
-            "SELECT id, name, parent_id,
+            "SELECT id, syscode, name, parent_id,
                     description, position, created_at, updated_at
              FROM category WHERE {$whereStr}
              ORDER BY {$orderBy}
@@ -66,6 +66,16 @@ class CategoryRepository
         $row = $this->db->fetchOne(
             'SELECT * FROM category WHERE id = ? AND franchise_code = ?',
             [$id, $this->code],
+        );
+
+        return $row ?: null;
+    }
+
+    public function findBySyscode(string $syscode): ?array
+    {
+        $row = $this->db->fetchOne(
+            'SELECT * FROM category WHERE syscode = ? AND franchise_code = ?',
+            [$syscode, $this->code],
         );
 
         return $row ?: null;
