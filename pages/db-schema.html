@@ -24,7 +24,7 @@
   <a href="db-table.html"      class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128203; DB Tabulky</a>
 </nav>
 <div class="bg-white border-b border-slate-200 px-8 py-2 flex items-center justify-between flex-wrap gap-2">
-  <span class="text-sm text-slate-500">12 tabulek &middot; Entity-Relationship Diagram</span>
+  <span class="text-sm text-slate-500">13 tabulek &middot; Entity-Relationship Diagram</span>
   <div class="flex gap-2">
     <button onclick="exportSvg()" class="text-xs px-3 py-1.5 rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors">&#8595; Export SVG</button>
     <button onclick="zoomIn()"    class="text-xs px-3 py-1.5 rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors">&#65291; Zoom in</button>
@@ -68,6 +68,7 @@ erDiagram
     category { int id PK
         varchar franchise_code
         int parent_id FK
+        varchar syscode
         varchar name
         text description
         smallint position }
@@ -78,7 +79,12 @@ erDiagram
         text description
         decimal price
         decimal vat_rate
-        int stock_quantity }
+        int stock_quantity
+        tinyint is_active
+        varchar kind
+        varchar color
+        varchar variant
+        json data }
     product_category { int product_id FK
         int category_id FK }
     text { int id PK

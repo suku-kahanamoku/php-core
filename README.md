@@ -252,7 +252,11 @@ php tests/api_test.php http://myserver.com/api
 
 ## Database schema
 
-Tables: `role`, `user`, `user_token`, `address`, `category`, `product`, `text`, `enumeration`, `order`, `order_item`, `invoice`, `invoice_item`
+Tables: `role`, `user`, `user_token`, `address`, `category`, `product`, `product_category`, `text`, `enumeration`, `order`, `order_item`, `invoice`, `invoice_item`
+
+- **`product_category`** — M:N pivot table linking products to categories (one product can belong to multiple categories).
+- **`category.syscode`** — machine-readable identifier (e.g. `top`, `new`) for filtering via `category_syscode` query param.
+- **`product.data`** — flexible JSON column for project-specific attributes. Filter via dot-notation: `filter={"data.year":{"value":2022}}`.
 
 All tables (except `user_token`, `order_item`, `invoice_item`) are scoped by `franchise_code`.
 

@@ -1849,7 +1849,13 @@
       "sku": "IPHONE-15",
       "price": "25000.00",
       "vat_rate": "21.00",
-      "stock_quantity": 10
+      "stock_quantity": 10,
+      "is_active": 1,
+      "kind": null,
+      "color": null,
+      "variant": null,
+      "data": null,
+      "category_ids": [1]
     }
   ]
 }</code></pre>
@@ -1859,7 +1865,10 @@
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
                 ><code>curl $BASE/products
-curl "$BASE/products?category_id=1"</code></pre>
+curl "$BASE/products?category_id=1"
+curl "$BASE/products?category_syscode=top"
+curl "$BASE/products?filter=$(python3 -c "import urllib.parse,json; print(urllib.parse.quote(json.dumps({'data.year':{'value':2022}})))")"
+</code></pre>
               </div>
             </div>
           </div>
@@ -1899,6 +1908,11 @@ curl "$BASE/products?category_id=1"</code></pre>
   "vat_rate": 21,
   "category_ids": [1],
   "stock_quantity": 10,
+  "is_active": 1,
+  "kind": "dry",
+  "color": "white",
+  "variant": "riesling",
+  "data": { "quality": "kabinett", "volume": 0.75 },
   "description": "..."
 }</code></pre>
               </div>

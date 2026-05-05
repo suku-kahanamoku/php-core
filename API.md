@@ -288,7 +288,10 @@ When `operator` is omitted, `eq` (equals) is used as default.
 
 ### Security
 
-- Column names are validated with `/^[a-zA-Z_][a-zA-Z0-9_]*$/`. Any column containing special characters (`;`, `.`, spaces, etc.) is silently skipped — no SQL injection is possible.
+- Column names are validated to prevent SQL injection.
+  - Simple columns must match `/^[a-zA-Z_][a-zA-Z0-9_]*$/`.
+  - **Dot-notation** for JSON sub-fields is also supported: `"data.year"` is translated to `JSON_UNQUOTE(JSON_EXTRACT(alias.data, '$.year'))`. Both the column part and the field part are validated separately. Any other use of `.` (e.g. two dots, leading dot) is rejected.
+  - Any invalid name is silently skipped — no SQL injection is possible.
 - Values are always passed as PDO bound parameters — no escaping needed.
 - Invalid JSON, empty `{}`, or entirely invalid column names return an empty filter (all records returned).
 
@@ -757,6 +760,7 @@ GET /users/1/address?type=billing&sort=[{"is_default":-1}]
 {
   "id": 3,
   "parent_id": 1,
+  "syscode": "sale",
   "name": "T-Shirts",
   "description": "All t-shirt variants",
   "position": 10,
@@ -771,6 +775,7 @@ GET /users/1/address?type=billing&sort=[{"is_default":-1}]
 {
   "id": 3,
   "parent_id": 1,
+  "syscode": "sale",
   "name": "T-Shirts",
   "description": "All t-shirt variants",
   "position": 10,
@@ -805,10 +810,19 @@ GET /categories?sort=[{"position":1},{"name":1}]&filter={"parent_id":{"operator"
 {
   "name": "Footwear",
   "description": "Shoes, boots and sandals",
+  "syscode": "footwear",
   "parent_id": null,
   "position": 30
 }
 ```
+
+| Field         | Required | Notes                                             |
+|---------------|----------|---------------------------------------------------|
+| `name`        | ✓        |                                                   |
+| `syscode`     | —        | Machine-readable identifier, unique per franchise |
+| `description` | —        |                                                   |
+| `parent_id`   | —        | ID of parent category for nesting                 |
+| `position`    | —        | Sort order                                        |
 
 ---
 
@@ -837,35 +851,48 @@ GET /categories?sort=[{"position":1},{"name":1}]&filter={"parent_id":{"operator"
   "price": "299.00",
   "vat_rate": "21.00",
   "stock_quantity": 150,
+  "is_active": 1,
+  "kind": "dry",
+  "color": "white",
+  "variant": "riesling",
+  "data": { "quality": "kabinett", "volume": 0.75, "year": 2022 },
   "created_at": "2026-01-15T08:00:00",
   "updated_at": "2026-04-01T10:00:00"
 }
 ```
 
-| Field            | Type           | Notes                                  |
-|------------------|----------------|----------------------------------------|
-| `sku`            | string         | Unique per franchise                   |
-| `price`          | decimal string | e.g. `"299.00"`                        |
-| `vat_rate`       | decimal string | Percentage, e.g. `"21.00"` = 21 % VAT |
-| `stock_quantity` | integer        | Can be negative (backordering)         |
-| `category_ids`   | integer[]      | IDs of all assigned categories         |
-| `category_names` | string[]       | Names of all assigned categories (GET /:id only) |
+| Field            | Type           | Notes                                                     |
+|------------------|----------------|-----------------------------------------------------------|
+| `sku`            | string         | Unique per franchise                                      |
+| `price`          | decimal string | e.g. `"299.00"`                                           |
+| `vat_rate`       | decimal string | Percentage, e.g. `"21.00"` = 21 % VAT                    |
+| `stock_quantity` | integer        | Can be negative (backordering)                            |
+| `is_active`      | 0 or 1         | `1` = visible/active                                      |
+| `kind`           | string or null | Project-specific attribute, e.g. dry, sweet               |
+| `color`          | string or null | Project-specific attribute, e.g. white, red               |
+| `variant`        | string or null | Project-specific attribute, e.g. grape variety            |
+| `data`           | object or null | Flexible JSON attributes — project-defined keys           |
+| `category_ids`   | integer[]      | IDs of all assigned categories (M:N)                      |
+| `category_names` | string[]       | Names of all assigned categories (GET `/:id` only)        |
 
 #### `GET /products`
 
 Query parameters:
 
-| Parameter      | Description                                              |
-|----------------|----------------------------------------------------------|
-| `page`         | Page number                                              |
-| `limit`        | Per page (max: 100)                                      |
-| `search`       | Full-text search in `name`, `sku`, `description`         |
-| `category_id`  | Filter products belonging to a category ID               |
-| `sort`         | JSON sort (columns: `name`, `sku`, `price`, `stock_quantity`, `created_at`) |
-| `filter`       | JSON filter (same columns + `vat_rate`)                  |
+| Parameter         | Description                                                                      |
+|-------------------|----------------------------------------------------------------------------------|
+| `page`            | Page number                                                                      |
+| `limit`           | Per page (max: 100)                                                              |
+| `search`          | Full-text search in `name`, `sku`, `description`                                 |
+| `category_id`     | Filter products belonging to a category ID                                       |
+| `category_syscode`| Filter products belonging to a category identified by its `syscode`              |
+| `sort`            | JSON sort (columns: `name`, `sku`, `price`, `stock_quantity`, `created_at`)      |
+| `filter`          | JSON filter — supports `kind`, `color`, `variant`, `is_active`, `price`, `stock_quantity`, `vat_rate` and dot-notation for JSON attributes e.g. `data.year` |
 
 ```
 GET /products?category_id=3&search=shirt&sort=[{"price":1}]&filter={"stock_quantity":{"value":0,"operator":"gt"}}
+GET /products?category_syscode=top
+GET /products?filter={"is_active":{"value":1},"data.year":{"value":2022},"color":{"value":"white"}}
 ```
 
 #### `POST /products`
@@ -878,9 +905,45 @@ GET /products?category_id=3&search=shirt&sort=[{"price":1}]&filter={"stock_quant
   "price": 499.00,
   "vat_rate": 21,
   "stock_quantity": 50,
+  "is_active": 1,
+  "kind": "dry",
+  "color": "white",
+  "variant": "riesling",
+  "data": { "quality": "kabinett", "volume": 0.75, "year": 2022 },
   "category_ids": [3, 7]
 }
 ```
+
+| Field          | Required | Notes                                                           |
+|----------------|----------|-----------------------------------------------------------------|
+| `name`         | ✓        |                                                                 |
+| `sku`          | —        | Auto-generated if omitted                                       |
+| `price`        | ✓        | Numeric                                                         |
+| `vat_rate`     | —        | Default: `21`                                                   |
+| `stock_quantity`| —       | Default: `0`                                                    |
+| `is_active`    | —        | `1` or `0`, default: `1`                                        |
+| `kind`         | —        | Project-specific string attribute                               |
+| `color`        | —        | Project-specific string attribute                               |
+| `variant`      | —        | Project-specific string attribute                               |
+| `data`         | —        | Flexible JSON object — any project-defined key/value pairs      |
+| `category_ids` | —        | Array of category IDs (M:N)                                     |
+
+#### `PATCH /products/:id`
+
+Send only the fields to update. For `data`, the provided object is **shallow-merged** into the existing `data` — keys not sent are preserved:
+
+```json
+{
+  "kind": "sweet",
+  "data": { "quality": "late_harvest" }
+}
+```
+
+To clear all JSON data, send `"data": null`.
+
+#### `PUT /products/:id`
+
+Full replacement — all fields required (same structure as POST). `data` is replaced entirely.
 
 #### `PATCH /products/:id/stock`
 
