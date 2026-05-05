@@ -33,8 +33,10 @@ $modelCatId   = $r['data']['data']['id'] ?? null;
 section('Product model – create()');
 $modelSku = 'MODEL-PROD-' . time();
 $r        = request('POST', "{$base}/products", [
-    'name'  => 'Model Product', 'sku' => $modelSku,
-    'price' => 299.0, 'category_id' => $modelCatId, 'stock_quantity' => 5,
+    'name'         => 'Model Product', 'sku' => $modelSku,
+    'price'        => 299.0, 'category_id' => $modelCatId, 'stock_quantity' => 5,
+    'kind'         => 'dry', 'color' => 'white', 'variant' => 'chardonnay',
+    'data'         => ['quality' => 'kabinett', 'volume' => 0.75, 'year' => 2023],
 ]);
 assert_test('create product 201', $r['status'] === 201, dump_on_fail($r));
 $modelProdId = $r['data']['data']['id'] ?? null;
@@ -56,6 +58,11 @@ if ($modelProdId) {
     assert_test('name matches', $r['data']['data']['name'] === 'Model Product');
     assert_test('has category_names', isset($r['data']['data']['category_names']));
     assert_test('stock_quantity = 5', $r['data']['data']['stock_quantity'] === 5);
+    assert_test('kind = dry', $r['data']['data']['kind'] === 'dry', dump_on_fail($r));
+    assert_test('color = white', $r['data']['data']['color'] === 'white', dump_on_fail($r));
+    assert_test('variant = chardonnay', $r['data']['data']['variant'] === 'chardonnay', dump_on_fail($r));
+    assert_test('data.quality = kabinett', ($r['data']['data']['data']['quality'] ?? null) === 'kabinett', dump_on_fail($r));
+    assert_test('data.year = 2023', (int)($r['data']['data']['data']['year'] ?? 0) === 2023, dump_on_fail($r));
 
     $r = request('GET', "{$base}/products/999999", [], false);
     assert_test('unknown id → 404', $r['status'] === 404, dump_on_fail($r));
@@ -65,11 +72,19 @@ if ($modelProdId) {
 
 section('Product model – update()');
 if ($modelProdId) {
-    $r = request('PATCH', "{$base}/products/{$modelProdId}", ['description' => 'Model desc']);
+    $r = request('PATCH', "{$base}/products/{$modelProdId}", [
+        'description' => 'Model desc',
+        'kind'        => 'sweet',
+        'data'        => ['quality' => 'late_harvest'],
+    ]);
     assert_test('PATCH product 200', $r['status'] === 200, dump_on_fail($r));
+    assert_test('kind updated', $r['data']['data']['kind'] === 'sweet', dump_on_fail($r));
+    assert_test('data.quality updated', ($r['data']['data']['data']['quality'] ?? null) === 'late_harvest', dump_on_fail($r));
+    assert_test('data.year preserved', (int)($r['data']['data']['data']['year'] ?? 0) === 2023, dump_on_fail($r));
 
     $r = request('PUT', "{$base}/products/{$modelProdId}", [
         'name' => 'Model Product Updated', 'sku' => $modelSku, 'price' => 349.0, 'stock_quantity' => 5,
+        'kind' => 'dry', 'color' => 'red', 'data' => ['quality' => 'quality_wine', 'volume' => 0.75, 'year' => 2021],
     ]);
     assert_test('PUT product 200', $r['status'] === 200, dump_on_fail($r));
 }

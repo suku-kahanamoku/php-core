@@ -70,6 +70,11 @@ class ProductService
             'price'          => (float) $price,
             'vat_rate'       => (float) ($input['vat_rate'] ?? 21),
             'stock_quantity' => (int) ($input['stock_quantity'] ?? 0),
+            'is_active'      => isset($input['is_active']) ? (int) $input['is_active'] : 1,
+            'kind'           => isset($input['kind']) ? trim((string) $input['kind']) : null,
+            'color'          => isset($input['color']) ? trim((string) $input['color']) : null,
+            'variant'        => isset($input['variant']) ? trim((string) $input['variant']) : null,
+            'data'           => isset($input['data']) && is_array($input['data']) ? $input['data'] : null,
         ]);
 
         if ($categoryIds) {
@@ -88,9 +93,9 @@ class ProductService
         }
 
         $set         = [];
-        $textFields  = ['sku', 'name', 'description'];
+        $textFields  = ['sku', 'name', 'description', 'kind', 'color', 'variant'];
         $floatFields = ['price', 'vat_rate'];
-        $intFields   = ['stock_quantity'];
+        $intFields   = ['stock_quantity', 'is_active'];
 
         foreach ($textFields as $f) {
             if (array_key_exists($f, $input) && $input[$f] !== null) {
@@ -115,6 +120,16 @@ class ProductService
         if (array_key_exists('category_ids', $input) && is_array($input['category_ids'])) {
             $this->product->syncCategories($id, array_map('intval', $input['category_ids']));
         }
+
+        if (array_key_exists('data', $input)) {
+            if (is_array($input['data']) && !empty($input['data'])) {
+                $existing = $this->product->findById($id);
+                $current  = array_merge($existing['data'] ?? [], $input['data']);
+                $this->product->update($id, ['data' => $current]);
+            } elseif ($input['data'] === null) {
+                $this->product->update($id, ['data' => null]);
+            }
+        }
     }
 
     public function replace(int $id, array $input): void
@@ -137,16 +152,17 @@ class ProductService
         $categoryIds = array_map('intval', (array) ($input['category_ids'] ?? []));
 
         $this->product->update($id, [
-            'name'        => $name,
-            'sku'         => $sku,
-            'price'       => (float) $price,
-            'description' => (string) ($input['description'] ?? ''),
-            'vat_rate'    => isset($input['vat_rate'])
-                ? (float) $input['vat_rate']
-                : 21.0,
-            'stock_quantity' => isset($input['stock_quantity'])
-                ? (int) $input['stock_quantity']
-                : 0,
+            'name'           => $name,
+            'sku'            => $sku,
+            'price'          => (float) $price,
+            'description'    => (string) ($input['description'] ?? ''),
+            'vat_rate'       => isset($input['vat_rate']) ? (float) $input['vat_rate'] : 21.0,
+            'stock_quantity' => isset($input['stock_quantity']) ? (int) $input['stock_quantity'] : 0,
+            'is_active'      => isset($input['is_active']) ? (int) $input['is_active'] : 1,
+            'kind'           => isset($input['kind']) ? trim((string) $input['kind']) : null,
+            'color'          => isset($input['color']) ? trim((string) $input['color']) : null,
+            'variant'        => isset($input['variant']) ? trim((string) $input['variant']) : null,
+            'data'           => isset($input['data']) && is_array($input['data']) ? $input['data'] : null,
         ]);
 
         $this->product->syncCategories($id, $categoryIds);

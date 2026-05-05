@@ -121,11 +121,21 @@ CREATE TABLE IF NOT EXISTS `product` (
     `price`          DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
     `vat_rate`       DECIMAL(5, 2)  NOT NULL DEFAULT 21.00 COMMENT 'VAT percentage',
     `stock_quantity` INT            NOT NULL DEFAULT 0,
+    `is_active`      TINYINT(1)     NOT NULL DEFAULT 1,
+    -- filterable VARCHAR attributes
+    `kind`           VARCHAR(64)             DEFAULT NULL COMMENT 'e.g. dry, sweet',
+    `color`          VARCHAR(64)             DEFAULT NULL COMMENT 'e.g. white, red, rose',
+    `variant`        VARCHAR(64)             DEFAULT NULL COMMENT 'grape variety / product variant',
+    -- flexible JSON attributes (project-specific, filter via dot-notation e.g. data.year)
+    `data`           JSON                    DEFAULT NULL COMMENT 'extra attributes, e.g. quality, volume, year',
     `created_at`     DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`     DATETIME                DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_product_franchise_sku` (`franchise_code`, `sku`),
-    KEY `idx_product_franchise` (`franchise_code`)
+    KEY `idx_product_franchise` (`franchise_code`),
+    KEY `idx_product_kind`      (`kind`),
+    KEY `idx_product_color`     (`color`),
+    KEY `idx_product_variant`   (`variant`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── product_category (M:N pivot) ──────────────────────────

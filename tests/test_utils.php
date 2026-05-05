@@ -229,9 +229,15 @@ assert_test('multi params', $r['params'] === ['jan', 100]);
 section('SQL_FILTER – security');
 assert_test('rejects semicolon in col', SQL_FILTER('{"col;drop":{"value":"x"}}')['sql'] === '');
 assert_test('rejects space in col', SQL_FILTER('{"col name":{"value":"x"}}')['sql'] === '');
-assert_test('rejects dot in col', SQL_FILTER('{"a.b":{"value":"x"}}')['sql'] === '');
 assert_test('rejects empty col', SQL_FILTER('{"":{"value":"x"}}')['sql'] === '');
 assert_test('unknown operator → empty', SQL_FILTER('{"col":{"value":"x","operator":"INJECTED"}}')['sql'] === '');
+
+section('SQL_FILTER – JSON dot-notation');
+$r = SQL_FILTER('{"data.year":{"value":2023}}');
+assert_test('dot-notation → JSON_EXTRACT', str_contains($r['sql'], "JSON_UNQUOTE(JSON_EXTRACT(data, '$.year'))"));
+assert_test('dot-notation with prefix', str_contains(SQL_FILTER('{"data.year":{"value":2023}}', 'p')['sql'], "JSON_UNQUOTE(JSON_EXTRACT(p.data, '$.year'))"));
+assert_test('dot-notation rejects invalid left side', SQL_FILTER('{"0bad.year":{"value":"x"}}')['sql'] === '');
+assert_test('dot-notation rejects invalid right side', SQL_FILTER('{"data.0bad":{"value":"x"}}')['sql'] === '');
 
 // ── Standalone summary ────────────────────────────────────────────────────────
 if (!isset($runnerMode)) {

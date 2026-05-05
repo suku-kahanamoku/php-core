@@ -66,7 +66,8 @@ class ProductRepository
 
         $items = $this->db->fetchAll(
             "SELECT p.id, p.sku, p.name, p.description,
-                    p.price, p.vat_rate, p.stock_quantity,
+                    p.price, p.vat_rate, p.stock_quantity, p.is_active,
+                    p.kind, p.color, p.variant, p.data,
                     GROUP_CONCAT(pc.category_id ORDER BY pc.category_id) AS category_ids,
                     p.created_at, p.updated_at
              FROM product p
@@ -82,6 +83,7 @@ class ProductRepository
             $item['category_ids'] = $item['category_ids']
                 ? array_map('intval', explode(',', $item['category_ids']))
                 : [];
+            $item['data'] = $item['data'] ? json_decode($item['data'], true) : null;
         }
         unset($item);
 
@@ -97,13 +99,17 @@ class ProductRepository
     public function findById(int $id): ?array
     {
         $row = $this->db->fetchOne(
-            'SELECT * FROM product WHERE id = ? AND franchise_code = ?',
+            'SELECT id, sku, name, description, price, vat_rate, stock_quantity, is_active,
+                    kind, color, variant, `data`, created_at, updated_at
+             FROM product WHERE id = ? AND franchise_code = ?',
             [$id, $this->code],
         );
 
         if (!$row) {
             return null;
         }
+
+        $row['data'] = $row['data'] ? json_decode($row['data'], true) : null;
 
         $categoryRows = $this->db->fetchAll(
             'SELECT pc.category_id, c.name AS category_name
@@ -133,6 +139,10 @@ class ProductRepository
 
     public function create(array $data): int
     {
+        if (isset($data['data']) && is_array($data['data'])) {
+            $data['data'] = json_encode($data['data'], JSON_UNESCAPED_UNICODE);
+        }
+
         return $this->db->insert('product', array_merge($data, [
             'franchise_code' => $this->code,
             'created_at'     => date('Y-m-d H:i:s'),
@@ -141,6 +151,10 @@ class ProductRepository
 
     public function update(int $id, array $data): void
     {
+        if (isset($data['data']) && is_array($data['data'])) {
+            $data['data'] = json_encode($data['data'], JSON_UNESCAPED_UNICODE);
+        }
+
         $this->db->update(
             'product',
             array_merge($data, ['updated_at' => date('Y-m-d H:i:s')]),

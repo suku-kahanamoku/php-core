@@ -309,7 +309,6 @@ assert_test('empty operator string → empty', f('{"col":{"value":"x","operator"
 section('SQL_FILTER unit – column name security');
 assert_test('semicolon in col → empty', f('{"col;DROP TABLE x":{"value":"y"}}')['sql'] === '');
 assert_test('space in col → empty', f('{"col name":{"value":"y"}}')['sql'] === '');
-assert_test('dot in col → empty', f('{"a.b":{"value":"y"}}')['sql'] === '');
 assert_test('empty col → empty', f('{"":{"value":"y"}}')['sql'] === '');
 assert_test('dash in col → empty', f('{"col-name":{"value":"y"}}')['sql'] === '');
 assert_test('star in col → empty', f('{"col*":{"value":"y"}}')['sql'] === '');
@@ -320,6 +319,13 @@ assert_test('valid underscored col: sql', f('{"first_name":{"value":"jan"}}')['s
 assert_test('valid alphanum col: sql', f('{"col123":{"value":"x"}}')['sql'] === 'col123 = ?');
 assert_test('leading underscore col: sql', f('{"_col":{"value":"x"}}')['sql'] === '_col = ?');
 assert_test('leading digit in col → empty', f('{"1col":{"value":"x"}}')['sql'] === '');
+
+// dot-notation: json_column.field → JSON_UNQUOTE(JSON_EXTRACT(...))
+$dot = f('{"data.year":{"value":2023}}');
+assert_test('dot-notation → JSON_EXTRACT sql', str_contains($dot['sql'], "JSON_UNQUOTE(JSON_EXTRACT(data, '$.year'))"));
+assert_test('dot-notation → bound param', $dot['params'] === [2023]);
+assert_test('dot-notation invalid left side → empty', f('{"0col.year":{"value":"x"}}')['sql'] === '');
+assert_test('dot-notation invalid right side → empty', f('{"data.0year":{"value":"x"}}')['sql'] === '');
 
 /* ═══════════════════════════════════════════════════════════
    UNIT – value passthrough (no escaping in params)

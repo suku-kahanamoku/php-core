@@ -19,7 +19,9 @@ declare(strict_types=1);
  *
  * Supported operators: eq, neq, lt, lte, gt, gte, range, regex, start, end, in, null, notnull
  *
- * Column names are validated with /^[a-zA-Z_][a-zA-Z0-9_]*$/ to prevent SQL injection.
+ * Column names are validated to prevent SQL injection. Simple columns must match
+ * /^[a-zA-Z_][a-zA-Z0-9_]*$/. JSON sub-fields use dot-notation: "data.year"
+ * is translated to JSON_UNQUOTE(JSON_EXTRACT(alias.data, '$.year')).
  *
  * @param string $filter  Raw query parameter (JSON string).
  * @param string $prefix  Optional table alias (e.g. "u") prepended as "u.col".
@@ -73,11 +75,25 @@ function SQL_FILTER(string $filter, string $prefix = ''): array
  */
 function _sql_filter_condition(string $col, array $spec, string $prefix): ?array
 {
-    if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $col)) {
-        return null;
+    // dot-notation: "data.field" → JSON_UNQUOTE(JSON_EXTRACT(alias.data, '$.field'))
+    if (str_contains($col, '.')) {
+        [$jsonCol, $jsonField] = explode('.', $col, 2);
+        if (
+            !preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $jsonCol) ||
+            !preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $jsonField)
+        ) {
+            return null;
+        }
+        $qualified = $prefix !== ''
+            ? "JSON_UNQUOTE(JSON_EXTRACT({$prefix}.{$jsonCol}, '\$.{$jsonField}'))"
+            : "JSON_UNQUOTE(JSON_EXTRACT({$jsonCol}, '\$.{$jsonField}'))";
+    } else {
+        if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $col)) {
+            return null;
+        }
+        $qualified = $prefix !== '' ? $prefix . '.' . $col : $col;
     }
 
-    $qualified = $prefix !== '' ? $prefix . '.' . $col : $col;
     $operator  = strtolower(trim((string) ($spec['operator'] ?? 'eq')));
     $value     = $spec['value'] ?? null;
 

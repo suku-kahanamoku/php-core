@@ -53,6 +53,11 @@ class ProductApi
             'price'          => $request->get('price'),
             'vat_rate'       => $request->get('vat_rate'),
             'stock_quantity' => $request->get('stock_quantity'),
+            'is_active'      => $request->get('is_active'),
+            'kind'           => $request->get('kind'),
+            'color'          => $request->get('color'),
+            'variant'        => $request->get('variant'),
+            'data'           => $request->get('data'),
             'category_ids'   => $request->get('category_ids'),
         ]);
         Response::created($this->service->get($id), 'Product created');
@@ -68,6 +73,11 @@ class ProductApi
             'price'          => $request->get('price'),
             'vat_rate'       => $request->get('vat_rate'),
             'stock_quantity' => $request->get('stock_quantity'),
+            'is_active'      => $request->get('is_active'),
+            'kind'           => $request->get('kind'),
+            'color'          => $request->get('color'),
+            'variant'        => $request->get('variant'),
+            'data'           => $request->get('data'),
             'category_ids'   => $request->get('category_ids'),
         ]);
         Response::success($this->service->get((int) $params['id']), 'Product updated');
@@ -83,6 +93,11 @@ class ProductApi
             'description'    => $request->get('description'),
             'vat_rate'       => $request->get('vat_rate'),
             'stock_quantity' => $request->get('stock_quantity'),
+            'is_active'      => $request->get('is_active'),
+            'kind'           => $request->get('kind'),
+            'color'          => $request->get('color'),
+            'variant'        => $request->get('variant'),
+            'data'           => $request->get('data'),
             'category_ids'   => $request->get('category_ids'),
         ]);
         Response::success($this->service->get((int) $params['id']), 'Product replaced');
