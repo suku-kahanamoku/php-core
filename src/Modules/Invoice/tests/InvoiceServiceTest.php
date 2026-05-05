@@ -23,7 +23,7 @@ $token = null;
 
 // ── Setup ─────────────────────────────────────────────────────────────────────
 
-$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
@@ -58,7 +58,7 @@ section('InvoiceService – admin-only creation');
 $r = request('POST', "{$base}/invoices", ['order_id' => $svcOrderId]);
 assert_test('POST /invoices → 403 for non-admin', $r['status'] === 403, dump_on_fail($r));
 
-$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
+$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
 $token = $r['data']['data']['token'] ?? null;
 
 // ── InvoiceService – duplicate prevention ─────────────────────────────────────

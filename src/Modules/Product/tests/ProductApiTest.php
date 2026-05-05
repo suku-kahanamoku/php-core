@@ -24,7 +24,7 @@ $token = null;
 // ── Admin login + setup: create a category ───────────────────────────────────
 
 section('Products – setup');
-$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
@@ -53,7 +53,7 @@ $token     = $r['data']['data']['token'] ?? null;
 $r = request('POST', "{$base}/products", ['name' => 'x', 'sku' => 'x', 'price' => 1]);
 assert_test('POST /products → 403 for non-admin', $r['status'] === 403, dump_on_fail($r));
 
-$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
+$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
 $token = $r['data']['data']['token'] ?? null;
 if ($prodRegId) {
     request('DELETE', "{$base}/users/{$prodRegId}");
@@ -65,7 +65,7 @@ section('Products – create');
 $prodSku = 'PROD-' . time();
 $r       = request('POST', "{$base}/products", [
     'name'  => 'Test Product', 'sku' => $prodSku,
-    'price' => 199.0, 'category_id' => $prodCatId, 'stock_quantity' => 10,
+    'price' => 199.0, 'category_ids' => [$prodCatId], 'stock_quantity' => 10,
 ]);
 assert_test('POST /products 201', $r['status'] === 201, dump_on_fail($r));
 $prodId = $r['data']['data']['id'] ?? null;
@@ -84,7 +84,7 @@ if ($prodId) {
     $r = request('GET', "{$base}/products/{$prodId}", [], false);
     assert_test('GET /products/:id 200 without token', $r['status'] === 200, dump_on_fail($r));
     assert_test('name matches', $r['data']['data']['name'] === 'Test Product');
-    assert_test('has category_name', isset($r['data']['data']['category_name']));
+    assert_test('has category_ids', isset($r['data']['data']['category_ids']));
 
     $r = request('GET', "{$base}/products/999999", [], false);
     assert_test('404 for unknown id', $r['status'] === 404, dump_on_fail($r));

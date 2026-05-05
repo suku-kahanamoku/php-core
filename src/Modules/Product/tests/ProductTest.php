@@ -21,7 +21,7 @@ if (!isset($runnerMode)) {
 }
 $token = null;
 
-$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
@@ -54,7 +54,7 @@ if ($modelProdId) {
     $r = request('GET', "{$base}/products/{$modelProdId}", [], false);
     assert_test('getById 200', $r['status'] === 200, dump_on_fail($r));
     assert_test('name matches', $r['data']['data']['name'] === 'Model Product');
-    assert_test('has category_name', isset($r['data']['data']['category_name']));
+    assert_test('has category_names', isset($r['data']['data']['category_names']));
     assert_test('stock_quantity = 5', $r['data']['data']['stock_quantity'] === 5);
 
     $r = request('GET', "{$base}/products/999999", [], false);

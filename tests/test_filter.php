@@ -362,7 +362,7 @@ assert_test('null spec treated as no-op: empty', $r['sql'] === '');
 ═══════════════════════════════════════════════════════════ */
 
 section('SQL_FILTER integration – auth setup');
-$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
+$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
 $token = $r['data']['data']['token'] ?? null;
 assert_test('admin login for filter tests', $token !== null, dump_on_fail($r));
 

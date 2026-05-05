@@ -59,17 +59,22 @@ class ProductService
             ? trim((string) $input['sku'])
             : $this->product->generateSku();
 
-        return $this->product->create([
+        $categoryIds = array_map('intval', (array) ($input['category_ids'] ?? []));
+
+        $id = $this->product->create([
             'sku'            => $sku,
             'name'           => $name,
             'description'    => (string) ($input['description'] ?? ''),
             'price'          => (float) $price,
             'vat_rate'       => (float) ($input['vat_rate'] ?? 21),
             'stock_quantity' => (int) ($input['stock_quantity'] ?? 0),
-            'category_id'    => isset($input['category_id'])
-                ? (int) $input['category_id']
-                : null,
         ]);
+
+        if ($categoryIds) {
+            $this->product->syncCategories($id, $categoryIds);
+        }
+
+        return $id;
     }
 
     public function update(int $id, array $input): void
@@ -83,7 +88,7 @@ class ProductService
         $set         = [];
         $textFields  = ['sku', 'name', 'description'];
         $floatFields = ['price', 'vat_rate'];
-        $intFields   = ['stock_quantity', 'category_id'];
+        $intFields   = ['stock_quantity'];
 
         foreach ($textFields as $f) {
             if (array_key_exists($f, $input) && $input[$f] !== null) {
@@ -104,6 +109,10 @@ class ProductService
         if (!empty($set)) {
             $this->product->update($id, $set);
         }
+
+        if (array_key_exists('category_ids', $input) && is_array($input['category_ids'])) {
+            $this->product->syncCategories($id, array_map('intval', $input['category_ids']));
+        }
     }
 
     public function replace(int $id, array $input): void
@@ -123,6 +132,8 @@ class ProductService
         $sku   = trim((string) ($input['sku'] ?? ''));
         $price = $input['price'] ?? null;
 
+        $categoryIds = array_map('intval', (array) ($input['category_ids'] ?? []));
+
         $this->product->update($id, [
             'name'        => $name,
             'sku'         => $sku,
@@ -134,10 +145,9 @@ class ProductService
             'stock_quantity' => isset($input['stock_quantity'])
                 ? (int) $input['stock_quantity']
                 : 0,
-            'category_id' => !empty($input['category_id'])
-                ? (int) $input['category_id']
-                : null,
         ]);
+
+        $this->product->syncCategories($id, $categoryIds);
     }
 
     public function delete(int $id): void

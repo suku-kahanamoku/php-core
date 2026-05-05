@@ -778,7 +778,7 @@
   <div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div></div>
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono">SELECT id,sku,name,price,status FROM product WHERE category_id=? AND deleted_at IS NULL</div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono">SELECT p.id, p.sku, p.name, p.price FROM product p INNER JOIN product_category pc ON pc.product_id=p.id WHERE pc.category_id=?</div></div>
 </div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
   <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-emerald-400 bg-emerald-50 text-emerald-700">← 200 · { …category, products:[] }</div></div>
@@ -901,7 +901,7 @@
   <div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div></div>
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono">SELECT id FROM product WHERE category_id=? AND deleted_at IS NULL LIMIT 1 · existuje → 409</div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono">SELECT pc.product_id FROM product_category pc INNER JOIN product p ON p.id=pc.product_id WHERE pc.category_id=? LIMIT 1 · existuje → 409</div></div>
 </div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
@@ -932,7 +932,7 @@
 </div>
 <div class="flex items-center gap-2 text-sm font-bold text-slate-900 mt-6 mb-2"><span class="px-2 py-0.5 rounded text-white text-xs font-bold bg-emerald-600">GET</span><span class="font-mono text-slate-700">/products</span><span class="text-xs font-normal normal-case px-1.5 py-0.5 rounded bg-green-100 text-green-700 ml-1">&#128275; public</span><span class="text-xs text-slate-400 font-normal ml-2">seznam produktů (stránkovaný)</span><span class="flex-1 h-px bg-slate-200 block ml-2"></span></div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">GET /products?search=&category_id=&status=&page=&limit=</div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">GET /products?search=&amp;category_id=&amp;page=&amp;limit=</div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
@@ -964,14 +964,14 @@
   <div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div></div>
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-amber-400 bg-amber-50 text-amber-700">filtry: search (name LIKE / sku LIKE), category_id, status<br><small>stránkování: page, limit (max 100)</small></div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-amber-400 bg-amber-50 text-amber-700">filtry: search (name LIKE / sku LIKE), category_id (EXISTS na pivot)<br><small>stránkování: page, limit (max 100)</small></div></div>
 </div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div></div>
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono">SELECT p.*, c.name AS category_name FROM product p LEFT JOIN category c ON c.id=p.category_id<br>WHERE deleted_at IS NULL … ORDER BY p.created_at DESC LIMIT ? OFFSET ?</div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono">SELECT p.*, GROUP_CONCAT(pc.category_id) AS category_ids FROM product p LEFT JOIN product_category pc ON pc.product_id=p.id<br>WHERE … GROUP BY p.id ORDER BY p.created_at DESC LIMIT ? OFFSET ?</div></div>
 </div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
   <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-emerald-400 bg-emerald-50 text-emerald-700">← 200 · { items[], total, page, limit, totalPages }</div></div>
@@ -1000,7 +1000,7 @@
   <div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div></div>
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono">SELECT p.*, c.name AS category_name FROM product p LEFT JOIN category c ON c.id=p.category_id<br>WHERE p.id=? AND p.deleted_at IS NULL · nenalezeno → 404</div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono">SELECT p.* FROM product p WHERE p.id=? · + SELECT category_ids,category_names FROM product_category · nenalezeno → 404</div></div>
 </div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
   <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-emerald-400 bg-emerald-50 text-emerald-700">← 200 · objekt produktu</div></div>
@@ -1011,7 +1011,7 @@
 </div>
 <div class="flex items-center gap-2 text-sm font-bold text-slate-900 mt-6 mb-2"><span class="px-2 py-0.5 rounded text-white text-xs font-bold bg-blue-600">POST</span><span class="font-mono text-slate-700">/products</span><span class="text-xs font-normal normal-case px-1.5 py-0.5 rounded bg-red-100 text-red-700 ml-1">&#128274; admin</span><span class="text-xs text-slate-400 font-normal ml-2">vytvoření produktu</span><span class="flex-1 h-px bg-slate-200 block ml-2"></span></div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">POST /products<br><small>{ name, sku?, price, vat_rate?, stock_quantity?, category_id?, description?, status? }</small></div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">POST /products<br><small>{ name, sku?, price, vat_rate?, stock_quantity?, category_ids?[], description? }</small></div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
@@ -1036,7 +1036,7 @@
   <div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div></div>
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono">INSERT INTO product (category_id,sku,name,description,price,vat_rate,stock_quantity,status,created_at)</div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono">INSERT INTO product (sku,name,description,price,vat_rate,stock_quantity,created_at)<br>+ INSERT INTO product_category (product_id, category_id) per each</div></div>
 </div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
   <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-emerald-400 bg-emerald-50 text-emerald-700">← 201 · { id }</div></div>
@@ -1047,7 +1047,7 @@
 </div>
 <div class="flex items-center gap-2 text-sm font-bold text-slate-900 mt-6 mb-2"><span class="px-2 py-0.5 rounded text-white text-xs font-bold bg-amber-600">PATCH</span><span class="font-mono text-slate-700">/products/:id</span><span class="text-xs font-normal normal-case px-1.5 py-0.5 rounded bg-red-100 text-red-700 ml-1">&#128274; admin</span><span class="text-xs text-slate-400 font-normal ml-2">částečná úprava produktu</span><span class="flex-1 h-px bg-slate-200 block ml-2"></span></div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">PATCH /products/5<br><small>{ libovolné pole z: name,sku,description,price,vat_rate,stock_quantity,status,category_id }</small></div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">PATCH /products/5<br><small>{ libovolné pole z: name,sku,description,price,vat_rate,stock_quantity,category_ids[] }</small></div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
@@ -1076,7 +1076,7 @@
 </div>
 <div class="flex items-center gap-2 text-sm font-bold text-slate-900 mt-6 mb-2"><span class="px-2 py-0.5 rounded text-white text-xs font-bold bg-orange-600">PUT</span><span class="font-mono text-slate-700">/products/:id</span><span class="text-xs font-normal normal-case px-1.5 py-0.5 rounded bg-red-100 text-red-700 ml-1">&#128274; admin</span><span class="text-xs text-slate-400 font-normal ml-2">úplná náhrada (povinné: name, sku, price)</span><span class="flex-1 h-px bg-slate-200 block ml-2"></span></div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">PUT /products/5<br><small>{ name, sku, price, vat_rate?, stock_quantity?, category_id?, description?, status? }</small></div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-blue-400 bg-blue-50 text-blue-700">PUT /products/5<br><small>{ name, sku, price, vat_rate?, stock_quantity?, category_ids?[], description? }</small></div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div class="flex items-center"><div class="flex-1 h-0.5 bg-blue-500"></div><div class="w-0 h-0 border-y-[4px] border-y-transparent border-l-[8px] border-l-blue-500"></div></div>
@@ -1094,7 +1094,7 @@
   <div></div>
   <div class="relative flex justify-center self-stretch"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div></div>
   <div></div>
-  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono">UPDATE product SET name,sku,description,price,vat_rate,stock_quantity,status,category_id,updated_at WHERE id=?</div></div>
+  <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-violet-400 bg-violet-50 text-violet-700 font-mono">UPDATE product SET name,sku,description,price,vat_rate,stock_quantity,updated_at WHERE id=?<br>+ DELETE/INSERT product_category (syncCategories)</div></div>
 </div>
 <div class="grid items-center min-h-[52px]" style="grid-template-columns:200px 1fr 160px 1fr 220px">
   <div class="relative flex items-center justify-center"><div class="absolute inset-y-0 w-0 border-l-2 border-dashed border-slate-300"></div><div class="relative z-10 rounded-lg px-3 py-2 text-xs leading-relaxed border-2 border-emerald-400 bg-emerald-50 text-emerald-700">← 200 · Product replaced</div></div>

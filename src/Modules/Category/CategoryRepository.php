@@ -74,8 +74,9 @@ class CategoryRepository
     public function hasProducts(int $id): bool
     {
         $row = $this->db->fetchOne(
-            'SELECT id FROM product
-             WHERE franchise_code = ? AND category_id = ? LIMIT 1',
+            'SELECT pc.product_id FROM product_category pc
+             INNER JOIN product p ON p.id = pc.product_id
+             WHERE p.franchise_code = ? AND pc.category_id = ? LIMIT 1',
             [$this->code, $id],
         );
 
@@ -85,8 +86,9 @@ class CategoryRepository
     public function getProducts(int $id): array
     {
         return $this->db->fetchAll(
-            'SELECT id, sku, name, price FROM product
-             WHERE franchise_code = ? AND category_id = ?',
+            'SELECT p.id, p.sku, p.name, p.price FROM product p
+             INNER JOIN product_category pc ON pc.product_id = p.id
+             WHERE p.franchise_code = ? AND pc.category_id = ?',
             [$this->code, $id],
         );
     }

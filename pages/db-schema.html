@@ -73,13 +73,14 @@ erDiagram
         smallint position }
     product { int id PK
         varchar franchise_code
-        int category_id FK
         varchar sku
         varchar name
         text description
         decimal price
         decimal vat_rate
         int stock_quantity }
+    product_category { int product_id FK
+        int category_id FK }
     text { int id PK
         varchar franchise_code
         varchar syscode
@@ -143,7 +144,8 @@ erDiagram
     address ||--o{ order : "billing_address"
     address ||--o{ invoice : "billing_address"
     category ||--o{ category : "subcategory"
-    category ||--o{ product : "contains"
+    category ||--o{ product_category : "in"
+    product ||--o{ product_category : "has"
     product ||--o{ order_item : "ordered as"
     product ||--o{ invoice_item : "invoiced as"
     order ||--o{ order_item : "has items"

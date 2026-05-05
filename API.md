@@ -829,7 +829,8 @@ GET /categories?sort=[{"position":1},{"name":1}]&filter={"parent_id":{"operator"
 ```json
 {
   "id": 10,
-  "category_id": 3,
+  "category_ids": [3, 7],
+  "category_names": ["T-Shirts", "Sale"],
   "sku": "TSH-001",
   "name": "Classic Tee",
   "description": "100% cotton t-shirt",
@@ -847,19 +848,21 @@ GET /categories?sort=[{"position":1},{"name":1}]&filter={"parent_id":{"operator"
 | `price`          | decimal string | e.g. `"299.00"`                        |
 | `vat_rate`       | decimal string | Percentage, e.g. `"21.00"` = 21 % VAT |
 | `stock_quantity` | integer        | Can be negative (backordering)         |
+| `category_ids`   | integer[]      | IDs of all assigned categories         |
+| `category_names` | string[]       | Names of all assigned categories (GET /:id only) |
 
 #### `GET /products`
 
 Query parameters:
 
-| Parameter     | Description                                              |
-|---------------|----------------------------------------------------------|
-| `page`        | Page number                                              |
-| `limit`       | Per page (max: 100)                                      |
-| `search`      | Full-text search in `name`, `sku`, `description`         |
-| `category_id` | Filter by category ID (integer)                          |
-| `sort`        | JSON sort (columns: `name`, `sku`, `price`, `stock_quantity`, `created_at`, `category_id`) |
-| `filter`      | JSON filter (same columns + `vat_rate`)                  |
+| Parameter      | Description                                              |
+|----------------|----------------------------------------------------------|
+| `page`         | Page number                                              |
+| `limit`        | Per page (max: 100)                                      |
+| `search`       | Full-text search in `name`, `sku`, `description`         |
+| `category_id`  | Filter products belonging to a category ID               |
+| `sort`         | JSON sort (columns: `name`, `sku`, `price`, `stock_quantity`, `created_at`) |
+| `filter`       | JSON filter (same columns + `vat_rate`)                  |
 
 ```
 GET /products?category_id=3&search=shirt&sort=[{"price":1}]&filter={"stock_quantity":{"value":0,"operator":"gt"}}
@@ -875,7 +878,7 @@ GET /products?category_id=3&search=shirt&sort=[{"price":1}]&filter={"stock_quant
   "price": 499.00,
   "vat_rate": 21,
   "stock_quantity": 50,
-  "category_id": 3
+  "category_ids": [3, 7]
 }
 ```
 
@@ -1290,7 +1293,7 @@ Any → `cancelled` or `refunded`
 | `/users`        | `first_name`, `last_name`, `email`, `phone`, `role_id`, `created_at`, `last_login_at` |
 | `/users/:id/address` | `type`, `city`, `zip`, `country`, `is_default`, `created_at`  |
 | `/categories`   | `name`, `description`, `parent_id`, `position`, `created_at`        |
-| `/products`     | `name`, `sku`, `price`, `vat_rate`, `stock_quantity`, `category_id`, `created_at` |
+| `/products`     | `name`, `sku`, `price`, `vat_rate`, `stock_quantity`, `created_at` |
 | `/enumerations` | `type`, `syscode`, `label`, `value`, `position`, `is_active`, `created_at` |
 | `/texts`        | `syscode`, `title`, `language`, `is_active`, `created_at`           |
 | `/orders`       | `order_number`, `status`, `total_amount`, `currency`, `payment_method`, `user_id`, `created_at` |
@@ -1430,8 +1433,8 @@ async function getText(syscode, language = 'cs') {
 ### 8. Filter with IS NULL / IS NOT NULL
 
 ```js
-// Products without a category
-const filter = JSON.stringify({ category_id: { operator: 'null' } });
+// Products without any category
+const filter = JSON.stringify({ stock_quantity: { operator: 'null' } });
 
 // Users who have ever logged in
 const filter2 = JSON.stringify({ last_login_at: { operator: 'notnull' } });

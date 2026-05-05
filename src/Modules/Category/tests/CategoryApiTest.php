@@ -31,7 +31,7 @@ assert_test('data is array', is_array($r['data']['data']));
 // ── Admin login ───────────────────────────────────────────────────────────────
 
 section('Categories – admin login');
-$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
@@ -56,7 +56,7 @@ $token    = $r['data']['data']['token'] ?? null;
 $r = request('POST', "{$base}/categories", ['name' => 'x']);
 assert_test('POST /categories → 403 for non-admin', $r['status'] === 403, dump_on_fail($r));
 
-$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
+$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
 $token = $r['data']['data']['token'] ?? null;
 if ($catRegId) {
     request('DELETE', "{$base}/users/{$catRegId}");
@@ -104,7 +104,7 @@ if ($catId) {
     $catProdSku = 'CAT-PROD-' . time();
     $r          = request('POST', "{$base}/products", [
         'name'  => 'Cat Test Product', 'sku' => $catProdSku,
-        'price' => 10.0, 'category_id' => $catId, 'stock_quantity' => 1,
+        'price' => 10.0, 'category_ids' => [$catId], 'stock_quantity' => 1,
     ]);
     $catProdId = $r['data']['data']['id'] ?? null;
 

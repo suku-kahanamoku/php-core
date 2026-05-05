@@ -24,7 +24,7 @@ $token = null;
 // ── Setup: admin creates category + product, registers test user ──────────────
 
 section('Orders – setup');
-$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
@@ -86,7 +86,7 @@ if ($orderId) {
 // ── Admin manages status ──────────────────────────────────────────────────────
 
 section('Orders – admin manages status');
-$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
+$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
 $token = $r['data']['data']['token'] ?? null;
 
 if ($orderId) {

@@ -23,7 +23,7 @@ $token = null;
 
 // ── Setup ─────────────────────────────────────────────────────────────────────
 
-$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
@@ -77,7 +77,7 @@ if ($modelOrderId) {
 // ── Order model – updateStatus() (admin) ─────────────────────────────────────
 
 section('Order model – updateStatus()');
-$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
+$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
 $token = $r['data']['data']['token'] ?? null;
 
 if ($modelOrderId) {

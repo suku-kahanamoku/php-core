@@ -113,7 +113,6 @@ CREATE TABLE IF NOT EXISTS `category` (
 CREATE TABLE IF NOT EXISTS `product` (
     `id`             INT UNSIGNED   NOT NULL AUTO_INCREMENT,
     `franchise_code`   VARCHAR(64)    NOT NULL DEFAULT 'default',
-    `category_id`    INT UNSIGNED            DEFAULT NULL,
     `sku`            VARCHAR(64)    NOT NULL,
     `name`           VARCHAR(255)   NOT NULL,
     `description`    TEXT                    DEFAULT NULL,
@@ -124,9 +123,17 @@ CREATE TABLE IF NOT EXISTS `product` (
     `updated_at`     DATETIME                DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_product_franchise_sku` (`franchise_code`, `sku`),
-    KEY `idx_product_franchise` (`franchise_code`),
-    KEY `idx_product_cat`       (`category_id`),
-    CONSTRAINT `fk_product_cat` FOREIGN KEY (`category_id`) REFERENCES `category` (`id`) ON DELETE SET NULL
+    KEY `idx_product_franchise` (`franchise_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ── product_category (M:N pivot) ──────────────────────────
+CREATE TABLE IF NOT EXISTS `product_category` (
+    `product_id`  INT UNSIGNED NOT NULL,
+    `category_id` INT UNSIGNED NOT NULL,
+    PRIMARY KEY (`product_id`, `category_id`),
+    KEY `idx_pc_category` (`category_id`),
+    CONSTRAINT `fk_pc_product`  FOREIGN KEY (`product_id`)  REFERENCES `product`  (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_pc_category` FOREIGN KEY (`category_id`) REFERENCES `category` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── text (CMS content blocks) ─────────────────────────────
@@ -279,6 +286,6 @@ INSERT INTO `enumeration` (`franchise_code`, `type`, `syscode`, `label`, `value`
 -- ── Seed: admin user (password: password) ────────────────
 INSERT INTO `user` (`franchise_code`, `first_name`, `last_name`, `email`, `password`, `role_id`) VALUES
   ('default', 'Admin', 'User', 'admin@example.com',
-   '$2y$12$ubNeYmIWTWs4hXG6OQWQdO5rRStAzqrHM1C/xxU9H7vZx0LvMKI5q',
+   '$2y$12$158hhuy1e4Q9sgkc7WHUfuBlJWCowqiNGdti1t6wpds7zOtP0KkeSs',
    (SELECT id FROM role WHERE franchise_code = 'default' AND name = 'admin'));
 

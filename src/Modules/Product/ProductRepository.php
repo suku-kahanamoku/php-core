@@ -42,7 +42,7 @@ class ProductRepository
             array_push($params, $s, $s, $s);
         }
         if ($categoryId !== null) {
-            $where[]  = 'p.category_id = ?';
+            $where[]  = 'EXISTS (SELECT 1 FROM product_category pc WHERE pc.product_id = p.id AND pc.category_id = ?)';
             $params[] = $categoryId;
         }
 
@@ -62,16 +62,23 @@ class ProductRepository
         $items = $this->db->fetchAll(
             "SELECT p.id, p.sku, p.name, p.description,
                     p.price, p.vat_rate, p.stock_quantity,
-                    p.category_id,
-                    c.name AS category_name,
+                    GROUP_CONCAT(pc.category_id ORDER BY pc.category_id) AS category_ids,
                     p.created_at, p.updated_at
              FROM product p
-             LEFT JOIN category c ON c.id = p.category_id
+             LEFT JOIN product_category pc ON pc.product_id = p.id
              WHERE {$whereStr}
+             GROUP BY p.id
              ORDER BY {$orderBy}
              LIMIT {$limit} OFFSET {$offset}",
             $params,
         );
+
+        foreach ($items as &$item) {
+            $item['category_ids'] = $item['category_ids']
+                ? array_map('intval', explode(',', $item['category_ids']))
+                : [];
+        }
+        unset($item);
 
         return [
             'items'      => $items,
@@ -85,14 +92,38 @@ class ProductRepository
     public function findById(int $id): ?array
     {
         $row = $this->db->fetchOne(
-            'SELECT p.*, c.name AS category_name
-             FROM product p
-             LEFT JOIN category c ON c.id = p.category_id
-             WHERE p.id = ? AND p.franchise_code = ?',
+            'SELECT * FROM product WHERE id = ? AND franchise_code = ?',
             [$id, $this->code],
         );
 
-        return $row ?: null;
+        if (!$row) {
+            return null;
+        }
+
+        $categoryRows = $this->db->fetchAll(
+            'SELECT pc.category_id, c.name AS category_name
+             FROM product_category pc
+             LEFT JOIN category c ON c.id = pc.category_id
+             WHERE pc.product_id = ?',
+            [$id],
+        );
+
+        $row['category_ids']   = array_map('intval', array_column($categoryRows, 'category_id'));
+        $row['category_names'] = array_column($categoryRows, 'category_name');
+
+        return $row;
+    }
+
+    public function syncCategories(int $productId, array $categoryIds): void
+    {
+        $this->db->delete('product_category', 'product_id = ?', [$productId]);
+
+        foreach ($categoryIds as $catId) {
+            $this->db->insert('product_category', [
+                'product_id'  => $productId,
+                'category_id' => (int) $catId,
+            ]);
+        }
     }
 
     public function create(array $data): int
@@ -115,6 +146,7 @@ class ProductRepository
 
     public function delete(int $id): void
     {
+        $this->db->delete('product_category', 'product_id = ?', [$id]);
         $this->db->delete('product', 'id = ? AND franchise_code = ?', [$id, $this->code]);
     }
 

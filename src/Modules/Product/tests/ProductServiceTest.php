@@ -21,7 +21,7 @@ if (!isset($runnerMode)) {
 }
 $token = null;
 
-$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
@@ -43,7 +43,7 @@ section('ProductService – create() success');
 $svcSku = 'SVC-PROD-' . time();
 $r      = request('POST', "{$base}/products", [
     'name'  => 'Svc Product', 'sku' => $svcSku,
-    'price' => 100.0, 'category_id' => $svcCatId, 'stock_quantity' => 10,
+    'price' => 100.0, 'category_ids' => [$svcCatId], 'stock_quantity' => 10,
 ]);
 assert_test('valid product → 201', $r['status'] === 201, dump_on_fail($r));
 $svcProdId = $r['data']['data']['id'] ?? null;
