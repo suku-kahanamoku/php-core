@@ -55,7 +55,16 @@ class TextService
         string $filter = '',
         ?array $projection = null,
     ): array {
-        return $this->text->findAll($language, $isActive, $search, $sort, $page, $limit, $filter, $projection);
+        return $this->text->findAll(
+            $language,
+            $isActive,
+            $search,
+            $sort,
+            $page,
+            $limit,
+            $filter,
+            $projection
+        );
     }
 
     /**
@@ -115,7 +124,10 @@ class TextService
             ->validate();
 
         if ($this->text->keyExists($key, $language)) {
-            Response::error("Syscode '$key' already exists for language '$language'", 409);
+            Response::error(
+                "Syscode '$key' already exists for language '$language'",
+                409
+            );
         }
 
         return $this->text->create([
@@ -173,8 +185,13 @@ class TextService
      * @param  array|null           $projection
      * @return array<string, mixed>
      */
-    public function replace(int $id, string $key, string $title, array $input, ?array $projection = null): array
-    {
+    public function replace(
+        int $id,
+        string $key,
+        string $title,
+        array $input,
+        ?array $projection = null
+    ): array {
         $this->auth->requireRole('admin');
 
         if (!$this->text->findById($id)) {

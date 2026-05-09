@@ -48,8 +48,10 @@ class Response
      * @param  string $message
      * @return never
      */
-    public static function created(mixed $data = null, string $message = 'Created'): never
-    {
+    public static function created(
+        mixed $data = null,
+        string $message = 'Created'
+    ): never {
         self::success($data, $message, 201);
     }
 

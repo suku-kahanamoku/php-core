@@ -66,7 +66,9 @@ class EnumerationApi
      */
     public function get(Request $request, array $params): void
     {
-        Response::success($this->service->get((int) $params['id'], $request->projection()));
+        Response::success(
+            $this->service->get((int) $params['id'], $request->projection())
+        );
     }
 
     /**

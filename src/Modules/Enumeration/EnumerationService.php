@@ -53,7 +53,15 @@ class EnumerationService
         string $filter = '',
         ?array $projection = null,
     ): array {
-        return $this->enum->findAll($type, $isActive, $sort, $page, $limit, $filter, $projection);
+        return $this->enum->findAll(
+            $type,
+            $isActive,
+            $sort,
+            $page,
+            $limit,
+            $filter,
+            $projection
+        );
     }
 
     /**
@@ -93,8 +101,13 @@ class EnumerationService
      * @param  array|null           $projection
      * @return array<string, mixed>
      */
-    public function create(string $type, string $code, string $label, array $input, ?array $projection = null): array
-    {
+    public function create(
+        string $type,
+        string $code,
+        string $label,
+        array $input,
+        ?array $projection = null
+    ): array {
         $this->auth->requireRole('admin');
 
         VALIDATOR(['type' => $type, 'syscode' => $code, 'label' => $label])

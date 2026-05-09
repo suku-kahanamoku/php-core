@@ -16,7 +16,19 @@ class ProductRepository
     private string   $code;
 
     private const SYS = ['id', 'created_at', 'updated_at'];
-    private const OWN = ['sku', 'name', 'description', 'price', 'vat_rate', 'stock_quantity', 'is_active', 'kind', 'color', 'variant', 'data'];
+    private const OWN = [
+        'sku',
+        'name',
+        'description',
+        'price',
+        'vat_rate',
+        'stock_quantity',
+        'is_active',
+        'kind',
+        'color',
+        'variant',
+        'data'
+    ];
     private const REL = ['categories'];
 
     /**
@@ -112,9 +124,15 @@ class ProductRepository
         $sysSel  = 'p.' . implode(', p.', $sys);
         $ownSel  = $ownCols ? ', p.' . implode(', p.', $ownCols) : '';
 
-        $needsCatJoin = $categoryId !== null || $categorySyscode !== null || $proj->needsJoin('categories');
-        $catJoin      = $needsCatJoin ? 'LEFT JOIN product_category pc ON pc.product_id = p.id' : '';
-        $catSel       = $proj->needsJoin('categories') ? ', GROUP_CONCAT(pc.category_id ORDER BY pc.category_id) AS category_ids' : '';
+        $needsCatJoin = $categoryId !== null ||
+            $categorySyscode !== null ||
+            $proj->needsJoin('categories');
+        $catJoin      = $needsCatJoin
+            ? 'LEFT JOIN product_category pc ON pc.product_id = p.id'
+            : '';
+        $catSel       = $proj->needsJoin('categories')
+            ? ', GROUP_CONCAT(pc.category_id ORDER BY pc.category_id) AS category_ids'
+            : '';
 
         $select = "{$sysSel}{$ownSel}{$catSel}";
 
@@ -216,11 +234,18 @@ class ProductRepository
                  WHERE pc.product_id = ?',
                 [$id],
             );
-            $row['category_ids']   = array_map('intval', array_column($categoryRows, 'category_id'));
+            $row['category_ids']   = array_map(
+                'intval',
+                array_column($categoryRows, 'category_id')
+            );
             $row['category_names'] = array_column($categoryRows, 'category_name');
         }
 
-        return $proj->apply($row, $sys, ['categories' => ['category_ids', 'category_names']]);
+        return $proj->apply(
+            $row,
+            $sys,
+            ['categories' => ['category_ids', 'category_names']]
+        );
     }
 
     /**
@@ -346,7 +371,11 @@ class ProductRepository
     public function delete(int $id): int
     {
         $this->db->delete('product_category', 'product_id = ?', [$id]);
-        return $this->db->delete('product', 'id = ? AND franchise_code = ?', [$id, $this->code]);
+        return $this->db->delete(
+            'product',
+            'id = ? AND franchise_code = ?',
+            [$id, $this->code]
+        );
     }
 
     /**

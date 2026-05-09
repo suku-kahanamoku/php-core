@@ -16,7 +16,14 @@ class UserRepository
     private string   $code;
 
     private const SYS = ['id', 'created_at', 'updated_at', 'last_login_at'];
-    private const OWN = ['first_name', 'last_name', 'email', 'phone', 'role_id'];
+    private const OWN = [
+        'first_name',
+        'last_name',
+        'email',
+        'phone',
+        'role_id',
+        'status'
+    ];
     private const REL = ['role'];
 
     /**
@@ -122,7 +129,14 @@ class UserRepository
         );
 
         foreach ($items as &$item) {
-            $item = $proj->apply($item, $sys, ['role' => ['fk' => 'role_id', 'nest' => ['name' => 'role_name', 'id' => 'role_id']]]);
+            $item = $proj->apply(
+                $item,
+                $sys,
+                ['role' => [
+                    'fk' => 'role_id',
+                    'nest' => ['name' => 'role_name', 'id' => 'role_id']
+                ]]
+            );
         }
         unset($item);
 
@@ -181,7 +195,14 @@ class UserRepository
             return null;
         }
 
-        return $proj->apply($user, $sys, ['role' => ['fk' => 'role_id', 'nest' => ['name' => 'role_name', 'id' => 'role_id']]]);
+        return $proj->apply(
+            $user,
+            $sys,
+            ['role' => [
+                'fk' => 'role_id',
+                'nest' => ['name' => 'role_name', 'id' => 'role_id']
+            ]]
+        );
     }
 
     /**
@@ -311,7 +332,11 @@ class UserRepository
      */
     public function delete(int $id): int
     {
-        return $this->db->delete('user', 'id = ? AND franchise_code = ?', [$id, $this->code]);
+        return $this->db->delete(
+            'user',
+            'id = ? AND franchise_code = ?',
+            [$id, $this->code]
+        );
     }
 
     /**

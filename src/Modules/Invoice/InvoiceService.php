@@ -87,7 +87,10 @@ class InvoiceService
             Response::notFound('Invoice not found');
         }
 
-        if (!$this->auth->hasRole('admin') && (int) $invoice['user_id'] !== $this->auth->id()) {
+        if (
+            !$this->auth->hasRole('admin') &&
+            (int) $invoice['user_id'] !== $this->auth->id()
+        ) {
             Response::forbidden();
         }
 
@@ -160,7 +163,10 @@ class InvoiceService
             Response::error($e->getMessage(), 500);
         }
 
-        return $this->invoice->findById($invoiceId ?? 0, $projection) ?? ['id' => $invoiceId ?? 0];
+        return $this->invoice->findById(
+            $invoiceId ?? 0,
+            $projection
+        ) ?? ['id' => $invoiceId ?? 0];
     }
 
     /**
@@ -172,8 +178,11 @@ class InvoiceService
      * @param  array|null $projection
      * @return array<string, mixed>
      */
-    public function updateStatus(int $id, string $status, ?array $projection = null): array
-    {
+    public function updateStatus(
+        int $id,
+        string $status,
+        ?array $projection = null
+    ): array {
         $this->auth->requireRole('admin');
 
         if ($status === '') {

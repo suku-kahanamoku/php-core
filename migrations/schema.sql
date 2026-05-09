@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS `user` (
     `phone`         VARCHAR(30)           DEFAULT NULL,
     `password`      VARCHAR(255) NOT NULL,
     `role_id`       INT UNSIGNED NOT NULL COMMENT 'FK → role.id',
+    `status`        ENUM('active','inactive','banned') NOT NULL DEFAULT 'active',
     `last_login_at` DATETIME              DEFAULT NULL,
     `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`    DATETIME              DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,

@@ -137,6 +137,7 @@ class UserService
                 ['cost' => 12],
             ),
             'role_id' => $roleId,
+            'status'  => 'active',
         ], $projection);
     }
 

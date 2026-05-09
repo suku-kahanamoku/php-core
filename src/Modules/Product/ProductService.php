@@ -113,11 +113,16 @@ class ProductService
             'price'          => (float) $price,
             'vat_rate'       => (float) ($input['vat_rate'] ?? 21),
             'stock_quantity' => (int) ($input['stock_quantity'] ?? 0),
-            'is_active'      => isset($input['is_active']) ? (int) $input['is_active'] : 1,
-            'kind'           => isset($input['kind']) ? trim((string) $input['kind']) : null,
-            'color'          => isset($input['color']) ? trim((string) $input['color']) : null,
-            'variant'        => isset($input['variant']) ? trim((string) $input['variant']) : null,
-            'data'           => isset($input['data']) && is_array($input['data']) ? $input['data'] : null,
+            'is_active'      => isset($input['is_active'])
+                ? (int) $input['is_active'] : 1,
+            'kind'           => isset($input['kind'])
+                ? trim((string) $input['kind']) : null,
+            'color'          => isset($input['color'])
+                ? trim((string) $input['color']) : null,
+            'variant'        => isset($input['variant'])
+                ? trim((string) $input['variant']) : null,
+            'data'           => isset($input['data']) && is_array($input['data'])
+                ? $input['data'] : null,
         ]);
 
         $id = $created['id'];
@@ -170,8 +175,14 @@ class ProductService
             $this->product->update($id, $set);
         }
 
-        if (array_key_exists('category_ids', $input) && is_array($input['category_ids'])) {
-            $this->product->syncCategories($id, array_map('intval', $input['category_ids']));
+        if (
+            array_key_exists('category_ids', $input) &&
+            is_array($input['category_ids'])
+        ) {
+            $this->product->syncCategories(
+                $id,
+                array_map('intval', $input['category_ids'])
+            );
         }
 
         if (array_key_exists('data', $input)) {
@@ -220,13 +231,20 @@ class ProductService
             'sku'            => $sku,
             'price'          => (float) $price,
             'description'    => (string) ($input['description'] ?? ''),
-            'vat_rate'       => isset($input['vat_rate']) ? (float) $input['vat_rate'] : 21.0,
-            'stock_quantity' => isset($input['stock_quantity']) ? (int) $input['stock_quantity'] : 0,
-            'is_active'      => isset($input['is_active']) ? (int) $input['is_active'] : 1,
-            'kind'           => isset($input['kind']) ? trim((string) $input['kind']) : null,
-            'color'          => isset($input['color']) ? trim((string) $input['color']) : null,
-            'variant'        => isset($input['variant']) ? trim((string) $input['variant']) : null,
-            'data'           => isset($input['data']) && is_array($input['data']) ? $input['data'] : null,
+            'vat_rate'       => isset($input['vat_rate'])
+                ? (float) $input['vat_rate'] : 21.0,
+            'stock_quantity' => isset($input['stock_quantity'])
+                ? (int) $input['stock_quantity'] : 0,
+            'is_active'      => isset($input['is_active'])
+                ? (int) $input['is_active'] : 1,
+            'kind'           => isset($input['kind'])
+                ? trim((string) $input['kind']) : null,
+            'color'          => isset($input['color'])
+                ? trim((string) $input['color']) : null,
+            'variant'        => isset($input['variant'])
+                ? trim((string) $input['variant']) : null,
+            'data'           => isset($input['data']) && is_array($input['data'])
+                ? $input['data'] : null,
         ]);
 
         $this->product->syncCategories($id, $categoryIds);

@@ -55,8 +55,13 @@ class RoleRepository
      *   totalPages: int
      * }
      */
-    public function findAll(int $page = 1, int $limit = 20, string $sort = '', string $filter = '', ?array $projection = null): array
-    {
+    public function findAll(
+        int $page = 1,
+        int $limit = 20,
+        string $sort = '',
+        string $filter = '',
+        ?array $projection = null
+    ): array {
         $proj    = new Projection($projection);
         $orderBy = SQL_SORT($sort, 'position ASC');
 
@@ -199,7 +204,11 @@ class RoleRepository
      */
     public function delete(int $id): int
     {
-        return $this->db->delete('role', 'id = ? AND franchise_code = ?', [$id, $this->code]);
+        return $this->db->delete(
+            'role',
+            'id = ? AND franchise_code = ?',
+            [$id, $this->code]
+        );
     }
 
     /**

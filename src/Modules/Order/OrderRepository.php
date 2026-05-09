@@ -16,7 +16,19 @@ class OrderRepository
     private string   $code;
 
     private const SYS = ['id', 'created_at', 'updated_at'];
-    private const OWN = ['order_number', 'status', 'total_amount', 'currency', 'payment_method', 'shipping_type', 'shipping_cost', 'shipping_address_id', 'billing_address_id', 'user_id', 'note'];
+    private const OWN = [
+        'order_number',
+        'status',
+        'total_amount',
+        'currency',
+        'payment_method',
+        'shipping_type',
+        'shipping_cost',
+        'shipping_address_id',
+        'billing_address_id',
+        'user_id',
+        'note'
+    ];
     private const REL = ['user'];
 
     /**
@@ -128,7 +140,14 @@ class OrderRepository
         );
 
         foreach ($items as &$item) {
-            $item = $proj->apply($item, $sys, ['user' => ['fk' => 'user_id', 'nest' => ['first_name', 'last_name', 'email']]]);
+            $item = $proj->apply(
+                $item,
+                $sys,
+                ['user' => [
+                    'fk' => 'user_id',
+                    'nest' => ['first_name', 'last_name', 'email']
+                ]]
+            );
         }
         unset($item);
 
@@ -201,7 +220,14 @@ class OrderRepository
             [$id],
         );
 
-        return $proj->apply($order, $sys, ['user' => ['fk' => 'user_id', 'nest' => ['first_name', 'last_name', 'email']]]);
+        return $proj->apply(
+            $order,
+            $sys,
+            ['user' => [
+                'fk' => 'user_id',
+                'nest' => ['first_name', 'last_name', 'email']
+            ]]
+        );
     }
 
     /**
@@ -256,8 +282,11 @@ class OrderRepository
      *   items: list<array<string, mixed>>
      * }
      */
-    public function updateStatus(int $id, string $status, ?array $projection = null): array
-    {
+    public function updateStatus(
+        int $id,
+        string $status,
+        ?array $projection = null
+    ): array {
         $this->db->update('order', [
             'status'     => $status,
             'updated_at' => date('Y-m-d H:i:s'),
@@ -274,7 +303,11 @@ class OrderRepository
      */
     public function delete(int $id): int
     {
-        return $this->db->delete('order', 'id = ? AND franchise_code = ?', [$id, $this->code]);
+        return $this->db->delete(
+            'order',
+            'id = ? AND franchise_code = ?',
+            [$id, $this->code]
+        );
     }
 
     /**

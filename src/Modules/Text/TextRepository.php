@@ -16,7 +16,14 @@ class TextRepository
     private string   $code;
 
     private const SYS = ['id', 'created_at', 'updated_at'];
-    private const OWN = ['syscode', 'title', 'content', 'language', 'is_active', 'created_by'];
+    private const OWN = [
+        'syscode',
+        'title',
+        'content',
+        'language',
+        'is_active',
+        'created_by'
+    ];
     private const REL = [];
 
     /**
@@ -200,8 +207,11 @@ class TextRepository
      * @param  int|null $excludeId
      * @return bool
      */
-    public function keyExists(string $key, string $language, ?int $excludeId = null): bool
-    {
+    public function keyExists(
+        string $key,
+        string $language,
+        ?int $excludeId = null
+    ): bool {
         if ($excludeId !== null) {
             $row = $this->db->fetchOne(
                 'SELECT id FROM text
@@ -284,6 +294,10 @@ class TextRepository
      */
     public function delete(int $id): int
     {
-        return $this->db->delete('text', 'id = ? AND franchise_code = ?', [$id, $this->code]);
+        return $this->db->delete(
+            'text',
+            'id = ? AND franchise_code = ?',
+            [$id, $this->code]
+        );
     }
 }

@@ -38,10 +38,12 @@ class ProductApi
             max(1, (int) $request->get('page', 1)),
             min(100, max(1, (int) $request->get('limit', 20))),
             $request->get('search'),
-            $request->get('category_id') !== null ? (int) $request->get('category_id') : null,
+            $request->get('category_id') !== null
+                ? (int) $request->get('category_id') : null,
             (string) $request->get('sort', ''),
             (string) $request->get('filter', ''),
-            $request->get('category_syscode') !== null ? (string) $request->get('category_syscode') : null,
+            $request->get('category_syscode') !== null
+                ? (string) $request->get('category_syscode') : null,
             $request->projection(),
         ));
     }
@@ -55,7 +57,9 @@ class ProductApi
      */
     public function get(Request $request, array $params): void
     {
-        Response::success($this->service->get((int) $params['id'], $request->projection()));
+        Response::success(
+            $this->service->get((int) $params['id'], $request->projection())
+        );
     }
 
     /**

@@ -96,8 +96,9 @@ class CategoryService
         }
 
         return $this->category->create([
+            'syscode'     => $input['syscode'] ?? null,
             'name'        => $name,
-            'description' => $input['description'] ?? '',
+            'description' => $input['description'] ?? null,
             'parent_id'   => isset($input['parent_id']) && $input['parent_id'] !== ''
                 ? (int) $input['parent_id']
                 : null,
@@ -148,7 +149,7 @@ class CategoryService
      *
      * @param  int                  $id
      * @param  string               $name
-     * @param  array<string, mixed> $input  description, parent_id, position
+     * @param  array<string, mixed> $input  syscode, description, parent_id, position
      * @param  array|null           $projection
      * @return array<string, mixed>
      */
@@ -172,6 +173,7 @@ class CategoryService
         $parentId = ($parentId !== null && $parentId !== '') ? (int) $parentId : null;
 
         $this->category->update($id, [
+            'syscode'     => $input['syscode'] ?? null,
             'name'        => $name,
             'description' => (string) ($input['description'] ?? ''),
             'parent_id'   => $parentId,

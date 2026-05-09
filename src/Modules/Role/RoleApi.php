@@ -52,7 +52,9 @@ class RoleApi
      */
     public function get(Request $request, array $params): void
     {
-        Response::success($this->service->get((int) $params['id'], $request->projection()));
+        Response::success(
+            $this->service->get((int) $params['id'], $request->projection())
+        );
     }
 
     /**
@@ -89,7 +91,11 @@ class RoleApi
                 $fields[$f] = $request->get($f);
             }
         }
-        $role = $this->service->update((int) $params['id'], $fields, $request->projection());
+        $role = $this->service->update(
+            (int) $params['id'],
+            $fields,
+            $request->projection()
+        );
         Response::success($role, 'Role updated');
     }
 

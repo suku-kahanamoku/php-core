@@ -52,13 +52,15 @@ class CategoryApi
      */
     public function get(Request $request, array $params): void
     {
-        Response::success($this->service->get((int) $params['id'], $request->projection()));
+        Response::success(
+            $this->service->get((int) $params['id'], $request->projection())
+        );
     }
 
     /**
      * POST /categories — Vytvori novou kategorii. Vyzaduje roli admin.
      *
-     * @param Request $request  body: name (required), description, parent_id, position
+     * @param Request $request  body: name (required), syscode, description, parent_id, position
      * @return void
      */
     public function create(Request $request): void
@@ -66,7 +68,8 @@ class CategoryApi
         $category = $this->service->create(
             trim((string) $request->get('name', '')),
             [
-                'description' => $request->get('description', ''),
+                'syscode'     => $request->get('syscode'),
+                'description' => $request->get('description'),
                 'parent_id'   => $request->get('parent_id'),
                 'position'    => $request->get('position', 0),
             ],
@@ -96,7 +99,7 @@ class CategoryApi
     /**
      * PUT /categories/:id — Uplna nahrada kategorie. Vyzaduje roli admin.
      *
-     * @param Request $request  body: name (required), description, parent_id, position
+     * @param Request $request  body: name (required), syscode, description, parent_id, position
      * @param array{id: string} $params
      * @return void
      */
@@ -106,6 +109,7 @@ class CategoryApi
             (int) $params['id'],
             trim((string) $request->get('name', '')),
             [
+                'syscode'     => $request->get('syscode'),
                 'description' => $request->get('description'),
                 'parent_id'   => $request->get('parent_id'),
                 'position'    => $request->get('position', 0),

@@ -68,7 +68,15 @@ class OrderService
 
         $userId = $this->auth->hasRole('admin') ? null : $this->auth->id();
 
-        return $this->order->findAll($page, $limit, $userId, $status, $sort, $filter, $projection);
+        return $this->order->findAll(
+            $page,
+            $limit,
+            $userId,
+            $status,
+            $sort,
+            $filter,
+            $projection
+        );
     }
 
     /**
@@ -88,7 +96,10 @@ class OrderService
             Response::notFound('Order not found');
         }
 
-        if (!$this->auth->hasRole('admin') && (int) $order['user_id'] !== $this->auth->id()) {
+        if (
+            !$this->auth->hasRole('admin') &&
+            (int) $order['user_id'] !== $this->auth->id()
+        ) {
             Response::forbidden();
         }
 
@@ -303,8 +314,11 @@ class OrderService
      * @param  array|null $projection
      * @return array<string, mixed>
      */
-    public function updateStatus(int $id, string $status, ?array $projection = null): array
-    {
+    public function updateStatus(
+        int $id,
+        string $status,
+        ?array $projection = null
+    ): array {
         $this->auth->requireRole('admin');
 
         VALIDATOR(['status' => $status])->required('status')->validate();

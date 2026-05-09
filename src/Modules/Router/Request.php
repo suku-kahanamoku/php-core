@@ -45,7 +45,13 @@ class Request
         if (!in_array($code, $allowed, true)) {
             http_response_code(403);
             header('Content-Type: application/json');
-            echo json_encode(['success' => false, 'message' => 'Franchise not recognised.', 'errors' => null]);
+            echo json_encode(
+                [
+                    'success' => false,
+                    'message' => 'Franchise not recognised.',
+                    'errors' => null
+                ]
+            );
             exit;
         }
 
@@ -151,9 +157,16 @@ class Request
         }
 
         if (is_array($raw)) {
-            return array_values(array_filter(array_map('trim', $raw), fn($v) => $v !== ''));
+            return array_values(
+                array_filter(array_map('trim', $raw), fn($v) => $v !== '')
+            );
         }
 
-        return array_values(array_filter(array_map('trim', explode(',', (string) $raw)), fn($v) => $v !== ''));
+        return array_values(
+            array_filter(
+                array_map('trim', explode(',', (string) $raw)),
+                fn($v) => $v !== ''
+            )
+        );
     }
 }

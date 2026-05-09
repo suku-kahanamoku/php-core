@@ -45,8 +45,13 @@ class RoleService
      *   totalPages: int
      * }
      */
-    public function list(int $page = 1, int $limit = 20, string $sort = '', string $filter = '', ?array $projection = null): array
-    {
+    public function list(
+        int $page = 1,
+        int $limit = 20,
+        string $sort = '',
+        string $filter = '',
+        ?array $projection = null
+    ): array {
         return $this->role->findAll($page, $limit, $sort, $filter, $projection);
     }
 

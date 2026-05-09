@@ -313,8 +313,11 @@ class InvoiceRepository
      *   items: list<array<string, mixed>>
      * }
      */
-    public function updateStatus(int $id, string $status, ?array $projection = null): array
-    {
+    public function updateStatus(
+        int $id,
+        string $status,
+        ?array $projection = null
+    ): array {
         $set = ['status' => $status, 'updated_at' => date('Y-m-d H:i:s')];
         if ($status === 'paid') {
             $set['paid_at'] = date('Y-m-d H:i:s');
@@ -337,7 +340,11 @@ class InvoiceRepository
      */
     public function delete(int $id): int
     {
-        return $this->db->delete('invoice', 'id = ? AND franchise_code = ?', [$id, $this->code]);
+        return $this->db->delete(
+            'invoice',
+            'id = ? AND franchise_code = ?',
+            [$id, $this->code]
+        );
     }
 
     /**
