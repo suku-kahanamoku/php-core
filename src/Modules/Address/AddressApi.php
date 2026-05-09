@@ -29,19 +29,20 @@ class AddressApi
             max(1, (int) $request->get('page', 1)),
             min(100, max(1, (int) $request->get('limit', 20))),
             (string) $request->get('filter', ''),
+            $request->projection(),
         ));
     }
 
     /** GET /addresses/:id */
     public function get(Request $request, array $params): void
     {
-        Response::success($this->service->get((int) $params['id']));
+        Response::success($this->service->get((int) $params['id'], $request->projection()));
     }
 
     /** POST /addresses */
     public function create(Request $request): void
     {
-        $id = $this->service->create([
+        $address = $this->service->create([
             'type'       => $request->get('type', 'billing'),
             'company'    => $request->get('company', ''),
             'name'       => $request->get('name'),
@@ -50,15 +51,15 @@ class AddressApi
             'zip'        => trim((string) $request->get('zip', '')),
             'country'    => trim((string) $request->get('country', 'CZ')),
             'is_default' => $request->get('is_default', 0),
-        ], $request->get('user_id') !== null ? (int) $request->get('user_id') : null);
+        ], $request->get('user_id') !== null ? (int) $request->get('user_id') : null, $request->projection());
 
-        Response::created($this->service->get($id), 'Address created');
+        Response::created($address, 'Address created');
     }
 
     /** PATCH /addresses/:id */
     public function update(Request $request, array $params): void
     {
-        $this->service->update((int) $params['id'], [
+        $address = $this->service->update((int) $params['id'], [
             'type'       => $request->get('type'),
             'company'    => $request->get('company'),
             'name'       => $request->get('name'),
@@ -67,14 +68,14 @@ class AddressApi
             'zip'        => $request->get('zip'),
             'country'    => $request->get('country'),
             'is_default' => $request->get('is_default'),
-        ]);
-        Response::success($this->service->get((int) $params['id']), 'Address updated');
+        ], $request->projection());
+        Response::success($address, 'Address updated');
     }
 
     /** PUT /addresses/:id */
     public function replace(Request $request, array $params): void
     {
-        $this->service->replace((int) $params['id'], [
+        $address = $this->service->replace((int) $params['id'], [
             'type'       => $request->get('type', 'billing'),
             'company'    => $request->get('company', ''),
             'name'       => $request->get('name'),
@@ -83,8 +84,8 @@ class AddressApi
             'zip'        => trim((string) $request->get('zip', '')),
             'country'    => trim((string) $request->get('country', '')),
             'is_default' => $request->get('is_default', 0),
-        ]);
-        Response::success($this->service->get((int) $params['id']), 'Address replaced');
+        ], $request->projection());
+        Response::success($address, 'Address replaced');
     }
 
     /** DELETE /addresses/:id */

@@ -26,6 +26,7 @@ class UserService
         ?string $role,
         string $sort = '',
         string $filter = '',
+        ?array $projection = null,
     ): array {
         $this->auth->requireRole('admin');
         return $this->user->findAll(
@@ -35,10 +36,11 @@ class UserService
             $role,
             $sort,
             $filter,
+            $projection,
         );
     }
 
-    public function get(int $id): array
+    public function get(int $id, ?array $projection = null): array
     {
         $this->auth->require();
 
@@ -46,7 +48,7 @@ class UserService
             Response::forbidden();
         }
 
-        $user = $this->user->findById($id);
+        $user = $this->user->findById($id, $projection);
         if (!$user) {
             Response::notFound('User not found');
         }
@@ -54,7 +56,7 @@ class UserService
         return $user;
     }
 
-    public function create(array $input): int
+    public function create(array $input, ?array $projection = null): array
     {
         $this->auth->requireRole('admin');
 
@@ -89,10 +91,10 @@ class UserService
                 ['cost' => 12],
             ),
             'role_id' => $roleId,
-        ]);
+        ], $projection);
     }
 
-    public function update(int $id, array $input): void
+    public function update(int $id, array $input, ?array $projection = null): array
     {
         $this->auth->require();
 
@@ -123,12 +125,12 @@ class UserService
             }
         }
 
-        if (!empty($set)) {
-            $this->user->update($id, $set);
-        }
+        return !empty($set)
+            ? $this->user->update($id, $set, $projection)
+            : ($this->user->findById($id, $projection) ?? ['id' => $id]);
     }
 
-    public function replace(int $id, array $input): void
+    public function replace(int $id, array $input, ?array $projection = null): array
     {
         $this->auth->require();
 
@@ -159,7 +161,7 @@ class UserService
             $set['role_id'] = $roleId;
         }
 
-        $this->user->update($id, $set);
+        return $this->user->update($id, $set, $projection);
     }
 
     public function delete(int $id): void

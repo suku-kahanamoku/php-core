@@ -31,13 +31,14 @@ class TextApi
             max(1, (int) $request->get('page', 1)),
             min(100, max(1, (int) $request->get('limit', 20))),
             (string) $request->get('filter', ''),
+            $request->projection(),
         ));
     }
 
     /** GET /texts/:id */
     public function get(Request $request, array $params): void
     {
-        Response::success($this->service->get((int) $params['id']));
+        Response::success($this->service->get((int) $params['id'], $request->projection()));
     }
 
     /** GET /texts/by-key/:key */
@@ -52,7 +53,7 @@ class TextApi
     /** POST /texts */
     public function create(Request $request): void
     {
-        $id = $this->service->create(
+        $text = $this->service->create(
             trim((string) $request->get('syscode', '')),
             trim((string) $request->get('title', '')),
             trim((string) $request->get('language', 'cs')),
@@ -60,27 +61,28 @@ class TextApi
                 'content'   => $request->get('content'),
                 'is_active' => $request->get('is_active', 1),
             ],
+            $request->projection(),
         );
-        Response::created($this->service->get($id), 'Text created');
+        Response::created($text, 'Text created');
     }
 
     /** PATCH /texts/:id */
     public function update(Request $request, array $params): void
     {
-        $this->service->update((int) $params['id'], [
+        $text = $this->service->update((int) $params['id'], [
             'syscode'   => $request->get('syscode'),
             'title'     => $request->get('title'),
             'content'   => $request->get('content'),
             'language'  => $request->get('language'),
             'is_active' => $request->get('is_active'),
-        ]);
-        Response::success($this->service->get((int) $params['id']), 'Text updated');
+        ], $request->projection());
+        Response::success($text, 'Text updated');
     }
 
     /** PUT /texts/:id */
     public function replace(Request $request, array $params): void
     {
-        $this->service->replace(
+        $text = $this->service->replace(
             (int) $params['id'],
             trim((string) $request->get('syscode', '')),
             trim((string) $request->get('title', '')),
@@ -89,8 +91,9 @@ class TextApi
                 'language'  => $request->get('language', 'cs'),
                 'is_active' => $request->get('is_active', 1),
             ],
+            $request->projection(),
         );
-        Response::success($this->service->get((int) $params['id']), 'Text replaced');
+        Response::success($text, 'Text replaced');
     }
 
     /** DELETE /texts/:id */

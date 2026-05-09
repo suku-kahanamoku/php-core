@@ -28,7 +28,7 @@ $r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'pas
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
-$r          = request('POST', "{$base}/categories", ['name' => 'Invoices Cat']);
+$r = request('POST', "{$base}/categories", ['name' => 'Invoices Cat']);
 assert_test('create category 201', $r['status'] === 201, dump_on_fail($r));
 $invCatId = $r['data']['data']['id'] ?? null;
 
@@ -52,8 +52,8 @@ $invUserId = $r['data']['data']['id'] ?? null;
 $r     = request('POST', "{$base}/auth/login", ['email' => $invUserEmail, 'password' => $invPassword], false);
 $token = $r['data']['data']['token'] ?? null;
 $r     = request('POST', "{$base}/orders", [
-    'items'    => [['product_id' => $invProductId, 'quantity' => 1]],
-    'currency' => 'CZK', 'payment_method' => 'card',
+    'carts'   => [['product_id' => $invProductId, 'quantity' => 1]],
+    'billing' => ['value' => 'card'],
 ]);
 assert_test('create order 201', $r['status'] === 201, dump_on_fail($r));
 $invOrderId = $r['data']['data']['id'] ?? null;

@@ -27,8 +27,8 @@ $r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'pas
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
-$r          = request('POST', "{$base}/categories", ['name' => 'Svc Inv Cat']);
-$svcCatId   = $r['data']['data']['id'] ?? null;
+$r        = request('POST', "{$base}/categories", ['name' => 'Svc Inv Cat']);
+$svcCatId = $r['data']['data']['id'] ?? null;
 
 $svcSku = 'SVC-INV-PROD-' . time();
 $r      = request('POST', "{$base}/products", [
@@ -47,8 +47,8 @@ $svcUserId = $r['data']['data']['id'] ?? null;
 $r     = request('POST', "{$base}/auth/login", ['email' => $svcUserEmail, 'password' => 'TestPass123'], false);
 $token = $r['data']['data']['token'] ?? null;
 $r     = request('POST', "{$base}/orders", [
-    'items'    => [['product_id' => $svcProdId, 'quantity' => 1]],
-    'currency' => 'CZK', 'payment_method' => 'card',
+    'carts'   => [['product_id' => $svcProdId, 'quantity' => 1]],
+    'billing' => ['value' => 'card'],
 ]);
 $svcOrderId = $r['data']['data']['id'] ?? null;
 

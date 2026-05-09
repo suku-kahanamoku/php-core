@@ -27,8 +27,8 @@ $r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'pas
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
-$r            = request('POST', "{$base}/categories", ['name' => 'Model Order Cat']);
-$modelCatId   = $r['data']['data']['id'] ?? null;
+$r          = request('POST', "{$base}/categories", ['name' => 'Model Order Cat']);
+$modelCatId = $r['data']['data']['id'] ?? null;
 
 $modelSku = TEST_PREFIX . 'model_ord_prod_' . time();
 $r        = request('POST', "{$base}/products", [
@@ -51,8 +51,8 @@ $r     = request('POST', "{$base}/auth/login", ['email' => $modelUserEmail, 'pas
 $token = $r['data']['data']['token'] ?? null;
 
 $r = request('POST', "{$base}/orders", [
-    'items'    => [['product_id' => $modelProdId, 'quantity' => 1]],
-    'currency' => 'CZK', 'payment_method' => 'card',
+    'carts'   => [['product_id' => $modelProdId, 'quantity' => 1]],
+    'billing' => ['value' => 'card'],
 ]);
 assert_test('create order 201', $r['status'] === 201, dump_on_fail($r));
 $modelOrderId = $r['data']['data']['id'] ?? null;

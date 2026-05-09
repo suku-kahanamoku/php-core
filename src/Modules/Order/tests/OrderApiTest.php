@@ -28,7 +28,7 @@ $r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'pas
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
-$r          = request('POST', "{$base}/categories", ['name' => 'Orders Cat']);
+$r = request('POST', "{$base}/categories", ['name' => 'Orders Cat']);
 assert_test('create category 201', $r['status'] === 201, dump_on_fail($r));
 $ordCatId = $r['data']['data']['id'] ?? null;
 
@@ -57,17 +57,17 @@ assert_test('test user login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
 $r = request('POST', "{$base}/orders", [
-    'items'    => [['product_id' => $ordProductId, 'quantity' => 1]],
-    'currency' => 'CZK', 'payment_method' => 'card',
+    'carts'   => [['product_id' => $ordProductId, 'quantity' => 1]],
+    'billing' => ['value' => 'card'],
 ]);
 assert_test('POST /orders 201', $r['status'] === 201, dump_on_fail($r));
 $orderId = $r['data']['data']['id'] ?? null;
 
-$r = request('POST', "{$base}/orders", ['items' => []]);
+$r = request('POST', "{$base}/orders", ['carts' => []]);
 assert_test('POST /orders 422 empty items', $r['status'] === 422, dump_on_fail($r));
 
 $r = request('POST', "{$base}/orders", [
-    'items' => [['product_id' => $ordProductId, 'quantity' => 99999]],
+    'carts' => [['product_id' => $ordProductId, 'quantity' => 99999]],
 ]);
 assert_test('POST /orders 422 insufficient stock', $r['status'] === 422, dump_on_fail($r));
 

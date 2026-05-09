@@ -28,7 +28,7 @@ $r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'pas
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
-$r           = request('POST', "{$base}/categories", ['name' => 'Products Test Cat']);
+$r = request('POST', "{$base}/categories", ['name' => 'Products Test Cat']);
 assert_test('create category for products 201', $r['status'] === 201, dump_on_fail($r));
 $prodCatId = $r['data']['data']['id'] ?? null;
 
@@ -64,10 +64,10 @@ if ($prodRegId) {
 section('Products – create');
 $prodSku = TEST_PREFIX . 'prod_' . time();
 $r       = request('POST', "{$base}/products", [
-    'name'         => 'Test Product', 'sku' => $prodSku,
-    'price'        => 199.0, 'category_ids' => [$prodCatId], 'stock_quantity' => 10,
-    'kind'         => 'dry', 'color' => 'white', 'variant' => 'riesling',
-    'data'         => ['quality' => 'late_harvest', 'volume' => 0.75, 'year' => 2022],
+    'name'  => 'Test Product', 'sku' => $prodSku,
+    'price' => 199.0, 'category_ids' => [$prodCatId], 'stock_quantity' => 10,
+    'kind'  => 'dry', 'color' => 'white', 'variant' => 'riesling',
+    'data'  => ['quality' => 'late_harvest', 'volume' => 0.75, 'year' => 2022],
 ]);
 assert_test('POST /products 201', $r['status'] === 201, dump_on_fail($r));
 $prodId = $r['data']['data']['id'] ?? null;
@@ -165,6 +165,23 @@ if ($prodCatId) {
     request('DELETE', "{$base}/categories/{$prodCatId}");
 }
 $token = null;
+
+// ── Projection ────────────────────────────────────────────────────────────────
+
+section('Products – projection');
+$r = request('GET', "{$base}/products?projection=name,price", [], false);
+assert_test('projection: 200', $r['status'] === 200, dump_on_fail($r));
+$firstItem = $r['data']['data']['items'][0] ?? [];
+assert_test('projection: has id (system)', isset($firstItem['id']));
+assert_test('projection: has name', isset($firstItem['name']));
+assert_test('projection: has price', isset($firstItem['price']));
+assert_test('projection: no sku', !isset($firstItem['sku']));
+
+$r = request('GET', "{$base}/products?projection=", [], false);
+assert_test('empty projection: 200', $r['status'] === 200, dump_on_fail($r));
+$firstItem = $r['data']['data']['items'][0] ?? [];
+assert_test('empty projection: has id', isset($firstItem['id']));
+assert_test('empty projection: no name', !isset($firstItem['name']));
 
 // ─────────────────────────────────────────────────────────────────────────────
 

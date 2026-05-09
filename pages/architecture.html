@@ -110,7 +110,7 @@ graph TD
         <div class="space-y-2">
           <div class="flex items-start gap-2"><span class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded font-mono shrink-0">*Api</span><span class="text-xs text-slate-600">HTTP routing, parsování requestu, volání service</span></div>
           <div class="flex items-start gap-2"><span class="bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded font-mono shrink-0">*Service</span><span class="text-xs text-slate-600">Business logika, validace, auth kontrola</span></div>
-          <div class="flex items-start gap-2"><span class="bg-violet-100 text-violet-700 text-xs px-2 py-0.5 rounded font-mono shrink-0">*Repository</span><span class="text-xs text-slate-600">Veškeré SQL dotazy, filtrování dle franchise_code</span></div>
+          <div class="flex items-start gap-2"><span class="bg-violet-100 text-violet-700 text-xs px-2 py-0.5 rounded font-mono shrink-0">*Repository</span><span class="text-xs text-slate-600">Veškeré SQL dotazy, filtrování dle franchise_code, podpora projekce</span></div>
         </div>
       </div>
       <div class="bg-white rounded-xl border border-slate-200 p-4">
@@ -118,8 +118,9 @@ graph TD
         <div class="space-y-2">
           <div class="flex items-start gap-2"><span class="bg-rose-100 text-rose-700 text-xs px-2 py-0.5 rounded font-mono shrink-0">Database</span><span class="text-xs text-slate-600">PDO singleton, query helpery</span></div>
           <div class="flex items-start gap-2"><span class="bg-rose-100 text-rose-700 text-xs px-2 py-0.5 rounded font-mono shrink-0">Auth</span><span class="text-xs text-slate-600">Instance třída – token, user, role</span></div>
-          <div class="flex items-start gap-2"><span class="bg-rose-100 text-rose-700 text-xs px-2 py-0.5 rounded font-mono shrink-0">Request</span><span class="text-xs text-slate-600">HTTP + franchise_code resolution</span></div>
+          <div class="flex items-start gap-2"><span class="bg-rose-100 text-rose-700 text-xs px-2 py-0.5 rounded font-mono shrink-0">Request</span><span class="text-xs text-slate-600">HTTP + franchise_code resolution, <code>projection()</code> parser</span></div>
           <div class="flex items-start gap-2"><span class="bg-rose-100 text-rose-700 text-xs px-2 py-0.5 rounded font-mono shrink-0">Router</span><span class="text-xs text-slate-600">Regex routing, dispatch</span></div>
+          <div class="flex items-start gap-2"><span class="bg-rose-100 text-rose-700 text-xs px-2 py-0.5 rounded font-mono shrink-0">Projection</span><span class="text-xs text-slate-600">Třída pro výběr sloupců — <code>?projection=field1,field2</code> nebo relace</span></div>
         </div>
       </div>
       <div class="bg-white rounded-xl border border-slate-200 p-4">

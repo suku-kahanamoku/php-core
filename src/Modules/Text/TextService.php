@@ -27,13 +27,14 @@ class TextService
         int $page = 1,
         int $limit = 20,
         string $filter = '',
+        ?array $projection = null,
     ): array {
-        return $this->text->findAll($language, $isActive, $search, $sort, $page, $limit, $filter);
+        return $this->text->findAll($language, $isActive, $search, $sort, $page, $limit, $filter, $projection);
     }
 
-    public function get(int $id): array
+    public function get(int $id, ?array $projection = null): array
     {
-        $text = $this->text->findById($id);
+        $text = $this->text->findById($id, $projection);
         if (!$text) {
             Response::notFound('Text not found');
         }
@@ -54,7 +55,8 @@ class TextService
         string $title,
         string $language,
         array $input,
-    ): int {
+        ?array $projection = null,
+    ): array {
         $this->auth->requireRole('admin');
 
         VALIDATOR(['syscode' => $key, 'title' => $title])
@@ -72,10 +74,10 @@ class TextService
             'language'   => $language,
             'is_active'  => (int) ($input['is_active'] ?? 1),
             'created_by' => $this->auth->id(),
-        ]);
+        ], $projection);
     }
 
-    public function update(int $id, array $input): void
+    public function update(int $id, array $input, ?array $projection = null): array
     {
         $this->auth->requireRole('admin');
 
@@ -98,9 +100,11 @@ class TextService
         if (!empty($set)) {
             $this->text->update($id, $set);
         }
+
+        return $this->text->findById($id, $projection) ?? ['id' => $id];
     }
 
-    public function replace(int $id, string $key, string $title, array $input): void
+    public function replace(int $id, string $key, string $title, array $input, ?array $projection = null): array
     {
         $this->auth->requireRole('admin');
 
@@ -119,6 +123,8 @@ class TextService
             'language'  => (string) ($input['language'] ?? 'cs'),
             'is_active' => (int)    ($input['is_active'] ?? 1),
         ]);
+
+        return $this->text->findById($id, $projection) ?? ['id' => $id];
     }
 
     public function delete(int $id): void

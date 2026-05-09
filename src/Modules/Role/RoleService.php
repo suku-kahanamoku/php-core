@@ -19,12 +19,12 @@ class RoleService
         $this->auth = $auth;
     }
 
-    public function list(int $page = 1, int $limit = 20, string $sort = '', string $filter = ''): array
+    public function list(int $page = 1, int $limit = 20, string $sort = '', string $filter = '', ?array $projection = null): array
     {
-        return $this->role->findAll($page, $limit, $sort, $filter);
+        return $this->role->findAll($page, $limit, $sort, $filter, $projection);
     }
 
-    public function get(int $id): array
+    public function get(int $id, ?array $projection = null): array
     {
         $role = $this->role->findById($id);
         if (!$role) {
@@ -39,7 +39,8 @@ class RoleService
         string $name,
         string $label,
         int $sortOrder,
-    ): int {
+        ?array $projection = null,
+    ): array {
         $this->auth->requireRole('admin');
 
         VALIDATOR(['name' => $name, 'label' => $label])
@@ -59,10 +60,10 @@ class RoleService
             'name'     => $name,
             'label'    => $label,
             'position' => $sortOrder,
-        ]);
+        ], $projection);
     }
 
-    public function update(int $id, array $fields): void
+    public function update(int $id, array $fields, ?array $projection = null): array
     {
         $this->auth->requireRole('admin');
 
@@ -96,6 +97,8 @@ class RoleService
         if (!empty($set)) {
             $this->role->update($id, $set);
         }
+
+        return $this->role->findById($id, $projection) ?? ['id' => $id];
     }
 
     public function replace(
@@ -103,7 +106,8 @@ class RoleService
         string $name,
         string $label,
         int $sortOrder,
-    ): void {
+        ?array $projection = null,
+    ): array {
         $this->auth->requireRole('admin');
 
         if (!$this->role->findById($id)) {
@@ -128,6 +132,8 @@ class RoleService
             'label'    => $label,
             'position' => $sortOrder,
         ]);
+
+        return $this->role->findById($id, $projection) ?? ['id' => $id];
     }
 
     public function delete(int $id): void

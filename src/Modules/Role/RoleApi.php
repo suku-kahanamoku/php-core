@@ -27,24 +27,26 @@ class RoleApi
             min(100, max(1, (int) $request->get('limit', 20))),
             (string) $request->get('sort', ''),
             (string) $request->get('filter', ''),
+            $request->projection(),
         ));
     }
 
     /** GET /roles/:id */
     public function get(Request $request, array $params): void
     {
-        Response::success($this->service->get((int) $params['id']));
+        Response::success($this->service->get((int) $params['id'], $request->projection()));
     }
 
     /** POST /roles */
     public function create(Request $request): void
     {
-        $id = $this->service->create(
+        $role = $this->service->create(
             trim(strtolower((string) $request->get('name', ''))),
             trim((string) $request->get('label', '')),
             (int) $request->get('position', 0),
+            $request->projection(),
         );
-        Response::created($this->service->get($id), 'Role created');
+        Response::created($role, 'Role created');
     }
 
     /** PATCH /roles/:id */
@@ -58,20 +60,21 @@ class RoleApi
                 $fields[$f] = $request->get($f);
             }
         }
-        $this->service->update((int) $params['id'], $fields);
-        Response::success($this->service->get((int) $params['id']), 'Role updated');
+        $role = $this->service->update((int) $params['id'], $fields, $request->projection());
+        Response::success($role, 'Role updated');
     }
 
     /** PUT /roles/:id */
     public function replace(Request $request, array $params): void
     {
-        $this->service->replace(
+        $role = $this->service->replace(
             (int) $params['id'],
             trim(strtolower((string) $request->get('name', ''))),
             trim((string) $request->get('label', '')),
             (int) $request->get('position', 0),
+            $request->projection(),
         );
-        Response::success($this->service->get((int) $params['id']), 'Role replaced');
+        Response::success($role, 'Role replaced');
     }
 
     /** DELETE /roles/:id */

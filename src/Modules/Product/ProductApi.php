@@ -26,27 +26,24 @@ class ProductApi
             max(1, (int) $request->get('page', 1)),
             min(100, max(1, (int) $request->get('limit', 20))),
             $request->get('search'),
-            $request->get('category_id') !== null
-                ? (int) $request->get('category_id')
-                : null,
+            $request->get('category_id') !== null ? (int) $request->get('category_id') : null,
             (string) $request->get('sort', ''),
             (string) $request->get('filter', ''),
-            $request->get('category_syscode') !== null
-                ? (string) $request->get('category_syscode')
-                : null,
+            $request->get('category_syscode') !== null ? (string) $request->get('category_syscode') : null,
+            $request->projection(),
         ));
     }
 
     /** GET /products/:id */
     public function get(Request $request, array $params): void
     {
-        Response::success($this->service->get((int) $params['id']));
+        Response::success($this->service->get((int) $params['id'], $request->projection()));
     }
 
     /** POST /products */
     public function create(Request $request): void
     {
-        $id = $this->service->create([
+        $product = $this->service->create([
             'name'           => $request->get('name'),
             'sku'            => $request->get('sku'),
             'description'    => $request->get('description'),
@@ -59,14 +56,14 @@ class ProductApi
             'variant'        => $request->get('variant'),
             'data'           => $request->get('data'),
             'category_ids'   => $request->get('category_ids'),
-        ]);
-        Response::created($this->service->get($id), 'Product created');
+        ], $request->projection());
+        Response::created($product, 'Product created');
     }
 
     /** PATCH /products/:id */
     public function update(Request $request, array $params): void
     {
-        $this->service->update((int) $params['id'], [
+        $product = $this->service->update((int) $params['id'], [
             'sku'            => $request->get('sku'),
             'name'           => $request->get('name'),
             'description'    => $request->get('description'),
@@ -79,14 +76,14 @@ class ProductApi
             'variant'        => $request->get('variant'),
             'data'           => $request->get('data'),
             'category_ids'   => $request->get('category_ids'),
-        ]);
-        Response::success($this->service->get((int) $params['id']), 'Product updated');
+        ], $request->projection());
+        Response::success($product, 'Product updated');
     }
 
     /** PUT /products/:id */
     public function replace(Request $request, array $params): void
     {
-        $this->service->replace((int) $params['id'], [
+        $product = $this->service->replace((int) $params['id'], [
             'name'           => $request->get('name'),
             'sku'            => $request->get('sku'),
             'price'          => $request->get('price'),
@@ -99,8 +96,8 @@ class ProductApi
             'variant'        => $request->get('variant'),
             'data'           => $request->get('data'),
             'category_ids'   => $request->get('category_ids'),
-        ]);
-        Response::success($this->service->get((int) $params['id']), 'Product replaced');
+        ], $request->projection());
+        Response::success($product, 'Product replaced');
     }
 
     /** DELETE /products/:id */

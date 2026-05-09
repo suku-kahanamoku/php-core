@@ -108,4 +108,31 @@ class Request
     {
         return str_contains($this->headers['content-type'] ?? '', 'application/json');
     }
+
+    /**
+     * Parse the `projection` query/body parameter into an array.
+     *
+     * - No parameter present → null  (all columns)
+     * - Empty string / empty array  → []    (system columns only)
+     * - 'field1,field2'             → ['field1', 'field2']
+     * - ['field1', 'field2']        → ['field1', 'field2']
+     */
+    public function projection(): ?array
+    {
+        $raw = $this->get('projection');
+
+        if ($raw === null) {
+            return null;
+        }
+
+        if ($raw === '' || $raw === []) {
+            return [];
+        }
+
+        if (is_array($raw)) {
+            return array_values(array_filter(array_map('trim', $raw), fn ($v) => $v !== ''));
+        }
+
+        return array_values(array_filter(array_map('trim', explode(',', (string) $raw)), fn ($v) => $v !== ''));
+    }
 }

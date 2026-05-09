@@ -153,9 +153,26 @@ if ($tempRoleId) {
 section('Roles – user CRUD with role assignment');
 $r = request('GET', "{$base}/users?role=admin");
 assert_test('GET /users?role=admin 200', $r['status'] === 200, dump_on_fail($r));
-assert_test('all returned users are admin', count(array_filter($r['data']['data']['items'] ?? [], fn ($u) => $u['role'] !== 'admin')) === 0);
+assert_test('all returned users are admin', count(array_filter($r['data']['data']['items'] ?? [], fn ($u) => ($u['role']['name'] ?? $u['role'] ?? null) !== 'admin')) === 0);
 
 $token = null;
+
+// ── Projection ────────────────────────────────────────────────────────────────
+
+section('Roles – projection');
+$r = request('GET', "{$base}/roles?projection=name,label", [], false);
+assert_test('projection: 200', $r['status'] === 200, dump_on_fail($r));
+$firstItem = $r['data']['data']['items'][0] ?? [];
+assert_test('projection: has id (system)', isset($firstItem['id']));
+assert_test('projection: has name', isset($firstItem['name']));
+assert_test('projection: has label', isset($firstItem['label']));
+assert_test('projection: no position', !isset($firstItem['position']));
+
+$r = request('GET', "{$base}/roles?projection=", [], false);
+assert_test('empty projection: 200', $r['status'] === 200, dump_on_fail($r));
+$firstItem = $r['data']['data']['items'][0] ?? [];
+assert_test('empty projection: has id', isset($firstItem['id']));
+assert_test('empty projection: no name', !isset($firstItem['name']));
 
 // ─────────────────────────────────────────────────────────────────────────────
 

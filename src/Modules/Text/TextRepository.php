@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Text;
 
 use App\Modules\Database\Database;
+use App\Utils\Projection;
 
 /**
  * Text (CMS) – DB entity layer.
@@ -13,6 +14,10 @@ class TextRepository
 {
     private Database $db;
     private string   $code;
+
+    private const SYS = ['id', 'created_at', 'updated_at'];
+    private const OWN = ['syscode', 'title', 'content', 'language', 'is_active', 'created_by'];
+    private const REL = [];
 
     public function __construct(Database $db, string $franchiseCode)
     {
@@ -28,7 +33,9 @@ class TextRepository
         int $page = 1,
         int $limit = 20,
         string $filter = '',
+        ?array $projection = null,
     ): array {
+        $proj    = new Projection($projection);
         $orderBy = SQL_SORT($sort, 'syscode ASC');
 
         $limit  = min(100, max(1, $limit));
@@ -55,17 +62,27 @@ class TextRepository
 
         $whereStr = implode(' AND ', $where);
 
+        $sys     = self::SYS;
+        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
+        $cols    = array_merge($sys, $ownCols);
+        $select  = implode(', ', $cols);
+
         $total = (int) $this->db->fetchOne(
             "SELECT COUNT(*) AS cnt FROM text WHERE {$whereStr}",
             $params,
         )['cnt'];
 
         $items = $this->db->fetchAll(
-            "SELECT id, syscode, title, language, is_active, created_at, updated_at
-             FROM text WHERE {$whereStr} ORDER BY {$orderBy}
+            "SELECT {$select} FROM text WHERE {$whereStr}
+             ORDER BY {$orderBy}
              LIMIT {$limit} OFFSET {$offset}",
             $params,
         );
+
+        foreach ($items as &$item) {
+            $item = $proj->apply($item, $sys);
+        }
+        unset($item);
 
         return [
             'items'      => $items,
@@ -76,14 +93,20 @@ class TextRepository
         ];
     }
 
-    public function findById(int $id): ?array
+    public function findById(int $id, ?array $projection = null): ?array
     {
+        $proj = new Projection($projection);
+
         $row = $this->db->fetchOne(
             'SELECT * FROM text WHERE id = ? AND franchise_code = ?',
             [$id, $this->code],
         );
 
-        return $row ?: null;
+        if (!$row) {
+            return null;
+        }
+
+        return $proj->apply($row, self::SYS);
     }
 
     public function findByKey(string $key, string $language): ?array
@@ -115,15 +138,17 @@ class TextRepository
         return (bool) $row;
     }
 
-    public function create(array $data): int
+    public function create(array $data, ?array $projection = null): array
     {
-        return $this->db->insert('text', array_merge($data, [
+        $id = $this->db->insert('text', array_merge($data, [
             'franchise_code' => $this->code,
             'created_at'     => date('Y-m-d H:i:s'),
         ]));
+
+        return $this->findById($id, $projection) ?? ['id' => $id];
     }
 
-    public function update(int $id, array $data): void
+    public function update(int $id, array $data, ?array $projection = null): array
     {
         $this->db->update(
             'text',
@@ -131,6 +156,8 @@ class TextRepository
             'id = ? AND franchise_code = ?',
             [$id, $this->code],
         );
+
+        return $this->findById($id, $projection) ?? ['id' => $id];
     }
 
     public function delete(int $id): void

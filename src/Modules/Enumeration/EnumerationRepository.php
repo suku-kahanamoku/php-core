@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Enumeration;
 
 use App\Modules\Database\Database;
+use App\Utils\Projection;
 
 /**
  * Enumeration (codebook) – DB entity layer.
@@ -13,6 +14,10 @@ class EnumerationRepository
 {
     private Database $db;
     private string   $code;
+
+    private const SYS = ['id', 'created_at', 'updated_at'];
+    private const OWN = ['type', 'syscode', 'label', 'value', 'position', 'is_active'];
+    private const REL = [];
 
     public function __construct(Database $db, string $franchiseCode)
     {
@@ -27,7 +32,9 @@ class EnumerationRepository
         int $page = 1,
         int $limit = 20,
         string $filter = '',
+        ?array $projection = null,
     ): array {
+        $proj    = new Projection($projection);
         $orderBy = SQL_SORT($sort, 'type ASC, position ASC, label ASC');
 
         $limit  = min(100, max(1, $limit));
@@ -53,18 +60,28 @@ class EnumerationRepository
 
         $whereStr = implode(' AND ', $where);
 
+        $sys     = self::SYS;
+        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
+        $cols    = array_merge($sys, $ownCols);
+        $select  = implode(', ', $cols);
+
         $total = (int) $this->db->fetchOne(
             "SELECT COUNT(*) AS cnt FROM enumeration WHERE {$whereStr}",
             $params,
         )['cnt'];
 
         $items = $this->db->fetchAll(
-            "SELECT * FROM enumeration
+            "SELECT {$select} FROM enumeration
              WHERE {$whereStr}
              ORDER BY {$orderBy}
              LIMIT {$limit} OFFSET {$offset}",
             $params,
         );
+
+        foreach ($items as &$item) {
+            $item = $proj->apply($item, $sys);
+        }
+        unset($item);
 
         return [
             'items'      => $items,
@@ -75,14 +92,20 @@ class EnumerationRepository
         ];
     }
 
-    public function findById(int $id): ?array
+    public function findById(int $id, ?array $projection = null): ?array
     {
+        $proj = new Projection($projection);
+
         $row = $this->db->fetchOne(
             'SELECT * FROM enumeration WHERE id = ? AND franchise_code = ?',
             [$id, $this->code],
         );
 
-        return $row ?: null;
+        if (!$row) {
+            return null;
+        }
+
+        return $proj->apply($row, self::SYS);
     }
 
     public function getTypes(): array
@@ -115,15 +138,17 @@ class EnumerationRepository
         return (bool) $row;
     }
 
-    public function create(array $data): int
+    public function create(array $data, ?array $projection = null): array
     {
-        return $this->db->insert('enumeration', array_merge($data, [
+        $id = $this->db->insert('enumeration', array_merge($data, [
             'franchise_code' => $this->code,
             'created_at'     => date('Y-m-d H:i:s'),
         ]));
+
+        return $this->findById($id, $projection) ?? ['id' => $id];
     }
 
-    public function update(int $id, array $data): void
+    public function update(int $id, array $data, ?array $projection = null): array
     {
         $this->db->update(
             'enumeration',
@@ -131,6 +156,8 @@ class EnumerationRepository
             'id = ? AND franchise_code = ?',
             [$id, $this->code],
         );
+
+        return $this->findById($id, $projection) ?? ['id' => $id];
     }
 
     public function delete(int $id): void

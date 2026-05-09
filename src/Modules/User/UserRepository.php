@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\User;
 
 use App\Modules\Database\Database;
+use App\Utils\Projection;
 
 /**
  * User – DB entity layer.
@@ -13,6 +14,10 @@ class UserRepository
 {
     private Database $db;
     private string   $code;
+
+    private const SYS = ['id', 'created_at', 'updated_at', 'last_login_at'];
+    private const OWN = ['first_name', 'last_name', 'email', 'phone', 'role_id'];
+    private const REL = ['role'];
 
     public function __construct(Database $db, string $franchiseCode)
     {
@@ -28,7 +33,9 @@ class UserRepository
         ?string $role = null,
         string $sort = '',
         string $filter = '',
+        ?array $projection = null,
     ): array {
+        $proj    = new Projection($projection);
         $orderBy = SQL_SORT($sort, 'u.created_at DESC', 'u');
 
         $limit  = min(100, max(1, $limit));
@@ -55,24 +62,35 @@ class UserRepository
 
         $whereStr = implode(' AND ', $where);
 
+        $sys     = self::SYS;
+        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
+        $sysSel  = 'u.' . implode(', u.', $sys);
+        $ownSel  = $ownCols ? ', u.' . implode(', u.', $ownCols) : '';
+
+        // JOIN role when filtering by role or when projection requires it
+        $needsRoleJoin = $role !== null || $proj->needsJoin('role');
+        $joinSql       = $needsRoleJoin ? 'LEFT JOIN role r ON r.id = u.role_id' : '';
+        $relSel        = $proj->needsJoin('role') ? ', r.name AS role_name' : '';
+
+        $select = "{$sysSel}{$ownSel}{$relSel}";
+
         $total = (int) $this->db->fetchOne(
-            'SELECT COUNT(*) AS cnt FROM user u'
-            . ' JOIN role r ON r.id = u.role_id'
-            . " WHERE {$whereStr}",
+            "SELECT COUNT(*) AS cnt FROM user u LEFT JOIN role r ON r.id = u.role_id WHERE {$whereStr}",
             $params,
         )['cnt'];
 
         $items = $this->db->fetchAll(
-            "SELECT u.id, u.first_name, u.last_name, u.email,
-                    r.name AS role, r.id AS role_id,
-                    u.phone, u.created_at, u.last_login_at
-             FROM user u
-             JOIN role r ON r.id = u.role_id
+            "SELECT {$select} FROM user u {$joinSql}
              WHERE {$whereStr}
              ORDER BY {$orderBy}
              LIMIT {$limit} OFFSET {$offset}",
             $params,
         );
+
+        foreach ($items as &$item) {
+            $item = $proj->apply($item, $sys, ['role' => ['fk' => 'role_id', 'nest' => ['name' => 'role_name', 'id' => 'role_id']]]);
+        }
+        unset($item);
 
         return [
             'items'      => $items,
@@ -83,21 +101,36 @@ class UserRepository
         ];
     }
 
-    /** Find single user by ID (with role join). */
-    public function findById(int $id): ?array
+    /** Find single user by ID. */
+    public function findById(int $id, ?array $projection = null): ?array
     {
+        $proj = new Projection($projection);
+
+        $sys     = self::SYS;
+        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
+        $sysSel  = 'u.' . implode(', u.', $sys);
+        $ownSel  = $ownCols ? ', u.' . implode(', u.', $ownCols) : '';
+
+        $joinSql = '';
+        $relSel  = '';
+        if ($proj->needsJoin('role')) {
+            $joinSql = 'LEFT JOIN role r ON r.id = u.role_id';
+            $relSel  = ', r.name AS role_name';
+        }
+
+        $select = "{$sysSel}{$ownSel}{$relSel}";
+
         $user = $this->db->fetchOne(
-            'SELECT u.id, u.first_name, u.last_name, u.email,
-                    r.name AS role, r.id AS role_id,
-                    u.phone,
-                    u.created_at, u.updated_at, u.last_login_at
-             FROM user u
-             JOIN role r ON r.id = u.role_id
-             WHERE u.id = ? AND u.franchise_code = ?',
+            "SELECT {$select} FROM user u {$joinSql}
+             WHERE u.id = ? AND u.franchise_code = ?",
             [$id, $this->code],
         );
 
-        return $user ?: null;
+        if (!$user) {
+            return null;
+        }
+
+        return $proj->apply($user, $sys, ['role' => ['fk' => 'role_id', 'nest' => ['name' => 'role_name', 'id' => 'role_id']]]);
     }
 
     /** Find role_id by role name. */
@@ -138,15 +171,17 @@ class UserRepository
         ) ?: null;
     }
 
-    public function create(array $data): int
+    public function create(array $data, ?array $projection = null): array
     {
-        return $this->db->insert('user', array_merge($data, [
+        $id = $this->db->insert('user', array_merge($data, [
             'franchise_code' => $this->code,
             'created_at'     => date('Y-m-d H:i:s'),
         ]));
+
+        return $this->findById($id, $projection) ?? ['id' => $id];
     }
 
-    public function update(int $id, array $data): void
+    public function update(int $id, array $data, ?array $projection = null): array
     {
         $this->db->update(
             'user',
@@ -154,6 +189,8 @@ class UserRepository
             'id = ? AND franchise_code = ?',
             [$id, $this->code],
         );
+
+        return $this->findById($id, $projection) ?? ['id' => $id];
     }
 
     public function delete(int $id): void

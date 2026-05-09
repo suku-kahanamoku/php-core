@@ -25,6 +25,7 @@ class InvoiceService
         ?string $status,
         string $sort = '',
         string $filter = '',
+        ?array $projection = null,
     ): array {
         $this->auth->require();
 
@@ -37,14 +38,15 @@ class InvoiceService
             $status,
             $sort,
             $filter,
+            $projection,
         );
     }
 
-    public function get(int $id): array
+    public function get(int $id, ?array $projection = null): array
     {
         $this->auth->require();
 
-        $invoice = $this->invoice->findById($id);
+        $invoice = $this->invoice->findById($id, $projection);
         if (!$invoice) {
             Response::notFound('Invoice not found');
         }
@@ -56,7 +58,7 @@ class InvoiceService
         return $invoice;
     }
 
-    public function create(int $orderId, array $input): int
+    public function create(int $orderId, array $input, ?array $projection = null): array
     {
         $this->auth->requireRole('admin');
 
@@ -81,7 +83,7 @@ class InvoiceService
         $pdo->beginTransaction();
 
         try {
-            $invoiceId = $this->invoice->create([
+            $invoiceRow = $this->invoice->create([
                 'invoice_number'     => $this->invoice->generateNumber(),
                 'order_id'           => $orderId,
                 'user_id'            => $order['user_id'],
@@ -93,6 +95,7 @@ class InvoiceService
                 'billing_address_id' => $order['billing_address_id'] ?? null,
                 'note'               => $input['note']               ?? '',
             ]);
+            $invoiceId = (int) $invoiceRow['id'];
 
             foreach ($orderItems as $item) {
                 $this->invoice->createItem([
@@ -111,10 +114,10 @@ class InvoiceService
             Response::error($e->getMessage(), 500);
         }
 
-        return $invoiceId ?? 0;
+        return $this->invoice->findById($invoiceId ?? 0, $projection) ?? ['id' => $invoiceId ?? 0];
     }
 
-    public function updateStatus(int $id, string $status): void
+    public function updateStatus(int $id, string $status, ?array $projection = null): array
     {
         $this->auth->requireRole('admin');
 
@@ -128,6 +131,8 @@ class InvoiceService
         }
 
         $this->invoice->updateStatus($id, $status);
+
+        return $this->invoice->findById($id, $projection) ?? ['id' => $id];
     }
 
     public function delete(int $id): void

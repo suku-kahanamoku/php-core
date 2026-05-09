@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Role;
 
 use App\Modules\Database\Database;
+use App\Utils\Projection;
 
 /**
  * Role – DB entity layer.
@@ -15,6 +16,10 @@ class RoleRepository
     private Database $db;
     private string   $code;
 
+    private const SYS = ['id', 'created_at', 'updated_at'];
+    private const OWN = ['name', 'label', 'position'];
+    private const REL = [];
+
     public function __construct(Database $db, string $franchiseCode)
     {
         $this->db   = $db;
@@ -22,8 +27,9 @@ class RoleRepository
     }
 
     /** Return all roles, optionally filtered and sorted. */
-    public function findAll(int $page = 1, int $limit = 20, string $sort = '', string $filter = ''): array
+    public function findAll(int $page = 1, int $limit = 20, string $sort = '', string $filter = '', ?array $projection = null): array
     {
+        $proj    = new Projection($projection);
         $orderBy = SQL_SORT($sort, 'position ASC');
 
         $limit  = min(100, max(1, $limit));
@@ -40,17 +46,27 @@ class RoleRepository
 
         $whereStr = implode(' AND ', $where);
 
+        $sys     = self::SYS;
+        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
+        $sysSel  = 'r.' . implode(', r.', $sys);
+        $ownSel  = $ownCols ? ', r.' . implode(', r.', $ownCols) : '';
+        $select  = "{$sysSel}{$ownSel}";
+
         $total = (int) $this->db->fetchOne(
             "SELECT COUNT(*) AS cnt FROM role WHERE {$whereStr}",
             $params,
         )['cnt'];
 
         $items = $this->db->fetchAll(
-            "SELECT id, name, label, position, created_at, updated_at
-             FROM role WHERE {$whereStr} ORDER BY {$orderBy}
+            "SELECT {$select} FROM role r WHERE {$whereStr} ORDER BY {$orderBy}
              LIMIT {$limit} OFFSET {$offset}",
             $params,
         );
+
+        foreach ($items as &$item) {
+            $item = $proj->apply($item, $sys);
+        }
+        unset($item);
 
         return [
             'items'      => $items,
@@ -62,15 +78,21 @@ class RoleRepository
     }
 
     /** Find single role by ID. */
-    public function findById(int $id): ?array
+    public function findById(int $id, ?array $projection = null): ?array
     {
+        $proj = new Projection($projection);
+
         $role = $this->db->fetchOne(
             'SELECT id, name, label, position, created_at, updated_at
              FROM role WHERE id = ? AND franchise_code = ?',
             [$id, $this->code],
         );
 
-        return $role ?: null;
+        if (!$role) {
+            return null;
+        }
+
+        return $proj->apply($role, self::SYS);
     }
 
     /** Count users assigned to this role. */
@@ -83,17 +105,19 @@ class RoleRepository
         )['cnt'];
     }
 
-    /** Insert a new role and return the new ID. */
-    public function create(array $data): int
+    /** Insert a new role and return the created row. */
+    public function create(array $data, ?array $projection = null): array
     {
-        return $this->db->insert('role', array_merge($data, [
+        $id = $this->db->insert('role', array_merge($data, [
             'franchise_code' => $this->code,
             'created_at'     => date('Y-m-d H:i:s'),
         ]));
+
+        return $this->findById($id, $projection);
     }
 
-    /** Update fields on an existing role. */
-    public function update(int $id, array $data): void
+    /** Update fields on an existing role and return the updated row. */
+    public function update(int $id, array $data, ?array $projection = null): array
     {
         $this->db->update(
             'role',
@@ -101,6 +125,8 @@ class RoleRepository
             'id = ? AND franchise_code = ?',
             [$id, $this->code],
         );
+
+        return $this->findById($id, $projection);
     }
 
     /** Hard-delete a role. */

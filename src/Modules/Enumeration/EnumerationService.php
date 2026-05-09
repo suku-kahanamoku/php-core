@@ -26,8 +26,9 @@ class EnumerationService
         int $page = 1,
         int $limit = 20,
         string $filter = '',
+        ?array $projection = null,
     ): array {
-        return $this->enum->findAll($type, $isActive, $sort, $page, $limit, $filter);
+        return $this->enum->findAll($type, $isActive, $sort, $page, $limit, $filter, $projection);
     }
 
     public function types(): array
@@ -35,16 +36,16 @@ class EnumerationService
         return $this->enum->getTypes();
     }
 
-    public function get(int $id): array
+    public function get(int $id, ?array $projection = null): array
     {
-        $item = $this->enum->findById($id);
+        $item = $this->enum->findById($id, $projection);
         if (!$item) {
             Response::notFound('Enumeration not found');
         }
         return $item;
     }
 
-    public function create(string $type, string $code, string $label, array $input): int
+    public function create(string $type, string $code, string $label, array $input, ?array $projection = null): array
     {
         $this->auth->requireRole('admin');
 
@@ -63,10 +64,10 @@ class EnumerationService
             'value'     => $input['value'] ?? $code,
             'position'  => (int) ($input['position'] ?? 0),
             'is_active' => (int) ($input['is_active'] ?? 1),
-        ]);
+        ], $projection);
     }
 
-    public function update(int $id, array $input): void
+    public function update(int $id, array $input, ?array $projection = null): array
     {
         $this->auth->requireRole('admin');
 
@@ -92,6 +93,8 @@ class EnumerationService
         if (!empty($set)) {
             $this->enum->update($id, $set);
         }
+
+        return $this->enum->findById($id, $projection) ?? ['id' => $id];
     }
 
     public function replace(
@@ -100,7 +103,8 @@ class EnumerationService
         string $code,
         string $label,
         array $input,
-    ): void {
+        ?array $projection = null,
+    ): array {
         $this->auth->requireRole('admin');
 
         if (!$this->enum->findById($id)) {
@@ -119,6 +123,8 @@ class EnumerationService
             'position'  => (int)    ($input['position'] ?? 0),
             'is_active' => (int)    ($input['is_active'] ?? 1),
         ]);
+
+        return $this->enum->findById($id, $projection) ?? ['id' => $id];
     }
 
     public function delete(int $id): void

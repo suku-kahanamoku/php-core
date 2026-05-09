@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Product;
 
 use App\Modules\Database\Database;
+use App\Utils\Projection;
 
 /**
  * Product – DB entity layer.
@@ -13,6 +14,10 @@ class ProductRepository
 {
     private Database $db;
     private string   $code;
+
+    private const SYS = ['id', 'created_at', 'updated_at'];
+    private const OWN = ['sku', 'name', 'description', 'price', 'vat_rate', 'stock_quantity', 'is_active', 'kind', 'color', 'variant', 'data'];
+    private const REL = ['categories'];
 
     public function __construct(Database $db, string $franchiseCode)
     {
@@ -28,7 +33,9 @@ class ProductRepository
         string $sort = '',
         string $filter = '',
         ?string $categorySyscode = null,
+        ?array $projection = null,
     ): array {
+        $proj    = new Projection($projection);
         $orderBy = SQL_SORT($sort, 'p.created_at DESC', 'p');
 
         $limit  = min(100, max(1, $limit));
@@ -59,19 +66,24 @@ class ProductRepository
 
         $whereStr = implode(' AND ', $where);
 
+        $sys     = self::SYS;
+        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
+        $sysSel  = 'p.' . implode(', p.', $sys);
+        $ownSel  = $ownCols ? ', p.' . implode(', p.', $ownCols) : '';
+
+        $needsCatJoin = $categoryId !== null || $categorySyscode !== null || $proj->needsJoin('categories');
+        $catJoin      = $needsCatJoin ? 'LEFT JOIN product_category pc ON pc.product_id = p.id' : '';
+        $catSel       = $proj->needsJoin('categories') ? ', GROUP_CONCAT(pc.category_id ORDER BY pc.category_id) AS category_ids' : '';
+
+        $select = "{$sysSel}{$ownSel}{$catSel}";
+
         $total = (int) $this->db->fetchOne(
-            "SELECT COUNT(*) AS cnt FROM product p WHERE {$whereStr}",
+            "SELECT COUNT(DISTINCT p.id) AS cnt FROM product p WHERE {$whereStr}",
             $params,
         )['cnt'];
 
         $items = $this->db->fetchAll(
-            "SELECT p.id, p.sku, p.name, p.description,
-                    p.price, p.vat_rate, p.stock_quantity, p.is_active,
-                    p.kind, p.color, p.variant, p.data,
-                    GROUP_CONCAT(pc.category_id ORDER BY pc.category_id) AS category_ids,
-                    p.created_at, p.updated_at
-             FROM product p
-             LEFT JOIN product_category pc ON pc.product_id = p.id
+            "SELECT {$select} FROM product p {$catJoin}
              WHERE {$whereStr}
              GROUP BY p.id
              ORDER BY {$orderBy}
@@ -80,10 +92,15 @@ class ProductRepository
         );
 
         foreach ($items as &$item) {
-            $item['category_ids'] = $item['category_ids']
-                ? array_map('intval', explode(',', $item['category_ids']))
-                : [];
-            $item['data'] = $item['data'] ? json_decode($item['data'], true) : null;
+            if (isset($item['category_ids'])) {
+                $item['category_ids'] = $item['category_ids']
+                    ? array_map('intval', explode(',', $item['category_ids']))
+                    : [];
+            }
+            if (isset($item['data'])) {
+                $item['data'] = $item['data'] ? json_decode($item['data'], true) : null;
+            }
+            $item = $proj->apply($item, $sys, ['categories' => ['category_ids']]);
         }
         unset($item);
 
@@ -96,12 +113,25 @@ class ProductRepository
         ];
     }
 
-    public function findById(int $id): ?array
+    public function findById(int $id, ?array $projection = null): ?array
     {
+        $proj = new Projection($projection);
+
+        $sys     = self::SYS;
+        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
+        $sysSel  = implode(', ', $sys);
+        $ownSel  = $ownCols ? ', ' . implode(', ', $ownCols) : '';
+        $select  = "`{$sysSel}`" === '`id, created_at, updated_at`' && $ownCols === []
+            ? implode(', ', $sys)
+            : $sysSel . $ownSel;
+
+        // Build a cleaner SELECT
+        $cols   = array_merge($sys, $ownCols);
+        $quoted = array_map(fn ($c) => "`{$c}`", $cols);
+        $select = implode(', ', $quoted);
+
         $row = $this->db->fetchOne(
-            'SELECT id, sku, name, description, price, vat_rate, stock_quantity, is_active,
-                    kind, color, variant, `data`, created_at, updated_at
-             FROM product WHERE id = ? AND franchise_code = ?',
+            "SELECT {$select} FROM product WHERE id = ? AND franchise_code = ?",
             [$id, $this->code],
         );
 
@@ -109,20 +139,23 @@ class ProductRepository
             return null;
         }
 
-        $row['data'] = $row['data'] ? json_decode($row['data'], true) : null;
+        if (isset($row['data'])) {
+            $row['data'] = $row['data'] ? json_decode($row['data'], true) : null;
+        }
 
-        $categoryRows = $this->db->fetchAll(
-            'SELECT pc.category_id, c.name AS category_name
-             FROM product_category pc
-             LEFT JOIN category c ON c.id = pc.category_id
-             WHERE pc.product_id = ?',
-            [$id],
-        );
+        if ($proj->needsJoin('categories')) {
+            $categoryRows = $this->db->fetchAll(
+                'SELECT pc.category_id, c.name AS category_name
+                 FROM product_category pc
+                 LEFT JOIN category c ON c.id = pc.category_id
+                 WHERE pc.product_id = ?',
+                [$id],
+            );
+            $row['category_ids']   = array_map('intval', array_column($categoryRows, 'category_id'));
+            $row['category_names'] = array_column($categoryRows, 'category_name');
+        }
 
-        $row['category_ids']   = array_map('intval', array_column($categoryRows, 'category_id'));
-        $row['category_names'] = array_column($categoryRows, 'category_name');
-
-        return $row;
+        return $proj->apply($row, $sys, ['categories' => ['category_ids', 'category_names']]);
     }
 
     public function syncCategories(int $productId, array $categoryIds): void
@@ -137,19 +170,21 @@ class ProductRepository
         }
     }
 
-    public function create(array $data): int
+    public function create(array $data, ?array $projection = null): array
     {
         if (isset($data['data']) && is_array($data['data'])) {
             $data['data'] = json_encode($data['data'], JSON_UNESCAPED_UNICODE);
         }
 
-        return $this->db->insert('product', array_merge($data, [
+        $id = $this->db->insert('product', array_merge($data, [
             'franchise_code' => $this->code,
             'created_at'     => date('Y-m-d H:i:s'),
         ]));
+
+        return $this->findById($id, $projection) ?? ['id' => $id];
     }
 
-    public function update(int $id, array $data): void
+    public function update(int $id, array $data, ?array $projection = null): array
     {
         if (isset($data['data']) && is_array($data['data'])) {
             $data['data'] = json_encode($data['data'], JSON_UNESCAPED_UNICODE);
@@ -161,6 +196,8 @@ class ProductRepository
             'id = ? AND franchise_code = ?',
             [$id, $this->code],
         );
+
+        return $this->findById($id, $projection) ?? ['id' => $id];
     }
 
     public function delete(int $id): void
@@ -178,7 +215,7 @@ class ProductRepository
         );
 
         if (!$product) {
-            return -1; // not found signal
+            return -1;
         }
 
         $newQty = $product['stock_quantity'] + $delta;
@@ -197,3 +234,4 @@ class ProductRepository
         return 'SKU-' . strtoupper(substr(uniqid(), -6));
     }
 }
+

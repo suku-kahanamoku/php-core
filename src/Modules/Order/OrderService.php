@@ -34,19 +34,20 @@ class OrderService
         ?string $status,
         string $sort = '',
         string $filter = '',
+        ?array $projection = null,
     ): array {
         $this->auth->require();
 
         $userId = $this->auth->hasRole('admin') ? null : $this->auth->id();
 
-        return $this->order->findAll($page, $limit, $userId, $status, $sort, $filter);
+        return $this->order->findAll($page, $limit, $userId, $status, $sort, $filter, $projection);
     }
 
-    public function get(int $id): array
+    public function get(int $id, ?array $projection = null): array
     {
         $this->auth->require();
 
-        $order = $this->order->findById($id);
+        $order = $this->order->findById($id, $projection);
         if (!$order) {
             Response::notFound('Order not found');
         }
@@ -128,7 +129,7 @@ class OrderService
 
             $totalAmount += $shippingCost;
 
-            $orderId = $this->order->create([
+            $orderRow = $this->order->create([
                 'order_number'        => $this->order->generateNumber(),
                 'user_id'             => $userId,
                 'status'              => 'pending',
@@ -141,6 +142,7 @@ class OrderService
                 'billing_address_id'  => $billingAddressId,
                 'note'                => $input['note'] ?? null,
             ]);
+            $orderId = (int) $orderRow['id'];
 
             foreach ($preparedItems as $item) {
                 $this->order->createItem(array_merge($item, ['order_id' => $orderId]));
@@ -178,14 +180,14 @@ class OrderService
             return null;
         }
 
-        return $this->user->create([
+        return (int) $this->user->create([
             'first_name' => $user['first_name'] ?? '',
             'last_name'  => $user['last_name']  ?? '',
             'email'      => $email,
             'phone'      => $user['phone'] ?? null,
             'password'   => '',   // guest – login disabled
             'role_id'    => $roleId,
-        ]);
+        ])['id'];
     }
 
     /** Create an address record for the order and return its ID. Returns null when required fields are missing. */
@@ -201,7 +203,7 @@ class OrderService
             $country = 'CZ';
         }
 
-        return $this->address->create([
+        return (int) $this->address->create([
             'user_id'    => $userId,
             'type'       => $type,
             'name'       => $addr['name']    ?? null,
@@ -211,7 +213,7 @@ class OrderService
             'zip'        => $addr['zip']  ?? '',
             'country'    => $country,
             'is_default' => 0,
-        ]);
+        ])['id'];
     }
 
     private function mapPaymentMethod(string $value): string
@@ -226,7 +228,7 @@ class OrderService
         };
     }
 
-    public function updateStatus(int $id, string $status): void
+    public function updateStatus(int $id, string $status, ?array $projection = null): array
     {
         $this->auth->requireRole('admin');
 
@@ -237,7 +239,7 @@ class OrderService
             Response::notFound('Order not found');
         }
 
-        $this->order->updateStatus($id, $status);
+        return $this->order->updateStatus($id, $status, $projection);
     }
 
     public function delete(int $id): void

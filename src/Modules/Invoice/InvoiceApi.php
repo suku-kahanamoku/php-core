@@ -28,36 +28,39 @@ class InvoiceApi
             $request->get('status'),
             (string) $request->get('sort', ''),
             (string) $request->get('filter', ''),
+            $request->projection(),
         ));
     }
 
     /** GET /invoices/:id */
     public function get(Request $request, array $params): void
     {
-        Response::success($this->service->get((int) $params['id']));
+        Response::success($this->service->get((int) $params['id'], $request->projection()));
     }
 
     /** POST /invoices */
     public function create(Request $request): void
     {
-        $id = $this->service->create(
+        $invoice = $this->service->create(
             (int) $request->get('order_id', 0),
             [
                 'due_at' => $request->get('due_at'),
                 'note'   => $request->get('note', ''),
             ],
+            $request->projection(),
         );
-        Response::created($this->service->get($id), 'Invoice created');
+        Response::created($invoice, 'Invoice created');
     }
 
     /** PATCH /invoices/:id/status */
     public function updateStatus(Request $request, array $params): void
     {
-        $this->service->updateStatus(
+        $invoice = $this->service->updateStatus(
             (int) $params['id'],
             trim((string) $request->get('status', '')),
+            $request->projection(),
         );
-        Response::success($this->service->get((int) $params['id']), 'Invoice status updated');
+        Response::success($invoice, 'Invoice status updated');
     }
 
     /** DELETE /invoices/:id */

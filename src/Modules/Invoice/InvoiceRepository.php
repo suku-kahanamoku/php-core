@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Invoice;
 
 use App\Modules\Database\Database;
+use App\Utils\Projection;
 
 /**
  * Invoice – DB entity layer.
@@ -13,6 +14,10 @@ class InvoiceRepository
 {
     private Database $db;
     private string   $code;
+
+    private const SYS = ['id', 'created_at', 'updated_at'];
+    private const OWN = ['invoice_number', 'status', 'total_amount', 'currency', 'issued_at', 'due_at', 'paid_at', 'order_id', 'user_id', 'billing_address_id'];
+    private const REL = ['user'];
 
     public function __construct(Database $db, string $franchiseCode)
     {
@@ -27,7 +32,9 @@ class InvoiceRepository
         ?string $status = null,
         string $sort = '',
         string $filter = '',
+        ?array $projection = null,
     ): array {
+        $proj    = new Projection($projection);
         $orderBy = SQL_SORT($sort, 'i.issued_at DESC', 'i');
 
         $limit  = min(100, max(1, $limit));
@@ -53,23 +60,37 @@ class InvoiceRepository
 
         $whereStr = implode(' AND ', $where);
 
+        $sys     = self::SYS;
+        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
+        $sysSel  = 'i.' . implode(', i.', $sys);
+        $ownSel  = $ownCols ? ', i.' . implode(', i.', $ownCols) : '';
+
+        $joinSql = '';
+        $relSel  = '';
+        if ($proj->needsJoin('user')) {
+            $joinSql = 'LEFT JOIN user u ON u.id = i.user_id';
+            $relSel  = ', u.first_name, u.last_name, u.email';
+        }
+
+        $select = "{$sysSel}{$ownSel}{$relSel}";
+
         $total = (int) $this->db->fetchOne(
             "SELECT COUNT(*) AS cnt FROM invoice i WHERE {$whereStr}",
             $params,
         )['cnt'];
 
         $items = $this->db->fetchAll(
-            "SELECT i.id, i.invoice_number, i.status, i.total_amount, i.currency,
-                    i.issued_at, i.due_at, i.paid_at,
-                    i.order_id, i.user_id, i.created_at, i.updated_at,
-                    u.first_name, u.last_name, u.email
-             FROM invoice i
-             LEFT JOIN user u ON u.id = i.user_id
+            "SELECT {$select} FROM invoice i {$joinSql}
              WHERE {$whereStr}
              ORDER BY {$orderBy}
              LIMIT {$limit} OFFSET {$offset}",
             $params,
         );
+
+        foreach ($items as &$item) {
+            $item = $proj->apply($item, $sys, ['user' => ['fk' => 'user_id', 'nest' => ['first_name', 'last_name', 'email']]]);
+        }
+        unset($item);
 
         return [
             'items'      => $items,
@@ -80,16 +101,27 @@ class InvoiceRepository
         ];
     }
 
-    public function findById(int $id): ?array
+    public function findById(int $id, ?array $projection = null): ?array
     {
+        $proj = new Projection($projection);
+
+        $sys     = self::SYS;
+        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
+        $sysSel  = 'i.' . implode(', i.', $sys);
+        $ownSel  = $ownCols ? ', i.' . implode(', i.', $ownCols) : '';
+
+        $joinSql = '';
+        $relSel  = '';
+        if ($proj->needsJoin('user')) {
+            $joinSql = 'LEFT JOIN user u ON u.id = i.user_id';
+            $relSel  = ', u.first_name, u.last_name, u.email';
+        }
+
+        $select = "{$sysSel}{$ownSel}{$relSel}";
+
         $invoice = $this->db->fetchOne(
-            'SELECT i.*, u.first_name, u.last_name, u.email,
-                    ba.street AS bill_street, ba.city AS bill_city,
-                    ba.zip AS bill_zip, ba.country AS bill_country
-             FROM invoice i
-             LEFT JOIN user u ON u.id = i.user_id
-             LEFT JOIN address ba ON ba.id = i.billing_address_id
-             WHERE i.id = ? AND i.franchise_code = ?',
+            "SELECT {$select} FROM invoice i {$joinSql}
+             WHERE i.id = ? AND i.franchise_code = ?",
             [$id, $this->code],
         );
 
@@ -105,7 +137,7 @@ class InvoiceRepository
             [$id],
         );
 
-        return $invoice;
+        return $proj->apply($invoice, $sys, ['user' => ['fk' => 'user_id', 'nest' => ['first_name', 'last_name', 'email']]]);
     }
 
     public function findByOrder(int $orderId): ?array
@@ -139,12 +171,14 @@ class InvoiceRepository
         );
     }
 
-    public function create(array $data): int
+    public function create(array $data, ?array $projection = null): array
     {
-        return $this->db->insert('invoice', array_merge($data, [
+        $id = $this->db->insert('invoice', array_merge($data, [
             'franchise_code' => $this->code,
             'created_at'     => date('Y-m-d H:i:s'),
         ]));
+
+        return $this->findById($id, $projection) ?? ['id' => $id];
     }
 
     public function createItem(array $data): int
@@ -154,7 +188,7 @@ class InvoiceRepository
         ]));
     }
 
-    public function updateStatus(int $id, string $status): void
+    public function updateStatus(int $id, string $status, ?array $projection = null): array
     {
         $set = ['status' => $status, 'updated_at' => date('Y-m-d H:i:s')];
         if ($status === 'paid') {
@@ -166,6 +200,8 @@ class InvoiceRepository
             'id = ? AND franchise_code = ?',
             [$id, $this->code],
         );
+
+        return $this->findById($id, $projection) ?? ['id' => $id];
     }
 
     public function delete(int $id): void

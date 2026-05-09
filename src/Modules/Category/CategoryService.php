@@ -19,14 +19,14 @@ class CategoryService
         $this->auth     = $auth;
     }
 
-    public function list(int $page = 1, int $limit = 20, string $sort = '', string $filter = ''): array
+    public function list(int $page = 1, int $limit = 20, string $sort = '', string $filter = '', ?array $projection = null): array
     {
-        return $this->category->findAll($page, $limit, $sort, $filter);
+        return $this->category->findAll($page, $limit, $sort, $filter, $projection);
     }
 
-    public function get(int $id): array
+    public function get(int $id, ?array $projection = null): array
     {
-        $category = $this->category->findById($id);
+        $category = $this->category->findById($id, $projection);
         if (!$category) {
             Response::notFound('Category not found');
         }
@@ -35,7 +35,7 @@ class CategoryService
         return $category;
     }
 
-    public function create(string $name, array $input): int
+    public function create(string $name, array $input, ?array $projection = null): array
     {
         $this->auth->requireRole('admin');
 
@@ -50,10 +50,10 @@ class CategoryService
                 ? (int) $input['parent_id']
                 : null,
             'position' => (int) ($input['position'] ?? 0),
-        ]);
+        ], $projection);
     }
 
-    public function update(int $id, array $input): void
+    public function update(int $id, array $input, ?array $projection = null): array
     {
         $this->auth->requireRole('admin');
 
@@ -79,9 +79,11 @@ class CategoryService
         if (!empty($set)) {
             $this->category->update($id, $set);
         }
+
+        return $this->category->findById($id, $projection) ?? ['id' => $id];
     }
 
-    public function replace(int $id, string $name, array $input): void
+    public function replace(int $id, string $name, array $input, ?array $projection = null): array
     {
         $this->auth->requireRole('admin');
 
@@ -102,6 +104,8 @@ class CategoryService
             'parent_id'   => $parentId,
             'position'    => (int) ($input['position'] ?? 0),
         ]);
+
+        return $this->category->findById($id, $projection) ?? ['id' => $id];
     }
 
     public function delete(int $id): void

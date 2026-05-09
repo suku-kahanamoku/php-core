@@ -233,6 +233,12 @@
       </div>
 
       <div id="ep-list">
+        <!-- PROJECTION INFO -->
+        <div class="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-5 text-xs text-blue-800">
+          <strong>Projekce (výběr polí):</strong> Přidejte <code>?projection=pole1,pole2</code> k libovolnému endpointu pro výběr jen požadovaných polí.
+          Prázdné <code>?projection=</code> vrátí pouze systémová pole (<code>id</code>, <code>created_at</code>, <code>updated_at</code>).
+          Vynechání parametru vrátí všechna pole. Relace se aktivují jménem, např. <code>projection=user</code> nebo <code>projection=user.email</code>.
+        </div>
         <!-- ═══════════════════════════════ AUTH ═══════════════════════════════ -->
         <div class="module-section mb-6" data-module="auth">
           <h2

@@ -30,51 +30,52 @@ class UserApi
             $request->get('role'),
             (string) $request->get('sort', ''),
             (string) $request->get('filter', ''),
+            $request->projection(),
         ));
     }
 
     /** GET /users/:id */
     public function get(Request $request, array $params): void
     {
-        Response::success($this->service->get((int) $params['id']));
+        Response::success($this->service->get((int) $params['id'], $request->projection()));
     }
 
     /** POST /users */
     public function create(Request $request): void
     {
-        $id = $this->service->create([
+        $user = $this->service->create([
             'first_name' => trim((string) $request->get('first_name', '')),
             'last_name'  => trim((string) $request->get('last_name', '')),
             'email'      => trim((string) $request->get('email', '')),
             'password'   => (string) $request->get('password', ''),
             'phone'      => $request->get('phone'),
             'role'       => $request->get('role'),
-        ]);
-        Response::created($this->service->get($id), 'User created');
+        ], $request->projection());
+        Response::created($user, 'User created');
     }
 
     /** PATCH /users/:id */
     public function update(Request $request, array $params): void
     {
-        $this->service->update((int) $params['id'], [
+        $user = $this->service->update((int) $params['id'], [
             'first_name' => $request->get('first_name'),
             'last_name'  => $request->get('last_name'),
             'phone'      => $request->get('phone'),
             'role'       => $request->get('role'),
-        ]);
-        Response::success($this->service->get((int) $params['id']), 'User updated');
+        ], $request->projection());
+        Response::success($user, 'User updated');
     }
 
     /** PUT /users/:id */
     public function replace(Request $request, array $params): void
     {
-        $this->service->replace((int) $params['id'], [
+        $user = $this->service->replace((int) $params['id'], [
             'first_name' => trim((string) $request->get('first_name', '')),
             'last_name'  => trim((string) $request->get('last_name', '')),
             'phone'      => $request->get('phone'),
             'role'       => $request->get('role'),
-        ]);
-        Response::success($this->service->get((int) $params['id']), 'User replaced');
+        ], $request->projection());
+        Response::success($user, 'User replaced');
     }
 
     /** DELETE /users/:id */

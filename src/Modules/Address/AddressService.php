@@ -26,6 +26,7 @@ class AddressService
         int $page = 1,
         int $limit = 20,
         string $filter = '',
+        ?array $projection = null,
     ): array {
         $this->auth->require();
 
@@ -33,14 +34,14 @@ class AddressService
             Response::forbidden();
         }
 
-        return $this->address->findByUser($userId, $type, $sort, $page, $limit, $filter);
+        return $this->address->findByUser($userId, $type, $sort, $page, $limit, $filter, $projection);
     }
 
-    public function get(int $id): array
+    public function get(int $id, ?array $projection = null): array
     {
         $this->auth->require();
 
-        $address = $this->address->findById($id);
+        $address = $this->address->findById($id, $projection);
         if (!$address) {
             Response::notFound('Address not found');
         }
@@ -52,7 +53,7 @@ class AddressService
         return $address;
     }
 
-    public function create(array $input, ?int $overrideUserId = null): int
+    public function create(array $input, ?int $overrideUserId = null, ?array $projection = null): array
     {
         $this->auth->require();
 
@@ -79,10 +80,10 @@ class AddressService
             'zip'        => $input['zip'],
             'country'    => $input['country'] ?? 'CZ',
             'is_default' => $isDefault,
-        ]);
+        ], $projection);
     }
 
-    public function update(int $id, array $input): void
+    public function update(int $id, array $input, ?array $projection = null): array
     {
         $this->auth->require();
 
@@ -118,9 +119,11 @@ class AddressService
         if (!empty($set)) {
             $this->address->update($id, $set);
         }
+
+        return $this->address->findById($id, $projection) ?? ['id' => $id];
     }
 
-    public function replace(int $id, array $input): void
+    public function replace(int $id, array $input, ?array $projection = null): array
     {
         $this->auth->require();
 
@@ -153,6 +156,8 @@ class AddressService
             'country'    => $input['country'],
             'is_default' => $isDefault,
         ]);
+
+        return $this->address->findById($id, $projection) ?? ['id' => $id];
     }
 
     public function delete(int $id): void

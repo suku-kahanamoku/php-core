@@ -30,6 +30,7 @@ class EnumerationApi
             max(1, (int) $request->get('page', 1)),
             min(100, max(1, (int) $request->get('limit', 20))),
             (string) $request->get('filter', ''),
+            $request->projection(),
         ));
     }
 
@@ -42,13 +43,13 @@ class EnumerationApi
     /** GET /enumerations/:id */
     public function get(Request $request, array $params): void
     {
-        Response::success($this->service->get((int) $params['id']));
+        Response::success($this->service->get((int) $params['id'], $request->projection()));
     }
 
     /** POST /enumerations */
     public function create(Request $request): void
     {
-        $id = $this->service->create(
+        $item = $this->service->create(
             trim((string) $request->get('type', '')),
             trim((string) $request->get('syscode', '')),
             trim((string) $request->get('label', '')),
@@ -57,28 +58,29 @@ class EnumerationApi
                 'position'  => $request->get('position', 0),
                 'is_active' => $request->get('is_active', 1),
             ],
+            $request->projection(),
         );
-        Response::created($this->service->get($id), 'Enumeration created');
+        Response::created($item, 'Enumeration created');
     }
 
     /** PATCH /enumerations/:id */
     public function update(Request $request, array $params): void
     {
-        $this->service->update((int) $params['id'], [
+        $item = $this->service->update((int) $params['id'], [
             'type'      => $request->get('type'),
             'syscode'   => $request->get('syscode'),
             'label'     => $request->get('label'),
             'value'     => $request->get('value'),
             'position'  => $request->get('position'),
             'is_active' => $request->get('is_active'),
-        ]);
-        Response::success($this->service->get((int) $params['id']), 'Enumeration updated');
+        ], $request->projection());
+        Response::success($item, 'Enumeration updated');
     }
 
     /** PUT /enumerations/:id */
     public function replace(Request $request, array $params): void
     {
-        $this->service->replace(
+        $item = $this->service->replace(
             (int) $params['id'],
             trim((string) $request->get('type', '')),
             trim((string) $request->get('syscode', '')),
@@ -88,8 +90,9 @@ class EnumerationApi
                 'position'  => $request->get('position', 0),
                 'is_active' => $request->get('is_active', 1),
             ],
+            $request->projection(),
         );
-        Response::success($this->service->get((int) $params['id']), 'Enumeration replaced');
+        Response::success($item, 'Enumeration replaced');
     }
 
     /** DELETE /enumerations/:id */

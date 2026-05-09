@@ -27,8 +27,8 @@ $r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'pas
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
-$r          = request('POST', "{$base}/categories", ['name' => 'Svc Order Cat']);
-$svcCatId   = $r['data']['data']['id'] ?? null;
+$r        = request('POST', "{$base}/categories", ['name' => 'Svc Order Cat']);
+$svcCatId = $r['data']['data']['id'] ?? null;
 
 $svcSku = 'SVC-ORD-PROD-' . time();
 $r      = request('POST', "{$base}/products", [
@@ -49,11 +49,11 @@ $token     = $r['data']['data']['token'] ?? null;
 // ── OrderService – validation ─────────────────────────────────────────────────
 
 section('OrderService – create() validation');
-$r = request('POST', "{$base}/orders", ['items' => []]);
+$r = request('POST', "{$base}/orders", ['carts' => []]);
 assert_test('empty items → 422', $r['status'] === 422, dump_on_fail($r));
 
 $r = request('POST', "{$base}/orders", [
-    'items' => [['product_id' => $svcProdId, 'quantity' => 99999]],
+    'carts' => [['product_id' => $svcProdId, 'quantity' => 99999]],
 ]);
 assert_test('insufficient stock → 422', $r['status'] === 422, dump_on_fail($r));
 
@@ -61,8 +61,8 @@ assert_test('insufficient stock → 422', $r['status'] === 422, dump_on_fail($r)
 
 section('OrderService – updateStatus() validation');
 $r = request('POST', "{$base}/orders", [
-    'items'    => [['product_id' => $svcProdId, 'quantity' => 1]],
-    'currency' => 'CZK', 'payment_method' => 'card',
+    'carts'   => [['product_id' => $svcProdId, 'quantity' => 1]],
+    'billing' => ['value' => 'card'],
 ]);
 assert_test('create order 201', $r['status'] === 201, dump_on_fail($r));
 $svcOrderId = $r['data']['data']['id'] ?? null;

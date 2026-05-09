@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Order;
 
 use App\Modules\Database\Database;
+use App\Utils\Projection;
 
 /**
  * Order – DB entity layer.
@@ -13,6 +14,10 @@ class OrderRepository
 {
     private Database $db;
     private string   $code;
+
+    private const SYS = ['id', 'created_at', 'updated_at'];
+    private const OWN = ['order_number', 'status', 'total_amount', 'currency', 'payment_method', 'shipping_type', 'shipping_cost', 'shipping_address_id', 'billing_address_id', 'user_id', 'note'];
+    private const REL = ['user'];
 
     public function __construct(Database $db, string $franchiseCode)
     {
@@ -27,7 +32,9 @@ class OrderRepository
         ?string $status = null,
         string $sort = '',
         string $filter = '',
+        ?array $projection = null,
     ): array {
+        $proj    = new Projection($projection);
         $orderBy = SQL_SORT($sort, 'o.created_at DESC', 'o');
 
         $limit  = min(100, max(1, $limit));
@@ -53,23 +60,37 @@ class OrderRepository
 
         $whereStr = implode(' AND ', $where);
 
+        $sys     = self::SYS;
+        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
+        $sysSel  = 'o.' . implode(', o.', $sys);
+        $ownSel  = $ownCols ? ', o.' . implode(', o.', $ownCols) : '';
+
+        $joinSql = '';
+        $relSel  = '';
+        if ($proj->needsJoin('user')) {
+            $joinSql = 'LEFT JOIN user u ON u.id = o.user_id';
+            $relSel  = ', u.first_name, u.last_name, u.email';
+        }
+
+        $select = "{$sysSel}{$ownSel}{$relSel}";
+
         $total = (int) $this->db->fetchOne(
             "SELECT COUNT(*) AS cnt FROM `order` o WHERE {$whereStr}",
             $params,
         )['cnt'];
 
         $items = $this->db->fetchAll(
-            "SELECT o.id, o.order_number, o.status, o.total_amount, o.currency,
-                    o.payment_method, o.user_id,
-                    u.first_name, u.last_name, u.email,
-                    o.created_at, o.updated_at
-             FROM `order` o
-             LEFT JOIN user u ON u.id = o.user_id
+            "SELECT {$select} FROM `order` o {$joinSql}
              WHERE {$whereStr}
              ORDER BY {$orderBy}
              LIMIT {$limit} OFFSET {$offset}",
             $params,
         );
+
+        foreach ($items as &$item) {
+            $item = $proj->apply($item, $sys, ['user' => ['fk' => 'user_id', 'nest' => ['first_name', 'last_name', 'email']]]);
+        }
+        unset($item);
 
         return [
             'items'      => $items,
@@ -80,16 +101,27 @@ class OrderRepository
         ];
     }
 
-    public function findById(int $id): ?array
+    public function findById(int $id, ?array $projection = null): ?array
     {
+        $proj = new Projection($projection);
+
+        $sys     = self::SYS;
+        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
+        $sysSel  = 'o.' . implode(', o.', $sys);
+        $ownSel  = $ownCols ? ', o.' . implode(', o.', $ownCols) : '';
+
+        $joinSql = '';
+        $relSel  = '';
+        if ($proj->needsJoin('user')) {
+            $joinSql = 'LEFT JOIN user u ON u.id = o.user_id';
+            $relSel  = ', u.first_name, u.last_name, u.email';
+        }
+
+        $select = "{$sysSel}{$ownSel}{$relSel}";
+
         $order = $this->db->fetchOne(
-            'SELECT o.*, u.first_name, u.last_name, u.email,
-                    a.street AS ship_street, a.city AS ship_city,
-                    a.zip AS ship_zip, a.country AS ship_country
-             FROM `order` o
-             LEFT JOIN user u ON u.id = o.user_id
-             LEFT JOIN address a ON a.id = o.shipping_address_id
-             WHERE o.id = ? AND o.franchise_code = ?',
+            "SELECT {$select} FROM `order` o {$joinSql}
+             WHERE o.id = ? AND o.franchise_code = ?",
             [$id, $this->code],
         );
 
@@ -105,15 +137,17 @@ class OrderRepository
             [$id],
         );
 
-        return $order;
+        return $proj->apply($order, $sys, ['user' => ['fk' => 'user_id', 'nest' => ['first_name', 'last_name', 'email']]]);
     }
 
-    public function create(array $data): int
+    public function create(array $data, ?array $projection = null): array
     {
-        return $this->db->insert('order', array_merge($data, [
+        $id = $this->db->insert('order', array_merge($data, [
             'franchise_code' => $this->code,
             'created_at'     => date('Y-m-d H:i:s'),
         ]));
+
+        return $this->findById($id, $projection) ?? ['id' => $id];
     }
 
     public function createItem(array $data): int
@@ -123,12 +157,14 @@ class OrderRepository
         ]));
     }
 
-    public function updateStatus(int $id, string $status): void
+    public function updateStatus(int $id, string $status, ?array $projection = null): array
     {
         $this->db->update('order', [
             'status'     => $status,
             'updated_at' => date('Y-m-d H:i:s'),
         ], 'id = ? AND franchise_code = ?', [$id, $this->code]);
+
+        return $this->findById($id, $projection) ?? ['id' => $id];
     }
 
     public function delete(int $id): void

@@ -28,13 +28,14 @@ class OrderApi
             $request->get('status'),
             (string) $request->get('sort', ''),
             (string) $request->get('filter', ''),
+            $request->projection(),
         ));
     }
 
     /** GET /orders/:id */
     public function get(Request $request, array $params): void
     {
-        Response::success($this->service->get((int) $params['id']));
+        Response::success($this->service->get((int) $params['id'], $request->projection()));
     }
 
     /** POST /orders */
@@ -47,11 +48,12 @@ class OrderApi
     /** PATCH /orders/:id/status */
     public function updateStatus(Request $request, array $params): void
     {
-        $this->service->updateStatus(
+        $order = $this->service->updateStatus(
             (int) $params['id'],
             trim((string) $request->get('status', '')),
+            $request->projection(),
         );
-        Response::success($this->service->get((int) $params['id']), 'Order status updated');
+        Response::success($order, 'Order status updated');
     }
 
     /** DELETE /orders/:id */

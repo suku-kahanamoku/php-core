@@ -27,6 +27,7 @@ class ProductService
         string $sort = '',
         string $filter = '',
         ?string $categorySyscode = null,
+        ?array $projection = null,
     ): array {
         return $this->product->findAll(
             $page,
@@ -36,12 +37,13 @@ class ProductService
             $sort,
             $filter,
             $categorySyscode,
+            $projection,
         );
     }
 
-    public function get(int $id): array
+    public function get(int $id, ?array $projection = null): array
     {
-        $product = $this->product->findById($id);
+        $product = $this->product->findById($id, $projection);
         if (!$product) {
             Response::notFound('Product not found');
         }
@@ -49,7 +51,7 @@ class ProductService
         return $product;
     }
 
-    public function create(array $input): int
+    public function create(array $input, ?array $projection = null): array
     {
         $this->auth->requireRole('admin');
 
@@ -63,7 +65,7 @@ class ProductService
 
         $categoryIds = array_map('intval', (array) ($input['category_ids'] ?? []));
 
-        $id = $this->product->create([
+        $created = $this->product->create([
             'sku'            => $sku,
             'name'           => $name,
             'description'    => (string) ($input['description'] ?? ''),
@@ -77,14 +79,15 @@ class ProductService
             'data'           => isset($input['data']) && is_array($input['data']) ? $input['data'] : null,
         ]);
 
+        $id = $created['id'];
         if ($categoryIds) {
             $this->product->syncCategories($id, $categoryIds);
         }
 
-        return $id;
+        return $this->product->findById($id, $projection) ?? $created;
     }
 
-    public function update(int $id, array $input): void
+    public function update(int $id, array $input, ?array $projection = null): array
     {
         $this->auth->requireRole('admin');
 
@@ -130,9 +133,11 @@ class ProductService
                 $this->product->update($id, ['data' => null]);
             }
         }
+
+        return $this->product->findById($id, $projection) ?? ['id' => $id];
     }
 
-    public function replace(int $id, array $input): void
+    public function replace(int $id, array $input, ?array $projection = null): array
     {
         $this->auth->requireRole('admin');
 
@@ -166,6 +171,8 @@ class ProductService
         ]);
 
         $this->product->syncCategories($id, $categoryIds);
+
+        return $this->product->findById($id, $projection) ?? ['id' => $id];
     }
 
     public function delete(int $id): void

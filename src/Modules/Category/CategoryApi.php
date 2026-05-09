@@ -27,45 +27,47 @@ class CategoryApi
             min(100, max(1, (int) $request->get('limit', 20))),
             (string) $request->get('sort', ''),
             (string) $request->get('filter', ''),
+            $request->projection(),
         ));
     }
 
     /** GET /categories/:id */
     public function get(Request $request, array $params): void
     {
-        Response::success($this->service->get((int) $params['id']));
+        Response::success($this->service->get((int) $params['id'], $request->projection()));
     }
 
     /** POST /categories */
     public function create(Request $request): void
     {
-        $id = $this->service->create(
+        $category = $this->service->create(
             trim((string) $request->get('name', '')),
             [
                 'description' => $request->get('description', ''),
                 'parent_id'   => $request->get('parent_id'),
                 'position'    => $request->get('position', 0),
             ],
+            $request->projection(),
         );
-        Response::created($this->service->get($id), 'Category created');
+        Response::created($category, 'Category created');
     }
 
     /** PATCH /categories/:id */
     public function update(Request $request, array $params): void
     {
-        $this->service->update((int) $params['id'], [
+        $category = $this->service->update((int) $params['id'], [
             'name'        => $request->get('name'),
             'description' => $request->get('description'),
             'parent_id'   => $request->get('parent_id'),
             'position'    => $request->get('position'),
-        ]);
-        Response::success($this->service->get((int) $params['id']), 'Category updated');
+        ], $request->projection());
+        Response::success($category, 'Category updated');
     }
 
     /** PUT /categories/:id */
     public function replace(Request $request, array $params): void
     {
-        $this->service->replace(
+        $category = $this->service->replace(
             (int) $params['id'],
             trim((string) $request->get('name', '')),
             [
@@ -73,8 +75,9 @@ class CategoryApi
                 'parent_id'   => $request->get('parent_id'),
                 'position'    => $request->get('position', 0),
             ],
+            $request->projection(),
         );
-        Response::success($this->service->get((int) $params['id']), 'Category replaced');
+        Response::success($category, 'Category replaced');
     }
 
     /** DELETE /categories/:id */

@@ -15,7 +15,8 @@
 5. [Pagination](#pagination)
 6. [Sorting](#sorting)
 7. [Filtering](#filtering)
-8. [Modules](#modules)
+8. [Projection](#projection)
+9. [Modules](#modules)
    - [Auth](#auth)
    - [Roles](#roles)
    - [Users](#users)
@@ -26,8 +27,9 @@
    - [Texts](#texts)
    - [Orders](#orders)
    - [Invoices](#invoices)
-9. [Field Reference](#field-reference)
-10. [Common Patterns & Frontend Recipes](#common-patterns--frontend-recipes)
+9. [Projection](#projection)
+10. [Field Reference](#field-reference)
+11. [Common Patterns & Frontend Recipes](#common-patterns--frontend-recipes)
 
 ---
 
@@ -364,6 +366,63 @@ filter={"phone":{"operator":"notnull"}}
 
 # Multi-column – active products in price range
 filter={"is_active":{"value":1},"price":{"value":[50,200],"operator":"range"}}
+```
+
+---
+
+## Projection
+
+The `projection` query parameter controls which fields are returned in every response — list, get, create, update and delete responses all respect it.
+
+### Format
+
+```
+GET /products?projection=id,name,price
+```
+
+Comma-separated list of field names (snake_case).
+
+### Behaviour
+
+| `projection` value | What is returned |
+|--------------------|-----------------|
+| *omitted*          | All fields (system + own columns + no relation JOINs by default) |
+| `projection=`      | System fields only (`id`, `created_at`, `updated_at`) |
+| `projection=name,price` | System fields + requested own fields |
+| `projection=user`  | System fields + full `user` relation object (triggers JOIN) |
+| `projection=user.first_name,user.email` | System fields + selected relation sub-fields |
+
+### System fields (always returned)
+
+`id`, `created_at`, `updated_at` — these are always included regardless of projection.
+
+### Relation names per module
+
+| Module | Available relations |
+|--------|-------------------|
+| Users | `role` |
+| Orders | `user` |
+| Invoices | `user` |
+| Products | `categories` |
+| Others | *(none)* |
+
+### Examples
+
+```
+# Only id, name and price (+ system fields)
+GET /products?projection=name,price
+
+# System fields only
+GET /products?projection=
+
+# Full user object included in each order
+GET /orders?projection=order_number,status,user
+
+# Specific user sub-fields
+GET /orders?projection=order_number,user.email,user.first_name
+
+# Apply projection to POST response
+POST /products?projection=id,sku,name
 ```
 
 ---

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Category;
 
 use App\Modules\Database\Database;
+use App\Utils\Projection;
 
 /**
  * Category – DB entity layer.
@@ -14,14 +15,24 @@ class CategoryRepository
     private Database $db;
     private string   $code;
 
+    private const SYS = ['id', 'created_at', 'updated_at'];
+    private const OWN = ['syscode', 'name', 'description', 'position', 'parent_id'];
+    private const REL = [];
+
     public function __construct(Database $db, string $franchiseCode)
     {
         $this->db   = $db;
         $this->code = $franchiseCode;
     }
 
-    public function findAll(int $page = 1, int $limit = 20, string $sort = '', string $filter = ''): array
-    {
+    public function findAll(
+        int $page = 1,
+        int $limit = 20,
+        string $sort = '',
+        string $filter = '',
+        ?array $projection = null,
+    ): array {
+        $proj    = new Projection($projection);
         $orderBy = SQL_SORT($sort, 'position ASC');
 
         $limit  = min(100, max(1, $limit));
@@ -38,19 +49,28 @@ class CategoryRepository
 
         $whereStr = implode(' AND ', $where);
 
+        $sys     = self::SYS;
+        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
+        $sysSel  = 'c.' . implode(', c.', $sys);
+        $ownSel  = $ownCols ? ', c.' . implode(', c.', $ownCols) : '';
+        $select  = "{$sysSel}{$ownSel}";
+
         $total = (int) $this->db->fetchOne(
             "SELECT COUNT(*) AS cnt FROM category WHERE {$whereStr}",
             $params,
         )['cnt'];
 
         $items = $this->db->fetchAll(
-            "SELECT id, syscode, name, parent_id,
-                    description, position, created_at, updated_at
-             FROM category WHERE {$whereStr}
+            "SELECT {$select} FROM category c WHERE {$whereStr}
              ORDER BY {$orderBy}
              LIMIT {$limit} OFFSET {$offset}",
             $params,
         );
+
+        foreach ($items as &$item) {
+            $item = $proj->apply($item, $sys);
+        }
+        unset($item);
 
         return [
             'items'      => $items,
@@ -61,14 +81,20 @@ class CategoryRepository
         ];
     }
 
-    public function findById(int $id): ?array
+    public function findById(int $id, ?array $projection = null): ?array
     {
+        $proj = new Projection($projection);
+
         $row = $this->db->fetchOne(
             'SELECT * FROM category WHERE id = ? AND franchise_code = ?',
             [$id, $this->code],
         );
 
-        return $row ?: null;
+        if (!$row) {
+            return null;
+        }
+
+        return $proj->apply($row, self::SYS);
     }
 
     public function findBySyscode(string $syscode): ?array
@@ -103,15 +129,17 @@ class CategoryRepository
         );
     }
 
-    public function create(array $data): int
+    public function create(array $data, ?array $projection = null): array
     {
-        return $this->db->insert('category', array_merge($data, [
+        $id = $this->db->insert('category', array_merge($data, [
             'franchise_code' => $this->code,
             'created_at'     => date('Y-m-d H:i:s'),
         ]));
+
+        return $this->findById($id, $projection);
     }
 
-    public function update(int $id, array $data): void
+    public function update(int $id, array $data, ?array $projection = null): array
     {
         $this->db->update(
             'category',
@@ -119,14 +147,12 @@ class CategoryRepository
             'id = ? AND franchise_code = ?',
             [$id, $this->code],
         );
+
+        return $this->findById($id, $projection);
     }
 
     public function delete(int $id): void
     {
-        $this->db->delete(
-            'category',
-            'id = ? AND franchise_code = ?',
-            [$id, $this->code],
-        );
+        $this->db->delete('category', 'id = ? AND franchise_code = ?', [$id, $this->code]);
     }
 }
