@@ -80,11 +80,15 @@ class RoleRepository
     /** Find single role by ID. */
     public function findById(int $id, ?array $projection = null): ?array
     {
-        $proj = new Projection($projection);
+        $proj    = new Projection($projection);
+        $sys     = self::SYS;
+        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
+        $sysSel  = 'r.' . implode(', r.', $sys);
+        $ownSel  = $ownCols ? ', r.' . implode(', r.', $ownCols) : '';
+        $select  = "{$sysSel}{$ownSel}";
 
         $role = $this->db->fetchOne(
-            'SELECT id, name, label, position, created_at, updated_at
-             FROM role WHERE id = ? AND franchise_code = ?',
+            "SELECT {$select} FROM role r WHERE r.id = ? AND r.franchise_code = ?",
             [$id, $this->code],
         );
 
@@ -92,7 +96,7 @@ class RoleRepository
             return null;
         }
 
-        return $proj->apply($role, self::SYS);
+        return $proj->apply($role, $sys);
     }
 
     /** Count users assigned to this role. */

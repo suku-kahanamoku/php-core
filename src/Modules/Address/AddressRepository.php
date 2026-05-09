@@ -29,13 +29,32 @@ class AddressRepository
     ];
     private const REL = [];
 
+    /**
+     * AddressRepository constructor.
+     *
+     * @param Database $db
+     * @param string $franchiseCode
+     * @return void
+     */
     public function __construct(Database $db, string $franchiseCode)
     {
         $this->db   = $db;
         $this->code = $franchiseCode;
     }
 
-    /** All addresses for a given user. */
+    /**
+     * Vrati adresy dle uzivatele a typu (billing/shipping) s podporou strankovani,
+     * hledani, filtru a projekce.
+     *
+     * @param int $userId
+     * @param string|null $type
+     * @param string $sort
+     * @param int $page
+     * @param int $limit
+     * @param string $filter
+     * @param array|null $projection
+     * @return array{items: array, limit: int, page: int, total: int, totalPages: int}
+     */
     public function findByUser(
         int $userId,
         ?string $type = null,
@@ -101,10 +120,14 @@ class AddressRepository
     /** Find single address by ID. */
     public function findById(int $id, ?array $projection = null): ?array
     {
-        $proj = new Projection($projection);
+        $proj    = new Projection($projection);
+        $sys     = self::SYS;
+        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
+        $cols    = array_merge($sys, $ownCols);
+        $select  = implode(', ', $cols);
 
         $row = $this->db->fetchOne(
-            'SELECT * FROM address WHERE id = ? AND franchise_code = ?',
+            "SELECT {$select} FROM address WHERE id = ? AND franchise_code = ?",
             [$id, $this->code],
         );
 
@@ -112,7 +135,7 @@ class AddressRepository
             return null;
         }
 
-        return $proj->apply($row, self::SYS);
+        return $proj->apply($row, $sys);
     }
 
     public function create(array $data, ?array $projection = null): array

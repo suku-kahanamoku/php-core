@@ -83,10 +83,14 @@ class CategoryRepository
 
     public function findById(int $id, ?array $projection = null): ?array
     {
-        $proj = new Projection($projection);
+        $proj    = new Projection($projection);
+        $sys     = self::SYS;
+        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
+        $cols    = array_merge($sys, $ownCols);
+        $select  = implode(', ', $cols);
 
         $row = $this->db->fetchOne(
-            'SELECT * FROM category WHERE id = ? AND franchise_code = ?',
+            "SELECT {$select} FROM category WHERE id = ? AND franchise_code = ?",
             [$id, $this->code],
         );
 
@@ -94,7 +98,7 @@ class CategoryRepository
             return null;
         }
 
-        return $proj->apply($row, self::SYS);
+        return $proj->apply($row, $sys);
     }
 
     public function findBySyscode(string $syscode): ?array

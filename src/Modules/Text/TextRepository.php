@@ -95,10 +95,14 @@ class TextRepository
 
     public function findById(int $id, ?array $projection = null): ?array
     {
-        $proj = new Projection($projection);
+        $proj    = new Projection($projection);
+        $sys     = self::SYS;
+        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
+        $cols    = array_merge($sys, $ownCols);
+        $select  = implode(', ', $cols);
 
         $row = $this->db->fetchOne(
-            'SELECT * FROM text WHERE id = ? AND franchise_code = ?',
+            "SELECT {$select} FROM text WHERE id = ? AND franchise_code = ?",
             [$id, $this->code],
         );
 
@@ -106,7 +110,7 @@ class TextRepository
             return null;
         }
 
-        return $proj->apply($row, self::SYS);
+        return $proj->apply($row, $sys);
     }
 
     public function findByKey(string $key, string $language): ?array
