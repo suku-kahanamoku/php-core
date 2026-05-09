@@ -247,6 +247,58 @@ assert_test('user.last_name excluded from nest', !isset($r['user']['last_name'])
 assert_test('user_id kept at root', isset($r['user_id']));
 assert_test('name kept', isset($r['name']));
 
+/* ═══════════════════════════════════════════════════════════
+   Response::applyFactory
+═══════════════════════════════════════════════════════════ */
+
+section('Response::applyFactory');
+
+if (!class_exists('App\Modules\Router\Response')) {
+    require_once __DIR__ . '/../src/Modules/Router/Response.php';
+}
+
+use App\Modules\Router\Response as Res;
+
+$items = [
+    ['id' => 1, 'name' => 'Cabernet',  'data' => ['quality' => 'premium', 'year' => 2020]],
+    ['id' => 2, 'name' => 'Riesling',  'data' => null],
+    ['id' => 3, 'name' => 'Pinot Noir', 'data' => ['quality' => 'reserve', 'year' => 2019]],
+];
+
+// Basic ${field} substitution
+$factory = ['url' => '/wine/${name}'];
+$result  = Res::applyFactory($items, $factory);
+assert_test('factory url uses name', ($result[0]['gen_data']['url'] ?? '') === '/wine/Cabernet');
+assert_test('factory url uses name (2)', ($result[2]['gen_data']['url'] ?? '') === '/wine/Pinot Noir');
+
+// $${field} → literal $ + value
+$factory = ['slug' => '${name}--$${id}'];
+$result  = Res::applyFactory($items, $factory);
+assert_test('factory $$id → $1', ($result[0]['gen_data']['slug'] ?? '') === 'Cabernet--$1');
+assert_test('factory $$id → $3', ($result[2]['gen_data']['slug'] ?? '') === 'Pinot Noir--$3');
+
+// Multiple generated fields
+$factory = ['url' => '/wine/${name}', 'id_str' => 'w-${id}'];
+$result  = Res::applyFactory($items, $factory);
+assert_test('multiple factory fields', isset($result[0]['gen_data']['url']) && isset($result[0]['gen_data']['id_str']));
+assert_test('id_str value', ($result[0]['gen_data']['id_str'] ?? '') === 'w-1');
+
+// Unknown field → empty string
+$factory = ['ref' => '/x/${unknown_field}'];
+$result  = Res::applyFactory($items, $factory);
+assert_test('unknown field → empty', ($result[0]['gen_data']['ref'] ?? '') === '/x/');
+
+// Null data → no crash, nested field is empty
+$factory = ['qual' => '${data.quality}'];
+$result  = Res::applyFactory($items, $factory);
+assert_test('nested data.quality (item 0)', ($result[0]['gen_data']['qual'] ?? null) === 'premium');
+assert_test('null data → empty string (item 1)', ($result[1]['gen_data']['qual'] ?? null) === '');
+assert_test('nested data.quality (item 2)', ($result[2]['gen_data']['qual'] ?? null) === 'reserve');
+
+// Empty factory → no gen_data added
+$result = Res::applyFactory($items, []);
+assert_test('empty factory → no gen_data', !isset($result[0]['gen_data']));
+
 if (!isset($runnerMode)) {
     echo "\n──────────────────────────────\n";
     echo "Výsledky:  {$passed} passed  {$failed} failed  /  " . ($passed + $failed) . " total\n";

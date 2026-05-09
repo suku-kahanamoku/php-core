@@ -29,12 +29,12 @@ class ProductApi
     /**
      * GET /products — Vrati strankovany seznam produktu. Verejne dostupne.
      *
-     * @param Request $request  query: page, limit, search, category_id, sort, filter, category_syscode, projection
+     * @param Request $request  query: page, limit, search, category_id, sort, filter, category_syscode, projection, factory
      * @return void
      */
     public function list(Request $request): void
     {
-        Response::success($this->service->list(
+        $result  = $this->service->list(
             max(1, (int) $request->get('page', 1)),
             min(100, max(1, (int) $request->get('limit', 20))),
             $request->get('search'),
@@ -45,7 +45,14 @@ class ProductApi
             $request->get('category_syscode') !== null
                 ? (string) $request->get('category_syscode') : null,
             $request->projection(),
-        ));
+        );
+
+        $factory = $request->factory();
+        if ($factory !== null) {
+            $result['items'] = Response::applyFactory($result['items'], $factory);
+        }
+
+        Response::success($result);
     }
 
     /**

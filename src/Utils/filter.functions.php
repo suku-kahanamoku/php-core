@@ -47,7 +47,11 @@ function SQL_FILTER(string $filter, string $prefix = ''): array
     $params     = [];
 
     foreach ($decoded as $col => $spec) {
-        $result = _sql_filter_condition((string) $col, is_array($spec) ? $spec : [], $prefix);
+        $result = _sql_filter_condition(
+            (string) $col,
+            is_array($spec) ? $spec : [],
+            $prefix
+        );
         if ($result !== null) {
             $conditions[] = $result['sql'];
             array_push($params, ...$result['params']);
@@ -164,7 +168,10 @@ function _sql_filter_operator(string $col, string $operator, mixed $value): ?arr
                 return null;
             }
             $placeholders = implode(', ', array_fill(0, count($value), '?'));
-            return ['sql' => "{$col} IN ({$placeholders})", 'params' => array_values($value)];
+            return [
+                'sql' => "{$col} IN ({$placeholders})",
+                'params' => array_values($value)
+            ];
 
         case 'null':
             return ['sql' => "{$col} IS NULL", 'params' => []];

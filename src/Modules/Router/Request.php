@@ -141,6 +141,7 @@ class Request
      * - Empty string / empty array  → []    (system columns only)
      * - 'field1,field2'             → ['field1', 'field2']
      * - ['field1', 'field2']        → ['field1', 'field2']
+     * - '["field1","field2"]'       → ['field1', 'field2']  (JSON array string)
      *
      * @return array<string>|null
      */
@@ -162,11 +163,52 @@ class Request
             );
         }
 
+        // Try to decode JSON array string: ["field1","field2",...]
+        if (is_string($raw) && str_starts_with(ltrim($raw), '[')) {
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded)) {
+                return array_values(
+                    array_filter(array_map('trim', $decoded), fn($v) => $v !== '')
+                );
+            }
+        }
+
         return array_values(
             array_filter(
                 array_map('trim', explode(',', (string) $raw)),
                 fn($v) => $v !== ''
             )
         );
+    }
+
+    /**
+     * Parse the `factory` query/body parameter.
+     *
+     * Format: {"url": "/wine/${name}--$${id}", "slug": "${name}-${id}"}
+     * - `${field}` is replaced by the value of `field` from each row
+     * - `$${field}` is replaced by literal `$` + value (escaped dollar)
+     *
+     * @return array<string, string>|null  Map of generated field name → template string, or null if not provided
+     */
+    public function factory(): ?array
+    {
+        $raw = $this->get('factory');
+
+        if ($raw === null) {
+            return null;
+        }
+
+        if (is_array($raw)) {
+            return array_filter($raw, fn($v) => is_string($v));
+        }
+
+        if (is_string($raw) && str_starts_with(ltrim($raw), '{')) {
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded)) {
+                return array_filter($decoded, fn($v) => is_string($v));
+            }
+        }
+
+        return null;
     }
 }

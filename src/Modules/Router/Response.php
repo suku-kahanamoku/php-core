@@ -121,4 +121,76 @@ class Response
     ): never {
         self::error($message, 422, $errors);
     }
+
+    /**
+     * Aplikuje factory sablony na kazdy zaznam v poli items.
+     *
+     * Factory je objekt kde klic = nazev generovaneho pole, hodnota = sablona.
+     * Sablona muze obsahovat:
+     *   ${field}  — nahrazeno hodnotou pole `field` (nebo prazdnym retezcem)
+     *   $${field} — nahrazeno literalnim `$` + hodnotou pole `field`
+     *
+     * Vysledek je vlozeny jako `gen_data` objekt do kazdeho zaznamu.
+     *
+     * @param  list<array<string, mixed>>  $items     Pole zaznamu
+     * @param  array<string, string>       $factory   Mapa nazev → sablona
+     * @return list<array<string, mixed>>
+     */
+    public static function applyFactory(array $items, array $factory): array
+    {
+        if (empty($factory)) {
+            return $items;
+        }
+
+        foreach ($items as &$item) {
+            $flat = self::flattenForFactory($item);
+            $gen  = [];
+
+            foreach ($factory as $key => $template) {
+                // First replace $${ (escaped dollar) then ${ (plain interpolation)
+                $result = preg_replace_callback(
+                    '/\$\$\{([^}]+)\}/',
+                    fn($m) => '$' . ($flat[$m[1]] ?? ''),
+                    $template,
+                );
+                $result = preg_replace_callback(
+                    '/\$\{([^}]+)\}/',
+                    fn($m) => (string) ($flat[$m[1]] ?? ''),
+                    $result,
+                );
+                $gen[$key] = $result;
+            }
+
+            $item['gen_data'] = $gen;
+        }
+        unset($item);
+
+        return $items;
+    }
+
+    /**
+     * Flatten a row for factory template resolution.
+     * Nested arrays (e.g. data.quality) are accessible via dot-notation key.
+     *
+     * @param  array<string, mixed> $row
+     * @param  string               $prefix
+     * @return array<string, string>
+     */
+    private static function flattenForFactory(array $row, string $prefix = ''): array
+    {
+        $result = [];
+        foreach ($row as $key => $value) {
+            $fullKey = $prefix !== '' ? "{$prefix}.{$key}" : $key;
+            if (is_array($value)) {
+                $result = array_merge($result, self::flattenForFactory($value, $fullKey));
+            } else {
+                $result[$fullKey] = (string) ($value ?? '');
+                // Also register short key without prefix for convenience
+                if ($prefix !== '') {
+                    $result[$key] ??= (string) ($value ?? '');
+                }
+            }
+        }
+        return $result;
+    }
 }

@@ -12,7 +12,7 @@ declare(strict_types=1);
  */
 function VALIDATOR(array $data): object
 {
-    return new class ($data) {
+    return new class($data) {
         private array $errors = [];
         private array $data;
 
@@ -25,7 +25,8 @@ function VALIDATOR(array $data): object
         public function required(string|array $fields): static
         {
             foreach ((array) $fields as $field) {
-                $val = isset($this->data[$field]) ? trim((string) $this->data[$field]) : '';
+                $val = isset($this->data[$field])
+                    ? trim((string) $this->data[$field]) : '';
                 if ($val === '') {
                     $this->errors[$field] = 'Required';
                 }
@@ -74,8 +75,11 @@ function VALIDATOR(array $data): object
         }
 
         /** Field must match regex $pattern (skipped when empty). */
-        public function pattern(string $field, string $pattern, string $message): static
-        {
+        public function pattern(
+            string $field,
+            string $pattern,
+            string $message
+        ): static {
             if (isset($this->errors[$field])) {
                 return $this;
             }
