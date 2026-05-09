@@ -38,6 +38,8 @@ $tests = [
     __DIR__ . '/test_utils.php',
     // Filter
     __DIR__ . '/test_filter.php',
+    // Projection
+    __DIR__ . '/test_projection.php',
     // Auth
     "{$modulesDir}/Auth/tests/AuthTest.php",
     "{$modulesDir}/Auth/tests/AuthServiceTest.php",

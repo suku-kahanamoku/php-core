@@ -15,6 +15,7 @@ namespace App\Utils;
  *   ['rel_id']       → FK column only, no JOIN
  *   ['rel']          → JOIN relation, return all its columns
  *   ['rel.col']      → JOIN relation, return only that column
+ *   ['json.key']     → JSON column + filter to only that sub-key (if 'json' is in OWN, not REL)
  *
  * Usage in a repository
  * ---------------------
@@ -27,13 +28,13 @@ namespace App\Utils;
  *   // 1. Get own columns to SELECT
  *   $ownCols = $proj->getOwnCols(self::OWN, self::REL);
  *
- *   // 2. Whether to add a JOIN
+ *   // 2. Whether to add a JOIN (false for JSON columns)
  *   if ($proj->needsJoin('role')) { ... }
  *
  *   // 3. Which relation columns to SELECT (null=skip, []=all, [...]=specific)
  *   $relCols = $proj->getRelationCols('role');
  *
- *   // 4. Filter result row
+ *   // 4. Filter result row (JSON column sub-keys are filtered automatically)
  *   $row = $proj->apply($row, self::SYS, ['role' => ['role', 'role_id']]);
  */
 class Projection
@@ -41,7 +42,11 @@ class Projection
     /** Own-table columns explicitly requested (no dot). */
     private array $ownCols = [];
 
-    /** Dot-notation relation columns: ['user' => ['first_name', 'email'], ...] */
+    /**
+     * Dot-notation entries split by prefix.
+     * For relations: ['user' => ['first_name', 'email']]
+     * For JSON cols: ['data' => ['quality', 'volume']]
+     */
     private array $dotRels = [];
 
     /**
@@ -118,11 +123,17 @@ class Projection
             }
         }
 
-        // For dot-notation relations, also include the FK
+        // For dot-notation entries, include FK for relations OR the column itself for JSON cols.
         foreach (array_keys($this->dotRels) as $rel) {
-            $fk = "{$rel}_id";
-            if (in_array($fk, $all, true) && !in_array($fk, $cols, true)) {
-                $cols[] = $fk;
+            if (in_array($rel, $relNames, true)) {
+                // Known relation: include its FK
+                $fk = "{$rel}_id";
+                if (in_array($fk, $all, true) && !in_array($fk, $cols, true)) {
+                    $cols[] = $fk;
+                }
+            } elseif (in_array($rel, $all, true) && !in_array($rel, $cols, true)) {
+                // JSON column (dot-notation sub-field): include the column itself
+                $cols[] = $rel;
             }
         }
 
@@ -131,11 +142,14 @@ class Projection
 
     /**
      * Whether a named relation should be JOINed/fetched.
+     * Returns false for JSON columns (those are OWN columns, not relations).
      *
-     * @param  string $name  Logicky nazev relace (napr. 'role', 'user')
+     * @param  string   $name       Logicky nazev relace (napr. 'role', 'user')
+     * @param  string[] $relNames   Known relation names — if provided, dot-notation prefix
+     *                              matching an OWN column (not a relation) returns false.
      * @return bool
      */
-    public function needsJoin(string $name): bool
+    public function needsJoin(string $name, array $relNames = []): bool
     {
         if ($this->isAll()) {
             return true;
@@ -145,7 +159,38 @@ class Projection
             return false;
         }
 
-        return in_array($name, $this->ownCols, true) || isset($this->dotRels[$name]);
+        if (!in_array($name, $this->ownCols, true) && !isset($this->dotRels[$name])) {
+            return false;
+        }
+
+        // If caller supplied known relation names and the dot-notation prefix is NOT among them,
+        // it is a JSON column — no JOIN needed.
+        if (
+            $relNames !== [] &&
+            isset($this->dotRels[$name]) &&
+            !in_array($name, $relNames, true)
+        ) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Returns the requested sub-field names for a JSON column accessed via dot-notation.
+     * Returns null  → column not accessed via dot-notation (include fully or not at all).
+     * Returns []    → all sub-keys requested (col was listed without dot-notation).
+     * Returns [...] → only these specific sub-keys.
+     *
+     * @param  string $col  Column name (e.g. 'data')
+     * @return string[]|null
+     */
+    public function getDotSubfields(string $col): ?array
+    {
+        if ($this->isAll()) {
+            return null;
+        }
+        return $this->dotRels[$col] ?? null;
     }
 
     /**
@@ -242,6 +287,8 @@ class Projection
 
             foreach ($this->dotRels as $rel => $reqCols) {
                 if (!isset($relMap[$rel])) {
+                    // JSON column accessed via dot-notation — include it so apply() can filter sub-keys.
+                    $keep[] = $rel;
                     continue;
                 }
                 $def = $relMap[$rel];
@@ -289,6 +336,21 @@ class Projection
         }
 
         $filtered = array_intersect_key($row, array_flip(array_unique($keep)));
+
+        // Filter sub-keys of JSON columns accessed via dot-notation.
+        foreach ($this->dotRels as $rel => $reqCols) {
+            if (
+                !isset($relMap[$rel]) &&
+                isset($filtered[$rel]) &&
+                is_array($filtered[$rel]) &&
+                $reqCols !== []
+            ) {
+                $filtered[$rel] = array_intersect_key(
+                    $filtered[$rel],
+                    array_flip($reqCols)
+                );
+            }
+        }
 
         return $this->nestRelations($filtered, $relMap);
     }
