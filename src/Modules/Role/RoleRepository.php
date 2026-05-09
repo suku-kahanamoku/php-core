@@ -26,7 +26,23 @@ class RoleRepository
         $this->code = $franchiseCode;
     }
 
-    /** Return all roles, optionally filtered and sorted. */
+    /** Return all roles, optionally filtered and sorted.
+     *
+     * @return array{
+     *   items: list<array{
+     *     id: int,
+     *     created_at: string,
+     *     updated_at: string,
+     *     name: string,
+     *     label: string,
+     *     position: int
+     *   }>,
+     *   total: int,
+     *   page: int,
+     *   limit: int,
+     *   totalPages: int
+     * }
+     */
     public function findAll(int $page = 1, int $limit = 20, string $sort = '', string $filter = '', ?array $projection = null): array
     {
         $proj    = new Projection($projection);
@@ -77,7 +93,10 @@ class RoleRepository
         ];
     }
 
-    /** Find single role by ID. */
+    /** Find single role by ID.
+     *
+     * @return array{id: int, created_at: string, updated_at: string, name: string, label: string, position: int}|null
+     */
     public function findById(int $id, ?array $projection = null): ?array
     {
         $proj    = new Projection($projection);
@@ -109,7 +128,11 @@ class RoleRepository
         )['cnt'];
     }
 
-    /** Insert a new role and return the created row. */
+    /** Insert a new role and return the created row.
+     *
+     * @param  array<string, mixed> $data
+     * @return array{id: int, created_at: string, updated_at: string, name: string, label: string, position: int}
+     */
     public function create(array $data, ?array $projection = null): array
     {
         $id = $this->db->insert('role', array_merge($data, [
@@ -120,7 +143,11 @@ class RoleRepository
         return $this->findById($id, $projection);
     }
 
-    /** Update fields on an existing role and return the updated row. */
+    /** Update fields on an existing role and return the updated row.
+     *
+     * @param  array<string, mixed> $data
+     * @return array{id: int, created_at: string, updated_at: string, name: string, label: string, position: int}
+     */
     public function update(int $id, array $data, ?array $projection = null): array
     {
         $this->db->update(

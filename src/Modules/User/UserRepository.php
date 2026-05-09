@@ -25,7 +25,27 @@ class UserRepository
         $this->code = $franchiseCode;
     }
 
-    /** Paginated list with optional filters. */
+    /** Paginated list with optional filters.
+     *
+     * @return array{
+     *   items: list<array{
+     *     id: int,
+     *     created_at: string,
+     *     updated_at: string,
+     *     last_login_at: string|null,
+     *     first_name: string,
+     *     last_name: string,
+     *     email: string,
+     *     phone: string|null,
+     *     role_id: int|null,
+     *     role?: array{name: string, id: int}
+     *   }>,
+     *   total: int,
+     *   page: int,
+     *   limit: int,
+     *   totalPages: int
+     * }
+     */
     public function findAll(
         int $page = 1,
         int $limit = 20,
@@ -101,7 +121,21 @@ class UserRepository
         ];
     }
 
-    /** Find single user by ID. */
+    /** Find single user by ID.
+     *
+     * @return array{
+     *   id: int,
+     *   created_at: string,
+     *   updated_at: string,
+     *   last_login_at: string|null,
+     *   first_name: string,
+     *   last_name: string,
+     *   email: string,
+     *   phone: string|null,
+     *   role_id: int|null,
+     *   role?: array{name: string, id: int}
+     * }|null
+     */
     public function findById(int $id, ?array $projection = null): ?array
     {
         $proj = new Projection($projection);
@@ -162,6 +196,11 @@ class UserRepository
         return (bool) $row;
     }
 
+    /**
+     * Najde uzivatele dle e-mailu (bez hesla).
+     *
+     * @return array{id: int, first_name: string, last_name: string, email: string, phone: string|null}|null
+     */
     public function findByEmail(string $email): ?array
     {
         return $this->db->fetchOne(
@@ -171,6 +210,12 @@ class UserRepository
         ) ?: null;
     }
 
+    /**
+     * Vlozi noveho uzivatele a vrati vytvoreny zaznam.
+     *
+     * @param  array<string, mixed> $data
+     * @return array{id: int, created_at: string, updated_at: string, last_login_at: string|null, first_name: string, last_name: string, email: string, phone: string|null, role_id: int|null, role?: array{name: string, id: int}}
+     */
     public function create(array $data, ?array $projection = null): array
     {
         $id = $this->db->insert('user', array_merge($data, [
@@ -181,6 +226,12 @@ class UserRepository
         return $this->findById($id, $projection) ?? ['id' => $id];
     }
 
+    /**
+     * Aktualizuje uzivatele a vrati aktualizovany zaznam.
+     *
+     * @param  array<string, mixed> $data
+     * @return array{id: int, created_at: string, updated_at: string, last_login_at: string|null, first_name: string, last_name: string, email: string, phone: string|null, role_id: int|null, role?: array{name: string, id: int}}
+     */
     public function update(int $id, array $data, ?array $projection = null): array
     {
         $this->db->update(

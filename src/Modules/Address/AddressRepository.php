@@ -46,14 +46,33 @@ class AddressRepository
      * Vrati adresy dle uzivatele a typu (billing/shipping) s podporou strankovani,
      * hledani, filtru a projekce.
      *
-     * @param int $userId
+     * @param int         $userId
      * @param string|null $type
-     * @param string $sort
-     * @param int $page
-     * @param int $limit
-     * @param string $filter
-     * @param array|null $projection
-     * @return array{items: array, limit: int, page: int, total: int, totalPages: int}
+     * @param string      $sort
+     * @param int         $page
+     * @param int         $limit
+     * @param string      $filter
+     * @param array|null  $projection
+     * @return array{
+     *   items: list<array{
+     *     id: int,
+     *     created_at: string,
+     *     updated_at: string,
+     *     user_id: int,
+     *     type: string,
+     *     company: string|null,
+     *     name: string,
+     *     street: string,
+     *     city: string,
+     *     zip: string,
+     *     country: string,
+     *     is_default: int
+     *   }>,
+     *   total: int,
+     *   page: int,
+     *   limit: int,
+     *   totalPages: int
+     * }
      */
     public function findByUser(
         int $userId,
@@ -117,7 +136,24 @@ class AddressRepository
         ];
     }
 
-    /** Find single address by ID. */
+    /**
+     * Najde adresu dle ID.
+     *
+     * @return array{
+     *   id: int,
+     *   created_at: string,
+     *   updated_at: string,
+     *   user_id: int,
+     *   type: string,
+     *   company: string|null,
+     *   name: string,
+     *   street: string,
+     *   city: string,
+     *   zip: string,
+     *   country: string,
+     *   is_default: int
+     * }|null
+     */
     public function findById(int $id, ?array $projection = null): ?array
     {
         $proj    = new Projection($projection);
@@ -138,6 +174,12 @@ class AddressRepository
         return $proj->apply($row, $sys);
     }
 
+    /**
+     * Vlozi novou adresu a vrati vytvoreny zaznam.
+     *
+     * @param  array<string, mixed> $data
+     * @return array{id: int, created_at: string, updated_at: string, user_id: int, type: string, company: string|null, name: string, street: string, city: string, zip: string, country: string, is_default: int}
+     */
     public function create(array $data, ?array $projection = null): array
     {
         $id = $this->db->insert('address', array_merge($data, [
@@ -148,6 +190,12 @@ class AddressRepository
         return $this->findById($id, $projection) ?? ['id' => $id];
     }
 
+    /**
+     * Aktualizuje adresu a vrati aktualizovany zaznam.
+     *
+     * @param  array<string, mixed> $data
+     * @return array{id: int, created_at: string, updated_at: string, user_id: int, type: string, company: string|null, name: string, street: string, city: string, zip: string, country: string, is_default: int}
+     */
     public function update(int $id, array $data, ?array $projection = null): array
     {
         $this->db->update(

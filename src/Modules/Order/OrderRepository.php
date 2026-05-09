@@ -25,6 +25,33 @@ class OrderRepository
         $this->code = $franchiseCode;
     }
 
+    /**
+     * Vrati strankovany seznam objednavek.
+     *
+     * @return array{
+     *   items: list<array{
+     *     id: int,
+     *     created_at: string,
+     *     updated_at: string,
+     *     order_number: string,
+     *     status: string,
+     *     total_amount: string,
+     *     currency: string,
+     *     payment_method: string|null,
+     *     shipping_type: string|null,
+     *     shipping_cost: string|null,
+     *     shipping_address_id: int|null,
+     *     billing_address_id: int|null,
+     *     user_id: int|null,
+     *     note: string|null,
+     *     user?: array{first_name: string, last_name: string, email: string}
+     *   }>,
+     *   total: int,
+     *   page: int,
+     *   limit: int,
+     *   totalPages: int
+     * }
+     */
     public function findAll(
         int $page = 1,
         int $limit = 20,
@@ -101,6 +128,28 @@ class OrderRepository
         ];
     }
 
+    /**
+     * Najde objednavku dle ID vcetne polozek.
+     *
+     * @return array{
+     *   id: int,
+     *   created_at: string,
+     *   updated_at: string,
+     *   order_number: string,
+     *   status: string,
+     *   total_amount: string,
+     *   currency: string,
+     *   payment_method: string|null,
+     *   shipping_type: string|null,
+     *   shipping_cost: string|null,
+     *   shipping_address_id: int|null,
+     *   billing_address_id: int|null,
+     *   user_id: int|null,
+     *   note: string|null,
+     *   items: list<array{id: int, order_id: int, product_id: int, quantity: int, unit_price: string, vat_rate: string, product_name: string|null, sku: string|null}>,
+     *   user?: array{first_name: string, last_name: string, email: string}
+     * }|null
+     */
     public function findById(int $id, ?array $projection = null): ?array
     {
         $proj = new Projection($projection);
@@ -140,6 +189,12 @@ class OrderRepository
         return $proj->apply($order, $sys, ['user' => ['fk' => 'user_id', 'nest' => ['first_name', 'last_name', 'email']]]);
     }
 
+    /**
+     * Vlozi novou objednavku a vrati vytvoreny zaznam vcetne polozek.
+     *
+     * @param  array<string, mixed> $data
+     * @return array{id: int, order_number: string, status: string, total_amount: string, user_id: int|null, items: list<array<string, mixed>>}
+     */
     public function create(array $data, ?array $projection = null): array
     {
         $id = $this->db->insert('order', array_merge($data, [
@@ -150,6 +205,11 @@ class OrderRepository
         return $this->findById($id, $projection) ?? ['id' => $id];
     }
 
+    /**
+     * Vlozi polozku objednavky a vrati jeji ID.
+     *
+     * @param  array<string, mixed> $data
+     */
     public function createItem(array $data): int
     {
         return $this->db->insert('order_item', array_merge($data, [
@@ -157,6 +217,11 @@ class OrderRepository
         ]));
     }
 
+    /**
+     * Zmeni stav objednavky a vrati aktualizovany zaznam.
+     *
+     * @return array{id: int, order_number: string, status: string, total_amount: string, user_id: int|null, items: list<array<string, mixed>>}
+     */
     public function updateStatus(int $id, string $status, ?array $projection = null): array
     {
         $this->db->update('order', [
@@ -172,6 +237,9 @@ class OrderRepository
         $this->db->delete('order', 'id = ? AND franchise_code = ?', [$id, $this->code]);
     }
 
+    /**
+     * Vygeneruje unikatni cislo objednavky ve formatu ORD-YYYYMMDD-XXXXX.
+     */
     public function generateNumber(): string
     {
         return 'ORD-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -5));

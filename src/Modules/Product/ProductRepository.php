@@ -25,6 +25,33 @@ class ProductRepository
         $this->code = $franchiseCode;
     }
 
+    /**
+     * Vrati strankovany seznam produktu.
+     *
+     * @return array{
+     *   items: list<array{
+     *     id: int,
+     *     created_at: string,
+     *     updated_at: string,
+     *     sku: string,
+     *     name: string,
+     *     description: string|null,
+     *     price: string,
+     *     vat_rate: string,
+     *     stock_quantity: int,
+     *     is_active: int,
+     *     kind: string|null,
+     *     color: string|null,
+     *     variant: string|null,
+     *     data: array<string, mixed>|null,
+     *     category_ids?: list<int>
+     *   }>,
+     *   total: int,
+     *   page: int,
+     *   limit: int,
+     *   totalPages: int
+     * }
+     */
     public function findAll(
         int $page = 1,
         int $limit = 20,
@@ -113,6 +140,28 @@ class ProductRepository
         ];
     }
 
+    /**
+     * Najde produkt dle ID vcetne kategoriı.
+     *
+     * @return array{
+     *   id: int,
+     *   created_at: string,
+     *   updated_at: string,
+     *   sku: string,
+     *   name: string,
+     *   description: string|null,
+     *   price: string,
+     *   vat_rate: string,
+     *   stock_quantity: int,
+     *   is_active: int,
+     *   kind: string|null,
+     *   color: string|null,
+     *   variant: string|null,
+     *   data: array<string, mixed>|null,
+     *   category_ids?: list<int>,
+     *   category_names?: list<string>
+     * }|null
+     */
     public function findById(int $id, ?array $projection = null): ?array
     {
         $proj = new Projection($projection);
@@ -158,6 +207,11 @@ class ProductRepository
         return $proj->apply($row, $sys, ['categories' => ['category_ids', 'category_names']]);
     }
 
+    /**
+     * Synchronizuje kategorie produktu — smaze stare a vlozi nove.
+     *
+     * @param list<int> $categoryIds
+     */
     public function syncCategories(int $productId, array $categoryIds): void
     {
         $this->db->delete('product_category', 'product_id = ?', [$productId]);
@@ -170,6 +224,12 @@ class ProductRepository
         }
     }
 
+    /**
+     * Vlozi novy produkt a vrati vytvoreny zaznam vcetne kategoriı.
+     *
+     * @param  array<string, mixed> $data
+     * @return array{id: int, sku: string, name: string, price: string, stock_quantity: int, is_active: int, category_ids: list<int>}
+     */
     public function create(array $data, ?array $projection = null): array
     {
         if (isset($data['data']) && is_array($data['data'])) {
@@ -184,6 +244,12 @@ class ProductRepository
         return $this->findById($id, $projection) ?? ['id' => $id];
     }
 
+    /**
+     * Aktualizuje produkt a vrati aktualizovany zaznam vcetne kategoriı.
+     *
+     * @param  array<string, mixed> $data
+     * @return array{id: int, sku: string, name: string, price: string, stock_quantity: int, is_active: int, category_ids: list<int>}
+     */
     public function update(int $id, array $data, ?array $projection = null): array
     {
         if (isset($data['data']) && is_array($data['data'])) {
@@ -206,6 +272,10 @@ class ProductRepository
         $this->db->delete('product', 'id = ? AND franchise_code = ?', [$id, $this->code]);
     }
 
+    /**
+     * Upravi skladove mnozstvi produktu o delta (kladne = pridat, zaporne = odebrat).
+     * Vraci nove mnozstvi nebo -1 pokud produkt neexistuje.
+     */
     public function adjustStock(int $id, int $delta): int
     {
         $product = $this->db->fetchOne(
@@ -229,9 +299,11 @@ class ProductRepository
         return $newQty;
     }
 
+    /**
+     * Vygeneruje unikatni SKU ve formatu SKU-XXXXXX.
+     */
     public function generateSku(): string
     {
         return 'SKU-' . strtoupper(substr(uniqid(), -6));
     }
 }
-

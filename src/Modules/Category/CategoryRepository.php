@@ -25,6 +25,26 @@ class CategoryRepository
         $this->code = $franchiseCode;
     }
 
+    /**
+     * Vrati strankovany seznam kategorii.
+     *
+     * @return array{
+     *   items: list<array{
+     *     id: int,
+     *     created_at: string,
+     *     updated_at: string,
+     *     syscode: string,
+     *     name: string,
+     *     description: string|null,
+     *     position: int,
+     *     parent_id: int|null
+     *   }>,
+     *   total: int,
+     *   page: int,
+     *   limit: int,
+     *   totalPages: int
+     * }
+     */
     public function findAll(
         int $page = 1,
         int $limit = 20,
@@ -81,6 +101,11 @@ class CategoryRepository
         ];
     }
 
+    /**
+     * Najde kategorii dle ID.
+     *
+     * @return array{id: int, created_at: string, updated_at: string, syscode: string, name: string, description: string|null, position: int, parent_id: int|null}|null
+     */
     public function findById(int $id, ?array $projection = null): ?array
     {
         $proj    = new Projection($projection);
@@ -101,6 +126,11 @@ class CategoryRepository
         return $proj->apply($row, $sys);
     }
 
+    /**
+     * Najde kategorii dle syscode.
+     *
+     * @return array{id: int, created_at: string, updated_at: string, syscode: string, name: string, description: string|null, position: int, parent_id: int|null}|null
+     */
     public function findBySyscode(string $syscode): ?array
     {
         $row = $this->db->fetchOne(
@@ -111,6 +141,9 @@ class CategoryRepository
         return $row ?: null;
     }
 
+    /**
+     * Vraci true, pokud ma kategorie prirazene produkty.
+     */
     public function hasProducts(int $id): bool
     {
         $row = $this->db->fetchOne(
@@ -123,6 +156,11 @@ class CategoryRepository
         return (bool) $row;
     }
 
+    /**
+     * Vrati produkty prirazene ke kategorii.
+     *
+     * @return list<array{id: int, sku: string, name: string, price: string}>
+     */
     public function getProducts(int $id): array
     {
         return $this->db->fetchAll(
@@ -133,6 +171,12 @@ class CategoryRepository
         );
     }
 
+    /**
+     * Vlozi novou kategorii a vrati vytvoreny zaznam.
+     *
+     * @param  array<string, mixed> $data
+     * @return array{id: int, created_at: string, updated_at: string, syscode: string, name: string, description: string|null, position: int, parent_id: int|null}
+     */
     public function create(array $data, ?array $projection = null): array
     {
         $id = $this->db->insert('category', array_merge($data, [
@@ -143,6 +187,12 @@ class CategoryRepository
         return $this->findById($id, $projection);
     }
 
+    /**
+     * Aktualizuje kategorii a vrati aktualizovany zaznam.
+     *
+     * @param  array<string, mixed> $data
+     * @return array{id: int, created_at: string, updated_at: string, syscode: string, name: string, description: string|null, position: int, parent_id: int|null}
+     */
     public function update(int $id, array $data, ?array $projection = null): array
     {
         $this->db->update(

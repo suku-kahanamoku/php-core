@@ -25,6 +25,27 @@ class EnumerationRepository
         $this->code = $franchiseCode;
     }
 
+    /**
+     * Vrati strankovany seznam ciselnikovych polozek.
+     *
+     * @return array{
+     *   items: list<array{
+     *     id: int,
+     *     created_at: string,
+     *     updated_at: string,
+     *     type: string,
+     *     syscode: string,
+     *     label: string,
+     *     value: string|null,
+     *     position: int,
+     *     is_active: int
+     *   }>,
+     *   total: int,
+     *   page: int,
+     *   limit: int,
+     *   totalPages: int
+     * }
+     */
     public function findAll(
         ?string $type = null,
         ?bool $isActive = null,
@@ -92,6 +113,11 @@ class EnumerationRepository
         ];
     }
 
+    /**
+     * Najde ciselnikovou polozku dle ID.
+     *
+     * @return array{id: int, created_at: string, updated_at: string, type: string, syscode: string, label: string, value: string|null, position: int, is_active: int}|null
+     */
     public function findById(int $id, ?array $projection = null): ?array
     {
         $proj    = new Projection($projection);
@@ -112,6 +138,11 @@ class EnumerationRepository
         return $proj->apply($row, $sys);
     }
 
+    /**
+     * Vrati seznam vsech unikatnich typu ciselnikु.
+     *
+     * @return list<string>
+     */
     public function getTypes(): array
     {
         $rows = $this->db->fetchAll(
@@ -123,6 +154,9 @@ class EnumerationRepository
         return array_column($rows, 'type');
     }
 
+    /**
+     * Vraci true, pokud kombinace type + syscode jiz existuje.
+     */
     public function codeExists(string $type, string $code, ?int $excludeId = null): bool
     {
         if ($excludeId !== null) {
@@ -142,6 +176,12 @@ class EnumerationRepository
         return (bool) $row;
     }
 
+    /**
+     * Vlozi novou ciselnikovou polozku a vrati vytvoreny zaznam.
+     *
+     * @param  array<string, mixed> $data
+     * @return array{id: int, created_at: string, updated_at: string, type: string, syscode: string, label: string, value: string|null, position: int, is_active: int}
+     */
     public function create(array $data, ?array $projection = null): array
     {
         $id = $this->db->insert('enumeration', array_merge($data, [
@@ -152,6 +192,12 @@ class EnumerationRepository
         return $this->findById($id, $projection) ?? ['id' => $id];
     }
 
+    /**
+     * Aktualizuje ciselnikovou polozku a vrati aktualizovany zaznam.
+     *
+     * @param  array<string, mixed> $data
+     * @return array{id: int, created_at: string, updated_at: string, type: string, syscode: string, label: string, value: string|null, position: int, is_active: int}
+     */
     public function update(int $id, array $data, ?array $projection = null): array
     {
         $this->db->update(

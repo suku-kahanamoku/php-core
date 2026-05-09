@@ -25,6 +25,32 @@ class InvoiceRepository
         $this->code = $franchiseCode;
     }
 
+    /**
+     * Vrati strankovany seznam faktur.
+     *
+     * @return array{
+     *   items: list<array{
+     *     id: int,
+     *     created_at: string,
+     *     updated_at: string,
+     *     invoice_number: string,
+     *     status: string,
+     *     total_amount: string,
+     *     currency: string,
+     *     issued_at: string,
+     *     due_at: string|null,
+     *     paid_at: string|null,
+     *     order_id: int|null,
+     *     user_id: int|null,
+     *     billing_address_id: int|null,
+     *     user?: array{first_name: string, last_name: string, email: string}
+     *   }>,
+     *   total: int,
+     *   page: int,
+     *   limit: int,
+     *   totalPages: int
+     * }
+     */
     public function findAll(
         int $page = 1,
         int $limit = 20,
@@ -101,6 +127,27 @@ class InvoiceRepository
         ];
     }
 
+    /**
+     * Najde fakturu dle ID vcetne polozek.
+     *
+     * @return array{
+     *   id: int,
+     *   created_at: string,
+     *   updated_at: string,
+     *   invoice_number: string,
+     *   status: string,
+     *   total_amount: string,
+     *   currency: string,
+     *   issued_at: string,
+     *   due_at: string|null,
+     *   paid_at: string|null,
+     *   order_id: int|null,
+     *   user_id: int|null,
+     *   billing_address_id: int|null,
+     *   items: list<array{id: int, invoice_id: int, product_id: int, quantity: int, unit_price: string, vat_rate: string, product_name: string|null, sku: string|null}>,
+     *   user?: array{first_name: string, last_name: string, email: string}
+     * }|null
+     */
     public function findById(int $id, ?array $projection = null): ?array
     {
         $proj = new Projection($projection);
@@ -140,6 +187,11 @@ class InvoiceRepository
         return $proj->apply($invoice, $sys, ['user' => ['fk' => 'user_id', 'nest' => ['first_name', 'last_name', 'email']]]);
     }
 
+    /**
+     * Vraci ID zaznamu faktury pro danou objednavku, nebo null pokud neexistuje.
+     *
+     * @return array{id: int}|null
+     */
     public function findByOrder(int $orderId): ?array
     {
         $row = $this->db->fetchOne(
@@ -151,6 +203,11 @@ class InvoiceRepository
         return $row ?: null;
     }
 
+    /**
+     * Nacte raw zaznam objednavky pro ucely vystaveni faktury (interni pouziti).
+     *
+     * @return array<string, mixed>|null
+     */
     public function getOrder(int $orderId): ?array
     {
         $row = $this->db->fetchOne(
@@ -162,6 +219,11 @@ class InvoiceRepository
         return $row ?: null;
     }
 
+    /**
+     * Nacte polozky objednavky pro ucely vystaveni faktury (interni pouziti).
+     *
+     * @return list<array{id: int, order_id: int, product_id: int, quantity: int, unit_price: string, vat_rate: string, product_name: string|null}>
+     */
     public function getOrderItems(int $orderId): array
     {
         return $this->db->fetchAll(
@@ -171,6 +233,12 @@ class InvoiceRepository
         );
     }
 
+    /**
+     * Vlozi novou fakturu a vrati vytvoreny zaznam vcetne polozek.
+     *
+     * @param  array<string, mixed> $data
+     * @return array{id: int, invoice_number: string, status: string, total_amount: string, user_id: int|null, items: list<array<string, mixed>>}
+     */
     public function create(array $data, ?array $projection = null): array
     {
         $id = $this->db->insert('invoice', array_merge($data, [
@@ -181,6 +249,11 @@ class InvoiceRepository
         return $this->findById($id, $projection) ?? ['id' => $id];
     }
 
+    /**
+     * Vlozi polozku faktury a vrati jeji ID.
+     *
+     * @param  array<string, mixed> $data
+     */
     public function createItem(array $data): int
     {
         return $this->db->insert('invoice_item', array_merge($data, [
@@ -188,6 +261,11 @@ class InvoiceRepository
         ]));
     }
 
+    /**
+     * Zmeni stav faktury (a nastavi paid_at pro status 'paid') a vrati aktualizovany zaznam.
+     *
+     * @return array{id: int, invoice_number: string, status: string, total_amount: string, user_id: int|null, items: list<array<string, mixed>>}
+     */
     public function updateStatus(int $id, string $status, ?array $projection = null): array
     {
         $set = ['status' => $status, 'updated_at' => date('Y-m-d H:i:s')];
@@ -209,6 +287,9 @@ class InvoiceRepository
         $this->db->delete('invoice', 'id = ? AND franchise_code = ?', [$id, $this->code]);
     }
 
+    /**
+     * Vygeneruje unikatni cislo faktury ve formatu YYYY-NNNNN.
+     */
     public function generateNumber(): string
     {
         $year = date('Y');

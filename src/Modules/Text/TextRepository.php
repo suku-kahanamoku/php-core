@@ -25,6 +25,27 @@ class TextRepository
         $this->code = $franchiseCode;
     }
 
+    /**
+     * Vrati strankovany seznam textovych obsahu (CMS).
+     *
+     * @return array{
+     *   items: list<array{
+     *     id: int,
+     *     created_at: string,
+     *     updated_at: string,
+     *     syscode: string,
+     *     title: string,
+     *     content: string,
+     *     language: string,
+     *     is_active: int,
+     *     created_by: int|null
+     *   }>,
+     *   total: int,
+     *   page: int,
+     *   limit: int,
+     *   totalPages: int
+     * }
+     */
     public function findAll(
         string $language = 'cs',
         ?bool $isActive = null,
@@ -93,6 +114,11 @@ class TextRepository
         ];
     }
 
+    /**
+     * Najde textovy obsah dle ID.
+     *
+     * @return array{id: int, created_at: string, updated_at: string, syscode: string, title: string, content: string, language: string, is_active: int, created_by: int|null}|null
+     */
     public function findById(int $id, ?array $projection = null): ?array
     {
         $proj    = new Projection($projection);
@@ -113,6 +139,11 @@ class TextRepository
         return $proj->apply($row, $sys);
     }
 
+    /**
+     * Najde textovy obsah dle syscode a jazyka.
+     *
+     * @return array{id: int, created_at: string, updated_at: string, syscode: string, title: string, content: string, language: string, is_active: int, created_by: int|null}|null
+     */
     public function findByKey(string $key, string $language): ?array
     {
         $row = $this->db->fetchOne(
@@ -123,6 +154,9 @@ class TextRepository
         return $row ?: null;
     }
 
+    /**
+     * Vraci true, pokud kombinace syscode + language jiz existuje.
+     */
     public function keyExists(string $key, string $language, ?int $excludeId = null): bool
     {
         if ($excludeId !== null) {
@@ -142,6 +176,12 @@ class TextRepository
         return (bool) $row;
     }
 
+    /**
+     * Vlozi novy textovy obsah a vrati vytvoreny zaznam.
+     *
+     * @param  array<string, mixed> $data
+     * @return array{id: int, created_at: string, updated_at: string, syscode: string, title: string, content: string, language: string, is_active: int, created_by: int|null}
+     */
     public function create(array $data, ?array $projection = null): array
     {
         $id = $this->db->insert('text', array_merge($data, [
@@ -152,6 +192,12 @@ class TextRepository
         return $this->findById($id, $projection) ?? ['id' => $id];
     }
 
+    /**
+     * Aktualizuje textovy obsah a vrati aktualizovany zaznam.
+     *
+     * @param  array<string, mixed> $data
+     * @return array{id: int, created_at: string, updated_at: string, syscode: string, title: string, content: string, language: string, is_active: int, created_by: int|null}
+     */
     public function update(int $id, array $data, ?array $projection = null): array
     {
         $this->db->update(
