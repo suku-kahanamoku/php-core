@@ -177,6 +177,8 @@ CREATE TABLE IF NOT EXISTS `order` (
     `total_amount`        DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
     `currency`            VARCHAR(3)     NOT NULL DEFAULT 'CZK',
     `payment_method`      VARCHAR(64)             DEFAULT 'bank_transfer',
+    `shipping_type`       VARCHAR(64)             DEFAULT NULL,
+    `shipping_cost`       DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
     `shipping_address_id` INT UNSIGNED            DEFAULT NULL,
     `billing_address_id`  INT UNSIGNED            DEFAULT NULL,
     `note`                TEXT                    DEFAULT NULL,

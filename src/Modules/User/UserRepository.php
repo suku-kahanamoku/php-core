@@ -129,6 +129,15 @@ class UserRepository
         return (bool) $row;
     }
 
+    public function findByEmail(string $email): ?array
+    {
+        return $this->db->fetchOne(
+            'SELECT id, first_name, last_name, email, phone
+             FROM user WHERE franchise_code = ? AND email = ?',
+            [$this->code, $email],
+        ) ?: null;
+    }
+
     public function create(array $data): int
     {
         return $this->db->insert('user', array_merge($data, [

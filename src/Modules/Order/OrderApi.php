@@ -40,16 +40,7 @@ class OrderApi
     /** POST /orders */
     public function create(Request $request): void
     {
-        $result = $this->service->create(
-            (array) $request->get('items', []),
-            (string) $request->get('currency', 'CZK'),
-            [
-                'payment_method'      => $request->get('payment_method', 'bank_transfer'),
-                'note'                => $request->get('note', ''),
-                'shipping_address_id' => $request->get('shipping_address_id'),
-                'billing_address_id'  => $request->get('billing_address_id'),
-            ],
-        );
+        $result = $this->service->create($request->body);
         Response::created($result, 'Order created');
     }
 

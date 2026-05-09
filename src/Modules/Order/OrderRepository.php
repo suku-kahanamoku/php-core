@@ -108,15 +108,6 @@ class OrderRepository
         return $order;
     }
 
-    public function getProduct(int $productId): ?array
-    {
-        return $this->db->fetchOne(
-            'SELECT id, name, price, stock_quantity FROM product
-             WHERE id = ? AND franchise_code = ?',
-            [$productId, $this->code],
-        ) ?: null;
-    }
-
     public function create(array $data): int
     {
         return $this->db->insert('order', array_merge($data, [
@@ -130,19 +121,6 @@ class OrderRepository
         return $this->db->insert('order_item', array_merge($data, [
             'created_at' => date('Y-m-d H:i:s'),
         ]));
-    }
-
-    public function decreaseStock(int $productId, int $qty): void
-    {
-        $this->db->update(
-            'product',
-            ['stock_quantity' => $this->db->fetchOne(
-                'SELECT stock_quantity FROM product WHERE id = ?',
-                [$productId],
-            )['stock_quantity'] - $qty],
-            'id = ?',
-            [$productId],
-        );
     }
 
     public function updateStatus(int $id, string $status): void
