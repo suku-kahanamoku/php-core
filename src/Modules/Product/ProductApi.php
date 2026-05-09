@@ -64,9 +64,12 @@ class ProductApi
      */
     public function get(Request $request, array $params): void
     {
-        Response::success(
-            $this->service->get((int) $params['id'], $request->projection())
-        );
+        $item    = $this->service->get((int) $params['id'], $request->projection());
+        $factory = $request->factory();
+        if ($factory !== null) {
+            $item = Response::applyFactory([$item], $factory)[0];
+        }
+        Response::success($item);
     }
 
     /**

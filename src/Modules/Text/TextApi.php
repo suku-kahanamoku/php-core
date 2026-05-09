@@ -35,7 +35,7 @@ class TextApi
     public function list(Request $request): void
     {
         $isActive = $request->get('is_active');
-        Response::success($this->service->list(
+        $result   = $this->service->list(
             (string) $request->get('language', 'cs'),
             $isActive !== null ? (bool)(int) $isActive : null,
             $request->get('search'),
@@ -44,7 +44,12 @@ class TextApi
             min(100, max(1, (int) $request->get('limit', 20))),
             (string) $request->get('filter', ''),
             $request->projection(),
-        ));
+        );
+        $factory = $request->factory();
+        if ($factory !== null) {
+            $result['items'] = Response::applyFactory($result['items'], $factory);
+        }
+        Response::success($result);
     }
 
     /**
@@ -56,9 +61,12 @@ class TextApi
      */
     public function get(Request $request, array $params): void
     {
-        Response::success(
-            $this->service->get((int) $params['id'], $request->projection())
-        );
+        $item    = $this->service->get((int) $params['id'], $request->projection());
+        $factory = $request->factory();
+        if ($factory !== null) {
+            $item = Response::applyFactory([$item], $factory)[0];
+        }
+        Response::success($item);
     }
 
     /**

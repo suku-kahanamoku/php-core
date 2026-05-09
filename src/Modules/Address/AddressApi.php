@@ -35,7 +35,7 @@ class AddressApi
      */
     public function list(Request $request, array $params): void
     {
-        Response::success($this->service->listByUser(
+        $result  = $this->service->listByUser(
             (int) $params['userId'],
             $request->get('type'),
             (string) $request->get('sort', ''),
@@ -43,7 +43,12 @@ class AddressApi
             min(100, max(1, (int) $request->get('limit', 20))),
             (string) $request->get('filter', ''),
             $request->projection(),
-        ));
+        );
+        $factory = $request->factory();
+        if ($factory !== null) {
+            $result['items'] = Response::applyFactory($result['items'], $factory);
+        }
+        Response::success($result);
     }
 
     /**
@@ -55,9 +60,12 @@ class AddressApi
      */
     public function get(Request $request, array $params): void
     {
-        Response::success(
-            $this->service->get((int) $params['id'], $request->projection())
-        );
+        $item    = $this->service->get((int) $params['id'], $request->projection());
+        $factory = $request->factory();
+        if ($factory !== null) {
+            $item = Response::applyFactory([$item], $factory)[0];
+        }
+        Response::success($item);
     }
 
     /**
