@@ -156,8 +156,10 @@ class ProductRepository
 
     /**
      * Najde produkt dle ID vcetne kategoriı.
-     *     * @param  int        $id
-     * @param  array|null $projection     * @return array{
+     *
+     * @param  int        $id
+     * @param  array|null $projection
+     * @return array{
      *   id: int,
      *   created_at: string,
      *   updated_at: string,
@@ -243,7 +245,9 @@ class ProductRepository
     /**
      * Vlozi novy produkt a vrati vytvoreny zaznam vcetne kategoriı.
      *
-     * @param  array<string, mixed> $data     * @param  array|null           $projection     * @return array{id: int, sku: string, name: string, price: string, stock_quantity: int, is_active: int, category_ids: list<int>}
+     * @param  array<string, mixed> $data
+     * @param  array|null           $projection
+     * @return array{id: int, sku: string, name: string, price: string, stock_quantity: int, is_active: int, category_ids: list<int>}
      */
     public function create(array $data, ?array $projection = null): array
     {
