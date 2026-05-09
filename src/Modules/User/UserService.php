@@ -19,6 +19,11 @@ class UserService
         $this->auth = $auth;
     }
 
+    /**
+     * Vrati strankovany seznam uzivatelu. Vyzaduje roli admin.
+     *
+     * @return array{items: list<array<string, mixed>>, total: int, page: int, limit: int, totalPages: int}
+     */
     public function list(
         int $page,
         int $limit,
@@ -40,6 +45,13 @@ class UserService
         );
     }
 
+    /**
+     * Vrati uzivatele dle ID.
+     * Vyzaduje prihlaseni; uzivatel vidi pouze sebe, admin vidi vsechny.
+     * Pokud uzivatel neexistuje, vraci 404.
+     *
+     * @return array<string, mixed>
+     */
     public function get(int $id, ?array $projection = null): array
     {
         $this->auth->require();
@@ -56,6 +68,14 @@ class UserService
         return $user;
     }
 
+    /**
+     * Vytvori noveho uzivatele. Vyzaduje roli admin.
+     * Povinna pole: first_name, last_name, email, password (min 8 znaku).
+     * Email musi byt unikatni. Heslo je ulozeno jako bcrypt hash.
+     *
+     * @param  array<string, mixed> $input
+     * @return array<string, mixed>
+     */
     public function create(array $input, ?array $projection = null): array
     {
         $this->auth->requireRole('admin');
@@ -94,6 +114,13 @@ class UserService
         ], $projection);
     }
 
+    /**
+     * Castecna aktualizace uzivatele (PATCH).
+     * Vyzaduje prihlaseni; uzivatel muze menit vlastni profil, admin muze menit kohokoliv a take roli.
+     *
+     * @param  array<string, mixed> $input  first_name, last_name, phone, role (admin only)
+     * @return array<string, mixed>
+     */
     public function update(int $id, array $input, ?array $projection = null): array
     {
         $this->auth->require();
@@ -130,6 +157,13 @@ class UserService
             : ($this->user->findById($id, $projection) ?? ['id' => $id]);
     }
 
+    /**
+     * Uplna nahrada uzivatele (PUT). Vyzaduje prihlaseni; uzivatel nebo admin.
+     * Povinna pole: first_name, last_name.
+     *
+     * @param  array<string, mixed> $input
+     * @return array<string, mixed>
+     */
     public function replace(int $id, array $input, ?array $projection = null): array
     {
         $this->auth->require();
@@ -164,7 +198,12 @@ class UserService
         return $this->user->update($id, $set, $projection);
     }
 
-    public function delete(int $id): void
+    /**
+     * Smaze uzivatele. Vyzaduje roli admin.
+     *
+     * @return int  Pocet smazanych zaznamu (0 nebo 1)
+     */
+    public function delete(int $id): int
     {
         $this->auth->requireRole('admin');
 
@@ -172,7 +211,6 @@ class UserService
             Response::notFound('User not found');
         }
 
-        $this->user->delete($id);
+        return $this->user->delete($id);
     }
-
 }

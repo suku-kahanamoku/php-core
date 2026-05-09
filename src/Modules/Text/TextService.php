@@ -19,6 +19,11 @@ class TextService
         $this->auth = $auth;
     }
 
+    /**
+     * Vrati strankovany seznam CMS textu. Verejne dostupne.
+     *
+     * @return array{items: list<array<string, mixed>>, total: int, page: int, limit: int, totalPages: int}
+     */
     public function list(
         string $language,
         ?bool $isActive,
@@ -32,6 +37,11 @@ class TextService
         return $this->text->findAll($language, $isActive, $search, $sort, $page, $limit, $filter, $projection);
     }
 
+    /**
+     * Vrati CMS text dle ID. Verejne dostupne. Pokud text neexistuje, vraci 404.
+     *
+     * @return array<string, mixed>
+     */
     public function get(int $id, ?array $projection = null): array
     {
         $text = $this->text->findById($id, $projection);
@@ -41,6 +51,11 @@ class TextService
         return $text;
     }
 
+    /**
+     * Vrati CMS text dle syscode a jazyka. Verejne dostupne. Pokud text neexistuje, vraci 404.
+     *
+     * @return array<string, mixed>
+     */
     public function getByKey(string $key, string $language): array
     {
         $text = $this->text->findByKey($key, $language);
@@ -50,6 +65,13 @@ class TextService
         return $text;
     }
 
+    /**
+     * Vytvori novy CMS text. Vyzaduje roli admin.
+     * Kombinace syscode + language musi byt unikatni.
+     *
+     * @param  array<string, mixed> $input  content, is_active
+     * @return array<string, mixed>
+     */
     public function create(
         string $key,
         string $title,
@@ -77,6 +99,12 @@ class TextService
         ], $projection);
     }
 
+    /**
+     * Castecna aktualizace CMS textu (PATCH). Vyzaduje roli admin.
+     *
+     * @param  array<string, mixed> $input  syscode, title, content, language, is_active
+     * @return array<string, mixed>
+     */
     public function update(int $id, array $input, ?array $projection = null): array
     {
         $this->auth->requireRole('admin');
@@ -104,6 +132,12 @@ class TextService
         return $this->text->findById($id, $projection) ?? ['id' => $id];
     }
 
+    /**
+     * Uplna nahrada CMS textu (PUT). Vyzaduje roli admin. Povinna pole: syscode, title.
+     *
+     * @param  array<string, mixed> $input  content, language, is_active
+     * @return array<string, mixed>
+     */
     public function replace(int $id, string $key, string $title, array $input, ?array $projection = null): array
     {
         $this->auth->requireRole('admin');
@@ -127,7 +161,12 @@ class TextService
         return $this->text->findById($id, $projection) ?? ['id' => $id];
     }
 
-    public function delete(int $id): void
+    /**
+     * Smaze CMS text. Vyzaduje roli admin.
+     *
+     * @return int  Pocet smazanych zaznamu (0 nebo 1)
+     */
+    public function delete(int $id): int
     {
         $this->auth->requireRole('admin');
 
@@ -135,6 +174,6 @@ class TextService
             Response::notFound('Text not found');
         }
 
-        $this->text->delete($id);
+        return $this->text->delete($id);
     }
 }

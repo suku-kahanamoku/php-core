@@ -14,12 +14,25 @@ class AddressApi
 {
     private AddressService $service;
 
+    /**
+     * Konstruktor AddressApi.
+     * 
+     * @param Database $db
+     * @param string $franchiseCode
+     * @param Auth $auth
+     */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->service = new AddressService($db, $franchiseCode, $auth);
     }
 
-    /** GET /users/:userId/addresses */
+    /**
+     * GET /users/:userId/addresses — Vrati seznam adres uzivatele.
+     *
+     * @param Request $request  query: type, sort, page, limit, filter, projection
+     * @param array{userId: string} $params
+     * @return void
+     */
     public function list(Request $request, array $params): void
     {
         Response::success($this->service->listByUser(
@@ -33,30 +46,53 @@ class AddressApi
         ));
     }
 
-    /** GET /addresses/:id */
+    /**
+     * GET /addresses/:id — Vrati adresu dle ID.
+     *
+     * @param Request $request
+     * @param array{id: string} $params
+     * @return void
+     */
     public function get(Request $request, array $params): void
     {
-        Response::success($this->service->get((int) $params['id'], $request->projection()));
+        Response::success(
+            $this->service->get((int) $params['id'], $request->projection())
+        );
     }
 
-    /** POST /addresses */
+    /**
+     * POST /addresses — Vytvori novou adresu. Vyzaduje prihlaseni.
+     *
+     * @param Request $request  body: type, name, street, city, zip, country, company, is_default, user_id
+     * @return void
+     */
     public function create(Request $request): void
     {
-        $address = $this->service->create([
-            'type'       => $request->get('type', 'billing'),
-            'company'    => $request->get('company', ''),
-            'name'       => $request->get('name'),
-            'street'     => trim((string) $request->get('street', '')),
-            'city'       => trim((string) $request->get('city', '')),
-            'zip'        => trim((string) $request->get('zip', '')),
-            'country'    => trim((string) $request->get('country', 'CZ')),
-            'is_default' => $request->get('is_default', 0),
-        ], $request->get('user_id') !== null ? (int) $request->get('user_id') : null, $request->projection());
+        $address = $this->service->create(
+            [
+                'type'       => $request->get('type', 'billing'),
+                'company'    => $request->get('company', ''),
+                'name'       => $request->get('name'),
+                'street'     => trim((string) $request->get('street', '')),
+                'city'       => trim((string) $request->get('city', '')),
+                'zip'        => trim((string) $request->get('zip', '')),
+                'country'    => trim((string) $request->get('country', 'CZ')),
+                'is_default' => $request->get('is_default', 0),
+            ],
+            $request->get('user_id') !== null ? (int) $request->get('user_id') : null,
+            $request->projection()
+        );
 
         Response::created($address, 'Address created');
     }
 
-    /** PATCH /addresses/:id */
+    /**
+     * PATCH /addresses/:id — Castecna aktualizace adresy. Vyzaduje prihlaseni; vlastnik nebo admin.
+     *
+     * @param Request $request  body: libovolna podmnozina sloupcu adresy
+     * @param array{id: string} $params
+     * @return void
+     */
     public function update(Request $request, array $params): void
     {
         $address = $this->service->update((int) $params['id'], [
@@ -72,7 +108,13 @@ class AddressApi
         Response::success($address, 'Address updated');
     }
 
-    /** PUT /addresses/:id */
+    /**
+     * PUT /addresses/:id — Uplna nahrada adresy. Vyzaduje prihlaseni; vlastnik nebo admin.
+     *
+     * @param Request $request  body: type, name, street, city, zip, country (vsechna pole povinne)
+     * @param array{id: string} $params
+     * @return void
+     */
     public function replace(Request $request, array $params): void
     {
         $address = $this->service->replace((int) $params['id'], [
@@ -88,13 +130,21 @@ class AddressApi
         Response::success($address, 'Address replaced');
     }
 
-    /** DELETE /addresses/:id */
+    /**
+     * DELETE /addresses/:id — Smaze adresu. Vyzaduje prihlaseni; vlastnik nebo admin.
+     *
+     * @param Request $request
+     * @param array{id: string} $params
+     * @return void
+     */
     public function delete(Request $request, array $params): void
     {
-        $this->service->delete((int) $params['id']);
-        Response::success(null, 'Address deleted');
+        Response::success($this->service->delete((int) $params['id']), 'Address deleted');
     }
 
+    /**
+     * Zaregistruje vsechny routy tohoto modulu do routeru.
+     */
     public function registerRoutes(Router $router): void
     {
         $router->post('/', [$this, 'create']);

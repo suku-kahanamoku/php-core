@@ -19,11 +19,22 @@ class CategoryService
         $this->auth     = $auth;
     }
 
+    /**
+     * Vrati strankovany seznam kategorii. Verejne dostupne.
+     *
+     * @return array{items: list<array<string, mixed>>, total: int, page: int, limit: int, totalPages: int}
+     */
     public function list(int $page = 1, int $limit = 20, string $sort = '', string $filter = '', ?array $projection = null): array
     {
         return $this->category->findAll($page, $limit, $sort, $filter, $projection);
     }
 
+    /**
+     * Vrati kategorii dle ID vcetne seznamu prirazanych produktu (pole products).
+     * Verejne dostupne. Pokud kategorie neexistuje, vraci 404.
+     *
+     * @return array{id: int, name: string, products: list<array{id: int, sku: string, name: string, price: string}>}
+     */
     public function get(int $id, ?array $projection = null): array
     {
         $category = $this->category->findById($id, $projection);
@@ -35,6 +46,13 @@ class CategoryService
         return $category;
     }
 
+    /**
+     * Vytvori novou kategorii. Vyzaduje roli admin.
+     * Povinna pole: name.
+     *
+     * @param  array<string, mixed> $input  description, parent_id, position
+     * @return array<string, mixed>
+     */
     public function create(string $name, array $input, ?array $projection = null): array
     {
         $this->auth->requireRole('admin');
@@ -53,6 +71,12 @@ class CategoryService
         ], $projection);
     }
 
+    /**
+     * Castecna aktualizace kategorie (PATCH). Vyzaduje roli admin.
+     *
+     * @param  array<string, mixed> $input  name, description, parent_id, position
+     * @return array<string, mixed>
+     */
     public function update(int $id, array $input, ?array $projection = null): array
     {
         $this->auth->requireRole('admin');
@@ -83,6 +107,12 @@ class CategoryService
         return $this->category->findById($id, $projection) ?? ['id' => $id];
     }
 
+    /**
+     * Uplna nahrada kategorie (PUT). Vyzaduje roli admin. Povinna pole: name.
+     *
+     * @param  array<string, mixed> $input  description, parent_id, position
+     * @return array<string, mixed>
+     */
     public function replace(int $id, string $name, array $input, ?array $projection = null): array
     {
         $this->auth->requireRole('admin');
@@ -108,7 +138,13 @@ class CategoryService
         return $this->category->findById($id, $projection) ?? ['id' => $id];
     }
 
-    public function delete(int $id): void
+    /**
+     * Smaze kategorii. Vyzaduje roli admin.
+     * Blokuje smazani kdyz je kategorie prirazena k produktum (409).
+     *
+     * @return int  Pocet smazanych zaznamu (0 nebo 1)
+     */
+    public function delete(int $id): int
     {
         $this->auth->requireRole('admin');
 
@@ -120,7 +156,7 @@ class CategoryService
             Response::error('Category is in use by products', 409);
         }
 
-        $this->category->delete($id);
+        return $this->category->delete($id);
     }
 
     private function buildTree(array $items, ?int $parentId = null): array

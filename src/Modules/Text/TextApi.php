@@ -19,7 +19,12 @@ class TextApi
         $this->service = new TextService($db, $franchiseCode, $auth);
     }
 
-    /** GET /texts */
+    /**
+     * GET /texts — Vrati strankovany seznam textu. Verejne dostupne.
+     *
+     * @param Request $request  query: language, is_active, search, sort, page, limit, filter, projection
+     * @return void
+     */
     public function list(Request $request): void
     {
         $isActive = $request->get('is_active');
@@ -35,13 +40,25 @@ class TextApi
         ));
     }
 
-    /** GET /texts/:id */
+    /**
+     * GET /texts/:id — Vrati text dle ID. Verejne dostupne.
+     *
+     * @param Request $request
+     * @param array{id: string} $params
+     * @return void
+     */
     public function get(Request $request, array $params): void
     {
         Response::success($this->service->get((int) $params['id'], $request->projection()));
     }
 
-    /** GET /texts/by-key/:key */
+    /**
+     * GET /texts/by-key/:key — Vrati text dle syscode klic a jazyka. Verejne dostupne.
+     *
+     * @param Request $request  query: language (default cs)
+     * @param array{key: string} $params
+     * @return void
+     */
     public function getByKey(Request $request, array $params): void
     {
         Response::success($this->service->getByKey(
@@ -50,7 +67,12 @@ class TextApi
         ));
     }
 
-    /** POST /texts */
+    /**
+     * POST /texts — Vytvori novy text. Vyzaduje roli admin.
+     *
+     * @param Request $request  body: syscode (required), title (required), language, content, is_active
+     * @return void
+     */
     public function create(Request $request): void
     {
         $text = $this->service->create(
@@ -66,7 +88,13 @@ class TextApi
         Response::created($text, 'Text created');
     }
 
-    /** PATCH /texts/:id */
+    /**
+     * PATCH /texts/:id — Castecna aktualizace textu. Vyzaduje roli admin.
+     *
+     * @param Request $request  body: libovolna podmnozina sloupcu
+     * @param array{id: string} $params
+     * @return void
+     */
     public function update(Request $request, array $params): void
     {
         $text = $this->service->update((int) $params['id'], [
@@ -79,7 +107,13 @@ class TextApi
         Response::success($text, 'Text updated');
     }
 
-    /** PUT /texts/:id */
+    /**
+     * PUT /texts/:id — Uplna nahrada textu. Vyzaduje roli admin.
+     *
+     * @param Request $request  body: syscode, title (required), language, content, is_active
+     * @param array{id: string} $params
+     * @return void
+     */
     public function replace(Request $request, array $params): void
     {
         $text = $this->service->replace(
@@ -96,13 +130,22 @@ class TextApi
         Response::success($text, 'Text replaced');
     }
 
-    /** DELETE /texts/:id */
+    /**
+     * DELETE /texts/:id — Smaze text. Vyzaduje roli admin.
+     *
+     * @param Request $request
+     * @param array{id: string} $params
+     * @return void
+     */
     public function delete(Request $request, array $params): void
     {
         $this->service->delete((int) $params['id']);
         Response::success(null, 'Text deleted');
     }
 
+    /**
+     * Zaregistruje vsechny routy tohoto modulu do routeru.
+     */
     public function registerRoutes(Router $router): void
     {
         $router->get('/', [$this, 'list']);

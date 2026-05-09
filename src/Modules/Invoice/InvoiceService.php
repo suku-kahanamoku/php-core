@@ -19,6 +19,12 @@ class InvoiceService
         $this->auth    = $auth;
     }
 
+    /**
+     * Vrati strankovany seznam faktur.
+     * Vyzaduje prihlaseni; admin vidi vsechny, uzivatel vidi pouze vlastni.
+     *
+     * @return array{items: list<array<string, mixed>>, total: int, page: int, limit: int, totalPages: int}
+     */
     public function list(
         int $page,
         int $limit,
@@ -42,6 +48,12 @@ class InvoiceService
         );
     }
 
+    /**
+     * Vrati fakturu dle ID vcetne polozek.
+     * Vyzaduje prihlaseni; vlastnik nebo admin. Pokud faktura neexistuje, vraci 404.
+     *
+     * @return array<string, mixed>
+     */
     public function get(int $id, ?array $projection = null): array
     {
         $this->auth->require();
@@ -58,6 +70,14 @@ class InvoiceService
         return $invoice;
     }
 
+    /**
+     * Vystavi fakturu pro existujici objednavku. Vyzaduje roli admin.
+     * Kazda objednavka muze mit nejvyse jednu fakturu (409 pri duplicite).
+     * Polozky faktury jsou zkopirovat z order_item. Cela operace probiha v transakci.
+     *
+     * @param  array<string, mixed> $input  due_at, note
+     * @return array<string, mixed>
+     */
     public function create(int $orderId, array $input, ?array $projection = null): array
     {
         $this->auth->requireRole('admin');
@@ -117,6 +137,12 @@ class InvoiceService
         return $this->invoice->findById($invoiceId ?? 0, $projection) ?? ['id' => $invoiceId ?? 0];
     }
 
+    /**
+     * Zmeni stav faktury. Vyzaduje roli admin.
+     * Status 'paid' automaticky nastavi paid_at na aktualní cas.
+     *
+     * @return array<string, mixed>
+     */
     public function updateStatus(int $id, string $status, ?array $projection = null): array
     {
         $this->auth->requireRole('admin');
@@ -135,7 +161,12 @@ class InvoiceService
         return $this->invoice->findById($id, $projection) ?? ['id' => $id];
     }
 
-    public function delete(int $id): void
+    /**
+     * Smaze fakturu. Vyzaduje roli admin.
+     *
+     * @return int  Pocet smazanych zaznamu (0 nebo 1)
+     */
+    public function delete(int $id): int
     {
         $this->auth->requireRole('admin');
 
@@ -144,6 +175,6 @@ class InvoiceService
             Response::notFound('Invoice not found');
         }
 
-        $this->invoice->delete($id);
+        return $this->invoice->delete($id);
     }
 }

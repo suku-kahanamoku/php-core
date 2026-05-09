@@ -19,7 +19,12 @@ class RoleApi
         $this->service = new RoleService($db, $franchiseCode, $auth);
     }
 
-    /** GET /roles */
+    /**
+     * GET /roles — Vrati strankovany seznam roli.
+     *
+     * @param Request $request  query: page, limit, sort, filter, projection
+     * @return void
+     */
     public function list(Request $request): void
     {
         Response::success($this->service->list(
@@ -31,13 +36,24 @@ class RoleApi
         ));
     }
 
-    /** GET /roles/:id */
+    /**
+     * GET /roles/:id — Vrati roli dle ID.
+     *
+     * @param Request $request
+     * @param array{id: string} $params
+     * @return void
+     */
     public function get(Request $request, array $params): void
     {
         Response::success($this->service->get((int) $params['id'], $request->projection()));
     }
 
-    /** POST /roles */
+    /**
+     * POST /roles — Vytvori novou roli. Vyzaduje roli admin.
+     *
+     * @param Request $request  body: name (required), label, position
+     * @return void
+     */
     public function create(Request $request): void
     {
         $role = $this->service->create(
@@ -49,7 +65,13 @@ class RoleApi
         Response::created($role, 'Role created');
     }
 
-    /** PATCH /roles/:id */
+    /**
+     * PATCH /roles/:id — Castecna aktualizace role. Vyzaduje roli admin.
+     *
+     * @param Request $request  body: name, label, position (libovolna podmnozina)
+     * @param array{id: string} $params
+     * @return void
+     */
     public function update(Request $request, array $params): void
     {
         $fields     = [];
@@ -64,7 +86,13 @@ class RoleApi
         Response::success($role, 'Role updated');
     }
 
-    /** PUT /roles/:id */
+    /**
+     * PUT /roles/:id — Uplna nahrada role. Vyzaduje roli admin.
+     *
+     * @param Request $request  body: name (required), label, position
+     * @param array{id: string} $params
+     * @return void
+     */
     public function replace(Request $request, array $params): void
     {
         $role = $this->service->replace(
@@ -77,13 +105,22 @@ class RoleApi
         Response::success($role, 'Role replaced');
     }
 
-    /** DELETE /roles/:id */
+    /**
+     * DELETE /roles/:id — Smaze roli. Vyzaduje roli admin.
+     *
+     * @param Request $request
+     * @param array{id: string} $params
+     * @return void
+     */
     public function delete(Request $request, array $params): void
     {
         $this->service->delete((int) $params['id']);
         Response::success(null, 'Role deleted');
     }
 
+    /**
+     * Zaregistruje vsechny routy tohoto modulu do routeru.
+     */
     public function registerRoutes(Router $router): void
     {
         $router->get('/', [$this, 'list']);

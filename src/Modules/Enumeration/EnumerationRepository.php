@@ -210,9 +210,9 @@ class EnumerationRepository
         return $this->findById($id, $projection) ?? ['id' => $id];
     }
 
-    public function delete(int $id): void
+    public function delete(int $id): int
     {
-        $this->db->delete(
+        return $this->db->delete(
             'enumeration',
             'id = ? AND franchise_code = ?',
             [$id, $this->code],

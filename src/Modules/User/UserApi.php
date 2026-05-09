@@ -20,7 +20,12 @@ class UserApi
         $this->service = new UserService($db, $franchiseCode, $auth);
     }
 
-    /** GET /users */
+    /**
+     * GET /users — Vrati strankovany seznam uzivatelu. Vyzaduje roli admin.
+     *
+     * @param Request $request  query: page, limit, search, role, sort, filter, projection
+     * @return void
+     */
     public function list(Request $request): void
     {
         Response::success($this->service->list(
@@ -34,13 +39,24 @@ class UserApi
         ));
     }
 
-    /** GET /users/:id */
+    /**
+     * GET /users/:id — Vrati uzivatele dle ID. Vyzaduje prihlaseni; vlastnik nebo admin.
+     *
+     * @param Request $request
+     * @param array{id: string} $params
+     * @return void
+     */
     public function get(Request $request, array $params): void
     {
         Response::success($this->service->get((int) $params['id'], $request->projection()));
     }
 
-    /** POST /users */
+    /**
+     * POST /users — Vytvori noveho uzivatele. Vyzaduje roli admin.
+     *
+     * @param Request $request  body: first_name, last_name, email (required), password (required), phone, role
+     * @return void
+     */
     public function create(Request $request): void
     {
         $user = $this->service->create([
@@ -54,7 +70,13 @@ class UserApi
         Response::created($user, 'User created');
     }
 
-    /** PATCH /users/:id */
+    /**
+     * PATCH /users/:id — Castecna aktualizace uzivatele. Vyzaduje prihlaseni; vlastnik nebo admin.
+     *
+     * @param Request $request  body: first_name, last_name, phone, role
+     * @param array{id: string} $params
+     * @return void
+     */
     public function update(Request $request, array $params): void
     {
         $user = $this->service->update((int) $params['id'], [
@@ -66,7 +88,13 @@ class UserApi
         Response::success($user, 'User updated');
     }
 
-    /** PUT /users/:id */
+    /**
+     * PUT /users/:id — Uplna nahrada uzivatele. Vyzaduje prihlaseni; vlastnik nebo admin.
+     *
+     * @param Request $request  body: first_name, last_name (required), phone, role
+     * @param array{id: string} $params
+     * @return void
+     */
     public function replace(Request $request, array $params): void
     {
         $user = $this->service->replace((int) $params['id'], [
@@ -78,13 +106,22 @@ class UserApi
         Response::success($user, 'User replaced');
     }
 
-    /** DELETE /users/:id */
+    /**
+     * DELETE /users/:id — Smaze uzivatele. Vyzaduje roli admin.
+     *
+     * @param Request $request
+     * @param array{id: string} $params
+     * @return void
+     */
     public function delete(Request $request, array $params): void
     {
         $this->service->delete((int) $params['id']);
         Response::success(null, 'User deleted');
     }
 
+    /**
+     * Zaregistruje vsechny routy tohoto modulu do routeru.
+     */
     public function registerRoutes(Router $router, AddressApi $addressApi): void
     {
         $router->get('/', [$this, 'list']);

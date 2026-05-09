@@ -2,7 +2,7 @@
     "intelephense.format.enable": true,
     "intelephense.format.braces": "psr2",
     "[php]": {
-        "editor.defaultFormatter": "junstyle.php-cs-fixer",
+        "editor.defaultFormatter": "bmewburn.vscode-intelephense-client",
         "editor.formatOnSave": true,
         "editor.wordWrapColumn": 90,
         "editor.rulers": [90]

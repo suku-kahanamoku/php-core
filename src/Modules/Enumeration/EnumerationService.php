@@ -19,6 +19,11 @@ class EnumerationService
         $this->auth = $auth;
     }
 
+    /**
+     * Vrati strankovany seznam ciselnikovych polozek. Verejne dostupne.
+     *
+     * @return array{items: list<array<string, mixed>>, total: int, page: int, limit: int, totalPages: int}
+     */
     public function list(
         ?string $type,
         ?bool $isActive,
@@ -31,11 +36,21 @@ class EnumerationService
         return $this->enum->findAll($type, $isActive, $sort, $page, $limit, $filter, $projection);
     }
 
+    /**
+     * Vrati seznam vsech unikatnich typu ciselnikú. Verejne dostupne.
+     *
+     * @return list<string>
+     */
     public function types(): array
     {
         return $this->enum->getTypes();
     }
 
+    /**
+     * Vrati ciselnikovou polozku dle ID. Verejne dostupne. Pokud polozka neexistuje, vraci 404.
+     *
+     * @return array<string, mixed>
+     */
     public function get(int $id, ?array $projection = null): array
     {
         $item = $this->enum->findById($id, $projection);
@@ -45,6 +60,13 @@ class EnumerationService
         return $item;
     }
 
+    /**
+     * Vytvori novou ciselnikovou polozku. Vyzaduje roli admin.
+     * Kombinace type + syscode musi byt unikatni.
+     *
+     * @param  array<string, mixed> $input  value, position, is_active
+     * @return array<string, mixed>
+     */
     public function create(string $type, string $code, string $label, array $input, ?array $projection = null): array
     {
         $this->auth->requireRole('admin');
@@ -67,6 +89,12 @@ class EnumerationService
         ], $projection);
     }
 
+    /**
+     * Castecna aktualizace ciselnikove polozky (PATCH). Vyzaduje roli admin.
+     *
+     * @param  array<string, mixed> $input  type, syscode, label, value, position, is_active
+     * @return array<string, mixed>
+     */
     public function update(int $id, array $input, ?array $projection = null): array
     {
         $this->auth->requireRole('admin');
@@ -97,6 +125,13 @@ class EnumerationService
         return $this->enum->findById($id, $projection) ?? ['id' => $id];
     }
 
+    /**
+     * Uplna nahrada ciselnikove polozky (PUT). Vyzaduje roli admin.
+     * Povinna pole: type, syscode, label.
+     *
+     * @param  array<string, mixed> $input  value, position, is_active
+     * @return array<string, mixed>
+     */
     public function replace(
         int $id,
         string $type,
@@ -127,7 +162,12 @@ class EnumerationService
         return $this->enum->findById($id, $projection) ?? ['id' => $id];
     }
 
-    public function delete(int $id): void
+    /**
+     * Smaze ciselnikovou polozku. Vyzaduje roli admin.
+     *
+     * @return int  Pocet smazanych zaznamu (0 nebo 1)
+     */
+    public function delete(int $id): int
     {
         $this->auth->requireRole('admin');
 
@@ -135,6 +175,6 @@ class EnumerationService
             Response::notFound('Enumeration not found');
         }
 
-        $this->enum->delete($id);
+        return $this->enum->delete($id);
     }
 }

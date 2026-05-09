@@ -19,7 +19,13 @@ class OrderApi
         $this->service = new OrderService($db, $franchiseCode, $auth);
     }
 
-    /** GET /orders */
+    /**
+     * GET /orders — Vrati strankovany seznam objednavek.
+     * Vyzaduje prihlaseni; admin vidi vsechny, uzivatel vidi pouze vlastni.
+     *
+     * @param Request $request  query: page, limit, status, sort, filter, projection
+     * @return void
+     */
     public function list(Request $request): void
     {
         Response::success($this->service->list(
@@ -32,20 +38,38 @@ class OrderApi
         ));
     }
 
-    /** GET /orders/:id */
+    /**
+     * GET /orders/:id — Vrati objednavku dle ID vcetne polozek.
+     * Vyzaduje prihlaseni; vlastnik nebo admin.
+     *
+     * @param Request $request
+     * @param array{id: string} $params
+     * @return void
+     */
     public function get(Request $request, array $params): void
     {
         Response::success($this->service->get((int) $params['id'], $request->projection()));
     }
 
-    /** POST /orders */
+    /**
+     * POST /orders — Vytvori novou objednavku. Verejne dostupne (guest checkout).
+     *
+     * @param Request $request  body: user?, carts, shipping?, billing?, note?
+     * @return void
+     */
     public function create(Request $request): void
     {
         $result = $this->service->create($request->body);
         Response::created($result, 'Order created');
     }
 
-    /** PATCH /orders/:id/status */
+    /**
+     * PATCH /orders/:id/status — Zmeni stav objednavky. Vyzaduje roli admin.
+     *
+     * @param Request $request  body: status (required)
+     * @param array{id: string} $params
+     * @return void
+     */
     public function updateStatus(Request $request, array $params): void
     {
         $order = $this->service->updateStatus(
@@ -56,13 +80,22 @@ class OrderApi
         Response::success($order, 'Order status updated');
     }
 
-    /** DELETE /orders/:id */
+    /**
+     * DELETE /orders/:id — Smaze objednavku. Vyzaduje roli admin.
+     *
+     * @param Request $request
+     * @param array{id: string} $params
+     * @return void
+     */
     public function delete(Request $request, array $params): void
     {
         $this->service->delete((int) $params['id']);
         Response::success(null, 'Order deleted');
     }
 
+    /**
+     * Zaregistruje vsechny routy tohoto modulu do routeru.
+     */
     public function registerRoutes(Router $router): void
     {
         $router->get('/', [$this, 'list']);

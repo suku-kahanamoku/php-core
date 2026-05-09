@@ -176,7 +176,7 @@ class ProductRepository
 
         // Build a cleaner SELECT
         $cols   = array_merge($sys, $ownCols);
-        $quoted = array_map(fn ($c) => "`{$c}`", $cols);
+        $quoted = array_map(fn($c) => "`{$c}`", $cols);
         $select = implode(', ', $quoted);
 
         $row = $this->db->fetchOne(
@@ -266,10 +266,10 @@ class ProductRepository
         return $this->findById($id, $projection) ?? ['id' => $id];
     }
 
-    public function delete(int $id): void
+    public function delete(int $id): int
     {
         $this->db->delete('product_category', 'product_id = ?', [$id]);
-        $this->db->delete('product', 'id = ? AND franchise_code = ?', [$id, $this->code]);
+        return $this->db->delete('product', 'id = ? AND franchise_code = ?', [$id, $this->code]);
     }
 
     /**

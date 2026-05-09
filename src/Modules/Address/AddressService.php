@@ -13,12 +13,31 @@ class AddressService
     private AddressRepository $address;
     private Auth $auth;
 
+    /**
+     * Inicializuje AddressService.
+     *
+     * @param Database $db
+     * @param string $franchiseCode
+     * @param Auth $auth
+     */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->address = new AddressRepository($db, $franchiseCode);
         $this->auth    = $auth;
     }
 
+    /**
+     * Vrati strankovany seznam adres daneho uzivatele.
+     * Vyzaduje prihlaseni; uzivatel vidi pouze vlastni adresy, admin vidi vsechny.
+     *
+     * @return array{
+     *   items: list<array<string, mixed>>, 
+     *   total: int, 
+     *   page: int, 
+     *   limit: int, 
+     *   totalPages: int
+     * }
+     */
     public function listByUser(
         int $userId,
         ?string $type,
@@ -34,9 +53,24 @@ class AddressService
             Response::forbidden();
         }
 
-        return $this->address->findByUser($userId, $type, $sort, $page, $limit, $filter, $projection);
+        return $this->address->findByUser(
+            $userId,
+            $type,
+            $sort,
+            $page,
+            $limit,
+            $filter,
+            $projection
+        );
     }
 
+    /**
+     * Vrati adresu dle ID.
+     * Vyzaduje prihlaseni; uzivatel vidi pouze vlastni adresy, admin vidi vsechny.
+     * Pokud adresa neexistuje, vola Response::notFound() a ukonci request (404).
+     *
+     * @return array<string, mixed>
+     */
     public function get(int $id, ?array $projection = null): array
     {
         $this->auth->require();
@@ -46,15 +80,29 @@ class AddressService
             Response::notFound('Address not found');
         }
 
-        if (!$this->auth->hasRole('admin') && (int) $address['user_id'] !== $this->auth->id()) {
+        if (
+            !$this->auth->hasRole('admin') &&
+            (int) $address['user_id'] !== $this->auth->id()
+        ) {
             Response::forbidden();
         }
 
         return $address;
     }
 
-    public function create(array $input, ?int $overrideUserId = null, ?array $projection = null): array
-    {
+    /**
+     * Vytvori novou adresu pro prihlaseneho uzivatele (nebo pro $overrideUserId pokud je caller admin).
+     * Pokud je is_default=1, zrusi predchozi default stejneho typu.
+     * Vyzaduje validaci: street, city, zip jsou povinna pole.
+     *
+     * @param  array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function create(
+        array $input,
+        ?int $overrideUserId = null,
+        ?array $projection = null
+    ): array {
         $this->auth->require();
 
         $userId = ($this->auth->hasRole('admin') && $overrideUserId !== null)
@@ -83,6 +131,13 @@ class AddressService
         ], $projection);
     }
 
+    /**
+     * Castecna aktualizace adresy (PATCH).
+     * Vyzaduje prihlaseni; pouze vlastnik nebo admin.
+     *
+     * @param  array<string, mixed> $input
+     * @return array<string, mixed>
+     */
     public function update(int $id, array $input, ?array $projection = null): array
     {
         $this->auth->require();
@@ -92,14 +147,22 @@ class AddressService
             Response::notFound('Address not found');
         }
 
-        if (!$this->auth->hasRole('admin') && (int) $address['user_id'] !== $this->auth->id()) {
+        if (
+            !$this->auth->hasRole('admin') &&
+            (int) $address['user_id'] !== $this->auth->id()
+        ) {
             Response::forbidden();
         }
 
         $set        = [];
         $textFields = [
-            'type', 'company', 'name',
-            'street', 'city', 'zip', 'country',
+            'type',
+            'company',
+            'name',
+            'street',
+            'city',
+            'zip',
+            'country',
         ];
 
         foreach ($textFields as $f) {
@@ -123,6 +186,13 @@ class AddressService
         return $this->address->findById($id, $projection) ?? ['id' => $id];
     }
 
+    /**
+     * Uplna nahrada adresy (PUT). Povinna pole: street, city, zip, country.
+     * Vyzaduje prihlaseni; pouze vlastnik nebo admin.
+     *
+     * @param  array<string, mixed> $input
+     * @return array<string, mixed>
+     */
     public function replace(int $id, array $input, ?array $projection = null): array
     {
         $this->auth->require();
@@ -132,7 +202,10 @@ class AddressService
             Response::notFound('Address not found');
         }
 
-        if (!$this->auth->hasRole('admin') && (int) $address['user_id'] !== $this->auth->id()) {
+        if (
+            !$this->auth->hasRole('admin') &&
+            (int) $address['user_id'] !== $this->auth->id()
+        ) {
             Response::forbidden();
         }
 
@@ -160,7 +233,14 @@ class AddressService
         return $this->address->findById($id, $projection) ?? ['id' => $id];
     }
 
-    public function delete(int $id): void
+    /**
+     * Smaze adresu.
+     * Vyzaduje prihlaseni; pouze vlastnik nebo admin.
+     *
+     * @param int $id
+     * @return int
+     */
+    public function delete(int $id): int
     {
         $this->auth->require();
 
@@ -169,10 +249,13 @@ class AddressService
             Response::notFound('Address not found');
         }
 
-        if (!$this->auth->hasRole('admin') && (int) $address['user_id'] !== $this->auth->id()) {
+        if (
+            !$this->auth->hasRole('admin') &&
+            (int) $address['user_id'] !== $this->auth->id()
+        ) {
             Response::forbidden();
         }
 
-        $this->address->delete($id);
+        return $this->address->delete($id);
     }
 }

@@ -178,7 +178,20 @@ class AddressRepository
      * Vlozi novou adresu a vrati vytvoreny zaznam.
      *
      * @param  array<string, mixed> $data
-     * @return array{id: int, created_at: string, updated_at: string, user_id: int, type: string, company: string|null, name: string, street: string, city: string, zip: string, country: string, is_default: int}
+     * @return array{
+     *   id: int,
+     *   created_at: string,
+     *   updated_at: string,
+     *   user_id: int,
+     *   type: string,
+     *   company: string|null,
+     *   name: string,
+     *   street: string,
+     *   city: string,
+     *   zip: string,
+     *   country: string,
+     *   is_default: int
+     * }
      */
     public function create(array $data, ?array $projection = null): array
     {
@@ -194,7 +207,20 @@ class AddressRepository
      * Aktualizuje adresu a vrati aktualizovany zaznam.
      *
      * @param  array<string, mixed> $data
-     * @return array{id: int, created_at: string, updated_at: string, user_id: int, type: string, company: string|null, name: string, street: string, city: string, zip: string, country: string, is_default: int}
+     * @return array{
+     *   id: int,
+     *   created_at: string,
+     *   updated_at: string,
+     *   user_id: int,
+     *   type: string,
+     *   company: string|null,
+     *   name: string,
+     *   street: string,
+     *   city: string,
+     *   zip: string,
+     *   country: string,
+     *   is_default: int
+     * }
      */
     public function update(int $id, array $data, ?array $projection = null): array
     {
@@ -208,15 +234,31 @@ class AddressRepository
         return $this->findById($id, $projection) ?? ['id' => $id];
     }
 
-    public function delete(int $id): void
+    /**
+     * Smaze adresu.
+     *
+     * @param int $id
+     * @return int Pocet smazanych radku (0 nebo 1)
+     */
+    public function delete(int $id): int
     {
-        $this->db->delete('address', 'id = ? AND franchise_code = ?', [$id, $this->code]);
+        return $this->db->delete(
+            'address',
+            'id = ? AND franchise_code = ?',
+            [$id, $this->code],
+        );
     }
 
-    /** Clear is_default flag for all user addresses of a given type. */
-    public function clearDefault(int $userId, string $type): void
+    /**
+     * Oznaci vsechny adresy daneho uzivatele a typu jako nevychozi (is_default = 0).
+     *
+     * @param int $userId
+     * @param string $type
+     * @return int Pocet aktualizovanych radku
+     */
+    public function clearDefault(int $userId, string $type): int
     {
-        $this->db->update(
+        return $this->db->update(
             'address',
             ['is_default' => 0],
             'franchise_code = ? AND user_id = ? AND type = ?',

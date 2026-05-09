@@ -161,9 +161,9 @@ class RoleRepository
     }
 
     /** Hard-delete a role. */
-    public function delete(int $id): void
+    public function delete(int $id): int
     {
-        $this->db->delete('role', 'id = ? AND franchise_code = ?', [$id, $this->code]);
+        return $this->db->delete('role', 'id = ? AND franchise_code = ?', [$id, $this->code]);
     }
 
     /** Check if a name is already taken (excluding a specific ID). */

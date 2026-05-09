@@ -19,7 +19,12 @@ class CategoryApi
         $this->service = new CategoryService($db, $franchiseCode, $auth);
     }
 
-    /** GET /categories */
+    /**
+     * GET /categories — Vrati strankovany seznam kategorii. Verejne dostupne.
+     *
+     * @param Request $request  query: page, limit, sort, filter, projection
+     * @return void
+     */
     public function list(Request $request): void
     {
         Response::success($this->service->list(
@@ -31,13 +36,24 @@ class CategoryApi
         ));
     }
 
-    /** GET /categories/:id */
+    /**
+     * GET /categories/:id — Vrati kategorii dle ID vcetne produktu. Verejne dostupne.
+     *
+     * @param Request $request
+     * @param array{id: string} $params
+     * @return void
+     */
     public function get(Request $request, array $params): void
     {
         Response::success($this->service->get((int) $params['id'], $request->projection()));
     }
 
-    /** POST /categories */
+    /**
+     * POST /categories — Vytvori novou kategorii. Vyzaduje roli admin.
+     *
+     * @param Request $request  body: name (required), description, parent_id, position
+     * @return void
+     */
     public function create(Request $request): void
     {
         $category = $this->service->create(
@@ -52,7 +68,13 @@ class CategoryApi
         Response::created($category, 'Category created');
     }
 
-    /** PATCH /categories/:id */
+    /**
+     * PATCH /categories/:id — Castecna aktualizace kategorie. Vyzaduje roli admin.
+     *
+     * @param Request $request  body: name, description, parent_id, position
+     * @param array{id: string} $params
+     * @return void
+     */
     public function update(Request $request, array $params): void
     {
         $category = $this->service->update((int) $params['id'], [
@@ -64,7 +86,13 @@ class CategoryApi
         Response::success($category, 'Category updated');
     }
 
-    /** PUT /categories/:id */
+    /**
+     * PUT /categories/:id — Uplna nahrada kategorie. Vyzaduje roli admin.
+     *
+     * @param Request $request  body: name (required), description, parent_id, position
+     * @param array{id: string} $params
+     * @return void
+     */
     public function replace(Request $request, array $params): void
     {
         $category = $this->service->replace(
@@ -80,13 +108,22 @@ class CategoryApi
         Response::success($category, 'Category replaced');
     }
 
-    /** DELETE /categories/:id */
+    /**
+     * DELETE /categories/:id — Smaze kategorii. Vyzaduje roli admin.
+     *
+     * @param Request $request
+     * @param array{id: string} $params
+     * @return void
+     */
     public function delete(Request $request, array $params): void
     {
         $this->service->delete((int) $params['id']);
         Response::success(null, 'Category deleted');
     }
 
+    /**
+     * Zaregistruje vsechny routy tohoto modulu do routeru.
+     */
     public function registerRoutes(Router $router): void
     {
         $router->get('/', [$this, 'list']);

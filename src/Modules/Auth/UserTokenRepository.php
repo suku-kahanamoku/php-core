@@ -10,12 +10,29 @@ class UserTokenRepository
 {
     private Database $db;
 
+    /**
+     * UserTokenRepository constructor.
+     * 
+     * @param Database $db
+     */
     public function __construct(Database $db)
     {
         $this->db = $db;
     }
 
-    /** Find user data by a valid, non-expired token for the given franchise. */
+    /**
+     * Find user data by a valid, non-expired token for the given franchise.
+     *
+     * @param string $token
+     * @param string $franchiseCode
+     * @return array{
+     *   id: int,
+     *   email: string,
+     *   role: string,
+     *   first_name: string,
+     *   last_name: string
+     * }|null
+     */
     public function findUserByToken(string $token, string $franchiseCode): ?array
     {
         $row = $this->db->fetchOne(
@@ -32,10 +49,17 @@ class UserTokenRepository
         return $row ?: null;
     }
 
-    /** Persist a new token for the given user. */
-    public function create(int $userId, string $token, string $expiresAt): void
+    /**
+     * Persist a new token for the given user.
+     *
+     * @param int $userId
+     * @param string $token
+     * @param string $expiresAt
+     * @return int|null
+     */
+    public function create(int $userId, string $token, string $expiresAt): ?int
     {
-        $this->db->insert('user_token', [
+        return $this->db->insert('user_token', [
             'user_id'    => $userId,
             'token'      => $token,
             'expires_at' => $expiresAt,
@@ -43,9 +67,14 @@ class UserTokenRepository
         ]);
     }
 
-    /** Delete a token (logout). */
-    public function delete(string $token): void
+    /**
+     * Delete a token (logout).
+     *
+     * @param string $token
+     * @return int  Number of deleted records (0 or 1)
+     */
+    public function delete(string $token): int
     {
-        $this->db->query('DELETE FROM user_token WHERE token = ?', [$token]);
+        return $this->db->delete('user_token', 'token = ?', [$token]);
     }
 }

@@ -14,6 +14,13 @@ class AuthService
     private string   $code;
     private Auth     $auth;
 
+    /**
+     * AuthService constructor.
+     * 
+     * @param Database $db
+     * @param string $franchiseCode
+     * @param Auth $auth
+     */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->db   = $db;
@@ -21,6 +28,13 @@ class AuthService
         $this->auth = $auth;
     }
 
+    /**
+     * Přihlášení uživatele.
+     *
+     * @param string $email
+     * @param string $password
+     * @return array<string, mixed>
+     */
     public function login(string $email, string $password): array
     {
         VALIDATOR(['email' => $email])->email('email')->validate();
@@ -71,18 +85,35 @@ class AuthService
         ];
     }
 
+    /**
+     * Odhlášení uživatele.
+     */
     public function logout(): void
     {
         $this->auth->require();
         $this->auth->logout();
     }
 
+    /**
+     * Získání informací o aktuálně přihlášeném uživateli.
+     *
+     * @return array<string, mixed>
+     */
     public function me(): array
     {
         $this->auth->require();
         return $this->auth->user();
     }
 
+    /**
+     * Registrace nového uživatele.
+     *
+     * @param string $firstName
+     * @param string $lastName
+     * @param string $email
+     * @param string $password
+     * @return int
+     */
     public function register(
         string $firstName,
         string $lastName,
@@ -128,6 +159,12 @@ class AuthService
         ]);
     }
 
+    /**
+     * Změna hesla aktuálně přihlášeného uživatele.
+     *
+     * @param string $currentPassword
+     * @param string $newPassword
+     */
     public function changePassword(string $currentPassword, string $newPassword): void
     {
         $this->auth->require();

@@ -205,8 +205,8 @@ class CategoryRepository
         return $this->findById($id, $projection);
     }
 
-    public function delete(int $id): void
+    public function delete(int $id): int
     {
-        $this->db->delete('category', 'id = ? AND franchise_code = ?', [$id, $this->code]);
+        return $this->db->delete('category', 'id = ? AND franchise_code = ?', [$id, $this->code]);
     }
 }

@@ -28,6 +28,12 @@ class OrderService
         $this->auth    = $auth;
     }
 
+    /**
+     * Vrati strankovany seznam objednavek.
+     * Vyzaduje prihlaseni; admin vidi vsechny, uzivatel vidi pouze vlastni.
+     *
+     * @return array{items: list<array<string, mixed>>, total: int, page: int, limit: int, totalPages: int}
+     */
     public function list(
         int $page,
         int $limit,
@@ -43,6 +49,12 @@ class OrderService
         return $this->order->findAll($page, $limit, $userId, $status, $sort, $filter, $projection);
     }
 
+    /**
+     * Vrati objednavku dle ID vcetne polozek.
+     * Vyzaduje prihlaseni; vlastnik nebo admin. Pokud objednavka neexistuje, vraci 404.
+     *
+     * @return array<string, mixed>
+     */
     public function get(int $id, ?array $projection = null): array
     {
         $this->auth->require();
@@ -59,6 +71,21 @@ class OrderService
         return $order;
     }
 
+    /**
+     * Vytvori novou objednavku. Verejne dostupne (bez prihlaseni = guest checkout).
+     * Automaticky vytvori uzivatele / adresy kdyz neexistuji.
+     * Kontroluje dostupnost skladu; cela operace probiha v transakci.
+     * Vraci pole {id, total_amount} (ne kompletni zaznam, pouzij get() pro detail).
+     *
+     * @param  array{
+     *   user?: array{email?: string, first_name?: string, last_name?: string, phone?: string},
+     *   carts: list<array{product_id: int, quantity: int}>,
+     *   shipping?: array{value?: string, total_price?: float, address?: array<string, mixed>},
+     *   billing?: array{value?: string, address?: array<string, mixed>},
+     *   note?: string
+     * } $input
+     * @return array{id: int|null, total_amount: float}
+     */
     public function create(array $input): array
     {
         $user     = $input['user']     ?? [];
@@ -228,6 +255,12 @@ class OrderService
         };
     }
 
+    /**
+     * Zmeni stav objednavky. Vyzaduje roli admin.
+     * Pokud objednavka neexistuje, vraci 404.
+     *
+     * @return array<string, mixed>
+     */
     public function updateStatus(int $id, string $status, ?array $projection = null): array
     {
         $this->auth->requireRole('admin');
@@ -242,7 +275,12 @@ class OrderService
         return $this->order->updateStatus($id, $status, $projection);
     }
 
-    public function delete(int $id): void
+    /**
+     * Smaze objednavku. Vyzaduje roli admin.
+     *
+     * @return int  Pocet smazanych zaznamu (0 nebo 1)
+     */
+    public function delete(int $id): int
     {
         $this->auth->requireRole('admin');
 
@@ -251,6 +289,6 @@ class OrderService
             Response::notFound('Order not found');
         }
 
-        $this->order->delete($id);
+        return $this->order->delete($id);
     }
 }

@@ -19,11 +19,22 @@ class RoleService
         $this->auth = $auth;
     }
 
+    /**
+     * Vrati strankovany seznam roli. Verejne dostupne.
+     *
+     * @return array{items: list<array<string, mixed>>, total: int, page: int, limit: int, totalPages: int}
+     */
     public function list(int $page = 1, int $limit = 20, string $sort = '', string $filter = '', ?array $projection = null): array
     {
         return $this->role->findAll($page, $limit, $sort, $filter, $projection);
     }
 
+    /**
+     * Vrati roli dle ID vcetne poctu prirazených uzivatel (pole user_count).
+     * Verejne dostupne. Pokud role neexistuje, vraci 404.
+     *
+     * @return array{id: int, name: string, label: string, position: int, user_count: int}
+     */
     public function get(int $id, ?array $projection = null): array
     {
         $role = $this->role->findById($id);
@@ -35,6 +46,12 @@ class RoleService
         return $role;
     }
 
+    /**
+     * Vytvori novou roli. Vyzaduje roli admin.
+     * Name musi byt unikatni a odpovidat vzoru /^[a-z0-9_]+$/.
+     *
+     * @return array{id: int, name: string, label: string, position: int}
+     */
     public function create(
         string $name,
         string $label,
@@ -63,6 +80,13 @@ class RoleService
         ], $projection);
     }
 
+    /**
+     * Castecna aktualizace role (PATCH). Vyzaduje roli admin.
+     * Pokud je menen name, validuje format a unikatnost.
+     *
+     * @param  array<string, mixed> $fields
+     * @return array{id: int, name: string, label: string, position: int}
+     */
     public function update(int $id, array $fields, ?array $projection = null): array
     {
         $this->auth->requireRole('admin');
@@ -101,6 +125,12 @@ class RoleService
         return $this->role->findById($id, $projection) ?? ['id' => $id];
     }
 
+    /**
+     * Uplna nahrada role (PUT). Vyzaduje roli admin.
+     * Povinna pole: name (unikatni, /^[a-z0-9_]+$/), label.
+     *
+     * @return array{id: int, name: string, label: string, position: int}
+     */
     public function replace(
         int $id,
         string $name,
@@ -136,7 +166,13 @@ class RoleService
         return $this->role->findById($id, $projection) ?? ['id' => $id];
     }
 
-    public function delete(int $id): void
+    /**
+     * Smaze roli. Vyzaduje roli admin.
+     * Blokuje smazani vestavenych roli (admin, user) a roli s prirazanymi uzivateli (409).
+     *
+     * @return int  Pocet smazanych zaznamu (0 nebo 1)
+     */
+    public function delete(int $id): int
     {
         $this->auth->requireRole('admin');
 
@@ -159,6 +195,6 @@ class RoleService
             );
         }
 
-        $this->role->delete($id);
+        return $this->role->delete($id);
     }
 }

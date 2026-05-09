@@ -19,7 +19,12 @@ class EnumerationApi
         $this->service = new EnumerationService($db, $franchiseCode, $auth);
     }
 
-    /** GET /enumerations */
+    /**
+     * GET /enumerations — Vrati strankovany seznam polozek ciselnikov. Verejne dostupne.
+     *
+     * @param Request $request  query: type, is_active, sort, page, limit, filter, projection
+     * @return void
+     */
     public function list(Request $request): void
     {
         $isActive = $request->get('is_active');
@@ -34,19 +39,35 @@ class EnumerationApi
         ));
     }
 
-    /** GET /enumerations/types */
+    /**
+     * GET /enumerations/types — Vrati seznam unikatnich typu ciselnikov. Verejne dostupne.
+     *
+     * @param Request $request
+     * @return void
+     */
     public function types(Request $request): void
     {
         Response::success($this->service->types());
     }
 
-    /** GET /enumerations/:id */
+    /**
+     * GET /enumerations/:id — Vrati polozku ciselnika dle ID. Verejne dostupne.
+     *
+     * @param Request $request
+     * @param array{id: string} $params
+     * @return void
+     */
     public function get(Request $request, array $params): void
     {
         Response::success($this->service->get((int) $params['id'], $request->projection()));
     }
 
-    /** POST /enumerations */
+    /**
+     * POST /enumerations — Vytvori novou polozku ciselnika. Vyzaduje roli admin.
+     *
+     * @param Request $request  body: type (required), syscode (required), label (required), value, position, is_active
+     * @return void
+     */
     public function create(Request $request): void
     {
         $item = $this->service->create(
@@ -63,7 +84,13 @@ class EnumerationApi
         Response::created($item, 'Enumeration created');
     }
 
-    /** PATCH /enumerations/:id */
+    /**
+     * PATCH /enumerations/:id — Castecna aktualizace polozky ciselnika. Vyzaduje roli admin.
+     *
+     * @param Request $request  body: libovolna podmnozina sloupcu
+     * @param array{id: string} $params
+     * @return void
+     */
     public function update(Request $request, array $params): void
     {
         $item = $this->service->update((int) $params['id'], [
@@ -77,7 +104,13 @@ class EnumerationApi
         Response::success($item, 'Enumeration updated');
     }
 
-    /** PUT /enumerations/:id */
+    /**
+     * PUT /enumerations/:id — Uplna nahrada polozky ciselnika. Vyzaduje roli admin.
+     *
+     * @param Request $request  body: type, syscode, label (vsechna required)
+     * @param array{id: string} $params
+     * @return void
+     */
     public function replace(Request $request, array $params): void
     {
         $item = $this->service->replace(
@@ -95,13 +128,22 @@ class EnumerationApi
         Response::success($item, 'Enumeration replaced');
     }
 
-    /** DELETE /enumerations/:id */
+    /**
+     * DELETE /enumerations/:id — Smaze polozku ciselnika. Vyzaduje roli admin.
+     *
+     * @param Request $request
+     * @param array{id: string} $params
+     * @return void
+     */
     public function delete(Request $request, array $params): void
     {
         $this->service->delete((int) $params['id']);
         Response::success(null, 'Enumeration deleted');
     }
 
+    /**
+     * Zaregistruje vsechny routy tohoto modulu do routeru.
+     */
     public function registerRoutes(Router $router): void
     {
         $router->get('/', [$this, 'list']);

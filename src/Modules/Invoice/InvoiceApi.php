@@ -19,7 +19,13 @@ class InvoiceApi
         $this->service = new InvoiceService($db, $franchiseCode, $auth);
     }
 
-    /** GET /invoices */
+    /**
+     * GET /invoices — Vrati strankovany seznam faktur.
+     * Vyzaduje prihlaseni; admin vidi vsechny, uzivatel vidi pouze vlastni.
+     *
+     * @param Request $request  query: page, limit, status, sort, filter, projection
+     * @return void
+     */
     public function list(Request $request): void
     {
         Response::success($this->service->list(
@@ -32,13 +38,25 @@ class InvoiceApi
         ));
     }
 
-    /** GET /invoices/:id */
+    /**
+     * GET /invoices/:id — Vrati fakturu dle ID vcetne polozek.
+     * Vyzaduje prihlaseni; vlastnik nebo admin.
+     *
+     * @param Request $request
+     * @param array{id: string} $params
+     * @return void
+     */
     public function get(Request $request, array $params): void
     {
         Response::success($this->service->get((int) $params['id'], $request->projection()));
     }
 
-    /** POST /invoices */
+    /**
+     * POST /invoices — Vystavi fakturu pro objednavku. Vyzaduje roli admin.
+     *
+     * @param Request $request  body: order_id (required), due_at, note
+     * @return void
+     */
     public function create(Request $request): void
     {
         $invoice = $this->service->create(
@@ -52,7 +70,13 @@ class InvoiceApi
         Response::created($invoice, 'Invoice created');
     }
 
-    /** PATCH /invoices/:id/status */
+    /**
+     * PATCH /invoices/:id/status — Zmeni stav faktury. Vyzaduje roli admin.
+     *
+     * @param Request $request  body: status (required)
+     * @param array{id: string} $params
+     * @return void
+     */
     public function updateStatus(Request $request, array $params): void
     {
         $invoice = $this->service->updateStatus(
@@ -63,13 +87,22 @@ class InvoiceApi
         Response::success($invoice, 'Invoice status updated');
     }
 
-    /** DELETE /invoices/:id */
+    /**
+     * DELETE /invoices/:id — Smaze fakturu. Vyzaduje roli admin.
+     *
+     * @param Request $request
+     * @param array{id: string} $params
+     * @return void
+     */
     public function delete(Request $request, array $params): void
     {
         $this->service->delete((int) $params['id']);
         Response::success(null, 'Invoice deleted');
     }
 
+    /**
+     * Zaregistruje vsechny routy tohoto modulu do routeru.
+     */
     public function registerRoutes(Router $router): void
     {
         $router->get('/', [$this, 'list']);

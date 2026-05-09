@@ -282,9 +282,9 @@ class InvoiceRepository
         return $this->findById($id, $projection) ?? ['id' => $id];
     }
 
-    public function delete(int $id): void
+    public function delete(int $id): int
     {
-        $this->db->delete('invoice', 'id = ? AND franchise_code = ?', [$id, $this->code]);
+        return $this->db->delete('invoice', 'id = ? AND franchise_code = ?', [$id, $this->code]);
     }
 
     /**
