@@ -185,22 +185,6 @@ class UserRepository
     }
 
     /**
-     * Find role_id by role name.
-     *
-     * @param  string   $name
-     * @return int|null
-     */
-    public function resolveRoleId(string $name): ?int
-    {
-        $row = $this->db->fetchOne(
-            'SELECT id FROM role WHERE franchise_code = ? AND name = ?',
-            [$this->code, $name],
-        );
-
-        return $row ? (int) $row['id'] : null;
-    }
-
-    /**
      * Check if email is taken.
      *
      * @param  string   $email
@@ -222,6 +206,21 @@ class UserRepository
         }
 
         return (bool) $row;
+    }
+
+    /**
+     * Vrati pocet uzivatelu prirazanych k dane roli.
+     *
+     * @param  int $roleId
+     * @return int
+     */
+    public function countByRoleId(int $roleId): int
+    {
+        return (int) $this->db->fetchOne(
+            'SELECT COUNT(*) AS cnt FROM user
+             WHERE role_id = ? AND franchise_code = ?',
+            [$roleId, $this->code],
+        )['cnt'];
     }
 
     /**

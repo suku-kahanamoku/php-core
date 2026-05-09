@@ -284,6 +284,40 @@ class ProductRepository
     }
 
     /**
+     * Vrati true, pokud ma kategorie prirazeny alespon jeden produkt.
+     *
+     * @param  int $categoryId
+     * @return bool
+     */
+    public function existsForCategory(int $categoryId): bool
+    {
+        $row = $this->db->fetchOne(
+            'SELECT pc.product_id FROM product_category pc
+             INNER JOIN product p ON p.id = pc.product_id
+             WHERE p.franchise_code = ? AND pc.category_id = ? LIMIT 1',
+            [$this->code, $categoryId],
+        );
+
+        return (bool) $row;
+    }
+
+    /**
+     * Vrati produkty prirazene ke kategorii.
+     *
+     * @param  int $categoryId
+     * @return list<array{id: int, sku: string, name: string, price: string}>
+     */
+    public function findByCategoryId(int $categoryId): array
+    {
+        return $this->db->fetchAll(
+            'SELECT p.id, p.sku, p.name, p.price FROM product p
+             INNER JOIN product_category pc ON pc.product_id = p.id
+             WHERE p.franchise_code = ? AND pc.category_id = ?',
+            [$this->code, $categoryId],
+        );
+    }
+
+    /**
      * Smaze produkt vcetne vazeb na kategorie.
      *
      * @param  int $id

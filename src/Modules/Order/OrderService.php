@@ -8,6 +8,7 @@ use App\Modules\Address\AddressRepository;
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Product\ProductRepository;
+use App\Modules\Role\RoleRepository;
 use App\Modules\Router\Response;
 use App\Modules\User\UserRepository;
 
@@ -17,6 +18,7 @@ class OrderService
     private UserRepository    $user;
     private AddressRepository $address;
     private ProductRepository $product;
+    private RoleRepository    $role;
     private Auth $auth;
 
     /**
@@ -32,6 +34,7 @@ class OrderService
         $this->user    = new UserRepository($db, $franchiseCode);
         $this->address = new AddressRepository($db, $franchiseCode);
         $this->product = new ProductRepository($db, $franchiseCode);
+        $this->role    = new RoleRepository($db, $franchiseCode);
         $this->auth    = $auth;
     }
 
@@ -222,7 +225,7 @@ class OrderService
             return (int) $existing['id'];
         }
 
-        $roleId = $this->user->resolveRoleId('user');
+        $roleId = $this->role->findIdByName('user');
         if (!$roleId) {
             return null;
         }

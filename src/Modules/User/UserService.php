@@ -6,11 +6,13 @@ namespace App\Modules\User;
 
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
+use App\Modules\Role\RoleRepository;
 use App\Modules\Router\Response;
 
 class UserService
 {
     private UserRepository $user;
+    private RoleRepository $role;
     private Auth $auth;
 
     /**
@@ -23,6 +25,7 @@ class UserService
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->user = new UserRepository($db, $franchiseCode);
+        $this->role = new RoleRepository($db, $franchiseCode);
         $this->auth = $auth;
     }
 
@@ -109,12 +112,12 @@ class UserService
 
         $roleName = $input['role'] ?? null;
         if ($roleName !== null) {
-            $roleId = $this->user->resolveRoleId($roleName);
+            $roleId = $this->role->findIdByName($roleName);
             if ($roleId === null) {
                 Response::validationError(['role' => 'Unknown role']);
             }
         } else {
-            $roleId = $this->user->resolveRoleId('user');
+            $roleId = $this->role->findIdByName('user');
         }
 
         return $this->user->create([
@@ -163,7 +166,7 @@ class UserService
 
         if ($this->auth->hasRole('admin')) {
             if (array_key_exists('role', $input) && $input['role'] !== null) {
-                $roleId = $this->user->resolveRoleId((string) $input['role']);
+                $roleId = $this->role->findIdByName((string) $input['role']);
                 if ($roleId === null) {
                     Response::validationError(['role' => 'Unknown role']);
                 }
@@ -209,7 +212,7 @@ class UserService
 
         if ($this->auth->hasRole('admin')) {
             $roleName = $input['role'] ?? 'user';
-            $roleId   = $this->user->resolveRoleId($roleName);
+            $roleId   = $this->role->findIdByName($roleName);
             if ($roleId === null) {
                 Response::validationError(['role' => 'Unknown role']);
             }

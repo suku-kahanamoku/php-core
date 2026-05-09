@@ -134,21 +134,6 @@ class RoleRepository
     }
 
     /**
-     * Count users assigned to this role.
-     *
-     * @param  int $id
-     * @return int
-     */
-    public function countUsers(int $id): int
-    {
-        return (int) $this->db->fetchOne(
-            'SELECT COUNT(*) AS cnt FROM user
-             WHERE role_id = ? AND franchise_code = ?',
-            [$id, $this->code],
-        )['cnt'];
-    }
-
-    /**
      * Insert a new role and return the created row.
      *
      * @param  array<string, mixed> $data

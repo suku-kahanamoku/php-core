@@ -6,11 +6,13 @@ namespace App\Modules\Invoice;
 
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
+use App\Modules\Order\OrderRepository;
 use App\Modules\Router\Response;
 
 class InvoiceService
 {
     private InvoiceRepository $invoice;
+    private OrderRepository   $order;
     private Auth $auth;
 
     /**
@@ -23,6 +25,7 @@ class InvoiceService
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->invoice = new InvoiceRepository($db, $franchiseCode);
+        $this->order   = new OrderRepository($db, $franchiseCode);
         $this->auth    = $auth;
     }
 
@@ -103,7 +106,7 @@ class InvoiceService
             Response::validationError(['order_id' => 'Required']);
         }
 
-        $order = $this->invoice->getOrder($orderId);
+        $order = $this->order->findById($orderId);
         if (!$order) {
             Response::notFound('Order not found');
         }
@@ -112,7 +115,7 @@ class InvoiceService
             Response::error('Invoice already exists for this order', 409);
         }
 
-        $orderItems = $this->invoice->getOrderItems($orderId);
+        $orderItems = $order['items'];
         $issuedAt   = date('Y-m-d H:i:s');
         $dueAt      = $input['due_at'] ?? date('Y-m-d', strtotime('+14 days'));
 

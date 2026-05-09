@@ -6,11 +6,13 @@ namespace App\Modules\Category;
 
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
+use App\Modules\Product\ProductRepository;
 use App\Modules\Router\Response;
 
 class CategoryService
 {
     private CategoryRepository $category;
+    private ProductRepository  $product;
     private Auth $auth;
 
     /**
@@ -23,6 +25,7 @@ class CategoryService
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->category = new CategoryRepository($db, $franchiseCode);
+        $this->product  = new ProductRepository($db, $franchiseCode);
         $this->auth     = $auth;
     }
 
@@ -56,7 +59,7 @@ class CategoryService
             Response::notFound('Category not found');
         }
 
-        $category['products'] = $this->category->getProducts($id);
+        $category['products'] = $this->product->findByCategoryId($id);
         return $category;
     }
 
@@ -174,7 +177,7 @@ class CategoryService
             Response::notFound('Category not found');
         }
 
-        if ($this->category->hasProducts($id)) {
+        if ($this->product->existsForCategory($id)) {
             Response::error('Category is in use by products', 409);
         }
 

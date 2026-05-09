@@ -262,38 +262,6 @@ class InvoiceRepository
     }
 
     /**
-     * Nacte raw zaznam objednavky pro ucely vystaveni faktury (interni pouziti).
-     *
-     * @param  int $orderId
-     * @return array<string, mixed>|null
-     */
-    public function getOrder(int $orderId): ?array
-    {
-        $row = $this->db->fetchOne(
-            'SELECT * FROM `order`
-             WHERE id = ? AND franchise_code = ?',
-            [$orderId, $this->code],
-        );
-
-        return $row ?: null;
-    }
-
-    /**
-     * Nacte polozky objednavky pro ucely vystaveni faktury (interni pouziti).
-     *
-     * @param  int $orderId
-     * @return list<array{id: int, order_id: int, product_id: int, quantity: int, unit_price: string, vat_rate: string, product_name: string|null}>
-     */
-    public function getOrderItems(int $orderId): array
-    {
-        return $this->db->fetchAll(
-            'SELECT oi.*, p.name AS product_name FROM order_item oi
-             LEFT JOIN product p ON p.id = oi.product_id WHERE oi.order_id = ?',
-            [$orderId],
-        );
-    }
-
-    /**
      * Vlozi novou fakturu a vrati vytvoreny zaznam vcetne polozek.
      *
      * @param  array<string, mixed> $data

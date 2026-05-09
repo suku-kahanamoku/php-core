@@ -7,10 +7,12 @@ namespace App\Modules\Role;
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
+use App\Modules\User\UserRepository;
 
 class RoleService
 {
     private RoleRepository $role;
+    private UserRepository  $user;
     private Auth $auth;
 
     /**
@@ -23,6 +25,7 @@ class RoleService
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->role = new RoleRepository($db, $franchiseCode);
+        $this->user = new UserRepository($db, $franchiseCode);
         $this->auth = $auth;
     }
 
@@ -56,7 +59,7 @@ class RoleService
             Response::notFound('Role not found');
         }
 
-        $role['user_count'] = $this->role->countUsers($id);
+        $role['user_count'] = $this->user->countByRoleId($id);
         return $role;
     }
 
@@ -213,7 +216,7 @@ class RoleService
             Response::error("Built-in role '{$role['name']}' cannot be deleted", 409);
         }
 
-        $userCount = $this->role->countUsers($id);
+        $userCount = $this->user->countByRoleId($id);
         if ($userCount > 0) {
             Response::error(
                 "Cannot delete role: {$userCount} user(s) are assigned to it",
