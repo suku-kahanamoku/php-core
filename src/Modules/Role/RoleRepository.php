@@ -20,14 +20,26 @@ class RoleRepository
     private const OWN = ['name', 'label', 'position'];
     private const REL = [];
 
+    /**
+     * RoleRepository constructor.
+     *
+     * @param Database $db
+     * @param string   $franchiseCode
+     */
     public function __construct(Database $db, string $franchiseCode)
     {
         $this->db   = $db;
         $this->code = $franchiseCode;
     }
 
-    /** Return all roles, optionally filtered and sorted.
+    /**
+     * Return all roles, optionally filtered and sorted.
      *
+     * @param  int        $page
+     * @param  int        $limit
+     * @param  string     $sort
+     * @param  string     $filter
+     * @param  array|null $projection
      * @return array{
      *   items: list<array{
      *     id: int,
@@ -93,8 +105,11 @@ class RoleRepository
         ];
     }
 
-    /** Find single role by ID.
+    /**
+     * Find single role by ID.
      *
+     * @param  int        $id
+     * @param  array|null $projection
      * @return array{id: int, created_at: string, updated_at: string, name: string, label: string, position: int}|null
      */
     public function findById(int $id, ?array $projection = null): ?array
@@ -118,7 +133,12 @@ class RoleRepository
         return $proj->apply($role, $sys);
     }
 
-    /** Count users assigned to this role. */
+    /**
+     * Count users assigned to this role.
+     *
+     * @param  int $id
+     * @return int
+     */
     public function countUsers(int $id): int
     {
         return (int) $this->db->fetchOne(
@@ -128,9 +148,11 @@ class RoleRepository
         )['cnt'];
     }
 
-    /** Insert a new role and return the created row.
+    /**
+     * Insert a new role and return the created row.
      *
      * @param  array<string, mixed> $data
+     * @param  array|null           $projection
      * @return array{id: int, created_at: string, updated_at: string, name: string, label: string, position: int}
      */
     public function create(array $data, ?array $projection = null): array
@@ -143,9 +165,12 @@ class RoleRepository
         return $this->findById($id, $projection);
     }
 
-    /** Update fields on an existing role and return the updated row.
+    /**
+     * Update fields on an existing role and return the updated row.
      *
+     * @param  int                  $id
      * @param  array<string, mixed> $data
+     * @param  array|null           $projection
      * @return array{id: int, created_at: string, updated_at: string, name: string, label: string, position: int}
      */
     public function update(int $id, array $data, ?array $projection = null): array
@@ -160,13 +185,24 @@ class RoleRepository
         return $this->findById($id, $projection);
     }
 
-    /** Hard-delete a role. */
+    /**
+     * Hard-delete a role.
+     *
+     * @param  int $id
+     * @return int  Pocet smazanych radku (0 nebo 1)
+     */
     public function delete(int $id): int
     {
         return $this->db->delete('role', 'id = ? AND franchise_code = ?', [$id, $this->code]);
     }
 
-    /** Check if a name is already taken (excluding a specific ID). */
+    /**
+     * Check if a name is already taken (excluding a specific ID).
+     *
+     * @param  string   $name
+     * @param  int|null $excludeId
+     * @return bool
+     */
     public function nameExists(string $name, ?int $excludeId = null): bool
     {
         if ($excludeId !== null) {
@@ -182,5 +218,21 @@ class RoleRepository
         }
 
         return (bool) $row;
+    }
+
+    /**
+     * Vrati ID role dle nazvu nebo null pokud neexistuje.
+     *
+     * @param  string   $name
+     * @return int|null
+     */
+    public function findIdByName(string $name): ?int
+    {
+        $row = $this->db->fetchOne(
+            'SELECT id FROM `role` WHERE franchise_code = ? AND name = ?',
+            [$this->code, $name],
+        );
+
+        return $row ? (int) $row['id'] : null;
     }
 }

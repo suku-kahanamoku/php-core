@@ -13,6 +13,13 @@ class EnumerationService
     private EnumerationRepository $enum;
     private Auth $auth;
 
+    /**
+     * EnumerationService constructor.
+     *
+     * @param Database $db
+     * @param string   $franchiseCode
+     * @param Auth     $auth
+     */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->enum = new EnumerationRepository($db, $franchiseCode);
@@ -22,6 +29,13 @@ class EnumerationService
     /**
      * Vrati strankovany seznam ciselnikovych polozek. Verejne dostupne.
      *
+     * @param  string|null $type
+     * @param  bool|null   $isActive
+     * @param  string      $sort
+     * @param  int         $page
+     * @param  int         $limit
+     * @param  string      $filter
+     * @param  array|null  $projection
      * @return array{items: list<array<string, mixed>>, total: int, page: int, limit: int, totalPages: int}
      */
     public function list(
@@ -49,6 +63,8 @@ class EnumerationService
     /**
      * Vrati ciselnikovou polozku dle ID. Verejne dostupne. Pokud polozka neexistuje, vraci 404.
      *
+     * @param  int        $id
+     * @param  array|null $projection
      * @return array<string, mixed>
      */
     public function get(int $id, ?array $projection = null): array
@@ -64,7 +80,11 @@ class EnumerationService
      * Vytvori novou ciselnikovou polozku. Vyzaduje roli admin.
      * Kombinace type + syscode musi byt unikatni.
      *
+     * @param  string               $type
+     * @param  string               $code
+     * @param  string               $label
      * @param  array<string, mixed> $input  value, position, is_active
+     * @param  array|null           $projection
      * @return array<string, mixed>
      */
     public function create(string $type, string $code, string $label, array $input, ?array $projection = null): array
@@ -92,7 +112,9 @@ class EnumerationService
     /**
      * Castecna aktualizace ciselnikove polozky (PATCH). Vyzaduje roli admin.
      *
+     * @param  int                  $id
      * @param  array<string, mixed> $input  type, syscode, label, value, position, is_active
+     * @param  array|null           $projection
      * @return array<string, mixed>
      */
     public function update(int $id, array $input, ?array $projection = null): array
@@ -129,7 +151,12 @@ class EnumerationService
      * Uplna nahrada ciselnikove polozky (PUT). Vyzaduje roli admin.
      * Povinna pole: type, syscode, label.
      *
+     * @param  int                  $id
+     * @param  string               $type
+     * @param  string               $code
+     * @param  string               $label
      * @param  array<string, mixed> $input  value, position, is_active
+     * @param  array|null           $projection
      * @return array<string, mixed>
      */
     public function replace(
@@ -165,6 +192,7 @@ class EnumerationService
     /**
      * Smaze ciselnikovou polozku. Vyzaduje roli admin.
      *
+     * @param  int $id
      * @return int  Pocet smazanych zaznamu (0 nebo 1)
      */
     public function delete(int $id): int

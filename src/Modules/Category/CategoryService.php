@@ -13,6 +13,13 @@ class CategoryService
     private CategoryRepository $category;
     private Auth $auth;
 
+    /**
+     * CategoryService constructor.
+     *
+     * @param Database $db
+     * @param string   $franchiseCode
+     * @param Auth     $auth
+     */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->category = new CategoryRepository($db, $franchiseCode);
@@ -22,6 +29,11 @@ class CategoryService
     /**
      * Vrati strankovany seznam kategorii. Verejne dostupne.
      *
+     * @param  int        $page
+     * @param  int        $limit
+     * @param  string     $sort
+     * @param  string     $filter
+     * @param  array|null $projection
      * @return array{items: list<array<string, mixed>>, total: int, page: int, limit: int, totalPages: int}
      */
     public function list(int $page = 1, int $limit = 20, string $sort = '', string $filter = '', ?array $projection = null): array
@@ -33,6 +45,8 @@ class CategoryService
      * Vrati kategorii dle ID vcetne seznamu prirazanych produktu (pole products).
      * Verejne dostupne. Pokud kategorie neexistuje, vraci 404.
      *
+     * @param  int        $id
+     * @param  array|null $projection
      * @return array{id: int, name: string, products: list<array{id: int, sku: string, name: string, price: string}>}
      */
     public function get(int $id, ?array $projection = null): array
@@ -50,7 +64,9 @@ class CategoryService
      * Vytvori novou kategorii. Vyzaduje roli admin.
      * Povinna pole: name.
      *
+     * @param  string               $name
      * @param  array<string, mixed> $input  description, parent_id, position
+     * @param  array|null           $projection
      * @return array<string, mixed>
      */
     public function create(string $name, array $input, ?array $projection = null): array
@@ -74,7 +90,9 @@ class CategoryService
     /**
      * Castecna aktualizace kategorie (PATCH). Vyzaduje roli admin.
      *
+     * @param  int                  $id
      * @param  array<string, mixed> $input  name, description, parent_id, position
+     * @param  array|null           $projection
      * @return array<string, mixed>
      */
     public function update(int $id, array $input, ?array $projection = null): array
@@ -110,7 +128,10 @@ class CategoryService
     /**
      * Uplna nahrada kategorie (PUT). Vyzaduje roli admin. Povinna pole: name.
      *
+     * @param  int                  $id
+     * @param  string               $name
      * @param  array<string, mixed> $input  description, parent_id, position
+     * @param  array|null           $projection
      * @return array<string, mixed>
      */
     public function replace(int $id, string $name, array $input, ?array $projection = null): array
@@ -142,6 +163,7 @@ class CategoryService
      * Smaze kategorii. Vyzaduje roli admin.
      * Blokuje smazani kdyz je kategorie prirazena k produktum (409).
      *
+     * @param  int $id
      * @return int  Pocet smazanych zaznamu (0 nebo 1)
      */
     public function delete(int $id): int

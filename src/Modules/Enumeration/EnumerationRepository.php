@@ -19,6 +19,12 @@ class EnumerationRepository
     private const OWN = ['type', 'syscode', 'label', 'value', 'position', 'is_active'];
     private const REL = [];
 
+    /**
+     * EnumerationRepository constructor.
+     *
+     * @param Database $db
+     * @param string   $franchiseCode
+     */
     public function __construct(Database $db, string $franchiseCode)
     {
         $this->db   = $db;
@@ -28,6 +34,13 @@ class EnumerationRepository
     /**
      * Vrati strankovany seznam ciselnikovych polozek.
      *
+     * @param  string|null $type
+     * @param  bool|null   $isActive
+     * @param  string      $sort
+     * @param  int         $page
+     * @param  int         $limit
+     * @param  string      $filter
+     * @param  array|null  $projection
      * @return array{
      *   items: list<array{
      *     id: int,
@@ -116,7 +129,19 @@ class EnumerationRepository
     /**
      * Najde ciselnikovou polozku dle ID.
      *
-     * @return array{id: int, created_at: string, updated_at: string, type: string, syscode: string, label: string, value: string|null, position: int, is_active: int}|null
+     * @param  int        $id
+     * @param  array|null $projection
+     * @return array{
+     *   id: int, 
+     *   created_at: string, 
+     *   updated_at: string, 
+     *   type: string, 
+     *   syscode: string, 
+     *   label: string, 
+     *   value: string|null, 
+     *   position: int, 
+     *   is_active: int
+     * }|null
      */
     public function findById(int $id, ?array $projection = null): ?array
     {
@@ -139,7 +164,7 @@ class EnumerationRepository
     }
 
     /**
-     * Vrati seznam vsech unikatnich typu ciselnikु.
+     * Vrati seznam vsech unikatnich typu ciselniku.
      *
      * @return list<string>
      */
@@ -156,6 +181,11 @@ class EnumerationRepository
 
     /**
      * Vraci true, pokud kombinace type + syscode jiz existuje.
+     *
+     * @param  string   $type
+     * @param  string   $code
+     * @param  int|null $excludeId
+     * @return bool
      */
     public function codeExists(string $type, string $code, ?int $excludeId = null): bool
     {
@@ -180,7 +210,18 @@ class EnumerationRepository
      * Vlozi novou ciselnikovou polozku a vrati vytvoreny zaznam.
      *
      * @param  array<string, mixed> $data
-     * @return array{id: int, created_at: string, updated_at: string, type: string, syscode: string, label: string, value: string|null, position: int, is_active: int}
+     * @param  array|null           $projection
+     * @return array{
+     *   id: int, 
+     *   created_at: string, 
+     *   updated_at: string, 
+     *   type: string, 
+     *   syscode: string, 
+     *   label: string, 
+     *   value: string|null, 
+     *   position: int, 
+     *   is_active: int
+     * }
      */
     public function create(array $data, ?array $projection = null): array
     {
@@ -195,8 +236,20 @@ class EnumerationRepository
     /**
      * Aktualizuje ciselnikovou polozku a vrati aktualizovany zaznam.
      *
+     * @param  int                  $id
      * @param  array<string, mixed> $data
-     * @return array{id: int, created_at: string, updated_at: string, type: string, syscode: string, label: string, value: string|null, position: int, is_active: int}
+     * @param  array|null           $projection
+     * @return array{
+     *   id: int, 
+     *   created_at: string, 
+     *   updated_at: string, 
+     *   type: string, 
+     *   syscode: string, 
+     *   label: string, 
+     *   value: string|null, 
+     *   position: int, 
+     *   is_active: int
+     * }
      */
     public function update(int $id, array $data, ?array $projection = null): array
     {
@@ -210,6 +263,12 @@ class EnumerationRepository
         return $this->findById($id, $projection) ?? ['id' => $id];
     }
 
+    /**
+     * Smaze ciselnikovou polozku.
+     *
+     * @param  int $id
+     * @return int  Pocet smazanych radku (0 nebo 1)
+     */
     public function delete(int $id): int
     {
         return $this->db->delete(

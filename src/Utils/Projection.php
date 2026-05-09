@@ -63,13 +63,21 @@ class Projection
         }
     }
 
-    /** true → no projection supplied → return everything. */
+    /**
+     * true → no projection supplied → return everything.
+     *
+     * @return bool
+     */
     public function isAll(): bool
     {
         return $this->fields === null;
     }
 
-    /** true → projection is explicitly [] → system columns only. */
+    /**
+     * true → projection is explicitly [] → system columns only.
+     *
+     * @return bool
+     */
     public function isEmpty(): bool
     {
         return $this->fields !== null && $this->fields === [];
@@ -123,6 +131,9 @@ class Projection
 
     /**
      * Whether a named relation should be JOINed/fetched.
+     *
+     * @param  string $name  Logicky nazev relace (napr. 'role', 'user')
+     * @return bool
      */
     public function needsJoin(string $name): bool
     {
@@ -140,9 +151,10 @@ class Projection
     /**
      * Which columns of the relation to SELECT.
      *
-     * @return null     → relation not needed (don't JOIN)
-     * @return []       → all columns
-     * @return string[] → specific column names
+     * @param  string       $name  Logicky nazev relace
+     * @return null          → relation not needed (don't JOIN)
+     * @return array{}       → all columns
+     * @return string[]      → specific column names
      */
     public function getRelationCols(string $name): ?array
     {

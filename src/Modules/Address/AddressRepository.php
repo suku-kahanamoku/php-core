@@ -139,6 +139,8 @@ class AddressRepository
     /**
      * Najde adresu dle ID.
      *
+     * @param  int        $id
+     * @param  array|null $projection
      * @return array{
      *   id: int,
      *   created_at: string,
@@ -178,6 +180,7 @@ class AddressRepository
      * Vlozi novou adresu a vrati vytvoreny zaznam.
      *
      * @param  array<string, mixed> $data
+     * @param  array|null           $projection
      * @return array{
      *   id: int,
      *   created_at: string,
@@ -206,7 +209,9 @@ class AddressRepository
     /**
      * Aktualizuje adresu a vrati aktualizovany zaznam.
      *
+     * @param  int                  $id
      * @param  array<string, mixed> $data
+     * @param  array|null           $projection
      * @return array{
      *   id: int,
      *   created_at: string,

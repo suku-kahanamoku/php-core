@@ -17,8 +17,8 @@ class AddressService
      * Inicializuje AddressService.
      *
      * @param Database $db
-     * @param string $franchiseCode
-     * @param Auth $auth
+     * @param string   $franchiseCode
+     * @param Auth     $auth
      */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
@@ -30,6 +30,13 @@ class AddressService
      * Vrati strankovany seznam adres daneho uzivatele.
      * Vyzaduje prihlaseni; uzivatel vidi pouze vlastni adresy, admin vidi vsechny.
      *
+     * @param  int         $userId
+     * @param  string|null $type
+     * @param  string      $sort
+     * @param  int         $page
+     * @param  int         $limit
+     * @param  string      $filter
+     * @param  array|null  $projection
      * @return array{
      *   items: list<array<string, mixed>>, 
      *   total: int, 
@@ -69,6 +76,8 @@ class AddressService
      * Vyzaduje prihlaseni; uzivatel vidi pouze vlastni adresy, admin vidi vsechny.
      * Pokud adresa neexistuje, vola Response::notFound() a ukonci request (404).
      *
+     * @param  int        $id
+     * @param  array|null $projection
      * @return array<string, mixed>
      */
     public function get(int $id, ?array $projection = null): array
@@ -96,6 +105,8 @@ class AddressService
      * Vyzaduje validaci: street, city, zip jsou povinna pole.
      *
      * @param  array<string, mixed> $input
+     * @param  int|null             $overrideUserId
+     * @param  array|null           $projection
      * @return array<string, mixed>
      */
     public function create(
@@ -135,7 +146,9 @@ class AddressService
      * Castecna aktualizace adresy (PATCH).
      * Vyzaduje prihlaseni; pouze vlastnik nebo admin.
      *
+     * @param  int                  $id
      * @param  array<string, mixed> $input
+     * @param  array|null           $projection
      * @return array<string, mixed>
      */
     public function update(int $id, array $input, ?array $projection = null): array
@@ -190,7 +203,9 @@ class AddressService
      * Uplna nahrada adresy (PUT). Povinna pole: street, city, zip, country.
      * Vyzaduje prihlaseni; pouze vlastnik nebo admin.
      *
+     * @param  int                  $id
      * @param  array<string, mixed> $input
+     * @param  array|null           $projection
      * @return array<string, mixed>
      */
     public function replace(int $id, array $input, ?array $projection = null): array

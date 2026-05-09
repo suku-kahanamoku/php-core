@@ -13,6 +13,13 @@ class TextService
     private TextRepository $text;
     private Auth $auth;
 
+    /**
+     * TextService constructor.
+     *
+     * @param Database $db
+     * @param string   $franchiseCode
+     * @param Auth     $auth
+     */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->text = new TextRepository($db, $franchiseCode);
@@ -22,6 +29,14 @@ class TextService
     /**
      * Vrati strankovany seznam CMS textu. Verejne dostupne.
      *
+     * @param  string      $language
+     * @param  bool|null   $isActive
+     * @param  string|null $search
+     * @param  string      $sort
+     * @param  int         $page
+     * @param  int         $limit
+     * @param  string      $filter
+     * @param  array|null  $projection
      * @return array{items: list<array<string, mixed>>, total: int, page: int, limit: int, totalPages: int}
      */
     public function list(
@@ -40,6 +55,8 @@ class TextService
     /**
      * Vrati CMS text dle ID. Verejne dostupne. Pokud text neexistuje, vraci 404.
      *
+     * @param  int        $id
+     * @param  array|null $projection
      * @return array<string, mixed>
      */
     public function get(int $id, ?array $projection = null): array
@@ -54,6 +71,8 @@ class TextService
     /**
      * Vrati CMS text dle syscode a jazyka. Verejne dostupne. Pokud text neexistuje, vraci 404.
      *
+     * @param  string $key
+     * @param  string $language
      * @return array<string, mixed>
      */
     public function getByKey(string $key, string $language): array
@@ -69,7 +88,11 @@ class TextService
      * Vytvori novy CMS text. Vyzaduje roli admin.
      * Kombinace syscode + language musi byt unikatni.
      *
+     * @param  string               $key
+     * @param  string               $title
+     * @param  string               $language
      * @param  array<string, mixed> $input  content, is_active
+     * @param  array|null           $projection
      * @return array<string, mixed>
      */
     public function create(
@@ -102,7 +125,9 @@ class TextService
     /**
      * Castecna aktualizace CMS textu (PATCH). Vyzaduje roli admin.
      *
+     * @param  int                  $id
      * @param  array<string, mixed> $input  syscode, title, content, language, is_active
+     * @param  array|null           $projection
      * @return array<string, mixed>
      */
     public function update(int $id, array $input, ?array $projection = null): array
@@ -135,7 +160,11 @@ class TextService
     /**
      * Uplna nahrada CMS textu (PUT). Vyzaduje roli admin. Povinna pole: syscode, title.
      *
+     * @param  int                  $id
+     * @param  string               $key
+     * @param  string               $title
      * @param  array<string, mixed> $input  content, language, is_active
+     * @param  array|null           $projection
      * @return array<string, mixed>
      */
     public function replace(int $id, string $key, string $title, array $input, ?array $projection = null): array
@@ -164,6 +193,7 @@ class TextService
     /**
      * Smaze CMS text. Vyzaduje roli admin.
      *
+     * @param  int $id
      * @return int  Pocet smazanych zaznamu (0 nebo 1)
      */
     public function delete(int $id): int

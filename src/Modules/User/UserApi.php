@@ -15,6 +15,13 @@ class UserApi
 {
     private UserService $service;
 
+    /**
+     * UserApi constructor.
+     *
+     * @param Database $db
+     * @param string   $franchiseCode
+     * @param Auth     $auth
+     */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->service = new UserService($db, $franchiseCode, $auth);
@@ -121,6 +128,10 @@ class UserApi
 
     /**
      * Zaregistruje vsechny routy tohoto modulu do routeru.
+     *
+     * @param  Router     $router
+     * @param  AddressApi $addressApi
+     * @return void
      */
     public function registerRoutes(Router $router, AddressApi $addressApi): void
     {

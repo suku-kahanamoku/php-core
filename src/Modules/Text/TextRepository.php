@@ -19,6 +19,12 @@ class TextRepository
     private const OWN = ['syscode', 'title', 'content', 'language', 'is_active', 'created_by'];
     private const REL = [];
 
+    /**
+     * TextRepository constructor.
+     *
+     * @param Database $db
+     * @param string   $franchiseCode
+     */
     public function __construct(Database $db, string $franchiseCode)
     {
         $this->db   = $db;
@@ -28,6 +34,14 @@ class TextRepository
     /**
      * Vrati strankovany seznam textovych obsahu (CMS).
      *
+     * @param  string      $language
+     * @param  bool|null   $isActive
+     * @param  string|null $search
+     * @param  string      $sort
+     * @param  int         $page
+     * @param  int         $limit
+     * @param  string      $filter
+     * @param  array|null  $projection
      * @return array{
      *   items: list<array{
      *     id: int,
@@ -117,6 +131,8 @@ class TextRepository
     /**
      * Najde textovy obsah dle ID.
      *
+     * @param  int        $id
+     * @param  array|null $projection
      * @return array{id: int, created_at: string, updated_at: string, syscode: string, title: string, content: string, language: string, is_active: int, created_by: int|null}|null
      */
     public function findById(int $id, ?array $projection = null): ?array
@@ -142,6 +158,8 @@ class TextRepository
     /**
      * Najde textovy obsah dle syscode a jazyka.
      *
+     * @param  string $key
+     * @param  string $language
      * @return array{id: int, created_at: string, updated_at: string, syscode: string, title: string, content: string, language: string, is_active: int, created_by: int|null}|null
      */
     public function findByKey(string $key, string $language): ?array
@@ -156,6 +174,11 @@ class TextRepository
 
     /**
      * Vraci true, pokud kombinace syscode + language jiz existuje.
+     *
+     * @param  string   $key
+     * @param  string   $language
+     * @param  int|null $excludeId
+     * @return bool
      */
     public function keyExists(string $key, string $language, ?int $excludeId = null): bool
     {
@@ -180,6 +203,7 @@ class TextRepository
      * Vlozi novy textovy obsah a vrati vytvoreny zaznam.
      *
      * @param  array<string, mixed> $data
+     * @param  array|null           $projection
      * @return array{id: int, created_at: string, updated_at: string, syscode: string, title: string, content: string, language: string, is_active: int, created_by: int|null}
      */
     public function create(array $data, ?array $projection = null): array
@@ -195,7 +219,9 @@ class TextRepository
     /**
      * Aktualizuje textovy obsah a vrati aktualizovany zaznam.
      *
+     * @param  int                  $id
      * @param  array<string, mixed> $data
+     * @param  array|null           $projection
      * @return array{id: int, created_at: string, updated_at: string, syscode: string, title: string, content: string, language: string, is_active: int, created_by: int|null}
      */
     public function update(int $id, array $data, ?array $projection = null): array
@@ -210,6 +236,12 @@ class TextRepository
         return $this->findById($id, $projection) ?? ['id' => $id];
     }
 
+    /**
+     * Smaze textovy obsah.
+     *
+     * @param  int $id
+     * @return int  Pocet smazanych radku (0 nebo 1)
+     */
     public function delete(int $id): int
     {
         return $this->db->delete('text', 'id = ? AND franchise_code = ?', [$id, $this->code]);

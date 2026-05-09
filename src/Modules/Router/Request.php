@@ -94,16 +94,35 @@ class Request
         return $headers;
     }
 
+    /**
+     * Vrati hodnotu z body nebo query stringu dle klice.
+     *
+     * @param  string $key      Nazev parametru
+     * @param  mixed  $default  Vychozi hodnota kdyz klic neni pritomen
+     * @return mixed
+     */
     public function get(string $key, mixed $default = null): mixed
     {
         return $this->body[$key] ?? $this->query[$key] ?? $default;
     }
 
+    /**
+     * Vrati hodnotu HTTP hlavicky dle nazvu (case-insensitive).
+     *
+     * @param  string $name     Nazev hlavicky (napr. 'Authorization')
+     * @param  mixed  $default  Vychozi hodnota kdyz hlavicka neni pritomna
+     * @return mixed
+     */
     public function header(string $name, mixed $default = null): mixed
     {
         return $this->headers[strtolower($name)] ?? $default;
     }
 
+    /**
+     * Vrati true, pokud je Content-Type roven application/json.
+     *
+     * @return bool
+     */
     public function isJson(): bool
     {
         return str_contains($this->headers['content-type'] ?? '', 'application/json');
@@ -116,6 +135,8 @@ class Request
      * - Empty string / empty array  → []    (system columns only)
      * - 'field1,field2'             → ['field1', 'field2']
      * - ['field1', 'field2']        → ['field1', 'field2']
+     *
+     * @return array<string>|null
      */
     public function projection(): ?array
     {
@@ -130,9 +151,9 @@ class Request
         }
 
         if (is_array($raw)) {
-            return array_values(array_filter(array_map('trim', $raw), fn ($v) => $v !== ''));
+            return array_values(array_filter(array_map('trim', $raw), fn($v) => $v !== ''));
         }
 
-        return array_values(array_filter(array_map('trim', explode(',', (string) $raw)), fn ($v) => $v !== ''));
+        return array_values(array_filter(array_map('trim', explode(',', (string) $raw)), fn($v) => $v !== ''));
     }
 }

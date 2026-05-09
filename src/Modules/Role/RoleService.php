@@ -13,6 +13,13 @@ class RoleService
     private RoleRepository $role;
     private Auth $auth;
 
+    /**
+     * RoleService constructor.
+     *
+     * @param Database $db
+     * @param string   $franchiseCode
+     * @param Auth     $auth
+     */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->role = new RoleRepository($db, $franchiseCode);
@@ -22,6 +29,11 @@ class RoleService
     /**
      * Vrati strankovany seznam roli. Verejne dostupne.
      *
+     * @param  int        $page
+     * @param  int        $limit
+     * @param  string     $sort
+     * @param  string     $filter
+     * @param  array|null $projection
      * @return array{items: list<array<string, mixed>>, total: int, page: int, limit: int, totalPages: int}
      */
     public function list(int $page = 1, int $limit = 20, string $sort = '', string $filter = '', ?array $projection = null): array
@@ -30,9 +42,11 @@ class RoleService
     }
 
     /**
-     * Vrati roli dle ID vcetne poctu prirazených uzivatel (pole user_count).
+     * Vrati roli dle ID vcetne poctu prirazanych uzivatel (pole user_count).
      * Verejne dostupne. Pokud role neexistuje, vraci 404.
      *
+     * @param  int        $id
+     * @param  array|null $projection
      * @return array{id: int, name: string, label: string, position: int, user_count: int}
      */
     public function get(int $id, ?array $projection = null): array
@@ -50,6 +64,10 @@ class RoleService
      * Vytvori novou roli. Vyzaduje roli admin.
      * Name musi byt unikatni a odpovidat vzoru /^[a-z0-9_]+$/.
      *
+     * @param  string     $name
+     * @param  string     $label
+     * @param  int        $sortOrder
+     * @param  array|null $projection
      * @return array{id: int, name: string, label: string, position: int}
      */
     public function create(
@@ -84,7 +102,9 @@ class RoleService
      * Castecna aktualizace role (PATCH). Vyzaduje roli admin.
      * Pokud je menen name, validuje format a unikatnost.
      *
+     * @param  int                  $id
      * @param  array<string, mixed> $fields
+     * @param  array|null           $projection
      * @return array{id: int, name: string, label: string, position: int}
      */
     public function update(int $id, array $fields, ?array $projection = null): array
@@ -129,6 +149,11 @@ class RoleService
      * Uplna nahrada role (PUT). Vyzaduje roli admin.
      * Povinna pole: name (unikatni, /^[a-z0-9_]+$/), label.
      *
+     * @param  int        $id
+     * @param  string     $name
+     * @param  string     $label
+     * @param  int        $sortOrder
+     * @param  array|null $projection
      * @return array{id: int, name: string, label: string, position: int}
      */
     public function replace(
@@ -170,6 +195,7 @@ class RoleService
      * Smaze roli. Vyzaduje roli admin.
      * Blokuje smazani vestavenych roli (admin, user) a roli s prirazanymi uzivateli (409).
      *
+     * @param  int $id
      * @return int  Pocet smazanych zaznamu (0 nebo 1)
      */
     public function delete(int $id): int

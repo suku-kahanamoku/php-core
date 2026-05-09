@@ -13,6 +13,13 @@ class UserService
     private UserRepository $user;
     private Auth $auth;
 
+    /**
+     * UserService constructor.
+     *
+     * @param Database $db
+     * @param string   $franchiseCode
+     * @param Auth     $auth
+     */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->user = new UserRepository($db, $franchiseCode);
@@ -22,6 +29,13 @@ class UserService
     /**
      * Vrati strankovany seznam uzivatelu. Vyzaduje roli admin.
      *
+     * @param  int         $page
+     * @param  int         $limit
+     * @param  string|null $search
+     * @param  string|null $role
+     * @param  string      $sort
+     * @param  string      $filter
+     * @param  array|null  $projection
      * @return array{items: list<array<string, mixed>>, total: int, page: int, limit: int, totalPages: int}
      */
     public function list(
@@ -50,6 +64,8 @@ class UserService
      * Vyzaduje prihlaseni; uzivatel vidi pouze sebe, admin vidi vsechny.
      * Pokud uzivatel neexistuje, vraci 404.
      *
+     * @param  int        $id
+     * @param  array|null $projection
      * @return array<string, mixed>
      */
     public function get(int $id, ?array $projection = null): array
@@ -74,6 +90,7 @@ class UserService
      * Email musi byt unikatni. Heslo je ulozeno jako bcrypt hash.
      *
      * @param  array<string, mixed> $input
+     * @param  array|null           $projection
      * @return array<string, mixed>
      */
     public function create(array $input, ?array $projection = null): array
@@ -118,7 +135,9 @@ class UserService
      * Castecna aktualizace uzivatele (PATCH).
      * Vyzaduje prihlaseni; uzivatel muze menit vlastni profil, admin muze menit kohokoliv a take roli.
      *
+     * @param  int                  $id
      * @param  array<string, mixed> $input  first_name, last_name, phone, role (admin only)
+     * @param  array|null           $projection
      * @return array<string, mixed>
      */
     public function update(int $id, array $input, ?array $projection = null): array
@@ -161,7 +180,9 @@ class UserService
      * Uplna nahrada uzivatele (PUT). Vyzaduje prihlaseni; uzivatel nebo admin.
      * Povinna pole: first_name, last_name.
      *
+     * @param  int                  $id
      * @param  array<string, mixed> $input
+     * @param  array|null           $projection
      * @return array<string, mixed>
      */
     public function replace(int $id, array $input, ?array $projection = null): array
@@ -201,6 +222,7 @@ class UserService
     /**
      * Smaze uzivatele. Vyzaduje roli admin.
      *
+     * @param  int $id
      * @return int  Pocet smazanych zaznamu (0 nebo 1)
      */
     public function delete(int $id): int

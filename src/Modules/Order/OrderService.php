@@ -19,6 +19,13 @@ class OrderService
     private ProductRepository $product;
     private Auth $auth;
 
+    /**
+     * OrderService constructor.
+     *
+     * @param Database $db
+     * @param string   $franchiseCode
+     * @param Auth     $auth
+     */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->order   = new OrderRepository($db, $franchiseCode);
@@ -32,6 +39,12 @@ class OrderService
      * Vrati strankovany seznam objednavek.
      * Vyzaduje prihlaseni; admin vidi vsechny, uzivatel vidi pouze vlastni.
      *
+     * @param  int         $page
+     * @param  int         $limit
+     * @param  string|null $status
+     * @param  string      $sort
+     * @param  string      $filter
+     * @param  array|null  $projection
      * @return array{items: list<array<string, mixed>>, total: int, page: int, limit: int, totalPages: int}
      */
     public function list(
@@ -53,6 +66,8 @@ class OrderService
      * Vrati objednavku dle ID vcetne polozek.
      * Vyzaduje prihlaseni; vlastnik nebo admin. Pokud objednavka neexistuje, vraci 404.
      *
+     * @param  int        $id
+     * @param  array|null $projection
      * @return array<string, mixed>
      */
     public function get(int $id, ?array $projection = null): array
@@ -185,7 +200,12 @@ class OrderService
         return ['id' => $orderId ?? null, 'total_amount' => $totalAmount ?? 0];
     }
 
-    /** Find existing user by email, or create a guest account. Returns null when no email supplied. */
+    /**
+     * Find existing user by email, or create a guest account. Returns null when no email supplied.
+     *
+     * @param  array<string, mixed> $user
+     * @return int|null
+     */
     private function resolveUserId(array $user): ?int
     {
         if ($this->auth->check()) {
@@ -217,7 +237,14 @@ class OrderService
         ])['id'];
     }
 
-    /** Create an address record for the order and return its ID. Returns null when required fields are missing. */
+    /**
+     * Create an address record for the order and return its ID. Returns null when required fields are missing.
+     *
+     * @param  int|null             $userId
+     * @param  array<string, mixed> $addr
+     * @param  string               $type
+     * @return int|null
+     */
     private function resolveAddress(?int $userId, array $addr, string $type): ?int
     {
         if ($userId === null || empty($addr['street'])) {
@@ -259,6 +286,9 @@ class OrderService
      * Zmeni stav objednavky. Vyzaduje roli admin.
      * Pokud objednavka neexistuje, vraci 404.
      *
+     * @param  int        $id
+     * @param  string     $status
+     * @param  array|null $projection
      * @return array<string, mixed>
      */
     public function updateStatus(int $id, string $status, ?array $projection = null): array
@@ -278,6 +308,7 @@ class OrderService
     /**
      * Smaze objednavku. Vyzaduje roli admin.
      *
+     * @param  int $id
      * @return int  Pocet smazanych zaznamu (0 nebo 1)
      */
     public function delete(int $id): int

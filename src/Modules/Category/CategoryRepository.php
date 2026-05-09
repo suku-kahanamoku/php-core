@@ -19,6 +19,12 @@ class CategoryRepository
     private const OWN = ['syscode', 'name', 'description', 'position', 'parent_id'];
     private const REL = [];
 
+    /**
+     * CategoryRepository constructor.
+     *
+     * @param Database $db
+     * @param string   $franchiseCode
+     */
     public function __construct(Database $db, string $franchiseCode)
     {
         $this->db   = $db;
@@ -28,6 +34,11 @@ class CategoryRepository
     /**
      * Vrati strankovany seznam kategorii.
      *
+     * @param  int        $page
+     * @param  int        $limit
+     * @param  string     $sort
+     * @param  string     $filter
+     * @param  array|null $projection
      * @return array{
      *   items: list<array{
      *     id: int,
@@ -104,6 +115,8 @@ class CategoryRepository
     /**
      * Najde kategorii dle ID.
      *
+     * @param  int        $id
+     * @param  array|null $projection
      * @return array{id: int, created_at: string, updated_at: string, syscode: string, name: string, description: string|null, position: int, parent_id: int|null}|null
      */
     public function findById(int $id, ?array $projection = null): ?array
@@ -129,6 +142,7 @@ class CategoryRepository
     /**
      * Najde kategorii dle syscode.
      *
+     * @param  string $syscode
      * @return array{id: int, created_at: string, updated_at: string, syscode: string, name: string, description: string|null, position: int, parent_id: int|null}|null
      */
     public function findBySyscode(string $syscode): ?array
@@ -143,6 +157,9 @@ class CategoryRepository
 
     /**
      * Vraci true, pokud ma kategorie prirazene produkty.
+     *
+     * @param  int  $id
+     * @return bool
      */
     public function hasProducts(int $id): bool
     {
@@ -159,6 +176,7 @@ class CategoryRepository
     /**
      * Vrati produkty prirazene ke kategorii.
      *
+     * @param  int $id
      * @return list<array{id: int, sku: string, name: string, price: string}>
      */
     public function getProducts(int $id): array
@@ -175,6 +193,7 @@ class CategoryRepository
      * Vlozi novou kategorii a vrati vytvoreny zaznam.
      *
      * @param  array<string, mixed> $data
+     * @param  array|null           $projection
      * @return array{id: int, created_at: string, updated_at: string, syscode: string, name: string, description: string|null, position: int, parent_id: int|null}
      */
     public function create(array $data, ?array $projection = null): array
@@ -190,7 +209,9 @@ class CategoryRepository
     /**
      * Aktualizuje kategorii a vrati aktualizovany zaznam.
      *
+     * @param  int                  $id
      * @param  array<string, mixed> $data
+     * @param  array|null           $projection
      * @return array{id: int, created_at: string, updated_at: string, syscode: string, name: string, description: string|null, position: int, parent_id: int|null}
      */
     public function update(int $id, array $data, ?array $projection = null): array
@@ -205,6 +226,12 @@ class CategoryRepository
         return $this->findById($id, $projection);
     }
 
+    /**
+     * Smaze kategorii.
+     *
+     * @param  int $id
+     * @return int  Pocet smazanych radku (0 nebo 1)
+     */
     public function delete(int $id): int
     {
         return $this->db->delete('category', 'id = ? AND franchise_code = ?', [$id, $this->code]);

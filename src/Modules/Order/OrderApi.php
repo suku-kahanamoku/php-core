@@ -14,6 +14,13 @@ class OrderApi
 {
     private OrderService $service;
 
+    /**
+     * OrderApi constructor.
+     *
+     * @param Database $db
+     * @param string   $franchiseCode
+     * @param Auth     $auth
+     */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->service = new OrderService($db, $franchiseCode, $auth);
@@ -95,6 +102,9 @@ class OrderApi
 
     /**
      * Zaregistruje vsechny routy tohoto modulu do routeru.
+     *
+     * @param  Router $router
+     * @return void
      */
     public function registerRoutes(Router $router): void
     {

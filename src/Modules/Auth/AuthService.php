@@ -5,49 +5,45 @@ declare(strict_types=1);
 namespace App\Modules\Auth;
 
 use App\Modules\Database\Database;
+use App\Modules\Role\RoleRepository;
 use App\Modules\Router\Response;
+use App\Modules\User\UserRepository;
 
 
 class AuthService
 {
-    private Database $db;
-    private string   $code;
-    private Auth     $auth;
+    private UserRepository      $users;
+    private UserTokenRepository $tokens;
+    private RoleRepository      $roles;
+    private Auth                $auth;
 
     /**
      * AuthService constructor.
-     * 
+     *
      * @param Database $db
      * @param string $franchiseCode
      * @param Auth $auth
      */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->db   = $db;
-        $this->code = $franchiseCode;
-        $this->auth = $auth;
+        $this->users  = new UserRepository($db, $franchiseCode);
+        $this->tokens = new UserTokenRepository($db);
+        $this->roles  = new RoleRepository($db, $franchiseCode);
+        $this->auth   = $auth;
     }
 
     /**
-     * Přihlášení uživatele.
+     * Prihlasí uzivatele.
      *
-     * @param string $email
-     * @param string $password
-     * @return array<string, mixed>
+     * @param  string $email
+     * @param  string $password
+     * @return array{token: string, expires_at: string, id: int, email: string, role: string, first_name: string, last_name: string}
      */
     public function login(string $email, string $password): array
     {
         VALIDATOR(['email' => $email])->email('email')->validate();
 
-        $user = $this->db->fetchOne(
-            'SELECT u.id, u.email, u.password,
-                    r.name AS role, u.first_name, u.last_name, u.status
-             FROM user u
-             JOIN role r ON r.id = u.role_id
-             WHERE u.email = ? AND u.franchise_code = ?
-             LIMIT 1',
-            [$email, $this->code],
-        );
+        $user = $this->users->findForLogin($email);
 
         if (!$user || !password_verify($password, $user['password'])) {
             Response::error('Invalid credentials', 401);
@@ -60,19 +56,8 @@ class AuthService
         $token     = bin2hex(random_bytes(32));
         $expiresAt = date('Y-m-d H:i:s', strtotime('+24 hours'));
 
-        $this->db->insert('user_token', [
-            'user_id'    => $user['id'],
-            'token'      => $token,
-            'expires_at' => $expiresAt,
-            'created_at' => date('Y-m-d H:i:s'),
-        ]);
-
-        $this->db->update(
-            'user',
-            ['last_login_at' => date('Y-m-d H:i:s')],
-            'id = ?',
-            [$user['id']],
-        );
+        $this->tokens->create($user['id'], $token, $expiresAt);
+        $this->users->touchLastLogin($user['id']);
 
         return [
             'token'      => $token,
@@ -86,7 +71,9 @@ class AuthService
     }
 
     /**
-     * Odhlášení uživatele.
+     * Odhlasi prihlaseneho uzivatele (zrusi token).
+     *
+     * @return void
      */
     public function logout(): void
     {
@@ -95,9 +82,9 @@ class AuthService
     }
 
     /**
-     * Získání informací o aktuálně přihlášeném uživateli.
+     * Vrati data aktualne prihlaseneho uzivatele. Vyzaduje prihlaseni.
      *
-     * @return array<string, mixed>
+     * @return array{id: int, email: string, role: string, name: string}
      */
     public function me(): array
     {
@@ -131,39 +118,31 @@ class AuthService
             ->minLength('password', 8)
             ->validate();
 
-        $exists = $this->db->fetchOne(
-            'SELECT id FROM user WHERE franchise_code = ? AND email = ?',
-            [$this->code, $email],
-        );
-        if ($exists) {
+        if ($this->users->emailExists($email)) {
             Response::error('Email already registered', 409);
         }
 
-        $roleRow = $this->db->fetchOne(
-            'SELECT id FROM role WHERE franchise_code = ? AND name = ?',
-            [$this->code, 'user'],
-        );
-        if (!$roleRow) {
+        $roleId = $this->roles->findIdByName('user');
+        if (!$roleId) {
             Response::error('Default role not configured', 500);
         }
 
-        return $this->db->insert('user', [
-            'franchise_code' => $this->code,
-            'first_name'     => $firstName,
-            'last_name'      => $lastName,
-            'email'          => $email,
-            'password'       => password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]),
-            'role_id'        => $roleRow['id'],
-            'status'         => 'active',
-            'created_at'     => date('Y-m-d H:i:s'),
-        ]);
+        return $this->users->create([
+            'first_name' => $firstName,
+            'last_name'  => $lastName,
+            'email'      => $email,
+            'password'   => password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]),
+            'role_id'    => $roleId,
+            'status'     => 'active',
+        ])['id'];
     }
 
     /**
-     * Změna hesla aktuálně přihlášeného uživatele.
+     * Zmena hesla aktualne prihlaseneho uzivatele.
      *
-     * @param string $currentPassword
-     * @param string $newPassword
+     * @param  string $currentPassword  Aktualni heslo pro overeni
+     * @param  string $newPassword      Nove heslo (min. 8 znaku)
+     * @return void
      */
     public function changePassword(string $currentPassword, string $newPassword): void
     {
@@ -178,18 +157,14 @@ class AuthService
             ->validate();
 
         $userId = $this->auth->id();
-        $user   = $this->db->fetchOne(
-            'SELECT password FROM user WHERE id = ? AND franchise_code = ?',
-            [$userId, $this->code],
-        );
+        $hash   = $this->users->findPasswordHash($userId);
 
-        if (!$user || !password_verify($currentPassword, $user['password'])) {
+        if (!$hash || !password_verify($currentPassword, $hash)) {
             Response::error('Current password is incorrect', 401);
         }
 
-        $this->db->update('user', [
-            'password'   => password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 12]),
-            'updated_at' => date('Y-m-d H:i:s'),
-        ], 'id = ? AND franchise_code = ?', [$userId, $this->code]);
+        $this->users->update($userId, [
+            'password' => password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 12]),
+        ]);
     }
 }

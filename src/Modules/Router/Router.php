@@ -19,31 +19,72 @@ class Router
 
     // ─── Registration ──────────────────────────────────────────────────────────
 
+    /**
+     * Registruje GET routu.
+     *
+     * @param  string   $path     URL vzor (napr. '/:id')
+     * @param  callable $handler  Obsluzna funkce
+     * @return self
+     */
     public function get(string $path, callable $handler): self
     {
         return $this->addRoute('GET', $path, $handler);
     }
 
+    /**
+     * Registruje POST routu.
+     *
+     * @param  string   $path
+     * @param  callable $handler
+     * @return self
+     */
     public function post(string $path, callable $handler): self
     {
         return $this->addRoute('POST', $path, $handler);
     }
 
+    /**
+     * Registruje PUT routu.
+     *
+     * @param  string   $path
+     * @param  callable $handler
+     * @return self
+     */
     public function put(string $path, callable $handler): self
     {
         return $this->addRoute('PUT', $path, $handler);
     }
 
+    /**
+     * Registruje PATCH routu.
+     *
+     * @param  string   $path
+     * @param  callable $handler
+     * @return self
+     */
     public function patch(string $path, callable $handler): self
     {
         return $this->addRoute('PATCH', $path, $handler);
     }
 
+    /**
+     * Registruje DELETE routu.
+     *
+     * @param  string   $path
+     * @param  callable $handler
+     * @return self
+     */
     public function delete(string $path, callable $handler): self
     {
         return $this->addRoute('DELETE', $path, $handler);
     }
 
+    /**
+     * Prida middleware ke zpracovani posledni zaregistrovane routy.
+     *
+     * @param  callable $middleware
+     * @return self
+     */
     public function middleware(callable $middleware): self
     {
         // Applied to the last registered route
@@ -54,6 +95,12 @@ class Router
         return $this;
     }
 
+    /**
+     * Prida globalni middleware spousteny pred kazdou routou.
+     *
+     * @param  callable $middleware
+     * @return self
+     */
     public function addGlobalMiddleware(callable $middleware): self
     {
         $this->globalMiddleware[] = $middleware;
@@ -82,6 +129,13 @@ class Router
 
     // ─── Dispatch ──────────────────────────────────────────────────────────────
 
+    /**
+     * Zpracuje prichozi HTTP pozadavek a zavola odpovidajici handler.
+     * Pokud zadna routa neodpovida, vraci 404. Pokud metoda nesouhlasi, vraci 405.
+     *
+     * @param  Request $request
+     * @return void
+     */
     public function dispatch(Request $request): void
     {
         $method = $request->method;
@@ -124,5 +178,4 @@ class Router
 
         Response::notFound("Endpoint '{$uri}' not found.");
     }
-
 }

@@ -13,6 +13,13 @@ class InvoiceService
     private InvoiceRepository $invoice;
     private Auth $auth;
 
+    /**
+     * InvoiceService constructor.
+     *
+     * @param Database $db
+     * @param string   $franchiseCode
+     * @param Auth     $auth
+     */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->invoice = new InvoiceRepository($db, $franchiseCode);
@@ -23,6 +30,12 @@ class InvoiceService
      * Vrati strankovany seznam faktur.
      * Vyzaduje prihlaseni; admin vidi vsechny, uzivatel vidi pouze vlastni.
      *
+     * @param  int         $page
+     * @param  int         $limit
+     * @param  string|null $status
+     * @param  string      $sort
+     * @param  string      $filter
+     * @param  array|null  $projection
      * @return array{items: list<array<string, mixed>>, total: int, page: int, limit: int, totalPages: int}
      */
     public function list(
@@ -52,6 +65,8 @@ class InvoiceService
      * Vrati fakturu dle ID vcetne polozek.
      * Vyzaduje prihlaseni; vlastnik nebo admin. Pokud faktura neexistuje, vraci 404.
      *
+     * @param  int        $id
+     * @param  array|null $projection
      * @return array<string, mixed>
      */
     public function get(int $id, ?array $projection = null): array
@@ -75,7 +90,9 @@ class InvoiceService
      * Kazda objednavka muze mit nejvyse jednu fakturu (409 pri duplicite).
      * Polozky faktury jsou zkopirovat z order_item. Cela operace probiha v transakci.
      *
+     * @param  int                  $orderId
      * @param  array<string, mixed> $input  due_at, note
+     * @param  array|null           $projection
      * @return array<string, mixed>
      */
     public function create(int $orderId, array $input, ?array $projection = null): array
@@ -139,8 +156,11 @@ class InvoiceService
 
     /**
      * Zmeni stav faktury. Vyzaduje roli admin.
-     * Status 'paid' automaticky nastavi paid_at na aktualní cas.
+     * Status 'paid' automaticky nastavi paid_at na aktualni cas.
      *
+     * @param  int        $id
+     * @param  string     $status
+     * @param  array|null $projection
      * @return array<string, mixed>
      */
     public function updateStatus(int $id, string $status, ?array $projection = null): array
@@ -164,6 +184,7 @@ class InvoiceService
     /**
      * Smaze fakturu. Vyzaduje roli admin.
      *
+     * @param  int $id
      * @return int  Pocet smazanych zaznamu (0 nebo 1)
      */
     public function delete(int $id): int

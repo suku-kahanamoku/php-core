@@ -19,14 +19,28 @@ class UserRepository
     private const OWN = ['first_name', 'last_name', 'email', 'phone', 'role_id'];
     private const REL = ['role'];
 
+    /**
+     * UserRepository constructor.
+     *
+     * @param Database $db
+     * @param string   $franchiseCode
+     */
     public function __construct(Database $db, string $franchiseCode)
     {
         $this->db   = $db;
         $this->code = $franchiseCode;
     }
 
-    /** Paginated list with optional filters.
+    /**
+     * Paginated list with optional filters.
      *
+     * @param  int         $page
+     * @param  int         $limit
+     * @param  string|null $search
+     * @param  string|null $role
+     * @param  string      $sort
+     * @param  string      $filter
+     * @param  array|null  $projection
      * @return array{
      *   items: list<array{
      *     id: int,
@@ -121,8 +135,11 @@ class UserRepository
         ];
     }
 
-    /** Find single user by ID.
+    /**
+     * Find single user by ID.
      *
+     * @param  int        $id
+     * @param  array|null $projection
      * @return array{
      *   id: int,
      *   created_at: string,
@@ -167,7 +184,12 @@ class UserRepository
         return $proj->apply($user, $sys, ['role' => ['fk' => 'role_id', 'nest' => ['name' => 'role_name', 'id' => 'role_id']]]);
     }
 
-    /** Find role_id by role name. */
+    /**
+     * Find role_id by role name.
+     *
+     * @param  string   $name
+     * @return int|null
+     */
     public function resolveRoleId(string $name): ?int
     {
         $row = $this->db->fetchOne(
@@ -178,7 +200,13 @@ class UserRepository
         return $row ? (int) $row['id'] : null;
     }
 
-    /** Check if email is taken. */
+    /**
+     * Check if email is taken.
+     *
+     * @param  string   $email
+     * @param  int|null $excludeId
+     * @return bool
+     */
     public function emailExists(string $email, ?int $excludeId = null): bool
     {
         if ($excludeId !== null) {
@@ -199,6 +227,7 @@ class UserRepository
     /**
      * Najde uzivatele dle e-mailu (bez hesla).
      *
+     * @param  string $email
      * @return array{id: int, first_name: string, last_name: string, email: string, phone: string|null}|null
      */
     public function findByEmail(string $email): ?array
@@ -214,6 +243,7 @@ class UserRepository
      * Vlozi noveho uzivatele a vrati vytvoreny zaznam.
      *
      * @param  array<string, mixed> $data
+     * @param  array|null           $projection
      * @return array{id: int, created_at: string, updated_at: string, last_login_at: string|null, first_name: string, last_name: string, email: string, phone: string|null, role_id: int|null, role?: array{name: string, id: int}}
      */
     public function create(array $data, ?array $projection = null): array
@@ -229,7 +259,9 @@ class UserRepository
     /**
      * Aktualizuje uzivatele a vrati aktualizovany zaznam.
      *
+     * @param  int                  $id
      * @param  array<string, mixed> $data
+     * @param  array|null           $projection
      * @return array{id: int, created_at: string, updated_at: string, last_login_at: string|null, first_name: string, last_name: string, email: string, phone: string|null, role_id: int|null, role?: array{name: string, id: int}}
      */
     public function update(int $id, array $data, ?array $projection = null): array
@@ -244,8 +276,65 @@ class UserRepository
         return $this->findById($id, $projection) ?? ['id' => $id];
     }
 
+    /**
+     * Smaze uzivatele.
+     *
+     * @param  int $id
+     * @return int  Pocet smazanych radku (0 nebo 1)
+     */
     public function delete(int $id): int
     {
         return $this->db->delete('user', 'id = ? AND franchise_code = ?', [$id, $this->code]);
+    }
+
+    /**
+     * Najde uzivatele dle e-mailu vcetne hesla a role — pouziva se pouze pro prihlaseni.
+     *
+     * @param  string $email
+     * @return array{id: int, email: string, password: string, role: string, first_name: string, last_name: string, status: string}|null
+     */
+    public function findForLogin(string $email): ?array
+    {
+        return $this->db->fetchOne(
+            'SELECT u.id, u.email, u.password,
+                    r.name AS role, u.first_name, u.last_name, u.status
+             FROM `user` u
+             JOIN `role` r ON r.id = u.role_id
+             WHERE u.email = ? AND u.franchise_code = ?
+             LIMIT 1',
+            [$email, $this->code],
+        ) ?: null;
+    }
+
+    /**
+     * Aktualizuje cas posledniho prihlaseni uzivatele.
+     *
+     * @param  int $id
+     * @return void
+     */
+    public function touchLastLogin(int $id): void
+    {
+        $this->db->update(
+            'user',
+            ['last_login_at' => date('Y-m-d H:i:s')],
+            'id = ?',
+            [$id],
+        );
+    }
+
+    /**
+     * Vrati hash hesla uzivatele (pouziva se pro zmenu hesla).
+     *
+     * @param  int      $id
+     * @return string|null
+     */
+    public function findPasswordHash(int $id): ?string
+    {
+        $row = $this->db->fetchOne(
+            'SELECT password FROM `user` WHERE id = ? AND franchise_code = ?',
+            [$id, $this->code],
+        );
+
+        return $row['password'] ?? null;
     }
 }

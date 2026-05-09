@@ -21,7 +21,12 @@ class Auth
         $this->userToken = new UserTokenRepository($db);
     }
 
-    /** Create a Bearer token for the given user, persist it, and return it. */
+    /**
+     * Vytvori Bearer token pro uzivatele, ulozi ho do DB a vrati jeho hodnotu.
+     *
+     * @param  array{id: int, email: string, role: string, first_name: string, last_name: string} $user
+     * @return string  Vygenerovany token
+     */
     public function login(array $user): string
     {
         $token     = bin2hex(random_bytes(self::TOKEN_BYTES));
@@ -33,7 +38,11 @@ class Auth
         return $token;
     }
 
-    /** Revoke the Bearer token sent with the current request. */
+    /**
+     * Zrusi Bearer token aktualni pozadavku (odhlaseni).
+     *
+     * @return void
+     */
     public function logout(): void
     {
         $token = $this->extractToken();
@@ -43,7 +52,11 @@ class Auth
         $this->currentUser = null;
     }
 
-    /** Return true when a valid, non-expired Bearer token is present. */
+    /**
+     * Vrati true, pokud je v pozadavku platny, nevyprsely Bearer token.
+     *
+     * @return bool
+     */
     public function check(): bool
     {
         if ($this->currentUser !== null) {
@@ -71,31 +84,63 @@ class Auth
         return true;
     }
 
+    /**
+     * Vrati data prihlaseneho uzivatele nebo null kdyz neni prihlasen.
+     *
+     * @return array{id: int, email: string, role: string, name: string}|null
+     */
     public function user(): ?array
     {
         return $this->check() ? $this->currentUser : null;
     }
 
+    /**
+     * Vrati ID prihlaseneho uzivatele nebo null.
+     *
+     * @return int|null
+     */
     public function id(): ?int
     {
         return $this->user()['id'] ?? null;
     }
 
+    /**
+     * Vrati nazev role prihlaseneho uzivatele nebo null.
+     *
+     * @return string|null
+     */
     public function role(): ?string
     {
         return $this->user()['role'] ?? null;
     }
 
+    /**
+     * Vrati true, pokud ma prihlaseny uzivatel danou roli.
+     *
+     * @param  string $role  Ocekavany nazev role
+     * @return bool
+     */
     public function hasRole(string $role): bool
     {
         return $this->role() === $role;
     }
 
+    /**
+     * Vrati true, pokud ma prihlaseny uzivatel alespon jednu z uvedenych roli.
+     *
+     * @param  string[] $roles
+     * @return bool
+     */
     public function hasAnyRole(array $roles): bool
     {
         return in_array($this->role(), $roles, true);
     }
 
+    /**
+     * Vyzaduje prihlaseneho uzivatele; jinak ukonci pozadavek s 401.
+     *
+     * @return void
+     */
     public function require(): void
     {
         if (!$this->check()) {
@@ -103,6 +148,12 @@ class Auth
         }
     }
 
+    /**
+     * Vyzaduje prihlaseneho uzivatele s danou roli; jinak ukonci pozadavek s 401/403.
+     *
+     * @param  string $role  Pozadovany nazev role
+     * @return void
+     */
     public function requireRole(string $role): void
     {
         $this->require();

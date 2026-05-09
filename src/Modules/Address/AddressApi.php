@@ -144,6 +144,9 @@ class AddressApi
 
     /**
      * Zaregistruje vsechny routy tohoto modulu do routeru.
+     *
+     * @param  Router $router
+     * @return void
      */
     public function registerRoutes(Router $router): void
     {

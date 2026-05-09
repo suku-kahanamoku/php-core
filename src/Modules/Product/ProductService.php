@@ -13,6 +13,13 @@ class ProductService
     private ProductRepository $product;
     private Auth $auth;
 
+    /**
+     * ProductService constructor.
+     *
+     * @param Database $db
+     * @param string   $franchiseCode
+     * @param Auth     $auth
+     */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->product = new ProductRepository($db, $franchiseCode);
@@ -22,6 +29,14 @@ class ProductService
     /**
      * Vrati strankovany seznam produktu. Verejne dostupne.
      *
+     * @param  int         $page
+     * @param  int         $limit
+     * @param  string|null $search
+     * @param  int|null    $categoryId
+     * @param  string      $sort
+     * @param  string      $filter
+     * @param  string|null $categorySyscode
+     * @param  array|null  $projection
      * @return array{items: list<array<string, mixed>>, total: int, page: int, limit: int, totalPages: int}
      */
     public function list(
@@ -50,6 +65,8 @@ class ProductService
      * Vrati produkt dle ID. Verejne dostupne.
      * Pokud produkt neexistuje, vraci 404.
      *
+     * @param  int        $id
+     * @param  array|null $projection
      * @return array<string, mixed>
      */
     public function get(int $id, ?array $projection = null): array
@@ -66,6 +83,7 @@ class ProductService
      * Vytvori novy produkt. Vyzaduje roli admin.
      *
      * @param  array{name: string, price: float|int, sku?: string, description?: string, vat_rate?: float, stock_quantity?: int, is_active?: int, kind?: string, color?: string, variant?: string, data?: array<string, mixed>, category_ids?: list<int>} $input
+     * @param  array|null $projection
      * @return array<string, mixed>
      */
     public function create(array $input, ?array $projection = null): array
@@ -108,7 +126,9 @@ class ProductService
      * Aktualizuje existujici produkt (castecna aktualizace). Vyzaduje roli admin.
      * Pole data jsou mergována s existujicimi; null data pole maze.
      *
+     * @param  int                  $id
      * @param  array<string, mixed> $input  Libovolna podmnozina sloupcu produktu + category_ids, data
+     * @param  array|null           $projection
      * @return array<string, mixed>
      */
     public function update(int $id, array $input, ?array $projection = null): array
@@ -162,10 +182,12 @@ class ProductService
     }
 
     /**
-     * Plne nahradí produkt (uplna nahrada). Vyzaduje roli admin.
+     * Plne nahradi produkt (uplna nahrada). Vyzaduje roli admin.
      * Vyzaduje name, sku a price. Ostatni pole jsou nastavena na vychozi hodnoty.
      *
+     * @param  int        $id
      * @param  array{name: string, sku: string, price: float|int, description?: string, vat_rate?: float, stock_quantity?: int, is_active?: int, kind?: string, color?: string, variant?: string, data?: array<string, mixed>, category_ids?: list<int>} $input
+     * @param  array|null $projection
      * @return array<string, mixed>
      */
     public function replace(int $id, array $input, ?array $projection = null): array
@@ -209,6 +231,7 @@ class ProductService
     /**
      * Smaze produkt. Vyzaduje roli admin.
      *
+     * @param  int $id
      * @return int  Pocet smazanych zaznamu (0 nebo 1)
      */
     public function delete(int $id): int
@@ -226,6 +249,8 @@ class ProductService
      * Upravi mnozstvi na sklade o zadanou hodnotu (kladna = pridat, zaporna = odebrat).
      * Mnozstvi nemuze klesnout pod 0. Vyzaduje roli admin.
      *
+     * @param  int $id
+     * @param  int $delta
      * @return int  Nove mnozstvi na sklade
      */
     public function adjustStock(int $id, int $delta): int

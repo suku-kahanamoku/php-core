@@ -19,6 +19,12 @@ class OrderRepository
     private const OWN = ['order_number', 'status', 'total_amount', 'currency', 'payment_method', 'shipping_type', 'shipping_cost', 'shipping_address_id', 'billing_address_id', 'user_id', 'note'];
     private const REL = ['user'];
 
+    /**
+     * OrderRepository constructor.
+     *
+     * @param Database $db
+     * @param string   $franchiseCode
+     */
     public function __construct(Database $db, string $franchiseCode)
     {
         $this->db   = $db;
@@ -28,6 +34,13 @@ class OrderRepository
     /**
      * Vrati strankovany seznam objednavek.
      *
+     * @param  int         $page
+     * @param  int         $limit
+     * @param  int|null    $userId
+     * @param  string|null $status
+     * @param  string      $sort
+     * @param  string      $filter
+     * @param  array|null  $projection
      * @return array{
      *   items: list<array{
      *     id: int,
@@ -131,6 +144,8 @@ class OrderRepository
     /**
      * Najde objednavku dle ID vcetne polozek.
      *
+     * @param  int        $id
+     * @param  array|null $projection
      * @return array{
      *   id: int,
      *   created_at: string,
@@ -193,6 +208,7 @@ class OrderRepository
      * Vlozi novou objednavku a vrati vytvoreny zaznam vcetne polozek.
      *
      * @param  array<string, mixed> $data
+     * @param  array|null           $projection
      * @return array{id: int, order_number: string, status: string, total_amount: string, user_id: int|null, items: list<array<string, mixed>>}
      */
     public function create(array $data, ?array $projection = null): array
@@ -209,6 +225,7 @@ class OrderRepository
      * Vlozi polozku objednavky a vrati jeji ID.
      *
      * @param  array<string, mixed> $data
+     * @return int
      */
     public function createItem(array $data): int
     {
@@ -220,6 +237,9 @@ class OrderRepository
     /**
      * Zmeni stav objednavky a vrati aktualizovany zaznam.
      *
+     * @param  int        $id
+     * @param  string     $status
+     * @param  array|null $projection
      * @return array{id: int, order_number: string, status: string, total_amount: string, user_id: int|null, items: list<array<string, mixed>>}
      */
     public function updateStatus(int $id, string $status, ?array $projection = null): array
@@ -232,6 +252,12 @@ class OrderRepository
         return $this->findById($id, $projection) ?? ['id' => $id];
     }
 
+    /**
+     * Smaze objednavku.
+     *
+     * @param  int $id
+     * @return int  Pocet smazanych radku (0 nebo 1)
+     */
     public function delete(int $id): int
     {
         return $this->db->delete('order', 'id = ? AND franchise_code = ?', [$id, $this->code]);
@@ -239,12 +265,19 @@ class OrderRepository
 
     /**
      * Vygeneruje unikatni cislo objednavky ve formatu ORD-YYYYMMDD-XXXXX.
+     *
+     * @return string
      */
     public function generateNumber(): string
     {
         return 'ORD-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -5));
     }
 
+    /**
+     * Vrati nativni PDO instanci (pro transakce).
+     *
+     * @return \PDO
+     */
     public function getPdo(): \PDO
     {
         return $this->db->getPdo();

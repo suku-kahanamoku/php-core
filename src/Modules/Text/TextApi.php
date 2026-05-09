@@ -14,6 +14,13 @@ class TextApi
 {
     private TextService $service;
 
+    /**
+     * TextApi constructor.
+     *
+     * @param Database $db
+     * @param string   $franchiseCode
+     * @param Auth     $auth
+     */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->service = new TextService($db, $franchiseCode, $auth);
@@ -145,6 +152,9 @@ class TextApi
 
     /**
      * Zaregistruje vsechny routy tohoto modulu do routeru.
+     *
+     * @param  Router $router
+     * @return void
      */
     public function registerRoutes(Router $router): void
     {
