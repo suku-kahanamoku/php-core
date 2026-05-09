@@ -45,8 +45,13 @@ class CategoryService
      *   totalPages: int
      * }
      */
-    public function list(int $page = 1, int $limit = 20, string $sort = '', string $filter = '', ?array $projection = null): array
-    {
+    public function list(
+        int $page = 1,
+        int $limit = 20,
+        string $sort = '',
+        string $filter = '',
+        ?array $projection = null
+    ): array {
         return $this->category->findAll($page, $limit, $sort, $filter, $projection);
     }
 
@@ -147,8 +152,12 @@ class CategoryService
      * @param  array|null           $projection
      * @return array<string, mixed>
      */
-    public function replace(int $id, string $name, array $input, ?array $projection = null): array
-    {
+    public function replace(
+        int $id,
+        string $name,
+        array $input,
+        ?array $projection = null
+    ): array {
         $this->auth->requireRole('admin');
 
         if (!$this->category->findById($id)) {

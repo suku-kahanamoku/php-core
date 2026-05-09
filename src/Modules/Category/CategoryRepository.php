@@ -236,6 +236,10 @@ class CategoryRepository
      */
     public function delete(int $id): int
     {
-        return $this->db->delete('category', 'id = ? AND franchise_code = ?', [$id, $this->code]);
+        return $this->db->delete(
+            'category',
+            'id = ? AND franchise_code = ?',
+            [$id, $this->code]
+        );
     }
 }
