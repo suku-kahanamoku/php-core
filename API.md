@@ -1193,13 +1193,13 @@ GET /texts/by-key/homepage_hero?language=cs
 
 ### Orders
 
-| Method | Endpoint                   | Auth       | Description              |
-|--------|----------------------------|------------|--------------------------|
-| GET    | `/orders`                  | Admin only | List all orders          |
-| GET    | `/orders/:id`              | Admin only | Get order by ID          |
-| POST   | `/orders`                  | Required   | Create order             |
-| PATCH  | `/orders/:id/status`       | Admin only | Update order status      |
-| DELETE | `/orders/:id`              | Admin only | Delete order             |
+| Method | Endpoint                   | Auth          | Description                        |
+|--------|----------------------------|---------------|-------------------------------------|
+| GET    | `/orders`                  | Required      | List orders (own / all for admin)  |
+| GET    | `/orders/:id`              | Self or admin | Get order by ID                    |
+| POST   | `/orders`                  | Public        | Create order (guest checkout OK)   |
+| PATCH  | `/orders/:id/status`       | Admin only    | Update order status                |
+| DELETE | `/orders/:id`              | Admin only    | Delete order                       |
 
 #### Order object (list)
 
@@ -1267,6 +1267,8 @@ Query parameters:
 | `page`    | Page number                                                        |
 | `limit`   | Per page (max: 100)                                                |
 
+> **Auth behaviour:** authenticated users see only their own orders; `admin` role sees all.
+
 ```
 GET /orders?status=pending&sort=[{"created_at":-1}]
 GET /orders?filter={"status":{"value":["pending","confirmed"],"operator":"in"},"total_amount":{"value":1000,"operator":"gte"}}
@@ -1279,30 +1281,69 @@ Any status → `cancelled` or `refunded`
 
 #### `POST /orders`
 
+**Public** — guest checkout is supported. When authenticated the order is linked to the caller's account automatically; for a guest supply `user.email`.
+
 ```json
 {
-  "items": [
+  "user": {
+    "email": "jana@example.com",
+    "first_name": "Jana",
+    "last_name": "Nováková",
+    "phone": "+420123456789"
+  },
+  "carts": [
     { "product_id": 10, "quantity": 3 },
     { "product_id": 15, "quantity": 1 }
   ],
-  "currency": "CZK",
-  "payment_method": "bank_transfer",
-  "note": "Leave at door",
-  "shipping_address_id": 5,
-  "billing_address_id": 3
+  "shipping": {
+    "value": "dpd",
+    "total_price": 150.00,
+    "address": {
+      "name": "Jana Nováková",
+      "street": "Hlavní 123",
+      "city": "Praha",
+      "zip": "110 00",
+      "country": "CZ"
+    }
+  },
+  "billing": {
+    "value": "bank_transfer",
+    "address": {
+      "company": "ACME s.r.o.",
+      "street": "Obchodní 1",
+      "city": "Praha",
+      "zip": "110 00",
+      "country": "CZ"
+    }
+  },
+  "note": "Leave at door"
 }
 ```
 
-| Field                  | Required | Notes                                              |
-|------------------------|----------|----------------------------------------------------|
-| `items`                | ✓        | Array of `{ product_id, quantity }`                |
-| `currency`             | —        | Default `"CZK"`                                    |
-| `payment_method`       | —        | Default `"bank_transfer"`. See enumeration type `payment_method` |
-| `shipping_address_id`  | —        | Address ID                                         |
-| `billing_address_id`   | —        | Address ID                                         |
-| `note`                 | —        | Free text                                          |
+| Field          | Required | Notes                                                                                     |
+|----------------|----------|-------------------------------------------------------------------------------------------|
+| `user`         | —        | Omit when authenticated; provide `email` for guest checkout                               |
+| `user.email`   | —        | Used to find or create a user account for the order                                       |
+| `carts`        | ✓        | Array of `{ product_id, quantity }` — must not be empty                                   |
+| `shipping`     | —        | `value` = shipping method name; `total_price` = cost (float); `address` = address object  |
+| `billing`      | —        | `value` = payment method (`bank_transfer`, `cash`, `card`, `online`); `address` = object  |
+| `note`         | —        | Free text                                                                                 |
 
-`total_amount` is calculated server-side from items. `order_number` is generated automatically.
+`total_amount` is calculated server-side (items + shipping cost). `order_number` is generated automatically. Stock is decremented atomically in a transaction.
+
+Response `201`:
+```json
+{
+  "success": true,
+  "message": "Order created",
+  "data": {
+    "id": 100,
+    "total_amount": 1045.00
+  }
+}
+```
+
+> Use `GET /orders/:id` to fetch the full order detail after creation.
 
 #### `PATCH /orders/:id/status`
 
@@ -1517,17 +1558,25 @@ const paymentMethods = await loadOptions('payment_method');
 
 ```js
 const order = await apiFetch('POST', '/orders', {
-  items: [
+  user: { email: 'jana@example.com', first_name: 'Jana', last_name: 'Nováková' },
+  carts: [
     { product_id: 10, quantity: 2 },
     { product_id: 42, quantity: 1 }
   ],
-  currency: 'CZK',
-  payment_method: 'card',
-  billing_address_id: 3,
-  shipping_address_id: 5
+  shipping: {
+    value: 'dpd',
+    total_price: 150,
+    address: { street: 'Hlavní 1', city: 'Praha', zip: '110 00', country: 'CZ' }
+  },
+  billing: {
+    value: 'card',
+    address: { street: 'Obchodní 5', city: 'Praha', zip: '110 00', country: 'CZ' }
+  },
+  note: 'Leave at door'
 });
-// order.data.id — new order ID
-// order.data.order_number — generated number
+// order.data.id           — new order ID
+// order.data.total_amount — calculated total (incl. shipping)
+// Use GET /orders/:id for full order detail
 ```
 
 ### 6. Stock adjustment
@@ -1591,4 +1640,4 @@ async function apiFetch(method, path, body = null) {
 
 ---
 
-*Last updated: 2026-05-03*
+*Last updated: 2026-05-09*

@@ -24,7 +24,12 @@ class Auth
     /**
      * Vytvori Bearer token pro uzivatele, ulozi ho do DB a vrati jeho hodnotu.
      *
-     * @param  array{id: int, email: string, role: string, first_name: string, last_name: string} $user
+     * @param  array{
+     *  id: int, 
+     *  email: string, 
+     *  role: string, 
+     *  first_name: string, 
+     *  last_name: string} $user
      * @return string  Vygenerovany token
      */
     public function login(array $user): string

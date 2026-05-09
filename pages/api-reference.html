@@ -2474,7 +2474,7 @@ curl "$BASE/enumerations?type=order_status"</code></pre>
           <div
             class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden"
             data-module="orders"
-            data-search="post orders create vytvoření objednávka items"
+            data-search="post orders create vytvoření objednávka carts"
           >
             <div
               class="ep-row flex items-center gap-3 px-4 py-3"
@@ -2485,10 +2485,10 @@ curl "$BASE/enumerations?type=order_status"</code></pre>
                 >POST</span
               ><code class="text-sm font-mono text-slate-700">/orders</code
               ><span
-                class="bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded font-bold ml-1"
-                >&#128274; auth</span
+                class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1"
+                >&#127760; public</span
               ><span class="text-xs text-slate-500 ml-2"
-                >Vytvoření objednávky s položkami + odečtení skladu</span
+                >Vytvoření objednávky (guest checkout podporován)</span
               ><span class="ml-auto text-slate-400 text-xs">&#9660;</span>
             </div>
             <div
@@ -2501,15 +2501,36 @@ curl "$BASE/enumerations?type=order_status"</code></pre>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
                 ><code>{
-  "shipping_address_id": 1,
-  "billing_address_id": 1,
-  "payment_method": "bank_transfer",
-  "currency": "CZK",
-  "note": "...",
-  "items": [
-    {"product_id": 1, "quantity": 2},
-    {"product_id": 3, "quantity": 1}
-  ]
+  "user": {
+    "email": "jana@example.com",
+    "first_name": "Jana",
+    "last_name": "Nováková",
+    "phone": "+420123456789"
+  },
+  "carts": [
+    { "product_id": 1, "quantity": 2 },
+    { "product_id": 3, "quantity": 1 }
+  ],
+  "shipping": {
+    "value": "dpd",
+    "total_price": 150.00,
+    "address": {
+      "street": "Hlavní 123",
+      "city": "Praha",
+      "zip": "110 00",
+      "country": "CZ"
+    }
+  },
+  "billing": {
+    "value": "bank_transfer",
+    "address": {
+      "street": "Obchodní 1",
+      "city": "Praha",
+      "zip": "110 00",
+      "country": "CZ"
+    }
+  },
+  "note": "..."
 }</code></pre>
               </div>
               <div>
@@ -2520,12 +2541,10 @@ curl "$BASE/enumerations?type=order_status"</code></pre>
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
                 ><code>{
   "success": true,
+  "message": "Order created",
   "data": {
     "id": 5,
-    "order_number": "ORD-2024-005",
-    "status": "pending",
-    "total_amount": "51300.00",
-    "items": [ "..." ]
+    "total_amount": 1045.00
   }
 }</code></pre>
               </div>
@@ -2534,9 +2553,8 @@ curl "$BASE/enumerations?type=order_status"</code></pre>
                 <pre
                   class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
                 ><code>curl -X POST $BASE/orders \
-  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"items":[{"product_id":1,"quantity":2}],"shipping_address_id":1}'</code></pre>
+  -d '{"user":{"email":"jana@example.com"},"carts":[{"product_id":1,"quantity":2}]}'</code></pre>
               </div>
             </div>
           </div>
