@@ -266,7 +266,14 @@ class InvoiceRepository
      *
      * @param  array<string, mixed> $data
      * @param  array|null           $projection
-     * @return array{id: int, invoice_number: string, status: string, total_amount: string, user_id: int|null, items: list<array<string, mixed>>}
+     * @return array{
+     *   id: int,
+     *   invoice_number: string,
+     *   status: string,
+     *   total_amount: string,
+     *   user_id: int|null,
+     *   items: list<array<string, mixed>>
+     * }
      */
     public function create(array $data, ?array $projection = null): array
     {
@@ -297,7 +304,14 @@ class InvoiceRepository
      * @param  int        $id
      * @param  string     $status
      * @param  array|null $projection
-     * @return array{id: int, invoice_number: string, status: string, total_amount: string, user_id: int|null, items: list<array<string, mixed>>}
+     * @return array{
+     *   id: int,
+     *   invoice_number: string,
+     *   status: string,
+     *   total_amount: string,
+     *   user_id: int|null,
+     *   items: list<array<string, mixed>>
+     * }
      */
     public function updateStatus(int $id, string $status, ?array $projection = null): array
     {

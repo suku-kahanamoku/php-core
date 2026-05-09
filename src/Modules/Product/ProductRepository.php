@@ -247,7 +247,15 @@ class ProductRepository
      *
      * @param  array<string, mixed> $data
      * @param  array|null           $projection
-     * @return array{id: int, sku: string, name: string, price: string, stock_quantity: int, is_active: int, category_ids: list<int>}
+     * @return array{
+     *   id: int,
+     *   sku: string,
+     *   name: string,
+     *   price: string,
+     *   stock_quantity: int,
+     *   is_active: int,
+     *   category_ids: list<int>
+     * }
      */
     public function create(array $data, ?array $projection = null): array
     {
@@ -269,7 +277,15 @@ class ProductRepository
      * @param  int                  $id
      * @param  array<string, mixed> $data
      * @param  array|null           $projection
-     * @return array{id: int, sku: string, name: string, price: string, stock_quantity: int, is_active: int, category_ids: list<int>}
+     * @return array{
+     *   id: int,
+     *   sku: string,
+     *   name: string,
+     *   price: string,
+     *   stock_quantity: int,
+     *   is_active: int,
+     *   category_ids: list<int>
+     * }
      */
     public function update(int $id, array $data, ?array $projection = null): array
     {

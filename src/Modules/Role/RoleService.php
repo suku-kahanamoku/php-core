@@ -37,7 +37,13 @@ class RoleService
      * @param  string     $sort
      * @param  string     $filter
      * @param  array|null $projection
-     * @return array{items: list<array<string, mixed>>, total: int, page: int, limit: int, totalPages: int}
+     * @return array{
+     *   items: list<array<string, mixed>>,
+     *   total: int,
+     *   page: int,
+     *   limit: int,
+     *   totalPages: int
+     * }
      */
     public function list(int $page = 1, int $limit = 20, string $sort = '', string $filter = '', ?array $projection = null): array
     {
@@ -50,7 +56,13 @@ class RoleService
      *
      * @param  int        $id
      * @param  array|null $projection
-     * @return array{id: int, name: string, label: string, position: int, user_count: int}
+     * @return array{
+     *   id: int,
+     *   name: string,
+     *   label: string,
+     *   position: int,
+     *   user_count: int
+     * }
      */
     public function get(int $id, ?array $projection = null): array
     {
@@ -71,7 +83,12 @@ class RoleService
      * @param  string     $label
      * @param  int        $sortOrder
      * @param  array|null $projection
-     * @return array{id: int, name: string, label: string, position: int}
+     * @return array{
+     *   id: int,
+     *   name: string,
+     *   label: string,
+     *   position: int
+     * }
      */
     public function create(
         string $name,
@@ -108,7 +125,12 @@ class RoleService
      * @param  int                  $id
      * @param  array<string, mixed> $fields
      * @param  array|null           $projection
-     * @return array{id: int, name: string, label: string, position: int}
+     * @return array{
+     *   id: int,
+     *   name: string,
+     *   label: string,
+     *   position: int
+     * }
      */
     public function update(int $id, array $fields, ?array $projection = null): array
     {
@@ -157,7 +179,12 @@ class RoleService
      * @param  string     $label
      * @param  int        $sortOrder
      * @param  array|null $projection
-     * @return array{id: int, name: string, label: string, position: int}
+     * @return array{
+     *   id: int,
+     *   name: string,
+     *   label: string,
+     *   position: int
+     * }
      */
     public function replace(
         int $id,

@@ -227,7 +227,13 @@ class UserRepository
      * Najde uzivatele dle e-mailu (bez hesla).
      *
      * @param  string $email
-     * @return array{id: int, first_name: string, last_name: string, email: string, phone: string|null}|null
+     * @return array{
+     *   id: int,
+     *   first_name: string,
+     *   last_name: string,
+     *   email: string,
+     *   phone: string|null
+     * }|null
      */
     public function findByEmail(string $email): ?array
     {
@@ -243,7 +249,18 @@ class UserRepository
      *
      * @param  array<string, mixed> $data
      * @param  array|null           $projection
-     * @return array{id: int, created_at: string, updated_at: string, last_login_at: string|null, first_name: string, last_name: string, email: string, phone: string|null, role_id: int|null, role?: array{name: string, id: int}}
+     * @return array{
+     *   id: int,
+     *   created_at: string,
+     *   updated_at: string,
+     *   last_login_at: string|null,
+     *   first_name: string,
+     *   last_name: string,
+     *   email: string,
+     *   phone: string|null,
+     *   role_id: int|null,
+     *   role?: array{name: string, id: int}
+     * }
      */
     public function create(array $data, ?array $projection = null): array
     {
@@ -261,7 +278,18 @@ class UserRepository
      * @param  int                  $id
      * @param  array<string, mixed> $data
      * @param  array|null           $projection
-     * @return array{id: int, created_at: string, updated_at: string, last_login_at: string|null, first_name: string, last_name: string, email: string, phone: string|null, role_id: int|null, role?: array{name: string, id: int}}
+     * @return array{
+     *   id: int,
+     *   created_at: string,
+     *   updated_at: string,
+     *   last_login_at: string|null,
+     *   first_name: string,
+     *   last_name: string,
+     *   email: string,
+     *   phone: string|null,
+     *   role_id: int|null,
+     *   role?: array{name: string, id: int}
+     * }
      */
     public function update(int $id, array $data, ?array $projection = null): array
     {
@@ -290,7 +318,15 @@ class UserRepository
      * Najde uzivatele dle e-mailu vcetne hesla a role — pouziva se pouze pro prihlaseni.
      *
      * @param  string $email
-     * @return array{id: int, email: string, password: string, role: string, first_name: string, last_name: string, status: string}|null
+     * @return array{
+     *   id: int,
+     *   email: string,
+     *   password: string,
+     *   role: string,
+     *   first_name: string,
+     *   last_name: string,
+     *   status: string
+     * }|null
      */
     public function findForLogin(string $email): ?array
     {

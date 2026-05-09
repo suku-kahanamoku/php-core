@@ -37,7 +37,15 @@ class AuthService
      *
      * @param  string $email
      * @param  string $password
-     * @return array{token: string, expires_at: string, id: int, email: string, role: string, first_name: string, last_name: string}
+     * @return array{
+     *   token: string,
+     *   expires_at: string,
+     *   id: int,
+     *   email: string,
+     *   role: string,
+     *   first_name: string,
+     *   last_name: string
+     * }
      */
     public function login(string $email, string $password): array
     {
@@ -84,7 +92,12 @@ class AuthService
     /**
      * Vrati data aktualne prihlaseneho uzivatele. Vyzaduje prihlaseni.
      *
-     * @return array{id: int, email: string, role: string, name: string}
+     * @return array{
+     *   id: int,
+     *   email: string,
+     *   role: string,
+     *   name: string
+     * }
      */
     public function me(): array
     {

@@ -48,7 +48,13 @@ class OrderService
      * @param  string      $sort
      * @param  string      $filter
      * @param  array|null  $projection
-     * @return array{items: list<array<string, mixed>>, total: int, page: int, limit: int, totalPages: int}
+     * @return array{
+     *   items: list<array<string, mixed>>,
+     *   total: int,
+     *   page: int,
+     *   limit: int,
+     *   totalPages: int
+     * }
      */
     public function list(
         int $page,
@@ -102,7 +108,10 @@ class OrderService
      *   billing?: array{value?: string, address?: array<string, mixed>},
      *   note?: string
      * } $input
-     * @return array{id: int|null, total_amount: float}
+     * @return array{
+     *   id: int|null,
+     *   total_amount: float
+     * }
      */
     public function create(array $input): array
     {

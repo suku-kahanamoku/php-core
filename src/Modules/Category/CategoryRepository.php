@@ -117,7 +117,16 @@ class CategoryRepository
      *
      * @param  int        $id
      * @param  array|null $projection
-     * @return array{id: int, created_at: string, updated_at: string, syscode: string, name: string, description: string|null, position: int, parent_id: int|null}|null
+     * @return array{
+     *   id: int,
+     *   created_at: string,
+     *   updated_at: string,
+     *   syscode: string,
+     *   name: string,
+     *   description: string|null,
+     *   position: int,
+     *   parent_id: int|null
+     * }|null
      */
     public function findById(int $id, ?array $projection = null): ?array
     {
@@ -143,7 +152,16 @@ class CategoryRepository
      * Najde kategorii dle syscode.
      *
      * @param  string $syscode
-     * @return array{id: int, created_at: string, updated_at: string, syscode: string, name: string, description: string|null, position: int, parent_id: int|null}|null
+     * @return array{
+     *   id: int,
+     *   created_at: string,
+     *   updated_at: string,
+     *   syscode: string,
+     *   name: string,
+     *   description: string|null,
+     *   position: int,
+     *   parent_id: int|null
+     * }|null
      */
     public function findBySyscode(string $syscode): ?array
     {
@@ -160,7 +178,16 @@ class CategoryRepository
      *
      * @param  array<string, mixed> $data
      * @param  array|null           $projection
-     * @return array{id: int, created_at: string, updated_at: string, syscode: string, name: string, description: string|null, position: int, parent_id: int|null}
+     * @return array{
+     *   id: int,
+     *   created_at: string,
+     *   updated_at: string,
+     *   syscode: string,
+     *   name: string,
+     *   description: string|null,
+     *   position: int,
+     *   parent_id: int|null
+     * }
      */
     public function create(array $data, ?array $projection = null): array
     {
@@ -178,7 +205,16 @@ class CategoryRepository
      * @param  int                  $id
      * @param  array<string, mixed> $data
      * @param  array|null           $projection
-     * @return array{id: int, created_at: string, updated_at: string, syscode: string, name: string, description: string|null, position: int, parent_id: int|null}
+     * @return array{
+     *   id: int,
+     *   created_at: string,
+     *   updated_at: string,
+     *   syscode: string,
+     *   name: string,
+     *   description: string|null,
+     *   position: int,
+     *   parent_id: int|null
+     * }
      */
     public function update(int $id, array $data, ?array $projection = null): array
     {

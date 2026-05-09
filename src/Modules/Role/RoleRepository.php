@@ -110,7 +110,14 @@ class RoleRepository
      *
      * @param  int        $id
      * @param  array|null $projection
-     * @return array{id: int, created_at: string, updated_at: string, name: string, label: string, position: int}|null
+     * @return array{
+     *   id: int,
+     *   created_at: string,
+     *   updated_at: string,
+     *   name: string,
+     *   label: string,
+     *   position: int
+     * }|null
      */
     public function findById(int $id, ?array $projection = null): ?array
     {
@@ -138,7 +145,14 @@ class RoleRepository
      *
      * @param  array<string, mixed> $data
      * @param  array|null           $projection
-     * @return array{id: int, created_at: string, updated_at: string, name: string, label: string, position: int}
+     * @return array{
+     *   id: int,
+     *   created_at: string,
+     *   updated_at: string,
+     *   name: string,
+     *   label: string,
+     *   position: int
+     * }
      */
     public function create(array $data, ?array $projection = null): array
     {
@@ -156,7 +170,14 @@ class RoleRepository
      * @param  int                  $id
      * @param  array<string, mixed> $data
      * @param  array|null           $projection
-     * @return array{id: int, created_at: string, updated_at: string, name: string, label: string, position: int}
+     * @return array{
+     *   id: int,
+     *   created_at: string,
+     *   updated_at: string,
+     *   name: string,
+     *   label: string,
+     *   position: int
+     * }
      */
     public function update(int $id, array $data, ?array $projection = null): array
     {

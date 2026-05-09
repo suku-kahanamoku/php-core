@@ -97,7 +97,12 @@ class Auth
     /**
      * Vrati data prihlaseneho uzivatele nebo null kdyz neni prihlasen.
      *
-     * @return array{id: int, email: string, role: string, name: string}|null
+     * @return array{
+     *   id: int,
+     *   email: string,
+     *   role: string,
+     *   name: string
+     * }|null
      */
     public function user(): ?array
     {

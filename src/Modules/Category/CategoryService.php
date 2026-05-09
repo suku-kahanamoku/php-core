@@ -37,7 +37,13 @@ class CategoryService
      * @param  string     $sort
      * @param  string     $filter
      * @param  array|null $projection
-     * @return array{items: list<array<string, mixed>>, total: int, page: int, limit: int, totalPages: int}
+     * @return array{
+     *   items: list<array<string, mixed>>,
+     *   total: int,
+     *   page: int,
+     *   limit: int,
+     *   totalPages: int
+     * }
      */
     public function list(int $page = 1, int $limit = 20, string $sort = '', string $filter = '', ?array $projection = null): array
     {
@@ -50,7 +56,11 @@ class CategoryService
      *
      * @param  int        $id
      * @param  array|null $projection
-     * @return array{id: int, name: string, products: list<array{id: int, sku: string, name: string, price: string}>}
+     * @return array{
+     *   id: int,
+     *   name: string,
+     *   products: list<array{id: int, sku: string, name: string, price: string}>
+     * }
      */
     public function get(int $id, ?array $projection = null): array
     {

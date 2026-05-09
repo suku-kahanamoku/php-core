@@ -133,7 +133,17 @@ class TextRepository
      *
      * @param  int        $id
      * @param  array|null $projection
-     * @return array{id: int, created_at: string, updated_at: string, syscode: string, title: string, content: string, language: string, is_active: int, created_by: int|null}|null
+     * @return array{
+     *   id: int,
+     *   created_at: string,
+     *   updated_at: string,
+     *   syscode: string,
+     *   title: string,
+     *   content: string,
+     *   language: string,
+     *   is_active: int,
+     *   created_by: int|null
+     * }|null
      */
     public function findById(int $id, ?array $projection = null): ?array
     {
@@ -160,7 +170,17 @@ class TextRepository
      *
      * @param  string $key
      * @param  string $language
-     * @return array{id: int, created_at: string, updated_at: string, syscode: string, title: string, content: string, language: string, is_active: int, created_by: int|null}|null
+     * @return array{
+     *   id: int,
+     *   created_at: string,
+     *   updated_at: string,
+     *   syscode: string,
+     *   title: string,
+     *   content: string,
+     *   language: string,
+     *   is_active: int,
+     *   created_by: int|null
+     * }|null
      */
     public function findByKey(string $key, string $language): ?array
     {
@@ -204,7 +224,17 @@ class TextRepository
      *
      * @param  array<string, mixed> $data
      * @param  array|null           $projection
-     * @return array{id: int, created_at: string, updated_at: string, syscode: string, title: string, content: string, language: string, is_active: int, created_by: int|null}
+     * @return array{
+     *   id: int,
+     *   created_at: string,
+     *   updated_at: string,
+     *   syscode: string,
+     *   title: string,
+     *   content: string,
+     *   language: string,
+     *   is_active: int,
+     *   created_by: int|null
+     * }
      */
     public function create(array $data, ?array $projection = null): array
     {
@@ -222,7 +252,17 @@ class TextRepository
      * @param  int                  $id
      * @param  array<string, mixed> $data
      * @param  array|null           $projection
-     * @return array{id: int, created_at: string, updated_at: string, syscode: string, title: string, content: string, language: string, is_active: int, created_by: int|null}
+     * @return array{
+     *   id: int,
+     *   created_at: string,
+     *   updated_at: string,
+     *   syscode: string,
+     *   title: string,
+     *   content: string,
+     *   language: string,
+     *   is_active: int,
+     *   created_by: int|null
+     * }
      */
     public function update(int $id, array $data, ?array $projection = null): array
     {

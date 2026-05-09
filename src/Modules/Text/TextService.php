@@ -37,7 +37,13 @@ class TextService
      * @param  int         $limit
      * @param  string      $filter
      * @param  array|null  $projection
-     * @return array{items: list<array<string, mixed>>, total: int, page: int, limit: int, totalPages: int}
+     * @return array{
+     *   items: list<array<string, mixed>>,
+     *   total: int,
+     *   page: int,
+     *   limit: int,
+     *   totalPages: int
+     * }
      */
     public function list(
         string $language,
