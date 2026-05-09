@@ -13,12 +13,24 @@ class AuthApi
 {
     private AuthService $service;
 
+    /**
+     * AuthApi constructor.
+     *
+     * @param Database $db
+     * @param string   $franchiseCode
+     * @param Auth     $auth
+     */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->service = new AuthService($db, $franchiseCode, $auth);
     }
 
-    /** POST /auth/login */
+    /**
+     * POST /auth/login — Prihlaseni uzivatele. Verejne dostupne.
+     *
+     * @param Request $request  body: email (required), password (required)
+     * @return void
+     */
     public function login(Request $request): void
     {
         $email    = trim((string) $request->get('email', ''));
@@ -32,20 +44,35 @@ class AuthApi
         Response::success($result, 'Login successful');
     }
 
-    /** POST /auth/logout */
+    /**
+     * POST /auth/logout — Odhlaseni (zrusi Bearer token). Vyzaduje prihlaseni.
+     *
+     * @param Request $request
+     * @return void
+     */
     public function logout(Request $request): void
     {
         $this->service->logout();
         Response::success(null, 'Logged out');
     }
 
-    /** GET /auth/me */
+    /**
+     * GET /auth/me — Vrati data aktualne prihlaseneho uzivatele. Vyzaduje prihlaseni.
+     *
+     * @param Request $request
+     * @return void
+     */
     public function me(Request $request): void
     {
         Response::success($this->service->me());
     }
 
-    /** POST /auth/register */
+    /**
+     * POST /auth/register — Registrace noveho uzivatele. Verejne dostupne.
+     *
+     * @param Request $request  body: first_name, last_name, email, password (vse required)
+     * @return void
+     */
     public function register(Request $request): void
     {
         $id = $this->service->register(
@@ -58,7 +85,12 @@ class AuthApi
         Response::created(['id' => $id], 'Registration successful');
     }
 
-    /** POST /auth/change-password */
+    /**
+     * POST /auth/change-password — Zmena vlastniho hesla. Vyzaduje prihlaseni.
+     *
+     * @param Request $request  body: current_password (required), new_password (required, min 8 znaku)
+     * @return void
+     */
     public function changePassword(Request $request): void
     {
         $this->service->changePassword(
@@ -69,6 +101,12 @@ class AuthApi
         Response::success(null, 'Password changed successfully');
     }
 
+    /**
+     * Zaregistruje vsechny routy tohoto modulu do routeru.
+     *
+     * @param  Router $router
+     * @return void
+     */
     public function registerRoutes(Router $router): void
     {
         $router->post('/login', [$this, 'login']);

@@ -16,6 +16,11 @@ class Auth
     private UserTokenRepository $userToken;
     private ?array    $currentUser = null;
 
+    /**
+     * Auth constructor.
+     *
+     * @param Database $db
+     */
     public function __construct(Database $db)
     {
         $this->userToken = new UserTokenRepository($db);
