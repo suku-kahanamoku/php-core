@@ -4,42 +4,37 @@ declare(strict_types=1);
 
 namespace App\Modules\Address;
 
+use App\Modules\BaseRepository;
 use App\Modules\Database\Database;
 use App\Utils\Projection;
 
 /**
  * Address – DB entity layer.
  */
-class AddressRepository
+class AddressRepository extends BaseRepository
 {
-    private Database $db;
-    private string   $code;
-
-    private const SYS = ['id', 'created_at', 'updated_at'];
-    private const OWN = [
-        'user_id',
-        'type',
-        'company',
-        'name',
-        'street',
-        'city',
-        'zip',
-        'country',
-        'is_default',
-    ];
-    private const REL = [];
-
     /**
      * AddressRepository constructor.
      *
      * @param Database $db
-     * @param string $franchiseCode
-     * @return void
+     * @param string   $franchiseCode
      */
     public function __construct(Database $db, string $franchiseCode)
     {
-        $this->db   = $db;
-        $this->code = $franchiseCode;
+        parent::__construct($db, $franchiseCode);
+        $this->table = 'address';
+        $this->alias = 'a';
+        $this->own   = [
+            'user_id',
+            'type',
+            'company',
+            'name',
+            'street',
+            'city',
+            'zip',
+            'country',
+            'is_default',
+        ];
     }
 
     /**
@@ -84,39 +79,36 @@ class AddressRepository
         ?array $projection = null,
     ): array {
         $proj    = new Projection($projection);
-        $orderBy = SQL_SORT($sort, 'is_default DESC');
+        $orderBy = SQL_SORT($sort, 'a.is_default DESC', 'a');
 
         $limit  = min(100, max(1, $limit));
         $offset = ($page - 1) * $limit;
 
-        $where  = ['franchise_code = ?', 'user_id = ?'];
+        $where  = ['a.franchise_code = ?', 'a.user_id = ?'];
         $params = [$this->code, $userId];
 
         if ($type !== null) {
-            $where[]  = 'type = ?';
+            $where[]  = 'a.type = ?';
             $params[] = $type;
         }
 
-        $f = SQL_FILTER($filter);
+        $f = SQL_FILTER($filter, 'a');
         if ($f['sql'] !== '') {
             $where[] = $f['sql'];
             array_push($params, ...$f['params']);
         }
 
         $whereStr = implode(' AND ', $where);
-
-        $sys     = self::SYS;
-        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
-        $cols    = array_merge($sys, $ownCols);
-        $select  = implode(', ', $cols);
+        $select   = $this->buildSelect($proj);
+        $sys      = $this->sys;
 
         $total = (int) $this->db->fetchOne(
-            "SELECT COUNT(*) AS cnt FROM address WHERE {$whereStr}",
+            "SELECT COUNT(*) AS cnt FROM address a WHERE {$whereStr}",
             $params,
         )['cnt'];
 
         $items = $this->db->fetchAll(
-            "SELECT {$select} FROM address WHERE {$whereStr}
+            "SELECT {$select} FROM address a WHERE {$whereStr}
              ORDER BY {$orderBy}
              LIMIT {$limit} OFFSET {$offset}",
             $params,
@@ -127,53 +119,7 @@ class AddressRepository
         }
         unset($item);
 
-        return [
-            'items'      => $items,
-            'total'      => $total,
-            'page'       => $page,
-            'limit'      => $limit,
-            'totalPages' => (int) ceil($total / $limit),
-        ];
-    }
-
-    /**
-     * Najde adresu dle ID.
-     *
-     * @param  int        $id
-     * @param  array|null $projection
-     * @return array{
-     *   id: int,
-     *   created_at: string,
-     *   updated_at: string,
-     *   user_id: int,
-     *   type: string,
-     *   company: string|null,
-     *   name: string,
-     *   street: string,
-     *   city: string,
-     *   zip: string,
-     *   country: string,
-     *   is_default: int
-     * }|null
-     */
-    public function findById(int $id, ?array $projection = null): ?array
-    {
-        $proj    = new Projection($projection);
-        $sys     = self::SYS;
-        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
-        $cols    = array_merge($sys, $ownCols);
-        $select  = implode(', ', $cols);
-
-        $row = $this->db->fetchOne(
-            "SELECT {$select} FROM address WHERE id = ? AND franchise_code = ?",
-            [$id, $this->code],
-        );
-
-        if (!$row) {
-            return null;
-        }
-
-        return $proj->apply($row, $sys);
+        return $this->paginationResult($items, $total, $page, $limit);
     }
 
     /**

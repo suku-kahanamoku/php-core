@@ -4,28 +4,15 @@ declare(strict_types=1);
 
 namespace App\Modules\User;
 
+use App\Modules\BaseRepository;
 use App\Modules\Database\Database;
 use App\Utils\Projection;
 
 /**
  * User – DB entity layer.
  */
-class UserRepository
+class UserRepository extends BaseRepository
 {
-    private Database $db;
-    private string   $code;
-
-    private const SYS = ['id', 'created_at', 'updated_at', 'last_login_at'];
-    private const OWN = [
-        'first_name',
-        'last_name',
-        'email',
-        'phone',
-        'role_id',
-        'status'
-    ];
-    private const REL = ['role'];
-
     /**
      * UserRepository constructor.
      *
@@ -34,8 +21,19 @@ class UserRepository
      */
     public function __construct(Database $db, string $franchiseCode)
     {
-        $this->db   = $db;
-        $this->code = $franchiseCode;
+        parent::__construct($db, $franchiseCode);
+        $this->table = 'user';
+        $this->alias = 'u';
+        $this->sys   = ['id', 'created_at', 'updated_at', 'last_login_at'];
+        $this->own   = [
+            'first_name',
+            'last_name',
+            'email',
+            'phone',
+            'role_id',
+            'status',
+        ];
+        $this->rel = ['role'];
     }
 
     /**
@@ -103,17 +101,15 @@ class UserRepository
 
         $whereStr = implode(' AND ', $where);
 
-        $sys     = self::SYS;
-        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
-        $sysSel  = 'u.' . implode(', u.', $sys);
-        $ownSel  = $ownCols ? ', u.' . implode(', u.', $ownCols) : '';
+        $sys         = $this->sys;
+        $baseSelect  = $this->buildSelect($proj);
 
         // JOIN role when filtering by role or when projection requires it
         $needsRoleJoin = $role !== null || $proj->needsJoin('role');
         $joinSql       = $needsRoleJoin ? 'LEFT JOIN role r ON r.id = u.role_id' : '';
         $relSel        = $proj->needsJoin('role') ? ', r.name AS role_name' : '';
 
-        $select = "{$sysSel}{$ownSel}{$relSel}";
+        $select = "{$baseSelect}{$relSel}";
 
         $total = (int) $this->db->fetchOne(
             "SELECT COUNT(*) AS cnt FROM user u LEFT JOIN role r ON r.id = u.role_id WHERE {$whereStr}",
@@ -140,13 +136,7 @@ class UserRepository
         }
         unset($item);
 
-        return [
-            'items'      => $items,
-            'total'      => $total,
-            'page'       => $page,
-            'limit'      => $limit,
-            'totalPages' => (int) ceil($total / $limit),
-        ];
+        return $this->paginationResult($items, $total, $page, $limit);
     }
 
     /**
@@ -171,10 +161,8 @@ class UserRepository
     {
         $proj = new Projection($projection);
 
-        $sys     = self::SYS;
-        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
-        $sysSel  = 'u.' . implode(', u.', $sys);
-        $ownSel  = $ownCols ? ', u.' . implode(', u.', $ownCols) : '';
+        $sys        = $this->sys;
+        $baseSelect = $this->buildSelect($proj);
 
         $joinSql = '';
         $relSel  = '';
@@ -183,7 +171,7 @@ class UserRepository
             $relSel  = ', r.name AS role_name';
         }
 
-        $select = "{$sysSel}{$ownSel}{$relSel}";
+        $select = "{$baseSelect}{$relSel}";
 
         $user = $this->db->fetchOne(
             "SELECT {$select} FROM user u {$joinSql}

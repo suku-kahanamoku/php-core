@@ -10,10 +10,13 @@ use App\Modules\Database\Database;
 use App\Modules\Product\ProductRepository;
 use App\Modules\Role\RoleRepository;
 use App\Modules\Router\Response;
+use App\Modules\ServiceAuthTrait;
 use App\Modules\User\UserRepository;
 
 class OrderService
 {
+    use ServiceAuthTrait;
+
     private OrderRepository   $order;
     private UserRepository    $user;
     private AddressRepository $address;
@@ -36,6 +39,11 @@ class OrderService
         $this->product = new ProductRepository($db, $franchiseCode);
         $this->role    = new RoleRepository($db, $franchiseCode);
         $this->auth    = $auth;
+    }
+
+    protected function getAuth(): Auth
+    {
+        return $this->auth;
     }
 
     /**
@@ -91,17 +99,8 @@ class OrderService
     {
         $this->auth->require();
 
-        $order = $this->order->findById($id, $projection);
-        if (!$order) {
-            Response::notFound('Order not found');
-        }
-
-        if (
-            !$this->auth->hasRole('admin') &&
-            (int) $order['user_id'] !== $this->auth->id()
-        ) {
-            Response::forbidden();
-        }
+        $order = $this->requireEntity($this->order->findById($id, $projection), 'Order not found');
+        $this->requireOwnerOrAdmin($order);
 
         return $order;
     }
@@ -323,10 +322,7 @@ class OrderService
 
         VALIDATOR(['status' => $status])->required('status')->validate();
 
-        $order = $this->order->findById($id);
-        if (!$order) {
-            Response::notFound('Order not found');
-        }
+        $this->requireEntity($this->order->findById($id), 'Order not found');
 
         return $this->order->updateStatus($id, $status, $projection);
     }
@@ -341,10 +337,7 @@ class OrderService
     {
         $this->auth->requireRole('admin');
 
-        $order = $this->order->findById($id);
-        if (!$order) {
-            Response::notFound('Order not found');
-        }
+        $this->requireEntity($this->order->findById($id), 'Order not found');
 
         return $this->order->delete($id);
     }

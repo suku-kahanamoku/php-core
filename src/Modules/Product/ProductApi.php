@@ -46,13 +46,7 @@ class ProductApi
                 ? (string) $request->get('category_syscode') : null,
             $request->projection(),
         );
-
-        $factory = $request->factory();
-        if ($factory !== null) {
-            $result['items'] = Response::applyFactory($result['items'], $factory);
-        }
-
-        Response::success($result);
+        Response::successWithFactory($result, $request);
     }
 
     /**
@@ -65,11 +59,7 @@ class ProductApi
     public function get(Request $request, array $params): void
     {
         $item    = $this->service->get((int) $params['id'], $request->projection());
-        $factory = $request->factory();
-        if ($factory !== null) {
-            $item = Response::applyFactory([$item], $factory)[0];
-        }
-        Response::success($item);
+        Response::successItemWithFactory($item, $request);
     }
 
     /**

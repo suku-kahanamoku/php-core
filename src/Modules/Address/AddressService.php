@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Modules\Address;
 
+use App\Modules\ServiceAuthTrait;
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
 
 class AddressService
 {
+    use ServiceAuthTrait;
+
     private AddressRepository $address;
     private Auth $auth;
 
@@ -24,6 +27,11 @@ class AddressService
     {
         $this->address = new AddressRepository($db, $franchiseCode);
         $this->auth    = $auth;
+    }
+
+    protected function getAuth(): Auth
+    {
+        return $this->auth;
     }
 
     /**
@@ -84,17 +92,11 @@ class AddressService
     {
         $this->auth->require();
 
-        $address = $this->address->findById($id, $projection);
-        if (!$address) {
-            Response::notFound('Address not found');
-        }
-
-        if (
-            !$this->auth->hasRole('admin') &&
-            (int) $address['user_id'] !== $this->auth->id()
-        ) {
-            Response::forbidden();
-        }
+        $address = $this->requireEntity(
+            $this->address->findById($id, $projection),
+            'Address not found',
+        );
+        $this->requireOwnerOrAdmin($address);
 
         return $address;
     }
@@ -155,17 +157,8 @@ class AddressService
     {
         $this->auth->require();
 
-        $address = $this->address->findById($id);
-        if (!$address) {
-            Response::notFound('Address not found');
-        }
-
-        if (
-            !$this->auth->hasRole('admin') &&
-            (int) $address['user_id'] !== $this->auth->id()
-        ) {
-            Response::forbidden();
-        }
+        $address = $this->requireEntity($this->address->findById($id), 'Address not found');
+        $this->requireOwnerOrAdmin($address);
 
         $set        = [];
         $textFields = [
@@ -212,17 +205,8 @@ class AddressService
     {
         $this->auth->require();
 
-        $address = $this->address->findById($id);
-        if (!$address) {
-            Response::notFound('Address not found');
-        }
-
-        if (
-            !$this->auth->hasRole('admin') &&
-            (int) $address['user_id'] !== $this->auth->id()
-        ) {
-            Response::forbidden();
-        }
+        $address = $this->requireEntity($this->address->findById($id), 'Address not found');
+        $this->requireOwnerOrAdmin($address);
 
         VALIDATOR($input)
             ->required(['street', 'city', 'zip', 'country'])
@@ -259,17 +243,8 @@ class AddressService
     {
         $this->auth->require();
 
-        $address = $this->address->findById($id);
-        if (!$address) {
-            Response::notFound('Address not found');
-        }
-
-        if (
-            !$this->auth->hasRole('admin') &&
-            (int) $address['user_id'] !== $this->auth->id()
-        ) {
-            Response::forbidden();
-        }
+        $address = $this->requireEntity($this->address->findById($id), 'Address not found');
+        $this->requireOwnerOrAdmin($address);
 
         return $this->address->delete($id);
     }

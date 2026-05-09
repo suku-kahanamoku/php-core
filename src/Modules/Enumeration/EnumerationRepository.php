@@ -4,21 +4,15 @@ declare(strict_types=1);
 
 namespace App\Modules\Enumeration;
 
+use App\Modules\BaseRepository;
 use App\Modules\Database\Database;
 use App\Utils\Projection;
 
 /**
  * Enumeration (codebook) – DB entity layer.
  */
-class EnumerationRepository
+class EnumerationRepository extends BaseRepository
 {
-    private Database $db;
-    private string   $code;
-
-    private const SYS = ['id', 'created_at', 'updated_at'];
-    private const OWN = ['type', 'syscode', 'label', 'value', 'position', 'is_active'];
-    private const REL = [];
-
     /**
      * EnumerationRepository constructor.
      *
@@ -27,8 +21,10 @@ class EnumerationRepository
      */
     public function __construct(Database $db, string $franchiseCode)
     {
-        $this->db   = $db;
-        $this->code = $franchiseCode;
+        parent::__construct($db, $franchiseCode);
+        $this->table = 'enumeration';
+        $this->alias = 'e';
+        $this->own   = ['type', 'syscode', 'label', 'value', 'position', 'is_active'];
     }
 
     /**
@@ -69,43 +65,40 @@ class EnumerationRepository
         ?array $projection = null,
     ): array {
         $proj    = new Projection($projection);
-        $orderBy = SQL_SORT($sort, 'type ASC, position ASC, label ASC');
+        $orderBy = SQL_SORT($sort, 'e.type ASC, e.position ASC, e.label ASC', 'e');
 
         $limit  = min(100, max(1, $limit));
         $offset = ($page - 1) * $limit;
 
-        $where  = ['franchise_code = ?'];
+        $where  = ['e.franchise_code = ?'];
         $params = [$this->code];
 
         if ($type !== null) {
-            $where[]  = 'type = ?';
+            $where[]  = 'e.type = ?';
             $params[] = $type;
         }
         if ($isActive !== null) {
-            $where[]  = 'is_active = ?';
+            $where[]  = 'e.is_active = ?';
             $params[] = (int) $isActive;
         }
 
-        $f = SQL_FILTER($filter);
+        $f = SQL_FILTER($filter, 'e');
         if ($f['sql'] !== '') {
             $where[] = $f['sql'];
             array_push($params, ...$f['params']);
         }
 
         $whereStr = implode(' AND ', $where);
-
-        $sys     = self::SYS;
-        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
-        $cols    = array_merge($sys, $ownCols);
-        $select  = implode(', ', $cols);
+        $select   = $this->buildSelect($proj);
+        $sys      = $this->sys;
 
         $total = (int) $this->db->fetchOne(
-            "SELECT COUNT(*) AS cnt FROM enumeration WHERE {$whereStr}",
+            "SELECT COUNT(*) AS cnt FROM enumeration e WHERE {$whereStr}",
             $params,
         )['cnt'];
 
         $items = $this->db->fetchAll(
-            "SELECT {$select} FROM enumeration
+            "SELECT {$select} FROM enumeration e
              WHERE {$whereStr}
              ORDER BY {$orderBy}
              LIMIT {$limit} OFFSET {$offset}",
@@ -117,50 +110,7 @@ class EnumerationRepository
         }
         unset($item);
 
-        return [
-            'items'      => $items,
-            'total'      => $total,
-            'page'       => $page,
-            'limit'      => $limit,
-            'totalPages' => (int) ceil($total / $limit),
-        ];
-    }
-
-    /**
-     * Najde ciselnikovou polozku dle ID.
-     *
-     * @param  int        $id
-     * @param  array|null $projection
-     * @return array{
-     *   id: int, 
-     *   created_at: string, 
-     *   updated_at: string, 
-     *   type: string, 
-     *   syscode: string, 
-     *   label: string, 
-     *   value: string|null, 
-     *   position: int, 
-     *   is_active: int
-     * }|null
-     */
-    public function findById(int $id, ?array $projection = null): ?array
-    {
-        $proj    = new Projection($projection);
-        $sys     = self::SYS;
-        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
-        $cols    = array_merge($sys, $ownCols);
-        $select  = implode(', ', $cols);
-
-        $row = $this->db->fetchOne(
-            "SELECT {$select} FROM enumeration WHERE id = ? AND franchise_code = ?",
-            [$id, $this->code],
-        );
-
-        if (!$row) {
-            return null;
-        }
-
-        return $proj->apply($row, $sys);
+        return $this->paginationResult($items, $total, $page, $limit);
     }
 
     /**

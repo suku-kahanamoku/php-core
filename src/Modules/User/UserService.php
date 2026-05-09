@@ -8,9 +8,12 @@ use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Role\RoleRepository;
 use App\Modules\Router\Response;
+use App\Modules\ServiceAuthTrait;
 
 class UserService
 {
+    use ServiceAuthTrait;
+
     private UserRepository $user;
     private RoleRepository $role;
     private Auth $auth;
@@ -27,6 +30,11 @@ class UserService
         $this->user = new UserRepository($db, $franchiseCode);
         $this->role = new RoleRepository($db, $franchiseCode);
         $this->auth = $auth;
+    }
+
+    protected function getAuth(): Auth
+    {
+        return $this->auth;
     }
 
     /**
@@ -85,10 +93,10 @@ class UserService
             Response::forbidden();
         }
 
-        $user = $this->user->findById($id, $projection);
-        if (!$user) {
-            Response::notFound('User not found');
-        }
+        $user = $this->requireEntity(
+            $this->user->findById($id, $projection),
+            'User not found'
+        );
 
         return $user;
     }
@@ -158,9 +166,7 @@ class UserService
             Response::forbidden();
         }
 
-        if (!$this->user->findById($id)) {
-            Response::notFound('User not found');
-        }
+        $this->requireEntity($this->user->findById($id), 'User not found');
 
         $set        = [];
         $textFields = ['first_name', 'last_name', 'phone'];
@@ -203,9 +209,7 @@ class UserService
             Response::forbidden();
         }
 
-        if (!$this->user->findById($id)) {
-            Response::notFound('User not found');
-        }
+        $this->requireEntity($this->user->findById($id), 'User not found');
 
         VALIDATOR($input)
             ->required(['first_name', 'last_name'])
@@ -239,9 +243,7 @@ class UserService
     {
         $this->auth->requireRole('admin');
 
-        if (!$this->user->findById($id)) {
-            Response::notFound('User not found');
-        }
+        $this->requireEntity($this->user->findById($id), 'User not found');
 
         return $this->user->delete($id);
     }

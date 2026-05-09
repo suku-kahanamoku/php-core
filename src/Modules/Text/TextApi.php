@@ -45,11 +45,7 @@ class TextApi
             (string) $request->get('filter', ''),
             $request->projection(),
         );
-        $factory = $request->factory();
-        if ($factory !== null) {
-            $result['items'] = Response::applyFactory($result['items'], $factory);
-        }
-        Response::success($result);
+        Response::successWithFactory($result, $request);
     }
 
     /**
@@ -62,11 +58,7 @@ class TextApi
     public function get(Request $request, array $params): void
     {
         $item    = $this->service->get((int) $params['id'], $request->projection());
-        $factory = $request->factory();
-        if ($factory !== null) {
-            $item = Response::applyFactory([$item], $factory)[0];
-        }
-        Response::success($item);
+        Response::successItemWithFactory($item, $request);
     }
 
     /**

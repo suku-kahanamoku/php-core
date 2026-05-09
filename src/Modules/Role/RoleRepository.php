@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Role;
 
+use App\Modules\BaseRepository;
 use App\Modules\Database\Database;
 use App\Utils\Projection;
 
@@ -11,15 +12,8 @@ use App\Utils\Projection;
  * Role – DB entity layer.
  * Handles all direct database operations for the `role` table.
  */
-class RoleRepository
+class RoleRepository extends BaseRepository
 {
-    private Database $db;
-    private string   $code;
-
-    private const SYS = ['id', 'created_at', 'updated_at'];
-    private const OWN = ['name', 'label', 'position'];
-    private const REL = [];
-
     /**
      * RoleRepository constructor.
      *
@@ -28,8 +22,10 @@ class RoleRepository
      */
     public function __construct(Database $db, string $franchiseCode)
     {
-        $this->db   = $db;
-        $this->code = $franchiseCode;
+        parent::__construct($db, $franchiseCode);
+        $this->table = 'role';
+        $this->alias = 'r';
+        $this->own   = ['name', 'label', 'position'];
     }
 
     /**
@@ -63,30 +59,26 @@ class RoleRepository
         ?array $projection = null
     ): array {
         $proj    = new Projection($projection);
-        $orderBy = SQL_SORT($sort, 'position ASC');
+        $orderBy = SQL_SORT($sort, 'r.position ASC', 'r');
 
         $limit  = min(100, max(1, $limit));
         $offset = ($page - 1) * $limit;
 
-        $where  = ['franchise_code = ?'];
+        $where  = ['r.franchise_code = ?'];
         $params = [$this->code];
 
-        $f = SQL_FILTER($filter);
+        $f = SQL_FILTER($filter, 'r');
         if ($f['sql'] !== '') {
             $where[] = $f['sql'];
             array_push($params, ...$f['params']);
         }
 
         $whereStr = implode(' AND ', $where);
-
-        $sys     = self::SYS;
-        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
-        $sysSel  = 'r.' . implode(', r.', $sys);
-        $ownSel  = $ownCols ? ', r.' . implode(', r.', $ownCols) : '';
-        $select  = "{$sysSel}{$ownSel}";
+        $select   = $this->buildSelect($proj);
+        $sys      = $this->sys;
 
         $total = (int) $this->db->fetchOne(
-            "SELECT COUNT(*) AS cnt FROM role WHERE {$whereStr}",
+            "SELECT COUNT(*) AS cnt FROM role r WHERE {$whereStr}",
             $params,
         )['cnt'];
 
@@ -101,48 +93,7 @@ class RoleRepository
         }
         unset($item);
 
-        return [
-            'items'      => $items,
-            'total'      => $total,
-            'page'       => $page,
-            'limit'      => $limit,
-            'totalPages' => (int) ceil($total / $limit),
-        ];
-    }
-
-    /**
-     * Find single role by ID.
-     *
-     * @param  int        $id
-     * @param  array|null $projection
-     * @return array{
-     *   id: int,
-     *   created_at: string,
-     *   updated_at: string,
-     *   name: string,
-     *   label: string,
-     *   position: int
-     * }|null
-     */
-    public function findById(int $id, ?array $projection = null): ?array
-    {
-        $proj    = new Projection($projection);
-        $sys     = self::SYS;
-        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
-        $sysSel  = 'r.' . implode(', r.', $sys);
-        $ownSel  = $ownCols ? ', r.' . implode(', r.', $ownCols) : '';
-        $select  = "{$sysSel}{$ownSel}";
-
-        $role = $this->db->fetchOne(
-            "SELECT {$select} FROM role r WHERE r.id = ? AND r.franchise_code = ?",
-            [$id, $this->code],
-        );
-
-        if (!$role) {
-            return null;
-        }
-
-        return $proj->apply($role, $sys);
+        return $this->paginationResult($items, $total, $page, $limit);
     }
 
     /**

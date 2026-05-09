@@ -4,33 +4,15 @@ declare(strict_types=1);
 
 namespace App\Modules\Order;
 
+use App\Modules\BaseRepository;
 use App\Modules\Database\Database;
 use App\Utils\Projection;
 
 /**
  * Order – DB entity layer.
  */
-class OrderRepository
+class OrderRepository extends BaseRepository
 {
-    private Database $db;
-    private string   $code;
-
-    private const SYS = ['id', 'created_at', 'updated_at'];
-    private const OWN = [
-        'order_number',
-        'status',
-        'total_amount',
-        'currency',
-        'payment_method',
-        'shipping_type',
-        'shipping_cost',
-        'shipping_address_id',
-        'billing_address_id',
-        'user_id',
-        'note'
-    ];
-    private const REL = ['user'];
-
     /**
      * OrderRepository constructor.
      *
@@ -39,8 +21,23 @@ class OrderRepository
      */
     public function __construct(Database $db, string $franchiseCode)
     {
-        $this->db   = $db;
-        $this->code = $franchiseCode;
+        parent::__construct($db, $franchiseCode);
+        $this->table = '`order`';
+        $this->alias = 'o';
+        $this->own   = [
+            'order_number',
+            'status',
+            'total_amount',
+            'currency',
+            'payment_method',
+            'shipping_type',
+            'shipping_cost',
+            'shipping_address_id',
+            'billing_address_id',
+            'user_id',
+            'note',
+        ];
+        $this->rel = ['user'];
     }
 
     /**
@@ -112,10 +109,8 @@ class OrderRepository
 
         $whereStr = implode(' AND ', $where);
 
-        $sys     = self::SYS;
-        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
-        $sysSel  = 'o.' . implode(', o.', $sys);
-        $ownSel  = $ownCols ? ', o.' . implode(', o.', $ownCols) : '';
+        $sys        = $this->sys;
+        $baseSelect = $this->buildSelect($proj);
 
         $joinSql = '';
         $relSel  = '';
@@ -124,7 +119,7 @@ class OrderRepository
             $relSel  = ', u.first_name, u.last_name, u.email';
         }
 
-        $select = "{$sysSel}{$ownSel}{$relSel}";
+        $select = "{$baseSelect}{$relSel}";
 
         $total = (int) $this->db->fetchOne(
             "SELECT COUNT(*) AS cnt FROM `order` o WHERE {$whereStr}",
@@ -151,13 +146,7 @@ class OrderRepository
         }
         unset($item);
 
-        return [
-            'items'      => $items,
-            'total'      => $total,
-            'page'       => $page,
-            'limit'      => $limit,
-            'totalPages' => (int) ceil($total / $limit),
-        ];
+        return $this->paginationResult($items, $total, $page, $limit);
     }
 
     /**
@@ -188,10 +177,8 @@ class OrderRepository
     {
         $proj = new Projection($projection);
 
-        $sys     = self::SYS;
-        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
-        $sysSel  = 'o.' . implode(', o.', $sys);
-        $ownSel  = $ownCols ? ', o.' . implode(', o.', $ownCols) : '';
+        $sys        = $this->sys;
+        $baseSelect = $this->buildSelect($proj);
 
         $joinSql = '';
         $relSel  = '';
@@ -200,7 +187,7 @@ class OrderRepository
             $relSel  = ', u.first_name, u.last_name, u.email';
         }
 
-        $select = "{$sysSel}{$ownSel}{$relSel}";
+        $select = "{$baseSelect}{$relSel}";
 
         $order = $this->db->fetchOne(
             "SELECT {$select} FROM `order` o {$joinSql}

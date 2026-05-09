@@ -123,6 +123,42 @@ class Response
     }
 
     /**
+     * Odesle uspesnou JSON odpoved s automaticky aplikovanym factory z requestu.
+     * Pouzij misto kombinace success() + applyFactory() v list() metodach.
+     * Pokud request neobsahuje factory, chova se stejne jako success().
+     *
+     * @param  array<string, mixed> $data     Musi obsahovat klic 'items'
+     * @param  Request              $request
+     * @return never
+     */
+    public static function successWithFactory(array $data, Request $request): never
+    {
+        $factory = $request->factory();
+        if ($factory !== null && isset($data['items'])) {
+            $data['items'] = self::applyFactory($data['items'], $factory);
+        }
+        self::success($data);
+    }
+
+    /**
+     * Odesle uspesnou JSON odpoved pro jeden zaznam s aplikovanym factory.
+     * Pouzij misto kombinace success() + applyFactory() v get() metodach.
+     * Pokud request neobsahuje factory, chova se stejne jako success().
+     *
+     * @param  array<string, mixed> $item
+     * @param  Request              $request
+     * @return never
+     */
+    public static function successItemWithFactory(array $item, Request $request): never
+    {
+        $factory = $request->factory();
+        if ($factory !== null) {
+            $item = self::applyFactory([$item], $factory)[0];
+        }
+        self::success($item);
+    }
+
+    /**
      * Aplikuje factory sablony na kazdy zaznam v poli items.
      *
      * Factory je objekt kde klic = nazev generovaneho pole, hodnota = sablona.

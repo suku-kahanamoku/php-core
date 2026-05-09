@@ -4,28 +4,15 @@ declare(strict_types=1);
 
 namespace App\Modules\Text;
 
+use App\Modules\BaseRepository;
 use App\Modules\Database\Database;
 use App\Utils\Projection;
 
 /**
  * Text (CMS) – DB entity layer.
  */
-class TextRepository
+class TextRepository extends BaseRepository
 {
-    private Database $db;
-    private string   $code;
-
-    private const SYS = ['id', 'created_at', 'updated_at'];
-    private const OWN = [
-        'syscode',
-        'title',
-        'content',
-        'language',
-        'is_active',
-        'created_by'
-    ];
-    private const REL = [];
-
     /**
      * TextRepository constructor.
      *
@@ -34,8 +21,17 @@ class TextRepository
      */
     public function __construct(Database $db, string $franchiseCode)
     {
-        $this->db   = $db;
-        $this->code = $franchiseCode;
+        parent::__construct($db, $franchiseCode);
+        $this->table = 'text';
+        $this->alias = 'tx';
+        $this->own   = [
+            'syscode',
+            'title',
+            'content',
+            'language',
+            'is_active',
+            'created_by',
+        ];
     }
 
     /**
@@ -78,44 +74,41 @@ class TextRepository
         ?array $projection = null,
     ): array {
         $proj    = new Projection($projection);
-        $orderBy = SQL_SORT($sort, 'syscode ASC');
+        $orderBy = SQL_SORT($sort, 'tx.syscode ASC', 'tx');
 
         $limit  = min(100, max(1, $limit));
         $offset = ($page - 1) * $limit;
 
-        $where  = ['franchise_code = ?', 'language = ?'];
+        $where  = ['tx.franchise_code = ?', 'tx.language = ?'];
         $params = [$this->code, $language];
 
         if ($isActive !== null) {
-            $where[]  = 'is_active = ?';
+            $where[]  = 'tx.is_active = ?';
             $params[] = (int) $isActive;
         }
         if ($search) {
-            $where[] = '(syscode LIKE ? OR title LIKE ? OR content LIKE ?)';
+            $where[] = '(tx.syscode LIKE ? OR tx.title LIKE ? OR tx.content LIKE ?)';
             $s       = '%' . $search . '%';
             array_push($params, $s, $s, $s);
         }
 
-        $f = SQL_FILTER($filter);
+        $f = SQL_FILTER($filter, 'tx');
         if ($f['sql'] !== '') {
             $where[] = $f['sql'];
             array_push($params, ...$f['params']);
         }
 
         $whereStr = implode(' AND ', $where);
-
-        $sys     = self::SYS;
-        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
-        $cols    = array_merge($sys, $ownCols);
-        $select  = implode(', ', $cols);
+        $select   = $this->buildSelect($proj);
+        $sys      = $this->sys;
 
         $total = (int) $this->db->fetchOne(
-            "SELECT COUNT(*) AS cnt FROM text WHERE {$whereStr}",
+            "SELECT COUNT(*) AS cnt FROM text tx WHERE {$whereStr}",
             $params,
         )['cnt'];
 
         $items = $this->db->fetchAll(
-            "SELECT {$select} FROM text WHERE {$whereStr}
+            "SELECT {$select} FROM text tx WHERE {$whereStr}
              ORDER BY {$orderBy}
              LIMIT {$limit} OFFSET {$offset}",
             $params,
@@ -126,50 +119,7 @@ class TextRepository
         }
         unset($item);
 
-        return [
-            'items'      => $items,
-            'total'      => $total,
-            'page'       => $page,
-            'limit'      => $limit,
-            'totalPages' => (int) ceil($total / $limit),
-        ];
-    }
-
-    /**
-     * Najde textovy obsah dle ID.
-     *
-     * @param  int        $id
-     * @param  array|null $projection
-     * @return array{
-     *   id: int,
-     *   created_at: string,
-     *   updated_at: string,
-     *   syscode: string,
-     *   title: string,
-     *   content: string,
-     *   language: string,
-     *   is_active: int,
-     *   created_by: int|null
-     * }|null
-     */
-    public function findById(int $id, ?array $projection = null): ?array
-    {
-        $proj    = new Projection($projection);
-        $sys     = self::SYS;
-        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
-        $cols    = array_merge($sys, $ownCols);
-        $select  = implode(', ', $cols);
-
-        $row = $this->db->fetchOne(
-            "SELECT {$select} FROM text WHERE id = ? AND franchise_code = ?",
-            [$id, $this->code],
-        );
-
-        if (!$row) {
-            return null;
-        }
-
-        return $proj->apply($row, $sys);
+        return $this->paginationResult($items, $total, $page, $limit);
     }
 
     /**

@@ -4,32 +4,15 @@ declare(strict_types=1);
 
 namespace App\Modules\Invoice;
 
+use App\Modules\BaseRepository;
 use App\Modules\Database\Database;
 use App\Utils\Projection;
 
 /**
  * Invoice – DB entity layer.
  */
-class InvoiceRepository
+class InvoiceRepository extends BaseRepository
 {
-    private Database $db;
-    private string   $code;
-
-    private const SYS = ['id', 'created_at', 'updated_at'];
-    private const OWN = [
-        'invoice_number',
-        'status',
-        'total_amount',
-        'currency',
-        'issued_at',
-        'due_at',
-        'paid_at',
-        'order_id',
-        'user_id',
-        'billing_address_id'
-    ];
-    private const REL = ['user'];
-
     /**
      * InvoiceRepository constructor.
      *
@@ -38,8 +21,22 @@ class InvoiceRepository
      */
     public function __construct(Database $db, string $franchiseCode)
     {
-        $this->db   = $db;
-        $this->code = $franchiseCode;
+        parent::__construct($db, $franchiseCode);
+        $this->table = 'invoice';
+        $this->alias = 'i';
+        $this->own   = [
+            'invoice_number',
+            'status',
+            'total_amount',
+            'currency',
+            'issued_at',
+            'due_at',
+            'paid_at',
+            'order_id',
+            'user_id',
+            'billing_address_id',
+        ];
+        $this->rel = ['user'];
     }
 
     /**
@@ -114,10 +111,8 @@ class InvoiceRepository
 
         $whereStr = implode(' AND ', $where);
 
-        $sys     = self::SYS;
-        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
-        $sysSel  = 'i.' . implode(', i.', $sys);
-        $ownSel  = $ownCols ? ', i.' . implode(', i.', $ownCols) : '';
+        $sys        = $this->sys;
+        $baseSelect = $this->buildSelect($proj);
 
         $joinSql = '';
         $relSel  = '';
@@ -126,7 +121,7 @@ class InvoiceRepository
             $relSel  = ', u.first_name, u.last_name, u.email';
         }
 
-        $select = "{$sysSel}{$ownSel}{$relSel}";
+        $select = "{$baseSelect}{$relSel}";
 
         $total = (int) $this->db->fetchOne(
             "SELECT COUNT(*) AS cnt FROM invoice i WHERE {$whereStr}",
@@ -153,13 +148,7 @@ class InvoiceRepository
         }
         unset($item);
 
-        return [
-            'items'      => $items,
-            'total'      => $total,
-            'page'       => $page,
-            'limit'      => $limit,
-            'totalPages' => (int) ceil($total / $limit),
-        ];
+        return $this->paginationResult($items, $total, $page, $limit);
     }
 
     /**
@@ -202,10 +191,8 @@ class InvoiceRepository
     {
         $proj = new Projection($projection);
 
-        $sys     = self::SYS;
-        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
-        $sysSel  = 'i.' . implode(', i.', $sys);
-        $ownSel  = $ownCols ? ', i.' . implode(', i.', $ownCols) : '';
+        $sys        = $this->sys;
+        $baseSelect = $this->buildSelect($proj);
 
         $joinSql = '';
         $relSel  = '';
@@ -214,7 +201,7 @@ class InvoiceRepository
             $relSel  = ', u.first_name, u.last_name, u.email';
         }
 
-        $select = "{$sysSel}{$ownSel}{$relSel}";
+        $select = "{$baseSelect}{$relSel}";
 
         $invoice = $this->db->fetchOne(
             "SELECT {$select} FROM invoice i {$joinSql}

@@ -4,33 +4,15 @@ declare(strict_types=1);
 
 namespace App\Modules\Product;
 
+use App\Modules\BaseRepository;
 use App\Modules\Database\Database;
 use App\Utils\Projection;
 
 /**
  * Product – DB entity layer.
  */
-class ProductRepository
+class ProductRepository extends BaseRepository
 {
-    private Database $db;
-    private string   $code;
-
-    private const SYS = ['id', 'created_at', 'updated_at'];
-    private const OWN = [
-        'sku',
-        'name',
-        'description',
-        'price',
-        'vat_rate',
-        'stock_quantity',
-        'is_active',
-        'kind',
-        'color',
-        'variant',
-        'data'
-    ];
-    private const REL = ['categories'];
-
     /**
      * ProductRepository constructor.
      *
@@ -39,8 +21,23 @@ class ProductRepository
      */
     public function __construct(Database $db, string $franchiseCode)
     {
-        $this->db   = $db;
-        $this->code = $franchiseCode;
+        parent::__construct($db, $franchiseCode);
+        $this->table = 'product';
+        $this->alias = 'p';
+        $this->own   = [
+            'sku',
+            'name',
+            'description',
+            'price',
+            'vat_rate',
+            'stock_quantity',
+            'is_active',
+            'kind',
+            'color',
+            'variant',
+            'data',
+        ];
+        $this->rel = ['categories'];
     }
 
     /**
@@ -119,10 +116,8 @@ class ProductRepository
 
         $whereStr = implode(' AND ', $where);
 
-        $sys     = self::SYS;
-        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
-        $sysSel  = 'p.' . implode(', p.', $sys);
-        $ownSel  = $ownCols ? ', p.' . implode(', p.', $ownCols) : '';
+        $sys          = $this->sys;
+        $baseSelect   = $this->buildSelect($proj);
 
         $needsCatJoin = $categoryId !== null ||
             $categorySyscode !== null ||
@@ -134,7 +129,7 @@ class ProductRepository
             ? ', GROUP_CONCAT(pc.category_id ORDER BY pc.category_id) AS category_ids'
             : '';
 
-        $select = "{$sysSel}{$ownSel}{$catSel}";
+        $select = "{$baseSelect}{$catSel}";
 
         $total = (int) $this->db->fetchOne(
             "SELECT COUNT(DISTINCT p.id) AS cnt FROM product p WHERE {$whereStr}",
@@ -163,17 +158,11 @@ class ProductRepository
         }
         unset($item);
 
-        return [
-            'items'      => $items,
-            'total'      => $total,
-            'page'       => $page,
-            'limit'      => $limit,
-            'totalPages' => (int) ceil($total / $limit),
-        ];
+        return $this->paginationResult($items, $total, $page, $limit);
     }
 
     /**
-     * Najde produkt dle ID vcetne kategoriı.
+     * Najde produkt dle ID vcetne kategorii.
      *
      * @param  int        $id
      * @param  array|null $projection
@@ -200,18 +189,11 @@ class ProductRepository
     {
         $proj = new Projection($projection);
 
-        $sys     = self::SYS;
-        $ownCols = $proj->getOwnCols(self::OWN, self::REL);
-        $sysSel  = implode(', ', $sys);
-        $ownSel  = $ownCols ? ', ' . implode(', ', $ownCols) : '';
-        $select  = "`{$sysSel}`" === '`id, created_at, updated_at`' && $ownCols === []
-            ? implode(', ', $sys)
-            : $sysSel . $ownSel;
-
-        // Build a cleaner SELECT
-        $cols   = array_merge($sys, $ownCols);
-        $quoted = array_map(fn($c) => "`{$c}`", $cols);
-        $select = implode(', ', $quoted);
+        $sys     = $this->sys;
+        $ownCols = $proj->getOwnCols($this->own, $this->rel);
+        $cols    = array_merge($sys, $ownCols);
+        $quoted  = array_map(fn($c) => "`{$c}`", $cols);
+        $select  = implode(', ', $quoted);
 
         $row = $this->db->fetchOne(
             "SELECT {$select} FROM product WHERE id = ? AND franchise_code = ?",
