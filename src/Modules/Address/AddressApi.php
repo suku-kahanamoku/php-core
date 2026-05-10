@@ -41,7 +41,7 @@ class AddressApi
             (string) $request->get('sort', ''),
             max(1, (int) $request->get('page', 1)),
             min(100, max(1, (int) $request->get('limit', 20))),
-            (string) $request->get('filter', ''),
+            (string) $request->get('q', ''),
             $request->projection(),
         );
         Response::successWithFactory($result, $request);

@@ -41,7 +41,7 @@ class UserApi
             $request->get('search'),
             $request->get('role'),
             (string) $request->get('sort', ''),
-            (string) $request->get('filter', ''),
+            (string) $request->get('q', ''),
             $request->projection(),
         );
         Response::successWithFactory($result, $request);

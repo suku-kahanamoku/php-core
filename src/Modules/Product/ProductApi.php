@@ -41,7 +41,7 @@ class ProductApi
             $request->get('category_id') !== null
                 ? (int) $request->get('category_id') : null,
             (string) $request->get('sort', ''),
-            (string) $request->get('filter', ''),
+            (string) $request->get('q', ''),
             $request->get('category_syscode') !== null
                 ? (string) $request->get('category_syscode') : null,
             $request->projection(),

@@ -98,7 +98,33 @@ function _sql_filter_condition(string $col, array $spec, string $prefix): ?array
         $qualified = $prefix !== '' ? $prefix . '.' . $col : $col;
     }
 
-    $operator  = strtolower(trim((string) ($spec['operator'] ?? 'eq')));
+    $rawOperator = $spec['operator'] ?? null;
+    // Frontend sends operator as {"value": "$regex"} object; accept both formats.
+    if (is_array($rawOperator)) {
+        $rawOperator = $rawOperator['value'] ?? null;
+    }
+
+    // ── MongoDB-style spec: {"$regex":"val","$options":"i"} or {"$eq":"val"} ──
+    $mongoKeys = array_filter(array_keys($spec), static fn($k) => str_starts_with((string) $k, '$'));
+    if (!empty($mongoKeys)) {
+        if (isset($spec['$regex'])) {
+            return _sql_filter_operator($qualified, 'regex', $spec['$regex']);
+        }
+        if (isset($spec['$in'])) {
+            return _sql_filter_operator($qualified, 'in', $spec['$in']);
+        }
+        $mongoMap = ['$eq' => 'eq', '$ne' => 'neq', '$lt' => 'lt', '$lte' => 'lte', '$gt' => 'gt', '$gte' => 'gte'];
+        foreach ($mongoMap as $mongoOp => $ourOp) {
+            if (array_key_exists($mongoOp, $spec)) {
+                return _sql_filter_operator($qualified, $ourOp, $spec[$mongoOp]);
+            }
+        }
+        return null;
+    }
+
+    // ── Our format: {"value": ..., "operator": "regex"|"eq"|...} ─────────────
+    // Strip leading $ sign used by frontend convention (e.g. "$regex" → "regex").
+    $operator  = strtolower(trim(ltrim((string) ($rawOperator ?? 'eq'), '$')));
     $value     = $spec['value'] ?? null;
 
     return _sql_filter_operator($qualified, $operator, $value);
