@@ -274,7 +274,8 @@ class OrderService
         }
 
         // Normalise country: "cs" (locale code) → "CZ" (ISO 3166)
-        $country = strtoupper($addr['state'] ?? $addr['country'] ?? 'CZ');
+        $rawCountry = $addr['state'] ?? $addr['country'] ?? 'CZ';
+        $country = is_string($rawCountry) ? strtoupper($rawCountry) : 'CZ';
         if ($country === 'CS') {
             $country = 'CZ';
         }
