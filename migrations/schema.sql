@@ -5,8 +5,23 @@
 SET NAMES utf8mb4;
 SET foreign_key_checks = 0;
 
+-- ── Drop existing tables ───────────────────────────────────
+/* DROP TABLE IF EXISTS `invoice_item`;
+DROP TABLE IF EXISTS `invoice`;
+DROP TABLE IF EXISTS `order_item`;
+DROP TABLE IF EXISTS `order`;
+DROP TABLE IF EXISTS `product_category`;
+DROP TABLE IF EXISTS `product`;
+DROP TABLE IF EXISTS `category`;
+DROP TABLE IF EXISTS `text`;
+DROP TABLE IF EXISTS `user_token`;
+DROP TABLE IF EXISTS `address`;
+DROP TABLE IF EXISTS `user`;
+DROP TABLE IF EXISTS `enumeration`;
+DROP TABLE IF EXISTS `role`; */
+
 -- ── enumeration (ciselnik) ────────────────────────────────
-CREATE TABLE IF NOT EXISTS `enumeration` (
+CREATE TABLE `enumeration` (
     `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `franchise_code` VARCHAR(64)  NOT NULL DEFAULT 'default' COMMENT 'multi-tenant project key',
     `type`         VARCHAR(64)  NOT NULL COMMENT 'e.g. order_status, invoice_status, payment_method',
@@ -24,7 +39,7 @@ CREATE TABLE IF NOT EXISTS `enumeration` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── role ──────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS `role` (
+CREATE TABLE `role` (
     `id`             INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `franchise_code` VARCHAR(64)  NOT NULL DEFAULT 'default',
     `name`           VARCHAR(64)  NOT NULL COMMENT 'e.g. admin, user, manager',
@@ -38,7 +53,7 @@ CREATE TABLE IF NOT EXISTS `role` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── user ─────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS `user` (
+CREATE TABLE `user` (
     `id`            INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `franchise_code`  VARCHAR(64)  NOT NULL DEFAULT 'default',
     `first_name`    VARCHAR(100) NOT NULL,
@@ -59,7 +74,7 @@ CREATE TABLE IF NOT EXISTS `user` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── address ───────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS `address` (
+CREATE TABLE `address` (
     `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `franchise_code` VARCHAR(64)  NOT NULL DEFAULT 'default',
     `user_id`      INT UNSIGNED NOT NULL,
@@ -80,7 +95,7 @@ CREATE TABLE IF NOT EXISTS `address` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── user_token ────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS `user_token` (
+CREATE TABLE `user_token` (
     `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `user_id`    INT UNSIGNED NOT NULL,
     `token`      VARCHAR(64)  NOT NULL,
@@ -94,7 +109,7 @@ CREATE TABLE IF NOT EXISTS `user_token` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── category ─────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS `category` (
+CREATE TABLE `category` (
     `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `franchise_code` VARCHAR(64)  NOT NULL DEFAULT 'default',
     `parent_id`    INT UNSIGNED          DEFAULT NULL,
@@ -113,7 +128,7 @@ CREATE TABLE IF NOT EXISTS `category` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── product ───────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS `product` (
+CREATE TABLE `product` (
     `id`             INT UNSIGNED   NOT NULL AUTO_INCREMENT,
     `franchise_code`   VARCHAR(64)    NOT NULL DEFAULT 'default',
     `sku`            VARCHAR(64)    NOT NULL,
@@ -140,7 +155,7 @@ CREATE TABLE IF NOT EXISTS `product` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── product_category (M:N pivot) ──────────────────────────
-CREATE TABLE IF NOT EXISTS `product_category` (
+CREATE TABLE `product_category` (
     `product_id`  INT UNSIGNED NOT NULL,
     `category_id` INT UNSIGNED NOT NULL,
     PRIMARY KEY (`product_id`, `category_id`),
@@ -150,7 +165,7 @@ CREATE TABLE IF NOT EXISTS `product_category` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── text (CMS content blocks) ─────────────────────────────
-CREATE TABLE IF NOT EXISTS `text` (
+CREATE TABLE `text` (
     `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `franchise_code` VARCHAR(64)  NOT NULL DEFAULT 'default',
     `syscode`      VARCHAR(128) NOT NULL,
@@ -169,7 +184,7 @@ CREATE TABLE IF NOT EXISTS `text` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── order ─────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS `order` (
+CREATE TABLE `order` (
     `id`                  INT UNSIGNED   NOT NULL AUTO_INCREMENT,
     `franchise_code`        VARCHAR(64)    NOT NULL DEFAULT 'default',
     `order_number`        VARCHAR(64)    NOT NULL,
@@ -196,7 +211,7 @@ CREATE TABLE IF NOT EXISTS `order` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── order_item ────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS `order_item` (
+CREATE TABLE `order_item` (
     `id`          INT UNSIGNED   NOT NULL AUTO_INCREMENT,
     `order_id`    INT UNSIGNED   NOT NULL,
     `product_id`  INT UNSIGNED            DEFAULT NULL,
@@ -213,7 +228,7 @@ CREATE TABLE IF NOT EXISTS `order_item` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── invoice ───────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS `invoice` (
+CREATE TABLE `invoice` (
     `id`                 INT UNSIGNED   NOT NULL AUTO_INCREMENT,
     `franchise_code`       VARCHAR(64)    NOT NULL DEFAULT 'default',
     `invoice_number`     VARCHAR(64)    NOT NULL,
@@ -241,7 +256,7 @@ CREATE TABLE IF NOT EXISTS `invoice` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── invoice_item ──────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS `invoice_item` (
+CREATE TABLE `invoice_item` (
     `id`          INT UNSIGNED   NOT NULL AUTO_INCREMENT,
     `invoice_id`  INT UNSIGNED   NOT NULL,
     `product_id`  INT UNSIGNED            DEFAULT NULL,
@@ -266,41 +281,33 @@ INSERT INTO `role` (`franchise_code`, `name`, `label`, `position`) VALUES
   ('default', 'manager', 'Manager', 20),
   ('default', 'user',    'User',    30);
 
--- ── Seed: default enumerations ────────────────────────────
+-- ── Seed: default enumerations (only currency) ────────────────────────────
 INSERT INTO `enumeration` (`franchise_code`, `type`, `syscode`, `label`, `value`, `position`) VALUES
-  -- Order statuses
-  ('default', 'order_status', 'pending',    'Pending',    'pending',    10),
-  ('default', 'order_status', 'confirmed',  'Confirmed',  'confirmed',  20),
-  ('default', 'order_status', 'processing', 'Processing', 'processing', 30),
-  ('default', 'order_status', 'shipped',    'Shipped',    'shipped',    40),
-  ('default', 'order_status', 'delivered',  'Delivered',  'delivered',  50),
-  ('default', 'order_status', 'cancelled',  'Cancelled',  'cancelled',  60),
-  ('default', 'order_status', 'refunded',   'Refunded',   'refunded',   70),
-  -- Invoice statuses
-  ('default', 'invoice_status', 'draft',     'Draft',     'draft',     10),
-  ('default', 'invoice_status', 'issued',    'Issued',    'issued',    20),
-  ('default', 'invoice_status', 'paid',      'Paid',      'paid',      30),
-  ('default', 'invoice_status', 'overdue',   'Overdue',   'overdue',   40),
-  ('default', 'invoice_status', 'cancelled', 'Cancelled', 'cancelled', 50),
-  ('default', 'invoice_status', 'refunded',  'Refunded',  'refunded',  60),
-  -- Payment methods
-  ('default', 'payment_method', 'bank_transfer', 'Bank Transfer', 'bank_transfer', 10),
-  ('default', 'payment_method', 'cash',          'Cash',          'cash',          20),
-  ('default', 'payment_method', 'card',          'Card',          'card',          30),
-  ('default', 'payment_method', 'online',        'Online',        'online',        40),
-  -- Currencies
+  -- Currencies only
   ('default', 'currency', 'CZK', 'Czech Koruna', 'CZK', 10),
   ('default', 'currency', 'EUR', 'Euro',         'EUR', 20),
-  ('default', 'currency', 'USD', 'US Dollar',    'USD', 30),
-  -- VAT rates
-  ('default', 'vat_rate', '0',  '0%',  '0',  10),
-  ('default', 'vat_rate', '10', '10%', '10', 20),
-  ('default', 'vat_rate', '12', '12%', '12', 30),
-  ('default', 'vat_rate', '21', '21%', '21', 40);
+  ('default', 'currency', 'USD', 'US Dollar',    'USD', 30);
 
 -- ── Seed: admin user (password: password) ────────────────
 INSERT INTO `user` (`franchise_code`, `first_name`, `last_name`, `email`, `password`, `role_id`) VALUES
   ('default', 'Admin', 'User', 'admin@example.com',
    '$2y$12$158hhuy1e4Q9sgkc7WHUfuBlJWCowqiNGdti1t6wpds7zOtP0KkeSs',
    (SELECT id FROM role WHERE franchise_code = 'default' AND name = 'admin'));
+
+-- ── Seed: category "top" ──────────────────────────────────
+INSERT INTO `category` (`franchise_code`, `parent_id`, `syscode`, `name`, `description`, `position`) VALUES
+  ('default', NULL, 'top', 'Top Produkty', 'Nejlepší vína z nabídky', 10);
+
+-- ── Seed: 4 wines ────────────────────────────────────────
+INSERT INTO `product` (`franchise_code`, `sku`, `name`, `description`, `price`, `vat_rate`, `stock_quantity`, `is_active`, `kind`, `color`, `variant`, `data`) VALUES
+  ('default', 'ZAJ-WHI-001', 'Zaječské Bílé', 'Jemné bílé víno ze Zaječí', 299.00, 21.00, 50, 1, 'dry', 'white', '0.75l', JSON_OBJECT('year', 2022, 'volume', 0.75, 'quality', 'kabinett', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 12.5, 'serving_temp', '8-10°C')),
+  ('default', 'ZAJ-RED-001', 'Zaječské Červené', 'Kvalitní červené víno tradičního stylu', 349.00, 21.00, 40, 1, 'dry', 'red', '0.75l', JSON_OBJECT('year', 2021, 'volume', 0.75, 'quality', 'selection_of_grapes', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 13.5, 'serving_temp', '16-18°C')),
+  ('default', 'ZAJ-ROE-001', 'Zaječské Rosé', 'Lehké rosé víno s ovocnými tóny', 329.00, 21.00, 35, 1, 'semiDry', 'rose', '0.75l', JSON_OBJECT('year', 2023, 'volume', 0.75, 'quality', 'late_harvest', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 12.0, 'serving_temp', '6-8°C')),
+  ('default', 'ZAJ-SWE-001', 'Zaječské Sladké', 'Sladké desertní víno s bohatou chutí', 399.00, 21.00, 20, 1, 'dessert', 'red', '0.5l', JSON_OBJECT('year', 2020, 'volume', 0.5, 'quality', 'ice_wine', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 11.0, 'serving_temp', '4-6°C'));
+
+-- ── Seed: link products 1, 2, 3 to category "top" ──────────
+INSERT INTO `product_category` (`product_id`, `category_id`) VALUES
+  ((SELECT id FROM product WHERE franchise_code = 'default' AND sku = 'ZAJ-WHI-001'), (SELECT id FROM category WHERE franchise_code = 'default' AND syscode = 'top')),
+  ((SELECT id FROM product WHERE franchise_code = 'default' AND sku = 'ZAJ-RED-001'), (SELECT id FROM category WHERE franchise_code = 'default' AND syscode = 'top')),
+  ((SELECT id FROM product WHERE franchise_code = 'default' AND sku = 'ZAJ-ROE-001'), (SELECT id FROM category WHERE franchise_code = 'default' AND syscode = 'top'));
 

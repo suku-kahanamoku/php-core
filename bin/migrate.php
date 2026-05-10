@@ -7,7 +7,7 @@
 
 require_once __DIR__ . '/../bootstrap.php';
 
-use App\Core\Database;
+use App\Modules\Database\Database;
 
 $db  = Database::getInstance()->getPdo();
 $sql = file_get_contents(__DIR__ . '/../migrations/schema.sql');
