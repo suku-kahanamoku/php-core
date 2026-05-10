@@ -21,7 +21,7 @@ if (!isset($runnerMode)) {
 }
 $token = null;
 
-$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
@@ -30,8 +30,8 @@ $token = $r['data']['data']['token'] ?? null;
 section('User model – getAll()');
 $r = request('GET', "{$base}/users");
 assert_test('returns 200', $r['status'] === 200, dump_on_fail($r));
-assert_test('has items + total', isset($r['data']['data']['items'], $r['data']['data']['total']));
-assert_test('has pagination fields', isset($r['data']['data']['page'], $r['data']['data']['limit'], $r['data']['data']['totalPages']));
+assert_test('has items + total', isset($r['data']['data'], $r['data']['meta']['total']));
+assert_test('has pagination fields', isset($r['data']['meta']['page'], $r['data']['meta']['limit'], $r['data']['meta']['totalPages']));
 
 // ── User model – getById() ────────────────────────────────────────────────────
 

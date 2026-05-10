@@ -26,13 +26,13 @@ $token = null;
 section('Enumerations – public list');
 $r = request('GET', "{$base}/enumerations", [], false);
 assert_test('GET /enumerations 200', $r['status'] === 200, dump_on_fail($r));
-assert_test('has items array', is_array($r['data']['data']['items']));
-assert_test('has order_status group', count(array_filter($r['data']['data']['items'], fn ($x) => $x['type'] === 'order_status')) > 0);
-assert_test('has invoice_status group', count(array_filter($r['data']['data']['items'], fn ($x) => $x['type'] === 'invoice_status')) > 0);
+assert_test('has items array', is_array($r['data']['data']));
+assert_test('has order_status group', count(array_filter($r['data']['data'], fn ($x) => $x['type'] === 'order_status')) > 0);
+assert_test('has invoice_status group', count(array_filter($r['data']['data'], fn ($x) => $x['type'] === 'invoice_status')) > 0);
 
 $firstEnumId = null;
-if (!empty($r['data']['data']['items'])) {
-    $firstGroup  = $r['data']['data']['items'][0];
+if (!empty($r['data']['data'])) {
+    $firstGroup  = $r['data']['data'][0];
     $firstEnumId = $firstGroup['id'] ?? null;
 }
 
@@ -51,7 +51,7 @@ if ($firstEnumId) {
 // ── Admin login ───────────────────────────────────────────────────────────────
 
 section('Enumerations – admin login');
-$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 

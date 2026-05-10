@@ -368,7 +368,7 @@ assert_test('null spec treated as no-op: empty', $r['sql'] === '');
 ═══════════════════════════════════════════════════════════ */
 
 section('SQL_FILTER integration – auth setup');
-$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
+$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 $token = $r['data']['data']['token'] ?? null;
 assert_test('admin login for filter tests', $token !== null, dump_on_fail($r));
 
@@ -378,61 +378,61 @@ if ($token !== null) {
     section('SQL_FILTER integration – GET /roles');
     $r = request('GET', $base . '/roles?limit=100&filter=' . urlencode('{"name":{"value":"admin"}}'));
     assert_test('roles eq filter: 200', $r['status'] === 200, dump_on_fail($r));
-    assert_test('roles eq filter: items array', is_array($r['data']['data']['items']));
+    assert_test('roles eq filter: items array', is_array($r['data']['data']));
     assert_test(
         'roles eq filter: only admin',
-        count(array_filter($r['data']['data']['items'], fn ($x) => $x['name'] !== 'admin')) === 0
-        && count($r['data']['data']['items']) >= 1,
+        count(array_filter($r['data']['data'], fn ($x) => $x['name'] !== 'admin')) === 0
+        && count($r['data']['data']) >= 1,
     );
 
     $r = request('GET', $base . '/roles?limit=100&filter=' . urlencode('{"name":{"value":"admin","operator":"neq"}}'));
     assert_test(
         'roles neq filter: no admin in result',
-        count(array_filter($r['data']['data']['items'], fn ($x) => $x['name'] === 'admin')) === 0,
+        count(array_filter($r['data']['data'], fn ($x) => $x['name'] === 'admin')) === 0,
     );
 
     $r = request('GET', $base . '/roles?limit=100&filter=' . urlencode('{"name":{"value":"adm","operator":"start"}}'));
     assert_test(
         'roles start filter: admin present',
-        count(array_filter($r['data']['data']['items'], fn ($x) => $x['name'] === 'admin')) >= 1,
+        count(array_filter($r['data']['data'], fn ($x) => $x['name'] === 'admin')) >= 1,
     );
 
     $r = request('GET', $base . '/roles?limit=100&filter=' . urlencode('{"position":{"value":0,"operator":"gte"}}'));
     assert_test('roles gte filter: 200', $r['status'] === 200);
-    assert_test('roles gte filter: has items', count($r['data']['data']['items']) >= 1);
+    assert_test('roles gte filter: has items', count($r['data']['data']) >= 1);
 
     // ── Users ─────────────────────────────────────────────────────────────────
     section('SQL_FILTER integration – GET /users');
     $r = request('GET', $base . '/users?limit=100&filter=' . urlencode('{"email":{"value":"admin@example.com"}}'));
     assert_test('users eq email filter: 200', $r['status'] === 200, dump_on_fail($r));
-    assert_test('users eq email filter: 1 result', count($r['data']['data']['items']) === 1);
+    assert_test('users eq email filter: 1 result', count($r['data']['data']) === 1);
     assert_test(
         'users eq email filter: correct email',
-        ($r['data']['data']['items'][0]['email'] ?? null) === 'admin@example.com',
+        ($r['data']['data'][0]['email'] ?? null) === 'admin@example.com',
     );
 
     $r = request('GET', $base . '/users?limit=100&filter=' . urlencode('{"email":{"value":"@example.com","operator":"end"}}'));
-    assert_test('users end email filter: has results', count($r['data']['data']['items']) >= 1);
+    assert_test('users end email filter: has results', count($r['data']['data']) >= 1);
     assert_test(
         'users end email filter: all match',
-        count(array_filter($r['data']['data']['items'], fn ($u) => !str_ends_with($u['email'], '@example.com'))) === 0,
+        count(array_filter($r['data']['data'], fn ($u) => !str_ends_with($u['email'], '@example.com'))) === 0,
     );
 
     $r = request('GET', $base . '/users?limit=100&filter=' . urlencode('{"email":{"value":"nonexistent_xyz_99999@x.com"}}'));
-    assert_test('users eq filter: no results for unknown', count($r['data']['data']['items']) === 0);
+    assert_test('users eq filter: no results for unknown', count($r['data']['data']) === 0);
 
     // ── Categories ────────────────────────────────────────────────────────────
     section('SQL_FILTER integration – GET /categories');
     // First get a real category name
     $rAll    = request('GET', "{$base}/categories?limit=1", [], false);
-    $catName = $rAll['data']['data']['items'][0]['name'] ?? null;
+    $catName = $rAll['data']['data'][0]['name'] ?? null;
     if ($catName !== null) {
         $r = request('GET', $base . '/categories?limit=100&filter=' . urlencode('{"name":{"value":"' . $catName . '"}}'), [], false);
         assert_test('categories eq filter: 200', $r['status'] === 200, dump_on_fail($r));
-        assert_test('categories eq filter: found', count($r['data']['data']['items']) >= 1);
+        assert_test('categories eq filter: found', count($r['data']['data']) >= 1);
         assert_test(
             'categories eq filter: name match',
-            ($r['data']['data']['items'][0]['name'] ?? null) === $catName,
+            ($r['data']['data'][0]['name'] ?? null) === $catName,
         );
     } else {
         assert_test('categories eq filter: skipped (no data)', true);
@@ -441,7 +441,7 @@ if ($token !== null) {
     }
 
     $r = request('GET', $base . '/categories?limit=100&filter=' . urlencode('{"name":{"value":"zz_never_exists_xyz_999"}}'), [], false);
-    assert_test('categories eq filter: 0 for unknown', ($r['data']['data']['total'] ?? -1) === 0);
+    assert_test('categories eq filter: 0 for unknown', ($r['data']['meta']['total'] ?? -1) === 0);
 
     $r = request('GET', $base . '/categories?limit=100&filter=' . urlencode('{"position":{"value":0,"operator":"gte"}}'), [], false);
     assert_test('categories gte filter: 200', $r['status'] === 200);
@@ -449,11 +449,11 @@ if ($token !== null) {
     // ── Products ──────────────────────────────────────────────────────────────
     section('SQL_FILTER integration – GET /products');
     $rAll     = request('GET', "{$base}/products?limit=1", [], false);
-    $prodName = $rAll['data']['data']['items'][0]['name'] ?? null;
+    $prodName = $rAll['data']['data'][0]['name'] ?? null;
     if ($prodName !== null) {
         $r = request('GET', $base . '/products?limit=100&filter=' . urlencode('{"name":{"value":"' . $prodName . '"}}'), [], false);
         assert_test('products eq filter: 200', $r['status'] === 200, dump_on_fail($r));
-        assert_test('products eq filter: found', count($r['data']['data']['items']) >= 1);
+        assert_test('products eq filter: found', count($r['data']['data']) >= 1);
     } else {
         assert_test('products eq filter: skipped (no data)', true);
         assert_test('products eq filter: skipped (no data)', true);
@@ -466,7 +466,7 @@ if ($token !== null) {
     assert_test('products gt stock filter: 200', $r['status'] === 200);
     assert_test(
         'products gt stock filter: all stock > 0',
-        count(array_filter($r['data']['data']['items'] ?? [], fn ($p) => (int)$p['stock_quantity'] <= 0)) === 0,
+        count(array_filter($r['data']['data'] ?? [], fn ($p) => (int)$p['stock_quantity'] <= 0)) === 0,
     );
 
     // ── Texts ─────────────────────────────────────────────────────────────────
@@ -482,50 +482,50 @@ if ($token !== null) {
 
     $r = request('GET', $base . '/texts?limit=100&filter=' . urlencode('{"is_active":{"value":1}}'));
     assert_test('texts eq is_active=1 filter: 200', $r['status'] === 200, dump_on_fail($r));
-    assert_test('texts eq is_active=1 filter: has items', count($r['data']['data']['items']) >= 1);
+    assert_test('texts eq is_active=1 filter: has items', count($r['data']['data']) >= 1);
     assert_test(
         'texts eq is_active=1 filter: all active',
-        count(array_filter($r['data']['data']['items'], fn ($t) => (int)$t['is_active'] !== 1)) === 0,
+        count(array_filter($r['data']['data'], fn ($t) => (int)$t['is_active'] !== 1)) === 0,
     );
 
     $r = request('GET', $base . '/texts?limit=100&filter=' . urlencode('{"syscode":{"value":"xyz_never_exists_zzz"}}'));
-    assert_test('texts eq syscode filter: 0 for unknown', ($r['data']['data']['total'] ?? -1) === 0);
+    assert_test('texts eq syscode filter: 0 for unknown', ($r['data']['meta']['total'] ?? -1) === 0);
 
     // ── Enumerations ──────────────────────────────────────────────────────────
     section('SQL_FILTER integration – GET /enumerations');
     $r = request('GET', $base . '/enumerations?limit=100&filter=' . urlencode('{"type":{"value":"order_status"}}'), [], false);
     assert_test('enumerations eq type filter: 200', $r['status'] === 200, dump_on_fail($r));
-    assert_test('enumerations eq type filter: has items', count($r['data']['data']['items']) >= 1);
+    assert_test('enumerations eq type filter: has items', count($r['data']['data']) >= 1);
     assert_test(
         'enumerations eq type filter: all order_status',
-        count(array_filter($r['data']['data']['items'], fn ($e) => $e['type'] !== 'order_status')) === 0,
+        count(array_filter($r['data']['data'], fn ($e) => $e['type'] !== 'order_status')) === 0,
     );
 
     $r = request('GET', $base . '/enumerations?limit=100&filter=' . urlencode('{"is_active":{"value":1}}'), [], false);
     assert_test('enumerations eq is_active filter: 200', $r['status'] === 200);
     assert_test(
         'enumerations eq is_active filter: all active',
-        count(array_filter($r['data']['data']['items'], fn ($e) => (int)$e['is_active'] !== 1)) === 0,
+        count(array_filter($r['data']['data'], fn ($e) => (int)$e['is_active'] !== 1)) === 0,
     );
 
     $r = request('GET', $base . '/enumerations?limit=100&filter=' . urlencode('{"label":{"value":"a","operator":"regex"}}'), [], false);
     assert_test('enumerations regex label filter: 200', $r['status'] === 200);
     assert_test(
         'enumerations regex label filter: all contain a',
-        count(array_filter($r['data']['data']['items'], fn ($e) => stripos($e['label'], 'a') === false)) === 0,
+        count(array_filter($r['data']['data'], fn ($e) => stripos($e['label'], 'a') === false)) === 0,
     );
 
     // ── Orders ────────────────────────────────────────────────────────────────
     section('SQL_FILTER integration – GET /orders');
     $rAll        = request('GET', "{$base}/orders?limit=1");
-    $orderStatus = $rAll['data']['data']['items'][0]['status'] ?? null;
+    $orderStatus = $rAll['data']['data'][0]['status'] ?? null;
     if ($orderStatus !== null) {
         $r = request('GET', $base . '/orders?limit=100&filter=' . urlencode('{"status":{"value":"' . $orderStatus . '"}}'));
         assert_test('orders eq status filter: 200', $r['status'] === 200, dump_on_fail($r));
-        assert_test('orders eq status filter: has items', count($r['data']['data']['items']) >= 1);
+        assert_test('orders eq status filter: has items', count($r['data']['data']) >= 1);
         assert_test(
             'orders eq status filter: all match status',
-            count(array_filter($r['data']['data']['items'], fn ($o) => $o['status'] !== $orderStatus)) === 0,
+            count(array_filter($r['data']['data'], fn ($o) => $o['status'] !== $orderStatus)) === 0,
         );
     } else {
         assert_test('orders eq filter: skipped (no data)', true);
@@ -539,14 +539,14 @@ if ($token !== null) {
     // ── Invoices ──────────────────────────────────────────────────────────────
     section('SQL_FILTER integration – GET /invoices');
     $rAll      = request('GET', "{$base}/invoices?limit=1");
-    $invStatus = $rAll['data']['data']['items'][0]['status'] ?? null;
+    $invStatus = $rAll['data']['data'][0]['status'] ?? null;
     if ($invStatus !== null) {
         $r = request('GET', $base . '/invoices?limit=100&filter=' . urlencode('{"status":{"value":"' . $invStatus . '"}}'));
         assert_test('invoices eq status filter: 200', $r['status'] === 200, dump_on_fail($r));
-        assert_test('invoices eq status filter: has items', count($r['data']['data']['items']) >= 1);
+        assert_test('invoices eq status filter: has items', count($r['data']['data']) >= 1);
         assert_test(
             'invoices eq status filter: all match',
-            count(array_filter($r['data']['data']['items'], fn ($i) => $i['status'] !== $invStatus)) === 0,
+            count(array_filter($r['data']['data'], fn ($i) => $i['status'] !== $invStatus)) === 0,
         );
     } else {
         assert_test('invoices eq filter: skipped (no data)', true);
@@ -563,14 +563,14 @@ if ($token !== null) {
     assert_test('roles multi-col: 200', $r['status'] === 200);
     assert_test(
         'roles multi-col: all names start with adm',
-        count(array_filter($r['data']['data']['items'], fn ($x) => !str_starts_with($x['name'], 'adm'))) === 0,
+        count(array_filter($r['data']['data'], fn ($x) => !str_starts_with($x['name'], 'adm'))) === 0,
     );
 
     // ── Invalid / garbage filter param is silently ignored ────────────────────
     section('SQL_FILTER integration – invalid filter param ignored');
     $r = request('GET', $base . '/roles?filter=bad_json', [], false);
     assert_test('garbage filter → 200 (ignored)', $r['status'] === 200);
-    assert_test('garbage filter → returns items', is_array($r['data']['data']['items']));
+    assert_test('garbage filter → returns items', is_array($r['data']['data']));
 
     $r = request('GET', $base . '/roles?filter={}', [], false);
     assert_test('empty filter obj → 200', $r['status'] === 200);

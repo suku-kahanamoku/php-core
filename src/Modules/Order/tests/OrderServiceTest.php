@@ -23,7 +23,7 @@ $token = null;
 
 // ── Setup ─────────────────────────────────────────────────────────────────────
 
-$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
@@ -67,7 +67,7 @@ $r = request('POST', "{$base}/orders", [
 assert_test('create order 201', $r['status'] === 201, dump_on_fail($r));
 $svcOrderId = $r['data']['data']['id'] ?? null;
 
-$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
+$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 $token = $r['data']['data']['token'] ?? null;
 
 if ($svcOrderId) {

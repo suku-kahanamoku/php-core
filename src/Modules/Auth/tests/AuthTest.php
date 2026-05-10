@@ -61,7 +61,7 @@ assert_test('registered user has role = user', $r['data']['data']['role'] === 'u
 
 // ── Cleanup ───────────────────────────────────────────────────────────────────
 
-$r          = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
+$r          = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 $adminToken = $r['data']['data']['token'] ?? null;
 $savedToken = $token;
 $token      = $adminToken;

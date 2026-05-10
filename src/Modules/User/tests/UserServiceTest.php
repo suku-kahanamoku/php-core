@@ -21,7 +21,7 @@ if (!isset($runnerMode)) {
 }
 $token = null;
 
-$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
@@ -66,7 +66,7 @@ $token = null;
 $r     = request('GET', "{$base}/users");
 assert_test('GET /users → 401 without token', $r['status'] === 401, dump_on_fail($r));
 
-$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
+$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 $token = $r['data']['data']['token'] ?? null;
 
 // ── Cleanup ───────────────────────────────────────────────────────────────────

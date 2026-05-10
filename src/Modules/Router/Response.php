@@ -127,6 +127,9 @@ class Response
      * Pouzij misto kombinace success() + applyFactory() v list() metodach.
      * Pokud request neobsahuje factory, chova se stejne jako success().
      *
+     * Transformuje data z formatu { items: [...], total, page, limit, totalPages }
+     * na format { success, message, data: [...], meta: { total, page, limit, totalPages } }
+     *
      * @param  array<string, mixed> $data     Musi obsahovat klic 'items'
      * @param  Request              $request
      * @return never
@@ -137,7 +140,24 @@ class Response
         if ($factory !== null && isset($data['items'])) {
             $data['items'] = self::applyFactory($data['items'], $factory);
         }
-        self::success($data);
+        
+        // Extrahuj metadata z data
+        $items = $data['items'] ?? [];
+        $meta  = [
+            'total'      => $data['total'] ?? 0,
+            'page'       => $data['page'] ?? 1,
+            'limit'      => $data['limit'] ?? 20,
+            'totalPages' => $data['totalPages'] ?? 0,
+            'skip'       => (($data['page'] ?? 1) - 1) * ($data['limit'] ?? 20),
+        ];
+        
+        // Vrať s items v data a metadata v meta
+        self::json([
+            'success' => true,
+            'message' => 'OK',
+            'data'    => $items,
+            'meta'    => $meta,
+        ]);
     }
 
     /**

@@ -31,7 +31,7 @@ assert_test('data is array', is_array($r['data']['data']));
 // ── Admin login ───────────────────────────────────────────────────────────────
 
 section('Categories – admin login');
-$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
@@ -56,7 +56,7 @@ $token    = $r['data']['data']['token'] ?? null;
 $r = request('POST', "{$base}/categories", ['name' => 'x']);
 assert_test('POST /categories → 403 for non-admin', $r['status'] === 403, dump_on_fail($r));
 
-$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
+$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 $token = $r['data']['data']['token'] ?? null;
 if ($catRegId) {
     request('DELETE', "{$base}/users/{$catRegId}");

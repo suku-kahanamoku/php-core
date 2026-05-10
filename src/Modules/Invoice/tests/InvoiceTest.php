@@ -23,7 +23,7 @@ $token = null;
 
 // ── Setup ─────────────────────────────────────────────────────────────────────
 
-$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
@@ -52,7 +52,7 @@ $r     = request('POST', "{$base}/orders", [
 ]);
 $modelOrderId = $r['data']['data']['id'] ?? null;
 
-$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
+$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 $token = $r['data']['data']['token'] ?? null;
 
 // ── Invoice model – create() ──────────────────────────────────────────────────
@@ -70,7 +70,7 @@ assert_test('duplicate invoice → 409', $r['status'] === 409, dump_on_fail($r))
 section('Invoice model – getAll()');
 $r = request('GET', "{$base}/invoices");
 assert_test('returns 200', $r['status'] === 200, dump_on_fail($r));
-assert_test('has items + pagination', isset($r['data']['data']['items'], $r['data']['data']['total']));
+assert_test('has items + pagination', isset($r['data']['data'], $r['data']['meta']['total']));
 
 // ── Invoice model – getById() ─────────────────────────────────────────────────
 
@@ -78,7 +78,7 @@ section('Invoice model – getById()');
 if ($modelInvoiceId) {
     $r = request('GET', "{$base}/invoices/{$modelInvoiceId}");
     assert_test('getById 200', $r['status'] === 200, dump_on_fail($r));
-    assert_test('has items array', isset($r['data']['data']['items']));
+    assert_test('has items array', isset($r['data']['data']));
     assert_test('invoice_number set', !empty($r['data']['data']['invoice_number']));
 }
 

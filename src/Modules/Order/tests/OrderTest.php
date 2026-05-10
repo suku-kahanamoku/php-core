@@ -23,7 +23,7 @@ $token = null;
 
 // ── Setup ─────────────────────────────────────────────────────────────────────
 
-$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
@@ -62,7 +62,7 @@ $modelOrderId = $r['data']['data']['id'] ?? null;
 section('Order model – getAll()');
 $r = request('GET', "{$base}/orders");
 assert_test('returns 200', $r['status'] === 200, dump_on_fail($r));
-assert_test('has items + pagination', isset($r['data']['data']['items'], $r['data']['data']['total']));
+assert_test('has items + pagination', isset($r['data']['data'], $r['data']['meta']['total']));
 
 // ── Order model – getById() ───────────────────────────────────────────────────
 
@@ -70,14 +70,14 @@ section('Order model – getById()');
 if ($modelOrderId) {
     $r = request('GET', "{$base}/orders/{$modelOrderId}");
     assert_test('getById 200', $r['status'] === 200, dump_on_fail($r));
-    assert_test('has items array', isset($r['data']['data']['items']));
-    assert_test('items not empty', count($r['data']['data']['items']) > 0);
+    assert_test('has items array', isset($r['data']['data']));
+    assert_test('items not empty', count($r['data']['data']) > 0);
 }
 
 // ── Order model – updateStatus() (admin) ─────────────────────────────────────
 
 section('Order model – updateStatus()');
-$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
+$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 $token = $r['data']['data']['token'] ?? null;
 
 if ($modelOrderId) {

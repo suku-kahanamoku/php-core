@@ -286,12 +286,75 @@ INSERT INTO `enumeration` (`franchise_code`, `type`, `syscode`, `label`, `value`
   -- Currencies only
   ('default', 'currency', 'CZK', 'Czech Koruna', 'CZK', 10),
   ('default', 'currency', 'EUR', 'Euro',         'EUR', 20),
-  ('default', 'currency', 'USD', 'US Dollar',    'USD', 30);
+  ('default', 'currency', 'USD', 'US Dollar',    'USD', 30),
+  -- Wine kinds
+  ('default', 'wine_kind', 'dry',           'Dry',             'dry',           10),
+  ('default', 'wine_kind', 'semi_dry',      'Semi-dry',        'semi_dry',      20),
+  ('default', 'wine_kind', 'sweet',         'Sweet',           'sweet',         30),
+  ('default', 'wine_kind', 'semi_sweet',    'Semi-sweet',      'semi_sweet',    40),
+  ('default', 'wine_kind', 'extra_dry',     'Extra dry',       'extra_dry',     50),
+  ('default', 'wine_kind', 'off_dry',       'Off-dry',         'off_dry',       60),
+  ('default', 'wine_kind', 'medium_dry',    'Medium dry',      'medium_dry',    70),
+  ('default', 'wine_kind', 'medium_sweet',  'Medium sweet',    'medium_sweet',  80),
+  ('default', 'wine_kind', 'very_sweet',    'Very sweet',      'very_sweet',    90),
+  ('default', 'wine_kind', 'dessert',       'Dessert',         'dessert',       100),
+  -- Wine quality
+  ('default', 'wine_quality', 'kabinett',                'Kabinett',                    'kabinett',                10),
+  ('default', 'wine_quality', 'late_harvest',            'Late harvest',                'late_harvest',            20),
+  ('default', 'wine_quality', 'selection_of_grapes',     'Selection of grapes',         'selection_of_grapes',     30),
+  ('default', 'wine_quality', 'selection_of_berries',    'Selection of berries',        'selection_of_berries',    40),
+  ('default', 'wine_quality', 'ice_wine',                'Ice wine',                    'ice_wine',                50),
+  ('default', 'wine_quality', 'straw_wine',              'Straw wine',                  'straw_wine',              60),
+  ('default', 'wine_quality', 'quality_wine',            'Quality wine',                'quality_wine',            70),
+  ('default', 'wine_quality', 'archive_wine',            'Archive wine',                'archive_wine',            80),
+  ('default', 'wine_quality', 'table_wine',              'Table wine',                  'table_wine',              90),
+  -- Wine colors
+  ('default', 'wine_color', 'white',  'White',  'white',  10),
+  ('default', 'wine_color', 'red',    'Red',    'red',    20),
+  ('default', 'wine_color', 'rose',   'Rosé',   'rose',   30),
+  ('default', 'wine_color', 'orange', 'Orange', 'orange', 40),
+  -- Wine varieties
+  ('default', 'wine_variety', 'cabernet_sauvignon',  'Cabernet Sauvignon',  'cabernet_sauvignon',  10),
+  ('default', 'wine_variety', 'chardonnay',          'Chardonnay',          'chardonnay',          20),
+  ('default', 'wine_variety', 'frankovka',           'Frankovka',           'frankovka',           30),
+  ('default', 'wine_variety', 'gruner_veltliner',    'Grüner Veltliner',    'gruner_veltliner',    40),
+  ('default', 'wine_variety', 'merlot',              'Merlot',              'merlot',              50),
+  ('default', 'wine_variety', 'modry_portugal',      'Modrý portugal',      'modry_portugal',      60),
+  ('default', 'wine_variety', 'mueller_thurgau',     'Müller-Thurgau',      'mueller_thurgau',     70),
+  ('default', 'wine_variety', 'muscat',              'Muscat',              'muscat',              80),
+  ('default', 'wine_variety', 'other',               'Other',               'other',               90),
+  ('default', 'wine_variety', 'pinot_blanc',         'Pinot Blanc',         'pinot_blanc',         100),
+  ('default', 'wine_variety', 'pinot_gris',          'Pinot Gris',          'pinot_gris',          110),
+  ('default', 'wine_variety', 'pinot_noir',          'Pinot Noir',          'pinot_noir',          120),
+  ('default', 'wine_variety', 'riesling',            'Riesling',            'riesling',            130),
+  ('default', 'wine_variety', 'sauvignon_blanc',     'Sauvignon Blanc',     'sauvignon_blanc',     140),
+  ('default', 'wine_variety', 'st_laurent',          'St. Laurent',         'st_laurent',          150),
+  ('default', 'wine_variety', 'traminer',            'Traminer',            'traminer',            160),
+  ('default', 'wine_variety', 'welschriesling',      'Welschriesling',      'welschriesling',      170),
+  ('default', 'wine_variety', 'zweigelt',            'Zweigelt',            'zweigelt',            180),
+  -- Languages
+  ('default', 'language', 'cs', 'Čeština', 'cs', 10),
+  ('default', 'language', 'en', 'English',  'en', 20),
+  -- Country codes
+  ('default', 'country_code', 'cs', 'CZ', 'cs', 10),
+  ('default', 'country_code', 'sk', 'SK', 'sk', 20),
+  -- Order status
+  ('default', 'order_status', 'pending', 'Pending', 'pending', 10),
+  ('default', 'order_status', 'confirmed', 'Confirmed', 'confirmed', 20),
+  ('default', 'order_status', 'shipped', 'Shipped', 'shipped', 30),
+  ('default', 'order_status', 'delivered', 'Delivered', 'delivered', 40),
+  ('default', 'order_status', 'cancelled', 'Cancelled', 'cancelled', 50),
+  -- Invoice status
+  ('default', 'invoice_status', 'draft', 'Draft', 'draft', 10),
+  ('default', 'invoice_status', 'issued', 'Issued', 'issued', 20),
+  ('default', 'invoice_status', 'paid', 'Paid', 'paid', 30),
+  ('default', 'invoice_status', 'overdue', 'Overdue', 'overdue', 40),
+  ('default', 'invoice_status', 'cancelled', 'Cancelled', 'cancelled', 50);
 
 -- ── Seed: admin user (password: password) ────────────────
 INSERT INTO `user` (`franchise_code`, `first_name`, `last_name`, `email`, `password`, `role_id`) VALUES
   ('default', 'Admin', 'User', 'admin@example.com',
-   '$2y$12$158hhuy1e4Q9sgkc7WHUfuBlJWCowqiNGdti1t6wpds7zOtP0KkeSs',
+   '$2y$12$J0P0lGKwBFIPbV03dvO5aee5yKDwPxgYxUNgR4zVHlY5x8XVvaTCO',
    (SELECT id FROM role WHERE franchise_code = 'default' AND name = 'admin'));
 
 -- ── Seed: category "top" ──────────────────────────────────
@@ -302,7 +365,7 @@ INSERT INTO `category` (`franchise_code`, `parent_id`, `syscode`, `name`, `descr
 INSERT INTO `product` (`franchise_code`, `sku`, `name`, `description`, `price`, `vat_rate`, `stock_quantity`, `is_active`, `kind`, `color`, `variant`, `data`) VALUES
   ('default', 'ZAJ-WHI-001', 'Zaječské Bílé', 'Jemné bílé víno ze Zaječí', 299.00, 21.00, 50, 1, 'dry', 'white', '0.75l', JSON_OBJECT('year', 2022, 'volume', 0.75, 'quality', 'kabinett', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 12.5, 'serving_temp', '8-10°C')),
   ('default', 'ZAJ-RED-001', 'Zaječské Červené', 'Kvalitní červené víno tradičního stylu', 349.00, 21.00, 40, 1, 'dry', 'red', '0.75l', JSON_OBJECT('year', 2021, 'volume', 0.75, 'quality', 'selection_of_grapes', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 13.5, 'serving_temp', '16-18°C')),
-  ('default', 'ZAJ-ROE-001', 'Zaječské Rosé', 'Lehké rosé víno s ovocnými tóny', 329.00, 21.00, 35, 1, 'semiDry', 'rose', '0.75l', JSON_OBJECT('year', 2023, 'volume', 0.75, 'quality', 'late_harvest', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 12.0, 'serving_temp', '6-8°C')),
+  ('default', 'ZAJ-ROE-001', 'Zaječské Rosé', 'Lehké rosé víno s ovocnými tóny', 329.00, 21.00, 35, 1, 'semi_dry', 'rose', '0.75l', JSON_OBJECT('year', 2023, 'volume', 0.75, 'quality', 'late_harvest', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 12.0, 'serving_temp', '6-8°C')),
   ('default', 'ZAJ-SWE-001', 'Zaječské Sladké', 'Sladké desertní víno s bohatou chutí', 399.00, 21.00, 20, 1, 'dessert', 'red', '0.5l', JSON_OBJECT('year', 2020, 'volume', 0.5, 'quality', 'ice_wine', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 11.0, 'serving_temp', '4-6°C'));
 
 -- ── Seed: link products 1, 2, 3 to category "top" ──────────

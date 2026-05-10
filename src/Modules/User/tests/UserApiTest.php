@@ -24,7 +24,7 @@ $token = null;
 // ── Admin login ───────────────────────────────────────────────────────────────
 
 section('Users – admin login');
-$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 assert_test('role = admin', $r['data']['data']['role'] === 'admin', dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
@@ -43,7 +43,7 @@ $token = $tmpToken;
 section('Users – list');
 $r = request('GET', "{$base}/users");
 assert_test('GET /users 200', $r['status'] === 200, dump_on_fail($r));
-assert_test('has items + total', isset($r['data']['data']['items'], $r['data']['data']['total']));
+assert_test('has items + total', isset($r['data']['data'], $r['data']['meta']['total']));
 
 // ── Create ────────────────────────────────────────────────────────────────────
 
@@ -87,12 +87,12 @@ $token = null;
 // ── Projection ────────────────────────────────────────────────────────────────
 
 section('Users – projection');
-$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
+$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 $token = $r['data']['data']['token'] ?? null;
 
 $r = request('GET', "{$base}/users?projection=email,first_name");
 assert_test('projection: 200', $r['status'] === 200, dump_on_fail($r));
-$firstItem = $r['data']['data']['items'][0] ?? [];
+$firstItem = $r['data']['data'][0] ?? [];
 assert_test('projection: has id (system)', isset($firstItem['id']));
 assert_test('projection: has email', isset($firstItem['email']));
 assert_test('projection: has first_name', isset($firstItem['first_name']));
@@ -100,7 +100,7 @@ assert_test('projection: no last_name', !isset($firstItem['last_name']));
 
 $r = request('GET', "{$base}/users?projection=");
 assert_test('empty projection: 200', $r['status'] === 200, dump_on_fail($r));
-$firstItem = $r['data']['data']['items'][0] ?? [];
+$firstItem = $r['data']['data'][0] ?? [];
 assert_test('empty projection: has id', isset($firstItem['id']));
 assert_test('empty projection: no email', !isset($firstItem['email']));
 

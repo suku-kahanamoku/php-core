@@ -26,12 +26,12 @@ $token = null;
 section('Role model – getAll()');
 $r = request('GET', "{$base}/roles?limit=100", [], false);
 assert_test('returns 200', $r['status'] === 200, dump_on_fail($r));
-assert_test('data is array', is_array($r['data']['data']['items']));
-assert_test('at least 3 default roles', ($r['data']['data']['total'] ?? 0) >= 3);
+assert_test('data is array', is_array($r['data']['data']));
+assert_test('at least 3 default roles', ($r['data']['meta']['total'] ?? 0) >= 3);
 
 section('Role model – getById()');
 $adminRoleId = null;
-foreach ($r['data']['data']['items'] ?? [] as $row) {
+foreach ($r['data']['data'] ?? [] as $row) {
     if ($row['name'] === 'admin') {
         $adminRoleId = $row['id'];
         break;
@@ -52,7 +52,7 @@ if ($adminRoleId) {
 // ── Role model – write operations (admin required) ────────────────────────────
 
 section('Role model – create()');
-$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
+$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 $token = $r['data']['data']['token'] ?? null;
 
 $r = request('POST', "{$base}/roles", ['name' => TEST_PREFIX . 'model_role_' . time(), 'label' => 'Model Role']);

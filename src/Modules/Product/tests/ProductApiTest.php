@@ -24,7 +24,7 @@ $token = null;
 // ── Admin login + setup: create a category ───────────────────────────────────
 
 section('Products – setup');
-$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
@@ -53,7 +53,7 @@ $token     = $r['data']['data']['token'] ?? null;
 $r = request('POST', "{$base}/products", ['name' => 'x', 'sku' => 'x', 'price' => 1]);
 assert_test('POST /products → 403 for non-admin', $r['status'] === 403, dump_on_fail($r));
 
-$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
+$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 $token = $r['data']['data']['token'] ?? null;
 if ($prodRegId) {
     request('DELETE', "{$base}/users/{$prodRegId}");
@@ -77,9 +77,9 @@ $prodId = $r['data']['data']['id'] ?? null;
 section('Products – public list');
 $r = request('GET', "{$base}/products", [], false);
 assert_test('GET /products 200 without token', $r['status'] === 200, dump_on_fail($r));
-assert_test('has items array', isset($r['data']['data']['items']));
-assert_test('has total', isset($r['data']['data']['total']));
-assert_test('has page/limit/totalPages', isset($r['data']['data']['page'], $r['data']['data']['limit'], $r['data']['data']['totalPages']));
+assert_test('has items array', isset($r['data']['data']));
+assert_test('has total', isset($r['data']['meta']['total']));
+assert_test('has page/limit/totalPages', isset($r['data']['meta']['page'], $r['data']['meta']['limit'], $r['data']['meta']['totalPages']));
 
 section('Products – public get by id');
 if ($prodId) {
@@ -105,17 +105,17 @@ if ($prodId) {
     $f = urlencode(json_encode(['data.quality' => ['value' => 'late_harvest']]));
     $r = request('GET', "{$base}/products?filter={$f}", [], false);
     assert_test('filter by data.quality → 200', $r['status'] === 200, dump_on_fail($r));
-    assert_test('filter data.quality returns result', ($r['data']['data']['total'] ?? 0) >= 1, dump_on_fail($r));
+    assert_test('filter data.quality returns result', ($r['data']['meta']['total'] ?? 0) >= 1, dump_on_fail($r));
 
     $f = urlencode(json_encode(['data.year' => ['value' => 2022]]));
     $r = request('GET', "{$base}/products?filter={$f}", [], false);
     assert_test('filter by data.year → 200', $r['status'] === 200, dump_on_fail($r));
-    assert_test('filter data.year returns result', ($r['data']['data']['total'] ?? 0) >= 1, dump_on_fail($r));
+    assert_test('filter data.year returns result', ($r['data']['meta']['total'] ?? 0) >= 1, dump_on_fail($r));
 
     $f = urlencode(json_encode(['color' => ['value' => 'white']]));
     $r = request('GET', "{$base}/products?filter={$f}", [], false);
     assert_test('filter by color → 200', $r['status'] === 200, dump_on_fail($r));
-    assert_test('filter color returns result', ($r['data']['data']['total'] ?? 0) >= 1, dump_on_fail($r));
+    assert_test('filter color returns result', ($r['data']['meta']['total'] ?? 0) >= 1, dump_on_fail($r));
 }
 
 // ── Update ────────────────────────────────────────────────────────────────────
@@ -171,7 +171,7 @@ $token = null;
 section('Products – projection');
 $r = request('GET', "{$base}/products?projection=name,price", [], false);
 assert_test('projection: 200', $r['status'] === 200, dump_on_fail($r));
-$firstItem = $r['data']['data']['items'][0] ?? [];
+$firstItem = $r['data']['data'][0] ?? [];
 assert_test('projection: has id (system)', isset($firstItem['id']));
 assert_test('projection: has name', isset($firstItem['name']));
 assert_test('projection: has price', isset($firstItem['price']));
@@ -179,7 +179,7 @@ assert_test('projection: no sku', !isset($firstItem['sku']));
 
 $r = request('GET', "{$base}/products?projection=", [], false);
 assert_test('empty projection: 200', $r['status'] === 200, dump_on_fail($r));
-$firstItem = $r['data']['data']['items'][0] ?? [];
+$firstItem = $r['data']['data'][0] ?? [];
 assert_test('empty projection: has id', isset($firstItem['id']));
 assert_test('empty projection: no name', !isset($firstItem['name']));
 

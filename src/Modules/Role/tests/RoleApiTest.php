@@ -26,14 +26,14 @@ $token = null;
 section('Roles – public list');
 $r = request('GET', "{$base}/roles?limit=100", [], false);
 assert_test('GET /roles 200', $r['status'] === 200, dump_on_fail($r));
-assert_test('data is array', is_array($r['data']['data']['items']));
-assert_test('contains admin role', count(array_filter($r['data']['data']['items'], fn ($x) => $x['name'] === 'admin')) > 0);
+assert_test('data is array', is_array($r['data']['data']));
+assert_test('contains admin role', count(array_filter($r['data']['data'], fn ($x) => $x['name'] === 'admin')) > 0);
 
 // ── Public: get by id ────────────────────────────────────────────────────────
 
 section('Roles – public get by id');
 $adminRoleId = null;
-foreach ($r['data']['data']['items'] ?? [] as $row) {
+foreach ($r['data']['data'] ?? [] as $row) {
     if ($row['name'] === 'admin') {
         $adminRoleId = $row['id'];
         break;
@@ -53,7 +53,7 @@ if ($adminRoleId) {
 // ── Admin login ───────────────────────────────────────────────────────────────
 
 section('Roles – admin login');
-$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
@@ -153,7 +153,7 @@ if ($tempRoleId) {
 section('Roles – user CRUD with role assignment');
 $r = request('GET', "{$base}/users?role=admin");
 assert_test('GET /users?role=admin 200', $r['status'] === 200, dump_on_fail($r));
-assert_test('all returned users are admin', count(array_filter($r['data']['data']['items'] ?? [], fn ($u) => ($u['role']['name'] ?? $u['role'] ?? null) !== 'admin')) === 0);
+assert_test('all returned users are admin', count(array_filter($r['data']['data'] ?? [], fn ($u) => ($u['role']['name'] ?? $u['role'] ?? null) !== 'admin')) === 0);
 
 $token = null;
 
@@ -162,7 +162,7 @@ $token = null;
 section('Roles – projection');
 $r = request('GET', "{$base}/roles?projection=name,label", [], false);
 assert_test('projection: 200', $r['status'] === 200, dump_on_fail($r));
-$firstItem = $r['data']['data']['items'][0] ?? [];
+$firstItem = $r['data']['data'][0] ?? [];
 assert_test('projection: has id (system)', isset($firstItem['id']));
 assert_test('projection: has name', isset($firstItem['name']));
 assert_test('projection: has label', isset($firstItem['label']));
@@ -170,7 +170,7 @@ assert_test('projection: no position', !isset($firstItem['position']));
 
 $r = request('GET', "{$base}/roles?projection=", [], false);
 assert_test('empty projection: 200', $r['status'] === 200, dump_on_fail($r));
-$firstItem = $r['data']['data']['items'][0] ?? [];
+$firstItem = $r['data']['data'][0] ?? [];
 assert_test('empty projection: has id', isset($firstItem['id']));
 assert_test('empty projection: no name', !isset($firstItem['name']));
 

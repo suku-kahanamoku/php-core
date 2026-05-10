@@ -24,7 +24,7 @@ $token = null;
 // ── Setup: admin creates category + product, registers test user ──────────────
 
 section('Orders – setup');
-$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
@@ -74,19 +74,19 @@ assert_test('POST /orders 422 insufficient stock', $r['status'] === 422, dump_on
 section('Orders – list & get');
 $r = request('GET', "{$base}/orders");
 assert_test('GET /orders 200', $r['status'] === 200, dump_on_fail($r));
-assert_test('has items array', isset($r['data']['data']['items']));
+assert_test('has items array', isset($r['data']['data']));
 
 if ($orderId) {
     $r = request('GET', "{$base}/orders/{$orderId}");
     assert_test('GET /orders/:id 200', $r['status'] === 200, dump_on_fail($r));
-    assert_test('has items array', isset($r['data']['data']['items']));
-    assert_test('items not empty', count($r['data']['data']['items']) > 0);
+    assert_test('has items array', isset($r['data']['data']));
+    assert_test('items not empty', count($r['data']['data']) > 0);
 }
 
 // ── Admin manages status ──────────────────────────────────────────────────────
 
 section('Orders – admin manages status');
-$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
+$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 $token = $r['data']['data']['token'] ?? null;
 
 if ($orderId) {

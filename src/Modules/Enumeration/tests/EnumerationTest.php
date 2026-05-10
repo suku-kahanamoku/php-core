@@ -26,12 +26,12 @@ $token = null;
 section('Enumeration model – getAll()');
 $r = request('GET', "{$base}/enumerations", [], false);
 assert_test('returns 200', $r['status'] === 200, dump_on_fail($r));
-assert_test('has items array', is_array($r['data']['data']['items']));
-assert_test('has order_status group', count(array_filter($r['data']['data']['items'], fn ($x) => $x['type'] === 'order_status')) > 0);
-assert_test('has invoice_status group', count(array_filter($r['data']['data']['items'], fn ($x) => $x['type'] === 'invoice_status')) > 0);
+assert_test('has items array', is_array($r['data']['data']));
+assert_test('has order_status group', count(array_filter($r['data']['data'], fn ($x) => $x['type'] === 'order_status')) > 0);
+assert_test('has invoice_status group', count(array_filter($r['data']['data'], fn ($x) => $x['type'] === 'invoice_status')) > 0);
 
 $firstEnumId = null;
-foreach ($r['data']['data']['items'] as $item) {
+foreach ($r['data']['data'] as $item) {
     if (!empty($item['id'])) {
         $firstEnumId = $item['id'];
         break;
@@ -55,7 +55,7 @@ if ($firstEnumId) {
     assert_test('has type + syscode', isset($r['data']['data']['type'], $r['data']['data']['syscode']));
 }
 
-$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => '12345678'], false);
+$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 $token = $r['data']['data']['token'] ?? null;
 
 // ── Enumeration model – create() ─────────────────────────────────────────────
