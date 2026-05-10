@@ -929,7 +929,7 @@ GET /categories?sort=[{"position":1},{"name":1}]&filter={"parent_id":{"operator"
 | `is_active`      | 0 or 1         | `1` = visible/active                                      |
 | `kind`           | string or null | Project-specific attribute, e.g. dry, sweet               |
 | `color`          | string or null | Project-specific attribute, e.g. white, red               |
-| `variant`        | string or null | Project-specific attribute, e.g. grape variety            |
+| `variant`        | string or null | Project-specific attribute, e.g. variant variety            |
 | `data`           | object or null | Flexible JSON attributes — project-defined keys           |
 | `category_ids`   | integer[]      | IDs of all assigned categories (M:N)                      |
 | `category_names` | string[]       | Names of all assigned categories (GET `/:id` only)        |
