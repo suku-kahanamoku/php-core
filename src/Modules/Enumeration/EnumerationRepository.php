@@ -30,11 +30,9 @@ class EnumerationRepository extends BaseRepository
     /**
      * Vrati strankovany seznam ciselnikovych polozek.
      *
-     * @param  string|null $type
-     * @param  bool|null   $isActive
-     * @param  string      $sort
      * @param  int         $page
      * @param  int         $limit
+     * @param  string      $sort
      * @param  string      $filter
      * @param  array|null  $projection
      * @return array{
@@ -56,11 +54,9 @@ class EnumerationRepository extends BaseRepository
      * }
      */
     public function findAll(
-        ?string $type = null,
-        ?bool $isActive = null,
-        string $sort = '',
         int $page = 1,
         int $limit = 20,
+        string $sort = '',
         string $filter = '',
         ?array $projection = null,
     ): array {
@@ -72,15 +68,6 @@ class EnumerationRepository extends BaseRepository
 
         $where  = ['e.franchise_code = ?'];
         $params = [$this->code];
-
-        if ($type !== null) {
-            $where[]  = 'e.type = ?';
-            $params[] = $type;
-        }
-        if ($isActive !== null) {
-            $where[]  = 'e.is_active = ?';
-            $params[] = (int) $isActive;
-        }
 
         $f = SQL_FILTER($filter, 'e');
         if ($f['sql'] !== '') {

@@ -45,10 +45,8 @@ class ProductRepository extends BaseRepository
      *
      * @param  int         $page
      * @param  int         $limit
-     * @param  int|null    $categoryId
      * @param  string      $sort
      * @param  string      $filter
-     * @param  string|null $categorySyscode
      * @param  array|null  $projection
      * @return array{
      *   items: list<array{
@@ -77,10 +75,8 @@ class ProductRepository extends BaseRepository
     public function findAll(
         int $page = 1,
         int $limit = 20,
-        ?int $categoryId = null,
         string $sort = '',
         string $filter = '',
-        ?string $categorySyscode = null,
         ?array $projection = null,
     ): array {
         $proj    = new Projection($projection);
@@ -91,15 +87,6 @@ class ProductRepository extends BaseRepository
 
         $where  = ['p.franchise_code = ?'];
         $params = [$this->code];
-
-        if ($categoryId !== null) {
-            $where[]  = 'EXISTS (SELECT 1 FROM product_category pc WHERE pc.product_id = p.id AND pc.category_id = ?)';
-            $params[] = $categoryId;
-        }
-        if ($categorySyscode !== null) {
-            $where[]  = 'EXISTS (SELECT 1 FROM product_category pc INNER JOIN category c ON c.id = pc.category_id WHERE pc.product_id = p.id AND c.syscode = ? AND c.franchise_code = p.franchise_code)';
-            $params[] = $categorySyscode;
-        }
 
         $f = SQL_FILTER($filter, 'p');
         if ($f['sql'] !== '') {
@@ -112,9 +99,7 @@ class ProductRepository extends BaseRepository
         $sys          = $this->sys;
         $baseSelect   = $this->buildSelect($proj);
 
-        $needsCatJoin = $categoryId !== null ||
-            $categorySyscode !== null ||
-            $proj->needsJoin('categories');
+        $needsCatJoin = $proj->needsJoin('categories');
         $catJoin      = $needsCatJoin
             ? 'LEFT JOIN product_category pc ON pc.product_id = p.id'
             : '';

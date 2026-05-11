@@ -29,11 +29,9 @@ class TextService
     /**
      * Vrati strankovany seznam CMS textu. Verejne dostupne.
      *
-     * @param  string      $language
-     * @param  bool|null   $isActive
-     * @param  string      $sort
      * @param  int         $page
      * @param  int         $limit
+     * @param  string      $sort
      * @param  string      $filter
      * @param  array|null  $projection
      * @return array{
@@ -45,20 +43,16 @@ class TextService
      * }
      */
     public function list(
-        string $language,
-        ?bool $isActive,
-        string $sort = '',
         int $page = 1,
         int $limit = 20,
+        string $sort = '',
         string $filter = '',
         ?array $projection = null,
     ): array {
         return $this->text->findAll(
-            $language,
-            $isActive,
-            $sort,
             $page,
             $limit,
+            $sort,
             $filter,
             $projection
         );

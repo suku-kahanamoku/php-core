@@ -38,7 +38,6 @@ class InvoiceApi
         $result  = $this->service->list(
             max(1, (int) $request->get('page', 1)),
             min(100, max(1, (int) $request->get('limit', 20))),
-            $request->get('status'),
             (string) $request->get('sort', ''),
             (string) $request->get('q', ''),
             $request->projection(),

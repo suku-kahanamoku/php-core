@@ -41,7 +41,6 @@ class UserRepository extends BaseRepository
      *
      * @param  int         $page
      * @param  int         $limit
-     * @param  string|null $role
      * @param  string      $sort
      * @param  string      $filter
      * @param  array|null  $projection
@@ -67,7 +66,6 @@ class UserRepository extends BaseRepository
     public function findAll(
         int $page = 1,
         int $limit = 20,
-        ?string $role = null,
         string $sort = '',
         string $filter = '',
         ?array $projection = null,
@@ -81,11 +79,6 @@ class UserRepository extends BaseRepository
         $where  = ['u.franchise_code = ?'];
         $params = [$this->code];
 
-        if ($role) {
-            $where[]  = 'r.name = ?';
-            $params[] = $role;
-        }
-
         $f = SQL_FILTER($filter, 'u');
         if ($f['sql'] !== '') {
             $where[] = $f['sql'];
@@ -97,8 +90,8 @@ class UserRepository extends BaseRepository
         $sys         = $this->sys;
         $baseSelect  = $this->buildSelect($proj);
 
-        // JOIN role when filtering by role or when projection requires it
-        $needsRoleJoin = $role !== null || $proj->needsJoin('role');
+        // JOIN role when projection requires it
+        $needsRoleJoin = $proj->needsJoin('role');
         $joinSql       = $needsRoleJoin ? 'LEFT JOIN role r ON r.id = u.role_id' : '';
         $relSel        = $proj->needsJoin('role') ? ', r.name AS role_name' : '';
 

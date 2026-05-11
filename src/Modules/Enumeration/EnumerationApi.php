@@ -34,13 +34,10 @@ class EnumerationApi
      */
     public function list(Request $request): void
     {
-        $isActive = $request->get('is_active');
-        $result   = $this->service->list(
-            $request->get('type'),
-            $isActive !== null ? (bool)(int) $isActive : null,
-            (string) $request->get('sort', ''),
+        $result = $this->service->list(
             max(1, (int) $request->get('page', 1)),
             min(100, max(1, (int) $request->get('limit', 20))),
+            (string) $request->get('sort', ''),
             (string) $request->get('q', ''),
             $request->projection(),
         );

@@ -45,7 +45,6 @@ class InvoiceRepository extends BaseRepository
      * @param  int         $page
      * @param  int         $limit
      * @param  int|null    $userId
-     * @param  string|null $status
      * @param  string      $sort
      * @param  string      $filter
      * @param  array|null  $projection
@@ -80,7 +79,6 @@ class InvoiceRepository extends BaseRepository
         int $page = 1,
         int $limit = 20,
         ?int $userId = null,
-        ?string $status = null,
         string $sort = '',
         string $filter = '',
         ?array $projection = null,
@@ -97,10 +95,6 @@ class InvoiceRepository extends BaseRepository
         if ($userId !== null) {
             $where[]  = 'i.user_id = ?';
             $params[] = $userId;
-        }
-        if ($status !== null) {
-            $where[]  = 'i.status = ?';
-            $params[] = $status;
         }
 
         $f = SQL_FILTER($filter, 'i');

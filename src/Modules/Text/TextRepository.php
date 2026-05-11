@@ -37,11 +37,9 @@ class TextRepository extends BaseRepository
     /**
      * Vrati strankovany seznam textovych obsahu (CMS).
      *
-     * @param  string      $language
-     * @param  bool|null   $isActive
-     * @param  string      $sort
      * @param  int         $page
      * @param  int         $limit
+     * @param  string      $sort
      * @param  string      $filter
      * @param  array|null  $projection
      * @return array{
@@ -63,11 +61,9 @@ class TextRepository extends BaseRepository
      * }
      */
     public function findAll(
-        string $language = 'cs',
-        ?bool $isActive = null,
-        string $sort = '',
         int $page = 1,
         int $limit = 20,
+        string $sort = '',
         string $filter = '',
         ?array $projection = null,
     ): array {
@@ -77,13 +73,8 @@ class TextRepository extends BaseRepository
         $limit  = min(100, max(1, $limit));
         $offset = ($page - 1) * $limit;
 
-        $where  = ['tx.franchise_code = ?', 'tx.language = ?'];
-        $params = [$this->code, $language];
-
-        if ($isActive !== null) {
-            $where[]  = 'tx.is_active = ?';
-            $params[] = (int) $isActive;
-        }
+        $where  = ['tx.franchise_code = ?'];
+        $params = [$this->code];
         $f = SQL_FILTER($filter, 'tx');
         if ($f['sql'] !== '') {
             $where[] = $f['sql'];

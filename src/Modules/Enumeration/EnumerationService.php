@@ -29,11 +29,9 @@ class EnumerationService
     /**
      * Vrati strankovany seznam ciselnikovych polozek. Verejne dostupne.
      *
-     * @param  string|null $type
-     * @param  bool|null   $isActive
-     * @param  string      $sort
      * @param  int         $page
      * @param  int         $limit
+     * @param  string      $sort
      * @param  string      $filter
      * @param  array|null  $projection
      * @return array{
@@ -45,20 +43,16 @@ class EnumerationService
      * }
      */
     public function list(
-        ?string $type,
-        ?bool $isActive,
-        string $sort = '',
         int $page = 1,
         int $limit = 20,
+        string $sort = '',
         string $filter = '',
         ?array $projection = null,
     ): array {
         return $this->enum->findAll(
-            $type,
-            $isActive,
-            $sort,
             $page,
             $limit,
+            $sort,
             $filter,
             $projection
         );

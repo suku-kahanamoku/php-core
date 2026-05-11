@@ -31,10 +31,8 @@ class ProductService
      *
      * @param  int         $page
      * @param  int         $limit
-     * @param  int|null    $categoryId
      * @param  string      $sort
      * @param  string      $filter
-     * @param  string|null $categorySyscode
      * @param  array|null  $projection
      * @return array{
      *   items: list<array<string, mixed>>,
@@ -45,21 +43,16 @@ class ProductService
      * }
      */
     public function list(
-        int $page,
-        int $limit,
-        ?int $categoryId,
-        string $sort = '',
-        string $filter = '',
-        ?string $categorySyscode = null,
+        int $page = 1,
+        int $limit = 20,
+        string $sort = '',        string $filter = '',
         ?array $projection = null,
     ): array {
         return $this->product->findAll(
             $page,
             $limit,
-            $categoryId,
             $sort,
             $filter,
-            $categorySyscode,
             $projection,
         );
     }

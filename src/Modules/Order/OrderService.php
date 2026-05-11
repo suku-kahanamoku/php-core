@@ -52,7 +52,6 @@ class OrderService
      *
      * @param  int         $page
      * @param  int         $limit
-     * @param  string|null $status
      * @param  string      $sort
      * @param  string      $filter
      * @param  array|null  $projection
@@ -65,9 +64,8 @@ class OrderService
      * }
      */
     public function list(
-        int $page,
-        int $limit,
-        ?string $status,
+        int $page = 1,
+        int $limit = 20,
         string $sort = '',
         string $filter = '',
         ?array $projection = null,
@@ -80,7 +78,6 @@ class OrderService
             $page,
             $limit,
             $userId,
-            $status,
             $sort,
             $filter,
             $projection

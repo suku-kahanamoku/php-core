@@ -43,7 +43,6 @@ class InvoiceService
      *
      * @param  int         $page
      * @param  int         $limit
-     * @param  string|null $status
      * @param  string      $sort
      * @param  string      $filter
      * @param  array|null  $projection
@@ -56,9 +55,8 @@ class InvoiceService
      * }
      */
     public function list(
-        int $page,
-        int $limit,
-        ?string $status,
+        int $page = 1,
+        int $limit = 20,
         string $sort = '',
         string $filter = '',
         ?array $projection = null,
@@ -71,7 +69,6 @@ class InvoiceService
             $page,
             $limit,
             $userId,
-            $status,
             $sort,
             $filter,
             $projection,

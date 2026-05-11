@@ -42,7 +42,6 @@ class UserService
      *
      * @param  int         $page
      * @param  int         $limit
-     * @param  string|null $role
      * @param  string      $sort
      * @param  string      $filter
      * @param  array|null  $projection
@@ -55,18 +54,15 @@ class UserService
      * }
      */
     public function list(
-        int $page,
-        int $limit,
-        ?string $role,
-        string $sort = '',
-        string $filter = '',
+        int $page = 1,
+        int $limit = 20,
+        string $sort = '',        string $filter = '',
         ?array $projection = null,
     ): array {
         $this->auth->requireRole('admin');
         return $this->user->findAll(
             $page,
             $limit,
-            $role,
             $sort,
             $filter,
             $projection,

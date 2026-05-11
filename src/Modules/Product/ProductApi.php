@@ -37,12 +37,8 @@ class ProductApi
         $result  = $this->service->list(
             max(1, (int) $request->get('page', 1)),
             min(100, max(1, (int) $request->get('limit', 20))),
-            $request->get('category_id') !== null
-                ? (int) $request->get('category_id') : null,
             (string) $request->get('sort', ''),
             (string) $request->get('q', ''),
-            $request->get('category_syscode') !== null
-                ? (string) $request->get('category_syscode') : null,
             $request->projection(),
         );
         Response::successWithFactory($result, $request);
