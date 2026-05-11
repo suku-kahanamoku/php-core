@@ -64,7 +64,7 @@ class CategoryService
      * @return array{
      *   id: int,
      *   name: string,
-     *   products: list<array{id: int, sku: string, name: string, price: string}>
+     *   products: list<array{id: int, sku: string, name: string, price: float}>
      * }
      */
     public function get(int $id, ?array $projection = null): array

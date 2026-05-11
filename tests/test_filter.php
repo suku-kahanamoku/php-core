@@ -376,7 +376,7 @@ if ($token !== null) {
 
     // ── Roles ─────────────────────────────────────────────────────────────────
     section('SQL_FILTER integration – GET /roles');
-    $r = request('GET', $base . '/roles?limit=100&filter=' . urlencode('{"name":{"value":"admin"}}'));
+    $r = request('GET', $base . '/roles?limit=100&q=' . urlencode('{"name":{"value":"admin"}}'));
     assert_test('roles eq filter: 200', $r['status'] === 200, dump_on_fail($r));
     assert_test('roles eq filter: items array', is_array($r['data']['data']));
     assert_test(
@@ -385,25 +385,25 @@ if ($token !== null) {
         && count($r['data']['data']) >= 1,
     );
 
-    $r = request('GET', $base . '/roles?limit=100&filter=' . urlencode('{"name":{"value":"admin","operator":"neq"}}'));
+    $r = request('GET', $base . '/roles?limit=100&q=' . urlencode('{"name":{"value":"admin","operator":"neq"}}'));
     assert_test(
         'roles neq filter: no admin in result',
         count(array_filter($r['data']['data'], fn ($x) => $x['name'] === 'admin')) === 0,
     );
 
-    $r = request('GET', $base . '/roles?limit=100&filter=' . urlencode('{"name":{"value":"adm","operator":"start"}}'));
+    $r = request('GET', $base . '/roles?limit=100&q=' . urlencode('{"name":{"value":"adm","operator":"start"}}'));
     assert_test(
         'roles start filter: admin present',
         count(array_filter($r['data']['data'], fn ($x) => $x['name'] === 'admin')) >= 1,
     );
 
-    $r = request('GET', $base . '/roles?limit=100&filter=' . urlencode('{"position":{"value":0,"operator":"gte"}}'));
+    $r = request('GET', $base . '/roles?limit=100&q=' . urlencode('{"position":{"value":0,"operator":"gte"}}'));
     assert_test('roles gte filter: 200', $r['status'] === 200);
     assert_test('roles gte filter: has items', count($r['data']['data']) >= 1);
 
     // ── Users ─────────────────────────────────────────────────────────────────
     section('SQL_FILTER integration – GET /users');
-    $r = request('GET', $base . '/users?limit=100&filter=' . urlencode('{"email":{"value":"admin@example.com"}}'));
+    $r = request('GET', $base . '/users?limit=100&q=' . urlencode('{"email":{"value":"admin@example.com"}}'));
     assert_test('users eq email filter: 200', $r['status'] === 200, dump_on_fail($r));
     assert_test('users eq email filter: 1 result', count($r['data']['data']) === 1);
     assert_test(
@@ -411,14 +411,14 @@ if ($token !== null) {
         ($r['data']['data'][0]['email'] ?? null) === 'admin@example.com',
     );
 
-    $r = request('GET', $base . '/users?limit=100&filter=' . urlencode('{"email":{"value":"@example.com","operator":"end"}}'));
+    $r = request('GET', $base . '/users?limit=100&q=' . urlencode('{"email":{"value":"@example.com","operator":"end"}}'));
     assert_test('users end email filter: has results', count($r['data']['data']) >= 1);
     assert_test(
         'users end email filter: all match',
         count(array_filter($r['data']['data'], fn ($u) => !str_ends_with($u['email'], '@example.com'))) === 0,
     );
 
-    $r = request('GET', $base . '/users?limit=100&filter=' . urlencode('{"email":{"value":"nonexistent_xyz_99999@x.com"}}'));
+    $r = request('GET', $base . '/users?limit=100&q=' . urlencode('{"email":{"value":"nonexistent_xyz_99999@x.com"}}'));
     assert_test('users eq filter: no results for unknown', count($r['data']['data']) === 0);
 
     // ── Categories ────────────────────────────────────────────────────────────
@@ -427,7 +427,7 @@ if ($token !== null) {
     $rAll    = request('GET', "{$base}/categories?limit=1", [], false);
     $catName = $rAll['data']['data'][0]['name'] ?? null;
     if ($catName !== null) {
-        $r = request('GET', $base . '/categories?limit=100&filter=' . urlencode('{"name":{"value":"' . $catName . '"}}'), [], false);
+        $r = request('GET', $base . '/categories?limit=100&q=' . urlencode('{"name":{"value":"' . $catName . '"}}'), [], false);
         assert_test('categories eq filter: 200', $r['status'] === 200, dump_on_fail($r));
         assert_test('categories eq filter: found', count($r['data']['data']) >= 1);
         assert_test(
@@ -440,10 +440,10 @@ if ($token !== null) {
         assert_test('categories eq filter: skipped (no data)', true);
     }
 
-    $r = request('GET', $base . '/categories?limit=100&filter=' . urlencode('{"name":{"value":"zz_never_exists_xyz_999"}}'), [], false);
+    $r = request('GET', $base . '/categories?limit=100&q=' . urlencode('{"name":{"value":"zz_never_exists_xyz_999"}}'), [], false);
     assert_test('categories eq filter: 0 for unknown', ($r['data']['meta']['total'] ?? -1) === 0);
 
-    $r = request('GET', $base . '/categories?limit=100&filter=' . urlencode('{"position":{"value":0,"operator":"gte"}}'), [], false);
+    $r = request('GET', $base . '/categories?limit=100&q=' . urlencode('{"position":{"value":0,"operator":"gte"}}'), [], false);
     assert_test('categories gte filter: 200', $r['status'] === 200);
 
     // ── Products ──────────────────────────────────────────────────────────────
@@ -451,7 +451,7 @@ if ($token !== null) {
     $rAll     = request('GET', "{$base}/products?limit=1", [], false);
     $prodName = $rAll['data']['data'][0]['name'] ?? null;
     if ($prodName !== null) {
-        $r = request('GET', $base . '/products?limit=100&filter=' . urlencode('{"name":{"value":"' . $prodName . '"}}'), [], false);
+        $r = request('GET', $base . '/products?limit=100&q=' . urlencode('{"name":{"value":"' . $prodName . '"}}'), [], false);
         assert_test('products eq filter: 200', $r['status'] === 200, dump_on_fail($r));
         assert_test('products eq filter: found', count($r['data']['data']) >= 1);
     } else {
@@ -459,10 +459,10 @@ if ($token !== null) {
         assert_test('products eq filter: skipped (no data)', true);
     }
 
-    $r = request('GET', $base . '/products?limit=100&filter=' . urlencode('{"price":{"value":0,"operator":"gte"}}'), [], false);
+    $r = request('GET', $base . '/products?limit=100&q=' . urlencode('{"price":{"value":0,"operator":"gte"}}'), [], false);
     assert_test('products gte price filter: 200', $r['status'] === 200);
 
-    $r = request('GET', $base . '/products?limit=100&filter=' . urlencode('{"stock_quantity":{"value":0,"operator":"gt"}}'), [], false);
+    $r = request('GET', $base . '/products?limit=100&q=' . urlencode('{"stock_quantity":{"value":0,"operator":"gt"}}'), [], false);
     assert_test('products gt stock filter: 200', $r['status'] === 200);
     assert_test(
         'products gt stock filter: all stock > 0',
@@ -480,7 +480,7 @@ if ($token !== null) {
     $filterTextId = $rSetupText['data']['data']['id'] ?? null;
     assert_test('filter texts setup: created', $rSetupText['status'] === 201, dump_on_fail($rSetupText));
 
-    $r = request('GET', $base . '/texts?limit=100&filter=' . urlencode('{"is_active":{"value":1}}'));
+    $r = request('GET', $base . '/texts?limit=100&q=' . urlencode('{"is_active":{"value":1}}'));
     assert_test('texts eq is_active=1 filter: 200', $r['status'] === 200, dump_on_fail($r));
     assert_test('texts eq is_active=1 filter: has items', count($r['data']['data']) >= 1);
     assert_test(
@@ -488,12 +488,12 @@ if ($token !== null) {
         count(array_filter($r['data']['data'], fn ($t) => (int)$t['is_active'] !== 1)) === 0,
     );
 
-    $r = request('GET', $base . '/texts?limit=100&filter=' . urlencode('{"syscode":{"value":"xyz_never_exists_zzz"}}'));
+    $r = request('GET', $base . '/texts?limit=100&q=' . urlencode('{"syscode":{"value":"xyz_never_exists_zzz"}}'));
     assert_test('texts eq syscode filter: 0 for unknown', ($r['data']['meta']['total'] ?? -1) === 0);
 
     // ── Enumerations ──────────────────────────────────────────────────────────
     section('SQL_FILTER integration – GET /enumerations');
-    $r = request('GET', $base . '/enumerations?limit=100&filter=' . urlencode('{"type":{"value":"order_status"}}'), [], false);
+    $r = request('GET', $base . '/enumerations?limit=100&q=' . urlencode('{"type":{"value":"order_status"}}'), [], false);
     assert_test('enumerations eq type filter: 200', $r['status'] === 200, dump_on_fail($r));
     assert_test('enumerations eq type filter: has items', count($r['data']['data']) >= 1);
     assert_test(
@@ -501,14 +501,14 @@ if ($token !== null) {
         count(array_filter($r['data']['data'], fn ($e) => $e['type'] !== 'order_status')) === 0,
     );
 
-    $r = request('GET', $base . '/enumerations?limit=100&filter=' . urlencode('{"is_active":{"value":1}}'), [], false);
+    $r = request('GET', $base . '/enumerations?limit=100&q=' . urlencode('{"is_active":{"value":1}}'), [], false);
     assert_test('enumerations eq is_active filter: 200', $r['status'] === 200);
     assert_test(
         'enumerations eq is_active filter: all active',
         count(array_filter($r['data']['data'], fn ($e) => (int)$e['is_active'] !== 1)) === 0,
     );
 
-    $r = request('GET', $base . '/enumerations?limit=100&filter=' . urlencode('{"label":{"value":"a","operator":"regex"}}'), [], false);
+    $r = request('GET', $base . '/enumerations?limit=100&q=' . urlencode('{"label":{"value":"a","operator":"regex"}}'), [], false);
     assert_test('enumerations regex label filter: 200', $r['status'] === 200);
     assert_test(
         'enumerations regex label filter: all contain a',
@@ -520,7 +520,7 @@ if ($token !== null) {
     $rAll        = request('GET', "{$base}/orders?limit=1");
     $orderStatus = $rAll['data']['data'][0]['status'] ?? null;
     if ($orderStatus !== null) {
-        $r = request('GET', $base . '/orders?limit=100&filter=' . urlencode('{"status":{"value":"' . $orderStatus . '"}}'));
+        $r = request('GET', $base . '/orders?limit=100&q=' . urlencode('{"status":{"value":"' . $orderStatus . '"}}'));
         assert_test('orders eq status filter: 200', $r['status'] === 200, dump_on_fail($r));
         assert_test('orders eq status filter: has items', count($r['data']['data']) >= 1);
         assert_test(
@@ -533,7 +533,7 @@ if ($token !== null) {
         assert_test('orders eq filter: skipped (no data)', true);
     }
 
-    $r = request('GET', $base . '/orders?limit=100&filter=' . urlencode('{"total_amount":{"value":0,"operator":"gte"}}'));
+    $r = request('GET', $base . '/orders?limit=100&q=' . urlencode('{"total_amount":{"value":0,"operator":"gte"}}'));
     assert_test('orders gte total_amount filter: 200', $r['status'] === 200);
 
     // ── Invoices ──────────────────────────────────────────────────────────────
@@ -541,7 +541,7 @@ if ($token !== null) {
     $rAll      = request('GET', "{$base}/invoices?limit=1");
     $invStatus = $rAll['data']['data'][0]['status'] ?? null;
     if ($invStatus !== null) {
-        $r = request('GET', $base . '/invoices?limit=100&filter=' . urlencode('{"status":{"value":"' . $invStatus . '"}}'));
+        $r = request('GET', $base . '/invoices?limit=100&q=' . urlencode('{"status":{"value":"' . $invStatus . '"}}'));
         assert_test('invoices eq status filter: 200', $r['status'] === 200, dump_on_fail($r));
         assert_test('invoices eq status filter: has items', count($r['data']['data']) >= 1);
         assert_test(
@@ -554,12 +554,12 @@ if ($token !== null) {
         assert_test('invoices eq filter: skipped (no data)', true);
     }
 
-    $r = request('GET', $base . '/invoices?limit=100&filter=' . urlencode('{"total_amount":{"value":0,"operator":"gte"}}'));
+    $r = request('GET', $base . '/invoices?limit=100&q=' . urlencode('{"total_amount":{"value":0,"operator":"gte"}}'));
     assert_test('invoices gte total_amount filter: 200', $r['status'] === 200);
 
     // ── Multi-column filter integration ───────────────────────────────────────
     section('SQL_FILTER integration – multi-column filter');
-    $r = request('GET', $base . '/roles?limit=100&filter=' . urlencode('{"name":{"value":"adm","operator":"start"},"position":{"value":0,"operator":"gte"}}'));
+    $r = request('GET', $base . '/roles?limit=100&q=' . urlencode('{"name":{"value":"adm","operator":"start"},"position":{"value":0,"operator":"gte"}}'));
     assert_test('roles multi-col: 200', $r['status'] === 200);
     assert_test(
         'roles multi-col: all names start with adm',

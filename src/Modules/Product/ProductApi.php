@@ -29,7 +29,7 @@ class ProductApi
     /**
      * GET /products — Vrati strankovany seznam produktu. Verejne dostupne.
      *
-     * @param Request $request  query: page, limit, search, category_id, sort, filter, category_syscode, projection, factory
+     * @param Request $request  query: page, limit, category_id, sort, q, category_syscode, projection, factory
      * @return void
      */
     public function list(Request $request): void
@@ -37,7 +37,6 @@ class ProductApi
         $result  = $this->service->list(
             max(1, (int) $request->get('page', 1)),
             min(100, max(1, (int) $request->get('limit', 20))),
-            $request->get('search'),
             $request->get('category_id') !== null
                 ? (int) $request->get('category_id') : null,
             (string) $request->get('sort', ''),

@@ -42,7 +42,6 @@ class UserService
      *
      * @param  int         $page
      * @param  int         $limit
-     * @param  string|null $search
      * @param  string|null $role
      * @param  string      $sort
      * @param  string      $filter
@@ -58,7 +57,6 @@ class UserService
     public function list(
         int $page,
         int $limit,
-        ?string $search,
         ?string $role,
         string $sort = '',
         string $filter = '',
@@ -68,7 +66,6 @@ class UserService
         return $this->user->findAll(
             $page,
             $limit,
-            $search,
             $role,
             $sort,
             $filter,

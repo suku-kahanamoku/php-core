@@ -41,7 +41,6 @@ class UserRepository extends BaseRepository
      *
      * @param  int         $page
      * @param  int         $limit
-     * @param  string|null $search
      * @param  string|null $role
      * @param  string      $sort
      * @param  string      $filter
@@ -68,7 +67,6 @@ class UserRepository extends BaseRepository
     public function findAll(
         int $page = 1,
         int $limit = 20,
-        ?string $search = null,
         ?string $role = null,
         string $sort = '',
         string $filter = '',
@@ -83,11 +81,6 @@ class UserRepository extends BaseRepository
         $where  = ['u.franchise_code = ?'];
         $params = [$this->code];
 
-        if ($search) {
-            $where[] = '(u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ?)';
-            $s       = '%' . $search . '%';
-            array_push($params, $s, $s, $s);
-        }
         if ($role) {
             $where[]  = 'r.name = ?';
             $params[] = $role;

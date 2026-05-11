@@ -57,11 +57,11 @@ class OrderRepository extends BaseRepository
      *     updated_at: string,
      *     order_number: string,
      *     status: string,
-     *     total_amount: string,
+     *     total_amount: float,
      *     currency: string,
      *     payment_method: string|null,
      *     shipping_type: string|null,
-     *     shipping_cost: string|null,
+     *     shipping_cost: float|null,
      *     shipping_address_id: int|null,
      *     billing_address_id: int|null,
      *     user_id: int|null,
@@ -160,16 +160,16 @@ class OrderRepository extends BaseRepository
      *   updated_at: string,
      *   order_number: string,
      *   status: string,
-     *   total_amount: string,
+     *   total_amount: float,
      *   currency: string,
      *   payment_method: string|null,
      *   shipping_type: string|null,
-     *   shipping_cost: string|null,
+     *   shipping_cost: float|null,
      *   shipping_address_id: int|null,
      *   billing_address_id: int|null,
      *   user_id: int|null,
      *   note: string|null,
-     *   items: list<array{id: int, order_id: int, product_id: int, quantity: int, unit_price: string, vat_rate: string, product_name: string|null, sku: string|null}>,
+     *   items: list<array{id: int, order_id: int, product_id: int, quantity: int, unit_price: float, vat_rate: float, product_name: string|null, sku: string|null}>,
      *   user?: array{first_name: string, last_name: string, email: string}
      * }|null
      */
@@ -226,7 +226,7 @@ class OrderRepository extends BaseRepository
      *   id: int,
      *   order_number: string,
      *   status: string,
-     *   total_amount: string,
+     *   total_amount: float,
      *   user_id: int|null,
      *   items: list<array<string, mixed>>
      * }
@@ -264,7 +264,7 @@ class OrderRepository extends BaseRepository
      *   id: int,
      *   order_number: string,
      *   status: string,
-     *   total_amount: string,
+     *   total_amount: float,
      *   user_id: int|null,
      *   items: list<array<string, mixed>>
      * }

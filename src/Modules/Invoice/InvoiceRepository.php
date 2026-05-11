@@ -56,7 +56,7 @@ class InvoiceRepository extends BaseRepository
      *     updated_at: string,
      *     invoice_number: string,
      *     status: string,
-     *     total_amount: string,
+     *     total_amount: float,
      *     currency: string,
      *     issued_at: string,
      *     due_at: string|null,
@@ -162,7 +162,7 @@ class InvoiceRepository extends BaseRepository
      *   updated_at: string,
      *   invoice_number: string,
      *   status: string,
-     *   total_amount: string,
+     *   total_amount: float,
      *   currency: string,
      *   issued_at: string,
      *   due_at: string|null,
@@ -175,8 +175,8 @@ class InvoiceRepository extends BaseRepository
      *     invoice_id: int, 
      *     product_id: int, 
      *     quantity: int, 
-     *     unit_price: string, 
-     *     vat_rate: string, 
+     *     unit_price: float, 
+     *     vat_rate: float, 
      *     product_name: string|null, 
      *     sku: string|null
      *   }>,
@@ -257,7 +257,7 @@ class InvoiceRepository extends BaseRepository
      *   id: int,
      *   invoice_number: string,
      *   status: string,
-     *   total_amount: string,
+     *   total_amount: float,
      *   user_id: int|null,
      *   items: list<array<string, mixed>>
      * }
@@ -295,7 +295,7 @@ class InvoiceRepository extends BaseRepository
      *   id: int,
      *   invoice_number: string,
      *   status: string,
-     *   total_amount: string,
+     *   total_amount: float,
      *   user_id: int|null,
      *   items: list<array<string, mixed>>
      * }

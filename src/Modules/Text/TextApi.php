@@ -29,7 +29,7 @@ class TextApi
     /**
      * GET /texts — Vrati strankovany seznam textu. Verejne dostupne.
      *
-     * @param Request $request  query: language, is_active, search, sort, page, limit, filter, projection
+     * @param Request $request  query: language, is_active, sort, page, limit, q, projection
      * @return void
      */
     public function list(Request $request): void
@@ -38,7 +38,6 @@ class TextApi
         $result   = $this->service->list(
             (string) $request->get('language', 'cs'),
             $isActive !== null ? (bool)(int) $isActive : null,
-            $request->get('search'),
             (string) $request->get('sort', ''),
             max(1, (int) $request->get('page', 1)),
             min(100, max(1, (int) $request->get('limit', 20))),

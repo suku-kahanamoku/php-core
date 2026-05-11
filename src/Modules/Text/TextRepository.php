@@ -39,7 +39,6 @@ class TextRepository extends BaseRepository
      *
      * @param  string      $language
      * @param  bool|null   $isActive
-     * @param  string|null $search
      * @param  string      $sort
      * @param  int         $page
      * @param  int         $limit
@@ -66,7 +65,6 @@ class TextRepository extends BaseRepository
     public function findAll(
         string $language = 'cs',
         ?bool $isActive = null,
-        ?string $search = null,
         string $sort = '',
         int $page = 1,
         int $limit = 20,
@@ -86,12 +84,6 @@ class TextRepository extends BaseRepository
             $where[]  = 'tx.is_active = ?';
             $params[] = (int) $isActive;
         }
-        if ($search) {
-            $where[] = '(tx.syscode LIKE ? OR tx.title LIKE ? OR tx.content LIKE ?)';
-            $s       = '%' . $search . '%';
-            array_push($params, $s, $s, $s);
-        }
-
         $f = SQL_FILTER($filter, 'tx');
         if ($f['sql'] !== '') {
             $where[] = $f['sql'];

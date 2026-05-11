@@ -31,7 +31,6 @@ class TextService
      *
      * @param  string      $language
      * @param  bool|null   $isActive
-     * @param  string|null $search
      * @param  string      $sort
      * @param  int         $page
      * @param  int         $limit
@@ -48,7 +47,6 @@ class TextService
     public function list(
         string $language,
         ?bool $isActive,
-        ?string $search,
         string $sort = '',
         int $page = 1,
         int $limit = 20,
@@ -58,7 +56,6 @@ class TextService
         return $this->text->findAll(
             $language,
             $isActive,
-            $search,
             $sort,
             $page,
             $limit,

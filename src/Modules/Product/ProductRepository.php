@@ -45,7 +45,6 @@ class ProductRepository extends BaseRepository
      *
      * @param  int         $page
      * @param  int         $limit
-     * @param  string|null $search
      * @param  int|null    $categoryId
      * @param  string      $sort
      * @param  string      $filter
@@ -59,8 +58,8 @@ class ProductRepository extends BaseRepository
      *     sku: string,
      *     name: string,
      *     description: string|null,
-     *     price: string,
-     *     vat_rate: string,
+     *     price: float,
+     *     vat_rate: float,
      *     stock_quantity: int,
      *     is_active: int,
      *     kind: string|null,
@@ -78,7 +77,6 @@ class ProductRepository extends BaseRepository
     public function findAll(
         int $page = 1,
         int $limit = 20,
-        ?string $search = null,
         ?int $categoryId = null,
         string $sort = '',
         string $filter = '',
@@ -94,11 +92,6 @@ class ProductRepository extends BaseRepository
         $where  = ['p.franchise_code = ?'];
         $params = [$this->code];
 
-        if ($search) {
-            $where[] = '(p.name LIKE ? OR p.sku LIKE ? OR p.description LIKE ?)';
-            $s       = '%' . $search . '%';
-            array_push($params, $s, $s, $s);
-        }
         if ($categoryId !== null) {
             $where[]  = 'EXISTS (SELECT 1 FROM product_category pc WHERE pc.product_id = p.id AND pc.category_id = ?)';
             $params[] = $categoryId;
@@ -173,8 +166,8 @@ class ProductRepository extends BaseRepository
      *   sku: string,
      *   name: string,
      *   description: string|null,
-     *   price: string,
-     *   vat_rate: string,
+     *   price: float,
+     *   vat_rate: float,
      *   stock_quantity: int,
      *   is_active: int,
      *   kind: string|null,
@@ -258,7 +251,7 @@ class ProductRepository extends BaseRepository
      *   id: int,
      *   sku: string,
      *   name: string,
-     *   price: string,
+     *   price: float,
      *   stock_quantity: int,
      *   is_active: int,
      *   category_ids: list<int>
@@ -288,7 +281,7 @@ class ProductRepository extends BaseRepository
      *   id: int,
      *   sku: string,
      *   name: string,
-     *   price: string,
+     *   price: float,
      *   stock_quantity: int,
      *   is_active: int,
      *   category_ids: list<int>
@@ -332,7 +325,7 @@ class ProductRepository extends BaseRepository
      * Vrati produkty prirazene ke kategorii.
      *
      * @param  int $categoryId
-     * @return list<array{id: int, sku: string, name: string, price: string}>
+     * @return list<array{id: int, sku: string, name: string, price: float}>
      */
     public function findByCategoryId(int $categoryId): array
     {

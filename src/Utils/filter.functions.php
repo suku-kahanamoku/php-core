@@ -47,9 +47,8 @@ function SQL_FILTER(string $filter, string $prefix = ''): array
     $params     = [];
 
     foreach ($decoded as $col => $spec) {
-        // Support simple {"key": "value"} format in addition to {"key": {"value": ...}}
         if (!is_array($spec)) {
-            $spec = ['value' => $spec];
+            continue;
         }
         $result = _sql_filter_condition(
             (string) $col,

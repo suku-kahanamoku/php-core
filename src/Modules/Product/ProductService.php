@@ -31,7 +31,6 @@ class ProductService
      *
      * @param  int         $page
      * @param  int         $limit
-     * @param  string|null $search
      * @param  int|null    $categoryId
      * @param  string      $sort
      * @param  string      $filter
@@ -48,7 +47,6 @@ class ProductService
     public function list(
         int $page,
         int $limit,
-        ?string $search,
         ?int $categoryId,
         string $sort = '',
         string $filter = '',
@@ -58,7 +56,6 @@ class ProductService
         return $this->product->findAll(
             $page,
             $limit,
-            $search,
             $categoryId,
             $sort,
             $filter,

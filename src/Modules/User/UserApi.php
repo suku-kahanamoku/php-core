@@ -30,7 +30,7 @@ class UserApi
     /**
      * GET /users — Vrati strankovany seznam uzivatelu. Vyzaduje roli admin.
      *
-     * @param Request $request  query: page, limit, search, role, sort, filter, projection
+     * @param Request $request  query: page, limit, role, sort, q, projection
      * @return void
      */
     public function list(Request $request): void
@@ -38,7 +38,6 @@ class UserApi
         $result  = $this->service->list(
             max(1, (int) $request->get('page', 1)),
             min(100, max(1, (int) $request->get('limit', 20))),
-            $request->get('search'),
             $request->get('role'),
             (string) $request->get('sort', ''),
             (string) $request->get('q', ''),
