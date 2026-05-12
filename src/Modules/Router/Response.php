@@ -17,7 +17,10 @@ class Response
     {
         http_response_code($status);
         header('Content-Type: application/json; charset=utf-8');
-        echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        echo json_encode(
+            $data,
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRESERVE_ZERO_FRACTION
+        );
         exit;
     }
 
@@ -140,7 +143,7 @@ class Response
         if ($factory !== null && isset($data['items'])) {
             $data['items'] = self::applyFactory($data['items'], $factory);
         }
-        
+
         // Extrahuj metadata z data
         $items = $data['items'] ?? [];
         $meta  = [
@@ -150,7 +153,7 @@ class Response
             'totalPages' => $data['totalPages'] ?? 0,
             'skip'       => (($data['page'] ?? 1) - 1) * ($data['limit'] ?? 20),
         ];
-        
+
         // Vrať s items v data a metadata v meta
         self::json([
             'success' => true,

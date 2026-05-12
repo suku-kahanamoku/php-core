@@ -91,7 +91,7 @@ class ProductApi
      */
     public function update(Request $request, array $params): void
     {
-        $product = $this->service->update((int) $params['id'], [
+        $input = [
             'sku'            => $request->get('sku'),
             'name'           => $request->get('name'),
             'description'    => $request->get('description'),
@@ -102,9 +102,13 @@ class ProductApi
             'kind'           => $request->get('kind'),
             'color'          => $request->get('color'),
             'variant'        => $request->get('variant'),
-            'data'           => $request->get('data'),
             'category_ids'   => $request->get('category_ids'),
-        ], $request->projection());
+        ];
+        // Include 'data' only when explicitly sent — prevents wiping existing data
+        if (array_key_exists('data', $request->body)) {
+            $input['data'] = $request->get('data');
+        }
+        $product = $this->service->update((int) $params['id'], $input, $request->projection());
         Response::success($product, 'Product updated');
     }
 
