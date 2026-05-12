@@ -126,7 +126,7 @@ class AuthService
             'email'      => $email,
             'password'   => $password,
         ])
-            ->required(['first_name', 'last_name', 'email', 'password'])
+            ->required(['email', 'password'])
             ->email('email')
             ->minLength('password', 8)
             ->validate();
@@ -179,6 +179,32 @@ class AuthService
         $this->users->update($userId, [
             'password' => password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 12]),
         ]);
+    }
+
+    /**
+     * Reset hesla uzivatele dle emailu.
+     * Vygeneruje nove nahodne heslo, ulozi ho a vrati plain-text verzi pro odeslani emailem.
+     *
+     * @param  string $email
+     * @return array{ email: string, password: string }
+     */
+    public function resetPassword(string $email): array
+    {
+        VALIDATOR(['email' => $email])->email('email')->validate();
+
+        $user = $this->users->findByEmail($email);
+        if (!$user) {
+            // Neodhalujeme zda email existuje – vzdy vratime uspech
+            return ['email' => $email, 'password' => ''];
+        }
+
+        $newPassword = bin2hex(random_bytes(8)); // 16 znaku hex
+
+        $this->users->update($user['id'], [
+            'password' => password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 12]),
+        ]);
+
+        return ['email' => $email, 'password' => $newPassword];
     }
 
     /**

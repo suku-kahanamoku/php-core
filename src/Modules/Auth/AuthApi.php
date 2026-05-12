@@ -81,6 +81,7 @@ class AuthApi
             trim((string) $request->get('email', '')),
             (string) $request->get('password', ''),
         );
+        // confirm_password a terms nejsou ukladany na backend – ignorujeme je
 
         Response::created(['id' => $id], 'Registration successful');
     }
@@ -99,6 +100,24 @@ class AuthApi
         );
 
         Response::success(null, 'Password changed successfully');
+    }
+
+    /**
+     * POST /auth/reset-password — Resetuje heslo uzivatele dle emailu. Verejne dostupne.
+     *
+     * @param Request $request  body: email (required)
+     * @return void
+     */
+    public function resetPassword(Request $request): void
+    {
+        $email = trim((string) $request->get('email', ''));
+
+        if ($email === '') {
+            Response::validationError(['email' => 'Email is required']);
+        }
+
+        $result = $this->service->resetPassword($email);
+        Response::success($result, 'Password reset successful');
     }
 
     /**
@@ -134,6 +153,7 @@ class AuthApi
         $router->get('/me', [$this, 'me']);
         $router->post('/register', [$this, 'register']);
         $router->post('/change-password', [$this, 'changePassword']);
+        $router->post('/reset-password', [$this, 'resetPassword']);
         $router->post('/oauth', [$this, 'oauth']);
     }
 }
