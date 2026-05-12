@@ -108,9 +108,16 @@ class InvoiceRepository extends BaseRepository
         $sys        = $this->sys;
         $baseSelect = $this->buildSelect($proj);
 
+        // Auto-JOIN user when filter references user.* columns or projection needs it.
+        $decodedFilter  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
+        $needsUserFilter = !empty(array_filter(
+            array_keys($decodedFilter),
+            static fn($k) => str_starts_with((string) $k, 'user.')
+        ));
+
         $joinSql = '';
         $relSel  = '';
-        if ($proj->needsJoin('user')) {
+        if ($proj->needsJoin('user') || $needsUserFilter) {
             $joinSql = 'LEFT JOIN user u ON u.id = i.user_id';
             $relSel  = ', u.first_name, u.last_name, u.email';
         }
@@ -118,7 +125,7 @@ class InvoiceRepository extends BaseRepository
         $select = "{$baseSelect}{$relSel}";
 
         $total = (int) $this->db->fetchOne(
-            "SELECT COUNT(*) AS cnt FROM invoice i WHERE {$whereStr}",
+            "SELECT COUNT(*) AS cnt FROM invoice i {$joinSql} WHERE {$whereStr}",
             $params,
         )['cnt'];
 

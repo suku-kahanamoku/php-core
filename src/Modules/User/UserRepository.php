@@ -90,15 +90,20 @@ class UserRepository extends BaseRepository
         $sys         = $this->sys;
         $baseSelect  = $this->buildSelect($proj);
 
-        // JOIN role when projection requires it
-        $needsRoleJoin = $proj->needsJoin('role');
+        // JOIN role when projection requires it OR filter references role.* columns.
+        $decodedFilter  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
+        $needsRoleFilter = !empty(array_filter(
+            array_keys($decodedFilter),
+            static fn($k) => str_starts_with((string) $k, 'role.')
+        ));
+        $needsRoleJoin = $proj->needsJoin('role') || $needsRoleFilter;
         $joinSql       = $needsRoleJoin ? 'LEFT JOIN role r ON r.id = u.role_id' : '';
-        $relSel        = $proj->needsJoin('role') ? ', r.name AS role_name' : '';
+        $relSel        = $needsRoleJoin ? ', r.name AS role_name' : '';
 
         $select = "{$baseSelect}{$relSel}";
 
         $total = (int) $this->db->fetchOne(
-            "SELECT COUNT(*) AS cnt FROM user u LEFT JOIN role r ON r.id = u.role_id WHERE {$whereStr}",
+            "SELECT COUNT(*) AS cnt FROM user u {$joinSql} WHERE {$whereStr}",
             $params,
         )['cnt'];
 

@@ -23,13 +23,16 @@ declare(strict_types=1);
  * /^[a-zA-Z_][a-zA-Z0-9_]*$/. JSON sub-fields use dot-notation: "data.year"
  * is translated to JSON_UNQUOTE(JSON_EXTRACT(alias.data, '$.year')).
  *
- * @param string $filter  Raw query parameter (JSON string).
- * @param string $prefix  Optional table alias (e.g. "u") prepended as "u.col".
+ * @param string   $filter    Raw query parameter (JSON string).
+ * @param string   $prefix    Optional table alias (e.g. "u") prepended as "u.col".
+ * @param string[] $jsonCols  List of column names whose dot-notation means JSON sub-field
+ *                            (e.g. ["data"]). Any other "table.column" dot-notation is
+ *                            treated as a direct alias.column reference (related table).
  * @return array{sql: string, params: array<mixed>}
  *   sql    – Ready-to-embed AND-joined SQL fragment (empty string when nothing parsed).
  *   params – Positional bound parameter values.
  */
-function SQL_FILTER(string $filter, string $prefix = ''): array
+function SQL_FILTER(string $filter, string $prefix = '', array $jsonCols = ['data']): array
 {
     $filter = trim($filter);
 
@@ -57,7 +60,8 @@ function SQL_FILTER(string $filter, string $prefix = ''): array
         $result = _sql_filter_condition(
             (string) $col,
             $spec,
-            $prefix
+            $prefix,
+            $jsonCols
         );
         if ($result !== null) {
             $conditions[] = $result['sql'];
@@ -79,25 +83,37 @@ function SQL_FILTER(string $filter, string $prefix = ''): array
  * Build a single WHERE condition for one column + spec pair.
  *
  * @internal
- * @param string  $col    Bare column name (validated here).
- * @param array   $spec   {'value': mixed, 'operator': string}
- * @param string  $prefix Table alias prefix.
+ * @param string   $col       Bare column name (validated here).
+ * @param array    $spec      {'value': mixed, 'operator': string}
+ * @param string   $prefix    Table alias prefix for the main table.
+ * @param string[] $jsonCols  Column names treated as JSON (dot = JSON_EXTRACT).
+ *                            All other dot-notation is treated as tableAlias.column.
  * @return array{sql: string, params: array<mixed>}|null  null when invalid input.
  */
-function _sql_filter_condition(string $col, array $spec, string $prefix): ?array
-{
-    // dot-notation: "data.field" → JSON_UNQUOTE(JSON_EXTRACT(alias.data, '$.field'))
+function _sql_filter_condition(
+    string $col,
+    array $spec,
+    string $prefix,
+    array $jsonCols = ['data']
+): ?array {
+    // dot-notation: "data.field" → JSON_EXTRACT  |  "category.syscode" → category.syscode
     if (str_contains($col, '.')) {
-        [$jsonCol, $jsonField] = explode('.', $col, 2);
+        [$left, $right] = explode('.', $col, 2);
         if (
-            !preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $jsonCol) ||
-            !preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $jsonField)
+            !preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $left) ||
+            !preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $right)
         ) {
             return null;
         }
-        $qualified = $prefix !== ''
-            ? "JSON_UNQUOTE(JSON_EXTRACT({$prefix}.{$jsonCol}, '\$.{$jsonField}'))"
-            : "JSON_UNQUOTE(JSON_EXTRACT({$jsonCol}, '\$.{$jsonField}'))";
+        if (in_array($left, $jsonCols, true)) {
+            // JSON sub-field: data.year → JSON_UNQUOTE(JSON_EXTRACT(p.data, '$.year'))
+            $qualified = $prefix !== ''
+                ? "JSON_UNQUOTE(JSON_EXTRACT({$prefix}.{$left}, '\$.{$right}'))"
+                : "JSON_UNQUOTE(JSON_EXTRACT({$left}, '\$.{$right}'))";
+        } else {
+            // Related table column: category.syscode → category.syscode
+            $qualified = "{$left}.{$right}";
+        }
     } else {
         if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $col)) {
             return null;

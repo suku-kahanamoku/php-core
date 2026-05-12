@@ -88,6 +88,28 @@ class ProductRepository extends BaseRepository
         $where  = ['p.franchise_code = ?'];
         $params = [$this->code];
 
+        // Detect whether the filter references category.* columns (e.g. category.syscode).
+        // If so, we need to JOIN the category table so SQL_FILTER can resolve category.col.
+        $decodedFilter  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
+        $needsCatFilter = !empty(array_filter(
+            array_keys($decodedFilter),
+            static fn($k) => str_starts_with((string) $k, 'category.')
+        ));
+
+        $needsCatJoin = $proj->needsJoin('categories') || $needsCatFilter;
+
+        // Build JOINs — no ? placeholders so param order stays simple.
+        $catJoin = $needsCatJoin
+            ? 'LEFT JOIN product_category pc ON pc.product_id = p.id
+               LEFT JOIN category ON category.id = pc.category_id'
+            : '';
+
+        // When joining category, restrict it to the same franchise to avoid cross-tenant leaks.
+        if ($needsCatFilter) {
+            $where[] = '(category.franchise_code = ? OR category.id IS NULL)';
+            $params[] = $this->code;
+        }
+
         $f = SQL_FILTER($filter, 'p');
         if ($f['sql'] !== '') {
             $where[] = $f['sql'];
@@ -96,21 +118,16 @@ class ProductRepository extends BaseRepository
 
         $whereStr = implode(' AND ', $where);
 
-        $sys          = $this->sys;
-        $baseSelect   = $this->buildSelect($proj);
-
-        $needsCatJoin = $proj->needsJoin('categories');
-        $catJoin      = $needsCatJoin
-            ? 'LEFT JOIN product_category pc ON pc.product_id = p.id'
-            : '';
-        $catSel       = $proj->needsJoin('categories')
+        $sys        = $this->sys;
+        $baseSelect = $this->buildSelect($proj);
+        $catSel     = $proj->needsJoin('categories')
             ? ', GROUP_CONCAT(pc.category_id ORDER BY pc.category_id) AS category_ids'
             : '';
 
         $select = "{$baseSelect}{$catSel}";
 
         $total = (int) $this->db->fetchOne(
-            "SELECT COUNT(DISTINCT p.id) AS cnt FROM product p WHERE {$whereStr}",
+            "SELECT COUNT(DISTINCT p.id) AS cnt FROM product p {$catJoin} WHERE {$whereStr}",
             $params,
         )['cnt'];
 
