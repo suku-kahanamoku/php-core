@@ -102,6 +102,26 @@ class AuthApi
     }
 
     /**
+     * POST /auth/oauth — OAuth login: najde nebo vytvori uzivatele dle emailu. Verejne dostupne.
+     *
+     * @param Request $request  body: email (required), first_name, last_name
+     * @return void
+     */
+    public function oauth(Request $request): void
+    {
+        $email     = trim((string) $request->get('email', ''));
+        $firstName = trim((string) $request->get('first_name', ''));
+        $lastName  = trim((string) $request->get('last_name', ''));
+
+        if ($email === '') {
+            Response::validationError(['email' => 'Email is required']);
+        }
+
+        $result = $this->service->oauthLogin($email, $firstName, $lastName);
+        Response::success($result, 'OAuth login successful');
+    }
+
+    /**
      * Zaregistruje vsechny routy tohoto modulu do routeru.
      *
      * @param  Router $router
@@ -114,5 +134,6 @@ class AuthApi
         $router->get('/me', [$this, 'me']);
         $router->post('/register', [$this, 'register']);
         $router->post('/change-password', [$this, 'changePassword']);
+        $router->post('/oauth', [$this, 'oauth']);
     }
 }

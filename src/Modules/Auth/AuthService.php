@@ -180,4 +180,76 @@ class AuthService
             'password' => password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 12]),
         ]);
     }
+
+    /**
+     * OAuth login – najde uzivatele dle emailu, nebo ho vytvori (bez hesla).
+     * Vyzadovano pri prihlaseni pres externi poskytovatele (Google, LinkedIn, apod.).
+     *
+     * @param  string $email
+     * @param  string $firstName
+     * @param  string $lastName
+     * @return array{
+     *   token: string,
+     *   expires_at: string,
+     *   id: int,
+     *   email: string,
+     *   role: string,
+     *   first_name: string,
+     *   last_name: string
+     * }
+     */
+    public function oauthLogin(
+        string $email,
+        string $firstName,
+        string $lastName
+    ): array {
+        VALIDATOR(['email' => $email])->email('email')->validate();
+
+        $user = $this->users->findForLogin($email);
+
+        if (!$user) {
+            $roleId = $this->roles->findIdByName('user');
+            if (!$roleId) {
+                Response::error('Default role not configured', 500);
+            }
+
+            $this->users->create([
+                'first_name' => $firstName,
+                'last_name'  => $lastName,
+                'email'      => $email,
+                'password'   => password_hash(
+                    bin2hex(random_bytes(16)),
+                    PASSWORD_BCRYPT,
+                    ['cost' => 12]
+                ),
+                'role_id'    => $roleId,
+                'status'     => 'active',
+            ]);
+
+            $user = $this->users->findForLogin($email);
+            if (!$user) {
+                Response::error('Failed to create user', 500);
+            }
+        }
+
+        if ($user['status'] !== 'active') {
+            Response::error('Account is not active', 403);
+        }
+
+        $token     = bin2hex(random_bytes(32));
+        $expiresAt = date('Y-m-d H:i:s', strtotime('+24 hours'));
+
+        $this->tokens->create($user['id'], $token, $expiresAt);
+        $this->users->touchLastLogin($user['id']);
+
+        return [
+            'token'      => $token,
+            'expires_at' => $expiresAt,
+            'id'         => $user['id'],
+            'email'      => $user['email'],
+            'role'       => $user['role'],
+            'first_name' => $user['first_name'],
+            'last_name'  => $user['last_name'],
+        ];
+    }
 }
