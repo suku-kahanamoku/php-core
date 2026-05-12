@@ -200,7 +200,7 @@ class OrderRepository extends BaseRepository
             return null;
         }
 
-        $order['items'] = $this->db->fetchAll(
+        $order['order_items'] = $this->db->fetchAll(
             'SELECT oi.*, p.name AS product_name, p.sku
              FROM order_item oi
              LEFT JOIN product p ON p.id = oi.product_id
