@@ -38,59 +38,30 @@ class AddressRepository extends BaseRepository
     }
 
     /**
-     * Vrati adresy dle uzivatele a typu (billing/shipping) s podporou strankovani,
-     * hledani, filtru a projekce.
+     * Vrati strankovany seznam vsech adres.
      *
-     * @param int         $userId
-     * @param string|null $type
-     * @param string      $sort
-     * @param int         $page
-     * @param int         $limit
-     * @param string      $filter
-     * @param array|null  $projection
-     * @return array{
-     *   items: list<array{
-     *     id: int,
-     *     created_at: string,
-     *     updated_at: string,
-     *     user_id: int,
-     *     type: string,
-     *     company: string|null,
-     *     name: string,
-     *     street: string,
-     *     city: string,
-     *     zip: string,
-     *     country: string,
-     *     is_default: int
-     *   }>,
-     *   total: int,
-     *   page: int,
-     *   limit: int,
-     *   totalPages: int
-     * }
+     * @param  int        $page
+     * @param  int        $limit
+     * @param  string     $sort
+     * @param  string     $filter
+     * @param  array|null $projection
+     * @return array{items: list<array<string,mixed>>, total: int, page: int, limit: int, totalPages: int}
      */
-    public function findByUser(
-        int $userId,
-        ?string $type = null,
-        string $sort = '',
+    public function findAll(
         int $page = 1,
         int $limit = 20,
+        string $sort = '',
         string $filter = '',
         ?array $projection = null,
     ): array {
         $proj    = new Projection($projection);
-        $orderBy = SQL_SORT($sort, 'a.is_default DESC', 'a');
+        $orderBy = SQL_SORT($sort, 'a.created_at DESC', 'a');
 
         $limit  = min(100, max(1, $limit));
         $offset = ($page - 1) * $limit;
 
-        $where  = ['a.franchise_code = ?', 'a.user_id = ?'];
-        $params = [$this->code, $userId];
-
-        if ($type !== null) {
-            $where[]  = 'a.type = ?';
-            $params[] = $type;
-        }
+        $where  = ['a.franchise_code = ?'];
+        $params = [$this->code];
 
         $f = SQL_FILTER($filter, 'a');
         if ($f['sql'] !== '') {

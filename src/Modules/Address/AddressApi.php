@@ -27,20 +27,18 @@ class AddressApi
     }
 
     /**
-     * GET /users/:userId/addresses — Vrati seznam adres uzivatele.
+     * GET /address — Vrati strankovany seznam adres (admin only).
      *
-     * @param Request $request  query: type, sort, page, limit, filter, projection
-     * @param array{userId: string} $params
+     * @param Request $request  query: sort, page, limit, q, projection
+     * @param array   $params
      * @return void
      */
     public function list(Request $request, array $params): void
     {
-        $result  = $this->service->listByUser(
-            (int) $params['userId'],
-            $request->get('type'),
-            (string) $request->get('sort', ''),
+        $result = $this->service->list(
             max(1, (int) $request->get('page', 1)),
             min(100, max(1, (int) $request->get('limit', 20))),
+            (string) $request->get('sort', ''),
             (string) $request->get('q', ''),
             $request->projection(),
         );
@@ -150,6 +148,7 @@ class AddressApi
      */
     public function registerRoutes(Router $router): void
     {
+        $router->get('/', [$this, 'list']);
         $router->post('/', [$this, 'create']);
         $router->get('/:id', [$this, 'get']);
         $router->put('/:id', [$this, 'replace']);

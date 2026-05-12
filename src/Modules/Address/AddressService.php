@@ -35,48 +35,25 @@ class AddressService
     }
 
     /**
-     * Vrati strankovany seznam adres daneho uzivatele.
-     * Vyzaduje prihlaseni; uzivatel vidi pouze vlastni adresy, admin vidi vsechny.
+     * Vrati strankovany seznam adres (admin only).
      *
-     * @param  int         $userId
-     * @param  string|null $type
-     * @param  string      $sort
-     * @param  int         $page
-     * @param  int         $limit
-     * @param  string      $filter
-     * @param  array|null  $projection
-     * @return array{
-     *   items: list<array<string, mixed>>, 
-     *   total: int, 
-     *   page: int, 
-     *   limit: int, 
-     *   totalPages: int
-     * }
+     * @param  int        $page
+     * @param  int        $limit
+     * @param  string     $sort
+     * @param  string     $filter
+     * @param  array|null $projection
+     * @return array
      */
-    public function listByUser(
-        int $userId,
-        ?string $type,
-        string $sort = '',
+    public function list(
         int $page = 1,
         int $limit = 20,
+        string $sort = '',
         string $filter = '',
         ?array $projection = null,
     ): array {
-        $this->auth->require();
+        $this->auth->requireRole('admin');
 
-        if (!$this->auth->hasRole('admin') && $this->auth->id() !== $userId) {
-            Response::forbidden();
-        }
-
-        return $this->address->findByUser(
-            $userId,
-            $type,
-            $sort,
-            $page,
-            $limit,
-            $filter,
-            $projection
-        );
+        return $this->address->findAll($page, $limit, $sort, $filter, $projection);
     }
 
     /**
