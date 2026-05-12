@@ -47,8 +47,12 @@ function SQL_FILTER(string $filter, string $prefix = ''): array
     $params     = [];
 
     foreach ($decoded as $col => $spec) {
+        // Support scalar shorthand: {"col": "val"} → implicit eq filter.
         if (!is_array($spec)) {
-            continue;
+            if ($spec === null || $spec === '') {
+                continue;
+            }
+            $spec = ['value' => $spec];
         }
         $result = _sql_filter_condition(
             (string) $col,

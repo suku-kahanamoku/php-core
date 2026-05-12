@@ -354,10 +354,12 @@ assert_test('percent in regex value wrapped: param', $r['params'] === ['%% wildc
 
 section('SQL_FILTER unit – non-array spec values');
 $r = f('{"name":"jan"}');
-assert_test('string spec treated as no-op: empty', $r['sql'] === '');
+assert_test('string spec treated as implicit eq: sql not empty', $r['sql'] !== '');
+assert_test('string spec implicit eq: correct param', $r['params'] === ['jan']);
 
 $r = f('{"name":42}');
-assert_test('int spec treated as no-op: empty', $r['sql'] === '');
+assert_test('int spec treated as implicit eq: sql not empty', $r['sql'] !== '');
+assert_test('int spec implicit eq: correct param', $r['params'] === [42]);
 
 $r = f('{"name":null}');
 assert_test('null spec treated as no-op: empty', $r['sql'] === '');
