@@ -56,7 +56,7 @@ $svcUserEmail = TEST_PREFIX . 'role_svc_user_' . time() . '@example.com';
 $r            = request('POST', "{$base}/users", [
     'first_name' => 'Role', 'last_name' => 'SvcUser',
     'email'      => $svcUserEmail, 'password' => 'Password123',
-    'role'       => $svcRoleName,
+    'role_id'    => $svcRoleId,
 ]);
 assert_test('create user with svc_role 201', $r['status'] === 201, dump_on_fail($r));
 $svcUserId = $r['data']['data']['id'] ?? null;

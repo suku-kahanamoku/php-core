@@ -477,17 +477,17 @@ if ($token !== null) {
     $filterTextKey = TEST_PREFIX . 'filter_text_' . time();
     $rSetupText    = request('POST', "{$base}/texts", [
         'syscode' => $filterTextKey, 'title' => 'Filter Test Text',
-        'content' => 'content', 'language' => 'cs', 'is_active' => 1,
+        'content' => 'content', 'language' => 'cs', 'published' => 1,
     ]);
     $filterTextId = $rSetupText['data']['data']['id'] ?? null;
     assert_test('filter texts setup: created', $rSetupText['status'] === 201, dump_on_fail($rSetupText));
 
-    $r = request('GET', $base . '/texts?limit=100&q=' . urlencode('{"is_active":{"value":1}}'));
-    assert_test('texts eq is_active=1 filter: 200', $r['status'] === 200, dump_on_fail($r));
-    assert_test('texts eq is_active=1 filter: has items', count($r['data']['data']) >= 1);
+    $r = request('GET', $base . '/texts?limit=100&q=' . urlencode('{"published":{"value":1}}'));
+    assert_test('texts eq published=1 filter: 200', $r['status'] === 200, dump_on_fail($r));
+    assert_test('texts eq published=1 filter: has items', count($r['data']['data']) >= 1);
     assert_test(
-        'texts eq is_active=1 filter: all active',
-        count(array_filter($r['data']['data'], fn ($t) => (int)$t['is_active'] !== 1)) === 0,
+        'texts eq published=1 filter: all active',
+        count(array_filter($r['data']['data'], fn ($t) => (int)$t['published'] !== 1)) === 0,
     );
 
     $r = request('GET', $base . '/texts?limit=100&q=' . urlencode('{"syscode":{"value":"xyz_never_exists_zzz"}}'));
@@ -503,11 +503,11 @@ if ($token !== null) {
         count(array_filter($r['data']['data'], fn ($e) => $e['type'] !== 'order_status')) === 0,
     );
 
-    $r = request('GET', $base . '/enumerations?limit=100&q=' . urlencode('{"is_active":{"value":1}}'), [], false);
-    assert_test('enumerations eq is_active filter: 200', $r['status'] === 200);
+    $r = request('GET', $base . '/enumerations?limit=100&q=' . urlencode('{"published":{"value":1}}'), [], false);
+    assert_test('enumerations eq published filter: 200', $r['status'] === 200);
     assert_test(
-        'enumerations eq is_active filter: all active',
-        count(array_filter($r['data']['data'], fn ($e) => (int)$e['is_active'] !== 1)) === 0,
+        'enumerations eq published filter: all active',
+        count(array_filter($r['data']['data'], fn ($e) => (int)$e['published'] !== 1)) === 0,
     );
 
     $r = request('GET', $base . '/enumerations?limit=100&q=' . urlencode('{"label":{"value":"a","operator":"regex"}}'), [], false);

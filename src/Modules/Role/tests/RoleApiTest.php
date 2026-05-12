@@ -134,7 +134,7 @@ if ($tempRoleId) {
     $r             = request('POST', "{$base}/users", [
         'first_name' => 'Temp', 'last_name' => 'User',
         'email'      => $tempUserEmail, 'password' => 'Password123',
-        'role'       => $tempRoleName,
+        'role_id'    => $tempRoleId,
     ]);
     assert_test('create user with temp_role 201', $r['status'] === 201, dump_on_fail($r));
     $tempUserId = $r['data']['data']['id'] ?? null;
