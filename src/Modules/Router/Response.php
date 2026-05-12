@@ -241,7 +241,7 @@ class Response
         foreach ($row as $key => $value) {
             $fullKey = $prefix !== '' ? "{$prefix}.{$key}" : $key;
             if (is_array($value)) {
-                $result = array_merge($result, self::flattenForFactory($value, $fullKey));
+                $result += self::flattenForFactory($value, $fullKey);
             } else {
                 $result[$fullKey] = (string) ($value ?? '');
                 // Also register short key without prefix for convenience
