@@ -31,7 +31,7 @@ class ProductRepository extends BaseRepository
             'price',
             'vat_rate',
             'stock_quantity',
-            'is_active',
+            'published',
             'kind',
             'color',
             'variant',
@@ -59,7 +59,7 @@ class ProductRepository extends BaseRepository
      *     price: float,
      *     vat_rate: float,
      *     stock_quantity: int,
-     *     is_active: int,
+     *     published: int,
      *     kind: string|null,
      *     color: string|null,
      *     variant: string|null,
@@ -171,7 +171,7 @@ class ProductRepository extends BaseRepository
      *   price: float,
      *   vat_rate: float,
      *   stock_quantity: int,
-     *   is_active: int,
+     *   published: int,
      *   kind: string|null,
      *   color: string|null,
      *   variant: string|null,
@@ -255,7 +255,7 @@ class ProductRepository extends BaseRepository
      *   name: string,
      *   price: float,
      *   stock_quantity: int,
-     *   is_active: int,
+     *   published: int,
      *   category_ids: list<int>
      * }
      */
@@ -285,7 +285,7 @@ class ProductRepository extends BaseRepository
      *   name: string,
      *   price: float,
      *   stock_quantity: int,
-     *   is_active: int,
+     *   published: int,
      *   category_ids: list<int>
      * }
      */

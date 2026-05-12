@@ -29,7 +29,7 @@ class EnumerationApi
     /**
      * GET /enumerations — Vrati strankovany seznam polozek ciselnikov. Verejne dostupne.
      *
-     * @param Request $request  query: type, is_active, sort, page, limit, filter, projection
+     * @param Request $request  query: type, published, sort, page, limit, filter, projection
      * @return void
      */
     public function list(Request $request): void
@@ -71,7 +71,7 @@ class EnumerationApi
     /**
      * POST /enumerations — Vytvori novou polozku ciselnika. Vyzaduje roli admin.
      *
-     * @param Request $request  body: type (required), syscode (required), label (required), value, position, is_active
+     * @param Request $request  body: type (required), syscode (required), label (required), value, position, published
      * @return void
      */
     public function create(Request $request): void
@@ -83,7 +83,7 @@ class EnumerationApi
             [
                 'value'     => $request->get('value'),
                 'position'  => $request->get('position', 0),
-                'is_active' => $request->get('is_active', 1),
+                'published' => $request->get('published', 1),
             ],
             $request->projection(),
         );
@@ -105,7 +105,7 @@ class EnumerationApi
             'label'     => $request->get('label'),
             'value'     => $request->get('value'),
             'position'  => $request->get('position'),
-            'is_active' => $request->get('is_active'),
+            'published' => $request->get('published'),
         ], $request->projection());
         Response::success($item, 'Enumeration updated');
     }
@@ -127,7 +127,7 @@ class EnumerationApi
             [
                 'value'     => $request->get('value'),
                 'position'  => $request->get('position', 0),
-                'is_active' => $request->get('is_active', 1),
+                'published' => $request->get('published', 1),
             ],
             $request->projection(),
         );

@@ -167,7 +167,7 @@ class OrderService
 
                 $product = $this->product->findById($productId);
 
-                if (!$product || !$product['is_active']) {
+                if (!$product || !$product['published']) {
                     throw new \RuntimeException(
                         "Product #{$productId} not found or inactive",
                     );

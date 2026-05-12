@@ -60,7 +60,7 @@ class ProductApi
     /**
      * POST /products — Vytvori novy produkt. Vyzaduje roli admin.
      *
-     * @param Request $request  body: name (required), price (required), sku, description, vat_rate, stock_quantity, is_active, kind, color, variant, data, category_ids
+     * @param Request $request  body: name (required), price (required), sku, description, vat_rate, stock_quantity, published, kind, color, variant, data, category_ids
      * @return void
      */
     public function create(Request $request): void
@@ -72,7 +72,7 @@ class ProductApi
             'price'          => $request->get('price'),
             'vat_rate'       => $request->get('vat_rate'),
             'stock_quantity' => $request->get('stock_quantity'),
-            'is_active'      => $request->get('is_active'),
+            'published'      => $request->get('published'),
             'kind'           => $request->get('kind'),
             'color'          => $request->get('color'),
             'variant'        => $request->get('variant'),
@@ -98,7 +98,7 @@ class ProductApi
             'price'          => $request->get('price'),
             'vat_rate'       => $request->get('vat_rate'),
             'stock_quantity' => $request->get('stock_quantity'),
-            'is_active'      => $request->get('is_active'),
+            'published'      => $request->get('published'),
             'kind'           => $request->get('kind'),
             'color'          => $request->get('color'),
             'variant'        => $request->get('variant'),
@@ -128,7 +128,7 @@ class ProductApi
             'description'    => $request->get('description'),
             'vat_rate'       => $request->get('vat_rate'),
             'stock_quantity' => $request->get('stock_quantity'),
-            'is_active'      => $request->get('is_active'),
+            'published'      => $request->get('published'),
             'kind'           => $request->get('kind'),
             'color'          => $request->get('color'),
             'variant'        => $request->get('variant'),

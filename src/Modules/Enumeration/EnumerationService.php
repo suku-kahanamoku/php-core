@@ -91,7 +91,7 @@ class EnumerationService
      * @param  string               $type
      * @param  string               $code
      * @param  string               $label
-     * @param  array<string, mixed> $input  value, position, is_active
+     * @param  array<string, mixed> $input  value, position, published
      * @param  array|null           $projection
      * @return array<string, mixed>
      */
@@ -118,7 +118,7 @@ class EnumerationService
             'label'     => $label,
             'value'     => $input['value'] ?? $code,
             'position'  => (int) ($input['position'] ?? 0),
-            'is_active' => (int) ($input['is_active'] ?? 1),
+            'published' => (int) ($input['published'] ?? 1),
         ], $projection);
     }
 
@@ -126,7 +126,7 @@ class EnumerationService
      * Castecna aktualizace ciselnikove polozky (PATCH). Vyzaduje roli admin.
      *
      * @param  int                  $id
-     * @param  array<string, mixed> $input  type, syscode, label, value, position, is_active
+     * @param  array<string, mixed> $input  type, syscode, label, value, position, published
      * @param  array|null           $projection
      * @return array<string, mixed>
      */
@@ -140,7 +140,7 @@ class EnumerationService
 
         $set        = [];
         $textFields = ['type', 'syscode', 'label', 'value'];
-        $intFields  = ['position', 'is_active'];
+        $intFields  = ['position', 'published'];
 
         foreach ($textFields as $f) {
             if (array_key_exists($f, $input) && $input[$f] !== null) {
@@ -168,7 +168,7 @@ class EnumerationService
      * @param  string               $type
      * @param  string               $code
      * @param  string               $label
-     * @param  array<string, mixed> $input  value, position, is_active
+     * @param  array<string, mixed> $input  value, position, published
      * @param  array|null           $projection
      * @return array<string, mixed>
      */
@@ -196,7 +196,7 @@ class EnumerationService
             'label'     => $label,
             'value'     => (string) ($input['value'] ?? $code),
             'position'  => (int)    ($input['position'] ?? 0),
-            'is_active' => (int)    ($input['is_active'] ?? 1),
+            'published' => (int)    ($input['published'] ?? 1),
         ]);
 
         return $this->enum->findById($id, $projection) ?? ['id' => $id];

@@ -29,7 +29,7 @@ class TextRepository extends BaseRepository
             'title',
             'content',
             'language',
-            'is_active',
+            'published',
             'created_by',
         ];
     }
@@ -51,7 +51,7 @@ class TextRepository extends BaseRepository
      *     title: string,
      *     content: string,
      *     language: string,
-     *     is_active: int,
+     *     published: int,
      *     created_by: int|null
      *   }>,
      *   total: int,
@@ -118,7 +118,7 @@ class TextRepository extends BaseRepository
      *   title: string,
      *   content: string,
      *   language: string,
-     *   is_active: int,
+     *   published: int,
      *   created_by: int|null
      * }|null
      */
@@ -175,7 +175,7 @@ class TextRepository extends BaseRepository
      *   title: string,
      *   content: string,
      *   language: string,
-     *   is_active: int,
+     *   published: int,
      *   created_by: int|null
      * }
      */
@@ -203,7 +203,7 @@ class TextRepository extends BaseRepository
      *   title: string,
      *   content: string,
      *   language: string,
-     *   is_active: int,
+     *   published: int,
      *   created_by: int|null
      * }
      */

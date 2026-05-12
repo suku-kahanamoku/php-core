@@ -29,7 +29,7 @@ class TextApi
     /**
      * GET /texts — Vrati strankovany seznam textu. Verejne dostupne.
      *
-     * @param Request $request  query: language, is_active, sort, page, limit, q, projection
+     * @param Request $request  query: language, published, sort, page, limit, q, projection
      * @return void
      */
     public function list(Request $request): void
@@ -75,7 +75,7 @@ class TextApi
     /**
      * POST /texts — Vytvori novy text. Vyzaduje roli admin.
      *
-     * @param Request $request  body: syscode (required), title (required), language, content, is_active
+     * @param Request $request  body: syscode (required), title (required), language, content, published
      * @return void
      */
     public function create(Request $request): void
@@ -86,7 +86,7 @@ class TextApi
             trim((string) $request->get('language', 'cs')),
             [
                 'content'   => $request->get('content'),
-                'is_active' => $request->get('is_active', 1),
+                'published' => $request->get('published', 1),
             ],
             $request->projection(),
         );
@@ -107,7 +107,7 @@ class TextApi
             'title'     => $request->get('title'),
             'content'   => $request->get('content'),
             'language'  => $request->get('language'),
-            'is_active' => $request->get('is_active'),
+            'published' => $request->get('published'),
         ], $request->projection());
         Response::success($text, 'Text updated');
     }
@@ -115,7 +115,7 @@ class TextApi
     /**
      * PUT /texts/:id — Uplna nahrada textu. Vyzaduje roli admin.
      *
-     * @param Request $request  body: syscode, title (required), language, content, is_active
+     * @param Request $request  body: syscode, title (required), language, content, published
      * @param array{id: string} $params
      * @return void
      */
@@ -128,7 +128,7 @@ class TextApi
             [
                 'content'   => $request->get('content'),
                 'language'  => $request->get('language', 'cs'),
-                'is_active' => $request->get('is_active', 1),
+                'published' => $request->get('published', 1),
             ],
             $request->projection(),
         );

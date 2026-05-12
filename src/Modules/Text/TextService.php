@@ -97,7 +97,7 @@ class TextService
      * @param  string               $key
      * @param  string               $title
      * @param  string               $language
-     * @param  array<string, mixed> $input  content, is_active
+     * @param  array<string, mixed> $input  content, published
      * @param  array|null           $projection
      * @return array<string, mixed>
      */
@@ -126,7 +126,7 @@ class TextService
             'title'      => $title,
             'content'    => $input['content'] ?? '',
             'language'   => $language,
-            'is_active'  => (int) ($input['is_active'] ?? 1),
+            'published'  => (int) ($input['published'] ?? 1),
             'created_by' => $this->auth->id(),
         ], $projection);
     }
@@ -135,7 +135,7 @@ class TextService
      * Castecna aktualizace CMS textu (PATCH). Vyzaduje roli admin.
      *
      * @param  int                  $id
-     * @param  array<string, mixed> $input  syscode, title, content, language, is_active
+     * @param  array<string, mixed> $input  syscode, title, content, language, published
      * @param  array|null           $projection
      * @return array<string, mixed>
      */
@@ -155,8 +155,8 @@ class TextService
                 $set[$f] = trim((string) $input[$f]);
             }
         }
-        if (array_key_exists('is_active', $input) && $input['is_active'] !== null) {
-            $set['is_active'] = (int) $input['is_active'];
+        if (array_key_exists('published', $input) && $input['published'] !== null) {
+            $set['published'] = (int) $input['published'];
         }
 
         if (!empty($set)) {
@@ -172,7 +172,7 @@ class TextService
      * @param  int                  $id
      * @param  string               $key
      * @param  string               $title
-     * @param  array<string, mixed> $input  content, language, is_active
+     * @param  array<string, mixed> $input  content, language, published
      * @param  array|null           $projection
      * @return array<string, mixed>
      */
@@ -198,7 +198,7 @@ class TextService
             'title'     => $title,
             'content'   => (string) ($input['content'] ?? ''),
             'language'  => (string) ($input['language'] ?? 'cs'),
-            'is_active' => (int)    ($input['is_active'] ?? 1),
+            'published' => (int)    ($input['published'] ?? 1),
         ]);
 
         return $this->text->findById($id, $projection) ?? ['id' => $id];

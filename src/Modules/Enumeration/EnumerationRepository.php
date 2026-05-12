@@ -24,7 +24,7 @@ class EnumerationRepository extends BaseRepository
         parent::__construct($db, $franchiseCode);
         $this->table = 'enumeration';
         $this->alias = 'e';
-        $this->own   = ['type', 'syscode', 'label', 'value', 'position', 'is_active'];
+        $this->own   = ['type', 'syscode', 'label', 'value', 'position', 'published'];
     }
 
     /**
@@ -45,7 +45,7 @@ class EnumerationRepository extends BaseRepository
      *     label: string,
      *     value: string|null,
      *     position: int,
-     *     is_active: int
+     *     published: int
      *   }>,
      *   total: int,
      *   page: int,
@@ -157,7 +157,7 @@ class EnumerationRepository extends BaseRepository
      *   label: string, 
      *   value: string|null, 
      *   position: int, 
-     *   is_active: int
+     *   published: int
      * }
      */
     public function create(array $data, ?array $projection = null): array
@@ -185,7 +185,7 @@ class EnumerationRepository extends BaseRepository
      *   label: string, 
      *   value: string|null, 
      *   position: int, 
-     *   is_active: int
+     *   published: int
      * }
      */
     public function update(int $id, array $data, ?array $projection = null): array

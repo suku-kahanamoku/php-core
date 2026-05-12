@@ -78,7 +78,7 @@ class ProductService
     /**
      * Vytvori novy produkt. Vyzaduje roli admin.
      *
-     * @param  array{name: string, price: float|int, sku?: string, description?: string, vat_rate?: float, stock_quantity?: int, is_active?: int, kind?: string, color?: string, variant?: string, data?: array<string, mixed>, category_ids?: list<int>} $input
+     * @param  array{name: string, price: float|int, sku?: string, description?: string, vat_rate?: float, stock_quantity?: int, published?: int, kind?: string, color?: string, variant?: string, data?: array<string, mixed>, category_ids?: list<int>} $input
      * @param  array|null $projection
      * @return array<string, mixed>
      */
@@ -103,8 +103,8 @@ class ProductService
             'price'          => (float) $price,
             'vat_rate'       => (float) ($input['vat_rate'] ?? 21),
             'stock_quantity' => (int) ($input['stock_quantity'] ?? 0),
-            'is_active'      => isset($input['is_active'])
-                ? (int) $input['is_active'] : 1,
+            'published'      => isset($input['published'])
+                ? (int) $input['published'] : 1,
             'kind'           => isset($input['kind'])
                 ? trim((string) $input['kind']) : null,
             'color'          => isset($input['color'])
@@ -143,7 +143,7 @@ class ProductService
         $set         = [];
         $textFields  = ['sku', 'name', 'description', 'kind', 'color', 'variant'];
         $floatFields = ['price', 'vat_rate'];
-        $intFields   = ['stock_quantity', 'is_active'];
+        $intFields   = ['stock_quantity', 'published'];
 
         foreach ($textFields as $f) {
             if (array_key_exists($f, $input) && $input[$f] !== null) {
@@ -193,7 +193,7 @@ class ProductService
      * Vyzaduje name, sku a price. Ostatni pole jsou nastavena na vychozi hodnoty.
      *
      * @param  int        $id
-     * @param  array{name: string, sku: string, price: float|int, description?: string, vat_rate?: float, stock_quantity?: int, is_active?: int, kind?: string, color?: string, variant?: string, data?: array<string, mixed>, category_ids?: list<int>} $input
+     * @param  array{name: string, sku: string, price: float|int, description?: string, vat_rate?: float, stock_quantity?: int, published?: int, kind?: string, color?: string, variant?: string, data?: array<string, mixed>, category_ids?: list<int>} $input
      * @param  array|null $projection
      * @return array<string, mixed>
      */
@@ -225,8 +225,8 @@ class ProductService
                 ? (float) $input['vat_rate'] : 21.0,
             'stock_quantity' => isset($input['stock_quantity'])
                 ? (int) $input['stock_quantity'] : 0,
-            'is_active'      => isset($input['is_active'])
-                ? (int) $input['is_active'] : 1,
+            'published'      => isset($input['published'])
+                ? (int) $input['published'] : 1,
             'kind'           => isset($input['kind'])
                 ? trim((string) $input['kind']) : null,
             'color'          => isset($input['color'])
