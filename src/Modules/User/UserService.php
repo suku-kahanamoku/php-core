@@ -56,7 +56,8 @@ class UserService
     public function list(
         int $page = 1,
         int $limit = 20,
-        string $sort = '',        string $filter = '',
+        string $sort = '',
+        string $filter = '',
         ?array $projection = null,
     ): array {
         $this->auth->requireRole('admin');
@@ -117,12 +118,12 @@ class UserService
             Response::error('Email already registered', 409);
         }
 
-        $roleName = $input['role'] ?? null;
-        if ($roleName !== null) {
-            $roleId = $this->role->findIdByName($roleName);
-            if ($roleId === null) {
-                Response::validationError(['role' => 'Unknown role']);
+        $roleId = $input['role_id'] ?? null;
+        if ($roleId !== null) {
+            if (!$this->role->findById((int) $roleId)) {
+                Response::validationError(['role_id' => 'Unknown role']);
             }
+            $roleId = (int) $roleId;
         } else {
             $roleId = $this->role->findIdByName('user');
         }
@@ -171,12 +172,11 @@ class UserService
         }
 
         if ($this->auth->hasRole('admin')) {
-            if (array_key_exists('role', $input) && $input['role'] !== null) {
-                $roleId = $this->role->findIdByName((string) $input['role']);
-                if ($roleId === null) {
-                    Response::validationError(['role' => 'Unknown role']);
+            if (array_key_exists('role_id', $input) && $input['role_id'] !== null) {
+                if (!$this->role->findById((int) $input['role_id'])) {
+                    Response::validationError(['role_id' => 'Unknown role']);
                 }
-                $set['role_id'] = $roleId;
+                $set['role_id'] = (int) $input['role_id'];
             }
         }
 
@@ -215,12 +215,12 @@ class UserService
         ];
 
         if ($this->auth->hasRole('admin')) {
-            $roleName = $input['role'] ?? 'user';
-            $roleId   = $this->role->findIdByName($roleName);
-            if ($roleId === null) {
-                Response::validationError(['role' => 'Unknown role']);
+            if (array_key_exists('role_id', $input) && $input['role_id'] !== null) {
+                if (!$this->role->findById((int) $input['role_id'])) {
+                    Response::validationError(['role_id' => 'Unknown role']);
+                }
+                $set['role_id'] = (int) $input['role_id'];
             }
-            $set['role_id'] = $roleId;
         }
 
         return $this->user->update($id, $set, $projection);

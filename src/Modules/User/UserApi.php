@@ -72,7 +72,8 @@ class UserApi
             'email'      => trim((string) $request->get('email', '')),
             'password'   => (string) $request->get('password', ''),
             'phone'      => $request->get('phone'),
-            'role'       => $request->get('role'),
+            'role_id'    => $request->get('role_id') !== null
+                ? (int) $request->get('role_id') : null,
         ], $request->projection());
         Response::created($user, 'User created');
     }
@@ -80,7 +81,7 @@ class UserApi
     /**
      * PATCH /users/:id — Castecna aktualizace uzivatele. Vyzaduje prihlaseni; vlastnik nebo admin.
      *
-     * @param Request $request  body: first_name, last_name, phone, role
+     * @param Request $request  body: first_name, last_name, phone, role_id
      * @param array{id: string} $params
      * @return void
      */
@@ -90,7 +91,8 @@ class UserApi
             'first_name' => $request->get('first_name'),
             'last_name'  => $request->get('last_name'),
             'phone'      => $request->get('phone'),
-            'role'       => $request->get('role'),
+            'role_id'    => $request->get('role_id') !== null
+                ? (int) $request->get('role_id') : null,
         ], $request->projection());
         Response::success($user, 'User updated');
     }
@@ -98,7 +100,7 @@ class UserApi
     /**
      * PUT /users/:id — Uplna nahrada uzivatele. Vyzaduje prihlaseni; vlastnik nebo admin.
      *
-     * @param Request $request  body: first_name, last_name (required), phone, role
+     * @param Request $request  body: first_name, last_name (required), phone, role_id
      * @param array{id: string} $params
      * @return void
      */
@@ -108,7 +110,8 @@ class UserApi
             'first_name' => trim((string) $request->get('first_name', '')),
             'last_name'  => trim((string) $request->get('last_name', '')),
             'phone'      => $request->get('phone'),
-            'role'       => $request->get('role'),
+            'role_id'    => $request->get('role_id') !== null
+                ? (int) $request->get('role_id') : null,
         ], $request->projection());
         Response::success($user, 'User replaced');
     }
