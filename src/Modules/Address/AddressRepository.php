@@ -24,6 +24,7 @@ class AddressRepository extends BaseRepository
         parent::__construct($db, $franchiseCode);
         $this->table = 'address';
         $this->alias = 'a';
+        $this->rel   = ['user'];
         $this->own   = [
             'user_id',
             'type',
@@ -70,27 +71,74 @@ class AddressRepository extends BaseRepository
         }
 
         $whereStr = implode(' AND ', $where);
-        $select   = $this->buildSelect($proj);
         $sys      = $this->sys;
+        $baseSelect = $this->buildSelect($proj);
+
+        $joinSql = '';
+        $relSel  = '';
+        if ($proj->needsJoin('user')) {
+            $joinSql = 'LEFT JOIN user u ON u.id = a.user_id';
+            $relSel  = ', u.id AS user_id_join, u.email AS user_email, u.first_name AS user_first_name, u.last_name AS user_last_name';
+        }
+        $select = "{$baseSelect}{$relSel}";
 
         $total = (int) $this->db->fetchOne(
-            "SELECT COUNT(*) AS cnt FROM address a WHERE {$whereStr}",
+            "SELECT COUNT(*) AS cnt FROM address a {$joinSql} WHERE {$whereStr}",
             $params,
         )['cnt'];
 
         $items = $this->db->fetchAll(
-            "SELECT {$select} FROM address a WHERE {$whereStr}
+            "SELECT {$select} FROM address a {$joinSql} WHERE {$whereStr}
              ORDER BY {$orderBy}
              LIMIT {$limit} OFFSET {$offset}",
             $params,
         );
 
         foreach ($items as &$item) {
-            $item = $proj->apply($item, $sys);
+            $item = $proj->apply($item, $sys, ['user' => [
+                'fk'   => 'user_id',
+                'nest' => ['id' => 'user_id_join', 'email' => 'user_email', 'first_name' => 'user_first_name', 'last_name' => 'user_last_name'],
+            ]]);
         }
         unset($item);
 
         return $this->paginationResult($items, $total, $page, $limit);
+    }
+
+    /**
+     * Najde adresu dle ID, volitelne s user JOINem.
+     *
+     * @param  int        $id
+     * @param  array|null $projection
+     * @return array<string, mixed>|null
+     */
+    public function findById(int $id, ?array $projection = null): ?array
+    {
+        $proj       = new Projection($projection);
+        $sys        = $this->sys;
+        $baseSelect = $this->buildSelect($proj);
+
+        $joinSql = '';
+        $relSel  = '';
+        if ($proj->needsJoin('user')) {
+            $joinSql = 'LEFT JOIN user u ON u.id = a.user_id';
+            $relSel  = ', u.id AS user_id_join, u.email AS user_email, u.first_name AS user_first_name, u.last_name AS user_last_name';
+        }
+        $select = "{$baseSelect}{$relSel}";
+
+        $row = $this->db->fetchOne(
+            "SELECT {$select} FROM address a {$joinSql} WHERE a.id = ? AND a.franchise_code = ?",
+            [$id, $this->code],
+        );
+
+        if (!$row) {
+            return null;
+        }
+
+        return $proj->apply($row, $sys, ['user' => [
+            'fk'   => 'user_id',
+            'nest' => ['id' => 'user_id_join', 'email' => 'user_email', 'first_name' => 'user_first_name', 'last_name' => 'user_last_name'],
+        ]]);
     }
 
     /**
