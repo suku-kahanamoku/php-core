@@ -97,6 +97,14 @@ class InvoiceRepository extends BaseRepository
             $params[] = $userId;
         }
 
+        // Extract 'deleted' from filter (default 0 = active only).
+        $filterArr  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
+        $deletedVal = isset($filterArr['deleted']) ? (int) $filterArr['deleted'] : 0;
+        unset($filterArr['deleted']);
+        $filter = count($filterArr) > 0 ? json_encode($filterArr) : '';
+        $where[]  = 'i.deleted = ?';
+        $params[] = $deletedVal;
+
         $f = SQL_FILTER($filter, 'i');
         if ($f['sql'] !== '') {
             $where[] = $f['sql'];
@@ -118,7 +126,7 @@ class InvoiceRepository extends BaseRepository
         $joinSql = '';
         $relSel  = '';
         if ($proj->needsJoin('user') || $needsUserFilter) {
-            $joinSql = 'LEFT JOIN user u ON u.id = i.user_id';
+            $joinSql = 'LEFT JOIN user u ON u.id = i.user_id AND u.deleted = 0';
             $relSel  = ', u.first_name, u.last_name, u.email';
         }
 
@@ -198,7 +206,7 @@ class InvoiceRepository extends BaseRepository
         $joinSql = '';
         $relSel  = '';
         if ($proj->needsJoin('user')) {
-            $joinSql = 'LEFT JOIN user u ON u.id = i.user_id';
+            $joinSql = 'LEFT JOIN user u ON u.id = i.user_id AND u.deleted = 0';
             $relSel  = ', u.first_name, u.last_name, u.email';
         }
 
@@ -206,7 +214,7 @@ class InvoiceRepository extends BaseRepository
 
         $invoice = $this->db->fetchOne(
             "SELECT {$select} FROM invoice i {$joinSql}
-             WHERE i.id = ? AND i.franchise_code = ?",
+             WHERE i.id = ? AND i.franchise_code = ? AND i.deleted = 0",
             [$id, $this->code],
         );
 
@@ -242,7 +250,7 @@ class InvoiceRepository extends BaseRepository
     {
         $row = $this->db->fetchOne(
             'SELECT id FROM invoice
-             WHERE franchise_code = ? AND order_id = ?',
+             WHERE franchise_code = ? AND order_id = ? AND deleted = 0',
             [$this->code, $orderId],
         );
 
@@ -328,10 +336,11 @@ class InvoiceRepository extends BaseRepository
      */
     public function delete(int $id): int
     {
-        return $this->db->delete(
+        return $this->db->update(
             'invoice',
+            ['deleted' => 1, 'updated_at' => date('Y-m-d H:i:s')],
             'id = ? AND franchise_code = ?',
-            [$id, $this->code]
+            [$id, $this->code],
         );
     }
 

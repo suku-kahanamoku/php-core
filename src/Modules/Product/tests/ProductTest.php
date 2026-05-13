@@ -105,11 +105,20 @@ if ($modelProdId) {
 
 section('Product model – delete()');
 if ($modelProdId) {
+    // Verify 'deleted' field is 0 before deletion.
+    $r = request('GET', "{$base}/products/{$modelProdId}", [], false);
+    assert_test('deleted field is 0 before delete', ($r['data']['data']['deleted'] ?? -1) === 0, dump_on_fail($r));
+
     $r = request('DELETE', "{$base}/products/{$modelProdId}");
     assert_test('delete product 200', $r['status'] === 200, dump_on_fail($r));
 
+    // Soft delete: GET by ID returns 404.
     $r = request('GET', "{$base}/products/{$modelProdId}", [], false);
     assert_test('deleted product → 404', $r['status'] === 404, dump_on_fail($r));
+
+    // Soft delete: visible with deleted=1 filter.
+    $r = request('GET', "{$base}/products?q=" . urlencode(json_encode(['deleted' => 1])), [], false);
+    assert_test('deleted products visible with deleted:1', ($r['data']['meta']['total'] ?? 0) >= 1, dump_on_fail($r));
 }
 
 // ── Cleanup ───────────────────────────────────────────────────────────────────

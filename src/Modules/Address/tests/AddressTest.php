@@ -85,9 +85,14 @@ if ($addrModelId) {
 
 section('Address model – delete()');
 if ($addrModelId) {
+    // Verify 'deleted' field is 0 before deletion.
+    $r = request('GET', "{$base}/address/{$addrModelId}");
+    assert_test('deleted field is 0 before delete', ($r['data']['data']['deleted'] ?? -1) === 0, dump_on_fail($r));
+
     $r = request('DELETE', "{$base}/address/{$addrModelId}");
     assert_test('delete address 200', $r['status'] === 200, dump_on_fail($r));
 
+    // Soft delete: GET by ID returns 404.
     $r = request('GET', "{$base}/address/{$addrModelId}");
     assert_test('deleted address → 404', $r['status'] === 404, dump_on_fail($r));
 }

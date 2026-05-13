@@ -75,6 +75,15 @@ class TextRepository extends BaseRepository
 
         $where  = ['tx.franchise_code = ?'];
         $params = [$this->code];
+
+        // Extract 'deleted' from filter (default 0 = active only).
+        $filterArr  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
+        $deletedVal = isset($filterArr['deleted']) ? (int) $filterArr['deleted'] : 0;
+        unset($filterArr['deleted']);
+        $filter = count($filterArr) > 0 ? json_encode($filterArr) : '';
+        $where[]  = 'tx.deleted = ?';
+        $params[] = $deletedVal;
+
         $f = SQL_FILTER($filter, 'tx');
         if ($f['sql'] !== '') {
             $where[] = $f['sql'];
@@ -125,7 +134,7 @@ class TextRepository extends BaseRepository
     public function findByKey(string $key, string $language): ?array
     {
         $row = $this->db->fetchOne(
-            'SELECT * FROM text WHERE franchise_code = ? AND syscode = ? AND language = ?',
+            'SELECT * FROM text WHERE franchise_code = ? AND syscode = ? AND language = ? AND deleted = 0',
             [$this->code, $key, $language],
         );
 
@@ -148,13 +157,13 @@ class TextRepository extends BaseRepository
         if ($excludeId !== null) {
             $row = $this->db->fetchOne(
                 'SELECT id FROM text
-                 WHERE franchise_code = ? AND syscode = ? AND language = ? AND id != ?',
+                 WHERE franchise_code = ? AND syscode = ? AND language = ? AND id != ? AND deleted = 0',
                 [$this->code, $key, $language, $excludeId],
             );
         } else {
             $row = $this->db->fetchOne(
                 'SELECT id FROM text
-                 WHERE franchise_code = ? AND syscode = ? AND language = ?',
+                 WHERE franchise_code = ? AND syscode = ? AND language = ? AND deleted = 0',
                 [$this->code, $key, $language],
             );
         }
@@ -227,10 +236,11 @@ class TextRepository extends BaseRepository
      */
     public function delete(int $id): int
     {
-        return $this->db->delete(
+        return $this->db->update(
             'text',
+            ['deleted' => 1, 'updated_at' => date('Y-m-d H:i:s')],
             'id = ? AND franchise_code = ?',
-            [$id, $this->code]
+            [$id, $this->code],
         );
     }
 }

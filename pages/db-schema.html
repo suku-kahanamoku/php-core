@@ -40,7 +40,8 @@ erDiagram
         varchar franchise_code
         varchar name
         varchar label
-        smallint position }
+        smallint position
+        tinyint deleted }
     user { int id PK
         varchar franchise_code
         varchar first_name
@@ -49,11 +50,13 @@ erDiagram
         varchar phone
         varchar password
         int role_id FK
-        datetime last_login_at }
+        datetime last_login_at
+        tinyint deleted }
     user_token { int id PK
         int user_id FK
         varchar token
-        datetime expires_at }
+        datetime expires_at
+        tinyint deleted }
     address { int id PK
         varchar franchise_code
         int user_id FK
@@ -64,14 +67,16 @@ erDiagram
         varchar city
         varchar zip
         varchar country
-        tinyint is_default }
+        tinyint is_default
+        tinyint deleted }
     category { int id PK
         varchar franchise_code
         int parent_id FK
         varchar syscode
         varchar name
         text description
-        smallint position }
+        smallint position
+        tinyint deleted }
     product { int id PK
         varchar franchise_code
         varchar sku
@@ -80,7 +85,8 @@ erDiagram
         decimal price
         decimal vat_rate
         int stock_quantity
-        tinyint is_active
+        tinyint published
+        tinyint deleted
         varchar kind
         varchar color
         varchar variant
@@ -93,7 +99,8 @@ erDiagram
         varchar title
         longtext content
         varchar language
-        tinyint is_active
+        tinyint published
+        tinyint deleted
         int created_by FK }
     enumeration { int id PK
         varchar franchise_code
@@ -102,7 +109,8 @@ erDiagram
         varchar label
         varchar value
         smallint position
-        tinyint is_active }
+        tinyint published
+        tinyint deleted }
     order { int id PK
         varchar franchise_code
         varchar order_number
@@ -113,13 +121,15 @@ erDiagram
         varchar payment_method
         int shipping_address_id FK
         int billing_address_id FK
-        text note }
+        text note
+        tinyint deleted }
     order_item { int id PK
         int order_id FK
         int product_id FK
         int quantity
         decimal unit_price
-        decimal total_price }
+        decimal total_price
+        tinyint deleted }
     invoice { int id PK
         varchar franchise_code
         varchar invoice_number
@@ -132,14 +142,16 @@ erDiagram
         text note
         datetime issued_at
         date due_at
-        datetime paid_at }
+        datetime paid_at
+        tinyint deleted }
     invoice_item { int id PK
         int invoice_id FK
         int product_id FK
         varchar description
         int quantity
         decimal unit_price
-        decimal total_price }
+        decimal total_price
+        tinyint deleted }
     role ||--o{ user : "assigned to"
     user ||--o{ user_token : "has tokens"
     user ||--o{ address : "has addresses"

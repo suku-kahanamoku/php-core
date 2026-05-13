@@ -88,6 +88,14 @@ class ProductRepository extends BaseRepository
         $where  = ['p.franchise_code = ?'];
         $params = [$this->code];
 
+        // Extract 'deleted' from filter (default 0 = active only).
+        $filterArr  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
+        $deletedVal = isset($filterArr['deleted']) ? (int) $filterArr['deleted'] : 0;
+        unset($filterArr['deleted']);
+        $filter = count($filterArr) > 0 ? json_encode($filterArr) : '';
+        $where[]  = 'p.deleted = ?';
+        $params[] = $deletedVal;
+
         // Detect whether the filter references category.* columns (e.g. category.syscode).
         // If so, we need to JOIN the category table so SQL_FILTER can resolve category.col.
         $decodedFilter  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
@@ -101,7 +109,7 @@ class ProductRepository extends BaseRepository
         // Build JOINs — no ? placeholders so param order stays simple.
         $catJoin = $needsCatJoin
             ? 'LEFT JOIN product_category pc ON pc.product_id = p.id
-               LEFT JOIN category ON category.id = pc.category_id'
+               LEFT JOIN category ON category.id = pc.category_id AND category.deleted = 0'
             : '';
 
         // When joining category, restrict it to the same franchise to avoid cross-tenant leaks.
@@ -191,7 +199,7 @@ class ProductRepository extends BaseRepository
         $select  = implode(', ', $quoted);
 
         $row = $this->db->fetchOne(
-            "SELECT {$select} FROM product WHERE id = ? AND franchise_code = ?",
+            "SELECT {$select} FROM product WHERE id = ? AND franchise_code = ? AND deleted = 0",
             [$id, $this->code],
         );
 
@@ -207,7 +215,7 @@ class ProductRepository extends BaseRepository
             $categoryRows = $this->db->fetchAll(
                 'SELECT pc.category_id, c.name AS category_name
                  FROM product_category pc
-                 LEFT JOIN category c ON c.id = pc.category_id
+                 LEFT JOIN category c ON c.id = pc.category_id AND c.deleted = 0
                  WHERE pc.product_id = ?',
                 [$id],
             );
@@ -316,7 +324,7 @@ class ProductRepository extends BaseRepository
         $row = $this->db->fetchOne(
             'SELECT pc.product_id FROM product_category pc
              INNER JOIN product p ON p.id = pc.product_id
-             WHERE p.franchise_code = ? AND pc.category_id = ? LIMIT 1',
+             WHERE p.franchise_code = ? AND pc.category_id = ? AND p.deleted = 0 LIMIT 1',
             [$this->code, $categoryId],
         );
 
@@ -334,7 +342,7 @@ class ProductRepository extends BaseRepository
         return $this->db->fetchAll(
             'SELECT p.id, p.sku, p.name, p.price FROM product p
              INNER JOIN product_category pc ON pc.product_id = p.id
-             WHERE p.franchise_code = ? AND pc.category_id = ?',
+             WHERE p.franchise_code = ? AND pc.category_id = ? AND p.deleted = 0',
             [$this->code, $categoryId],
         );
     }
@@ -347,11 +355,11 @@ class ProductRepository extends BaseRepository
      */
     public function delete(int $id): int
     {
-        $this->db->delete('product_category', 'product_id = ?', [$id]);
-        return $this->db->delete(
+        return $this->db->update(
             'product',
+            ['deleted' => 1, 'updated_at' => date('Y-m-d H:i:s')],
             'id = ? AND franchise_code = ?',
-            [$id, $this->code]
+            [$id, $this->code],
         );
     }
 
@@ -367,7 +375,7 @@ class ProductRepository extends BaseRepository
     {
         $product = $this->db->fetchOne(
             'SELECT stock_quantity FROM product
-             WHERE id = ? AND franchise_code = ?',
+             WHERE id = ? AND franchise_code = ? AND deleted = 0',
             [$id, $this->code],
         );
 

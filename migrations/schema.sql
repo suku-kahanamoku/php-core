@@ -30,12 +30,14 @@ CREATE TABLE `enumeration` (
     `value`        VARCHAR(255) NOT NULL DEFAULT '',
     `position`   SMALLINT     NOT NULL DEFAULT 0,
     `published`    TINYINT(1)   NOT NULL DEFAULT 1,
+    `deleted`      TINYINT(1)   NOT NULL DEFAULT 0,
     `created_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`   DATETIME              DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_enum_franchise_type_syscode` (`franchise_code`, `type`, `syscode`),
     KEY `idx_enum_franchise` (`franchise_code`),
-    KEY `idx_enum_type`      (`type`)
+    KEY `idx_enum_type`      (`type`),
+    KEY `idx_enum_deleted`   (`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── role ──────────────────────────────────────────────────
@@ -45,11 +47,13 @@ CREATE TABLE `role` (
     `name`           VARCHAR(64)  NOT NULL COMMENT 'e.g. admin, user, manager',
     `label`          VARCHAR(255) NOT NULL,
     `position`     SMALLINT     NOT NULL DEFAULT 0,
+    `deleted`        TINYINT(1)   NOT NULL DEFAULT 0,
     `created_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`     DATETIME              DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_role_franchise_name` (`franchise_code`, `name`),
-    KEY `idx_role_franchise` (`franchise_code`)
+    KEY `idx_role_franchise` (`franchise_code`),
+    KEY `idx_role_deleted`   (`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── user ─────────────────────────────────────────────────
@@ -64,12 +68,14 @@ CREATE TABLE `user` (
     `role_id`       INT UNSIGNED NOT NULL COMMENT 'FK → role.id',
     `status`        ENUM('active','inactive','banned') NOT NULL DEFAULT 'active',
     `last_login_at` DATETIME              DEFAULT NULL,
+    `deleted`       TINYINT(1)   NOT NULL DEFAULT 0,
     `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`    DATETIME              DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_user_franchise_email` (`franchise_code`, `email`),
     KEY `idx_user_franchise` (`franchise_code`),
     KEY `idx_user_role_id`   (`role_id`),
+    KEY `idx_user_deleted`   (`deleted`),
     CONSTRAINT `fk_user_role` FOREIGN KEY (`role_id`) REFERENCES `role` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -86,11 +92,13 @@ CREATE TABLE `address` (
     `zip`          VARCHAR(20)  NOT NULL,
     `country`      VARCHAR(3)   NOT NULL DEFAULT 'CZ',
     `is_default`   TINYINT(1)   NOT NULL DEFAULT 0,
+    `deleted`      TINYINT(1)   NOT NULL DEFAULT 0,
     `created_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`   DATETIME              DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     KEY `idx_addr_franchise` (`franchise_code`),
     KEY `idx_addr_user`      (`user_id`),
+    KEY `idx_addr_deleted`   (`deleted`),
     CONSTRAINT `fk_addr_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -100,6 +108,7 @@ CREATE TABLE `user_token` (
     `user_id`    INT UNSIGNED NOT NULL,
     `token`      VARCHAR(64)  NOT NULL,
     `expires_at` DATETIME     NOT NULL,
+    `deleted`    TINYINT(1)   NOT NULL DEFAULT 0,
     `created_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME              DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
@@ -117,6 +126,7 @@ CREATE TABLE `category` (
     `name`         VARCHAR(255) NOT NULL,
     `description`  TEXT                  DEFAULT NULL,
     `position`   SMALLINT     NOT NULL DEFAULT 0,
+    `deleted`      TINYINT(1)   NOT NULL DEFAULT 0,
     `created_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`   DATETIME              DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
 
@@ -124,6 +134,7 @@ CREATE TABLE `category` (
     UNIQUE KEY `uq_cat_franchise_syscode` (`franchise_code`, `syscode`),
     KEY `idx_cat_franchise` (`franchise_code`),
     KEY `idx_cat_parent`    (`parent_id`),
+    KEY `idx_cat_deleted`   (`deleted`),
     CONSTRAINT `fk_cat_parent` FOREIGN KEY (`parent_id`) REFERENCES `category` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -138,6 +149,7 @@ CREATE TABLE `product` (
     `vat_rate`       DECIMAL(5, 2)  NOT NULL DEFAULT 21.00 COMMENT 'VAT percentage',
     `stock_quantity` INT            NOT NULL DEFAULT 0,
     `published`      TINYINT(1)     NOT NULL DEFAULT 1,
+    `deleted`        TINYINT(1)     NOT NULL DEFAULT 0,
     -- filterable VARCHAR attributes
     `kind`           VARCHAR(64)             DEFAULT NULL COMMENT 'e.g. dry, sweet',
     `color`          VARCHAR(64)             DEFAULT NULL COMMENT 'e.g. white, red, rose',
@@ -151,7 +163,8 @@ CREATE TABLE `product` (
     KEY `idx_product_franchise` (`franchise_code`),
     KEY `idx_product_kind`      (`kind`),
     KEY `idx_product_color`     (`color`),
-    KEY `idx_product_variant`   (`variant`)
+    KEY `idx_product_variant`   (`variant`),
+    KEY `idx_product_deleted`   (`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── product_category (M:N pivot) ──────────────────────────
@@ -173,6 +186,7 @@ CREATE TABLE `text` (
     `content`      LONGTEXT              DEFAULT NULL,
     `language`     VARCHAR(10)  NOT NULL DEFAULT 'cs',
     `published`    TINYINT(1)   NOT NULL DEFAULT 1,
+    `deleted`      TINYINT(1)   NOT NULL DEFAULT 0,
     `created_by`   INT UNSIGNED          DEFAULT NULL,
     `created_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`   DATETIME              DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
@@ -180,6 +194,7 @@ CREATE TABLE `text` (
     UNIQUE KEY `uq_text_franchise_syscode_lang` (`franchise_code`, `syscode`, `language`),
     KEY `idx_text_franchise` (`franchise_code`),
     KEY `idx_text_lang`      (`language`),
+    KEY `idx_text_deleted`   (`deleted`),
     CONSTRAINT `fk_text_user` FOREIGN KEY (`created_by`) REFERENCES `user` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -198,6 +213,7 @@ CREATE TABLE `order` (
     `shipping_address_id` INT UNSIGNED            DEFAULT NULL,
     `billing_address_id`  INT UNSIGNED            DEFAULT NULL,
     `note`                TEXT                    DEFAULT NULL,
+    `deleted`             TINYINT(1)     NOT NULL DEFAULT 0,
     `created_at`          DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`          DATETIME                DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
@@ -205,6 +221,7 @@ CREATE TABLE `order` (
     KEY `idx_order_franchise` (`franchise_code`),
     KEY `idx_order_user`      (`user_id`),
     KEY `idx_order_status`    (`status`),
+    KEY `idx_order_deleted`   (`deleted`),
     CONSTRAINT `fk_order_user` FOREIGN KEY (`user_id`)             REFERENCES `user`    (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_order_ship` FOREIGN KEY (`shipping_address_id`) REFERENCES `address` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_order_bill` FOREIGN KEY (`billing_address_id`)  REFERENCES `address` (`id`) ON DELETE SET NULL
@@ -218,6 +235,7 @@ CREATE TABLE `order_item` (
     `quantity`    INT            NOT NULL DEFAULT 1,
     `unit_price`  DECIMAL(12, 2) NOT NULL,
     `total_price` DECIMAL(12, 2) NOT NULL,
+    `deleted`     TINYINT(1)     NOT NULL DEFAULT 0,
     `created_at`  DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`  DATETIME                DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
@@ -242,6 +260,7 @@ CREATE TABLE `invoice` (
     `issued_at`          DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `due_at`             DATE                    DEFAULT NULL,
     `paid_at`            DATETIME                DEFAULT NULL,
+    `deleted`            TINYINT(1)     NOT NULL DEFAULT 0,
     `created_at`         DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`         DATETIME                DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
@@ -250,6 +269,7 @@ CREATE TABLE `invoice` (
     KEY `idx_inv_order`     (`order_id`),
     KEY `idx_inv_user`      (`user_id`),
     KEY `idx_inv_status`    (`status`),
+    KEY `idx_inv_deleted`   (`deleted`),
     CONSTRAINT `fk_inv_order` FOREIGN KEY (`order_id`)           REFERENCES `order`   (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_inv_user`  FOREIGN KEY (`user_id`)            REFERENCES `user`    (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_inv_addr`  FOREIGN KEY (`billing_address_id`) REFERENCES `address` (`id`) ON DELETE SET NULL
@@ -264,6 +284,7 @@ CREATE TABLE `invoice_item` (
     `quantity`    INT            NOT NULL DEFAULT 1,
     `unit_price`  DECIMAL(12, 2) NOT NULL,
     `total_price` DECIMAL(12, 2) NOT NULL,
+    `deleted`     TINYINT(1)     NOT NULL DEFAULT 0,
     `created_at`  DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`  DATETIME                DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),

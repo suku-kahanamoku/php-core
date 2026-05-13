@@ -250,14 +250,44 @@ php tests/api_test.php http://myserver.com/api
 | PATCH  | `/invoices/:id/status` | admin | Update status |
 | DELETE | `/invoices/:id` | admin | Delete |
 
+## Soft delete
+
+All entities support **soft delete** — a `DELETE` request sets `deleted = 1` rather than removing the row from the database. Data is never physically deleted.
+
+### Default behaviour
+- Every `SELECT` query automatically appends `AND {table}.deleted = 0`.
+- `JOIN`s to related tables also filter by `deleted = 0` on the joined table, preventing orphaned references from appearing in results.
+- `GET /{resource}/:id` on a soft-deleted record returns **404**.
+
+### Querying deleted records
+Pass `deleted=1` inside the `q` filter parameter to retrieve soft-deleted items (admin only in practice):
+
+```bash
+# Show deleted products
+GET /products?q={"deleted":1}
+
+# Show deleted orders
+GET /orders?q={"deleted":1}
+```
+
+The `deleted` field is always included in all API responses (`deleted: 0` or `deleted: 1`).
+
+### Re-activating a record
+Use a `PATCH` to set `deleted` back to `0`:
+
+```bash
+PATCH /products/42   Body: {"deleted": 0}
+```
+
 ## Database schema
 
 Tables: `role`, `user`, `user_token`, `address`, `category`, `product`, `product_category`, `text`, `enumeration`, `order`, `order_item`, `invoice`, `invoice_item`
 
 - **`product_category`** — M:N pivot table linking products to categories (one product can belong to multiple categories).
 - **`category.syscode`** — machine-readable identifier (e.g. `top`, `new`) for filtering via `category_syscode` query param.
-- **`product.data`** — flexible JSON column for project-specific attributes. Filter via dot-notation: `filter={"data.year":{"value":2022}}`.
+- **`product.data`** — flexible JSON column for project-specific attributes. Filter via dot-notation: `q={"data.year":{"value":2022}}`.
+- **`deleted`** — soft-delete flag (`TINYINT(1) DEFAULT 0`) present on every entity table. Indexed for fast filtering.
 
-All tables (except `user_token`, `order_item`, `invoice_item`) are scoped by `franchise_code`.
+All tables (except `product_category`) are scoped by `franchise_code`.
 
 

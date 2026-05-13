@@ -68,6 +68,14 @@ class CategoryRepository extends BaseRepository
         $where  = ['c.franchise_code = ?'];
         $params = [$this->code];
 
+        // Extract 'deleted' from filter (default 0 = active only).
+        $filterArr  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
+        $deletedVal = isset($filterArr['deleted']) ? (int) $filterArr['deleted'] : 0;
+        unset($filterArr['deleted']);
+        $filter = count($filterArr) > 0 ? json_encode($filterArr) : '';
+        $where[]  = 'c.deleted = ?';
+        $params[] = $deletedVal;
+
         $f = SQL_FILTER($filter, 'c');
         if ($f['sql'] !== '') {
             $where[] = $f['sql'];
@@ -116,7 +124,7 @@ class CategoryRepository extends BaseRepository
     public function findBySyscode(string $syscode): ?array
     {
         $row = $this->db->fetchOne(
-            'SELECT * FROM category WHERE syscode = ? AND franchise_code = ?',
+            'SELECT * FROM category WHERE syscode = ? AND franchise_code = ? AND deleted = 0',
             [$syscode, $this->code],
         );
 
@@ -186,10 +194,11 @@ class CategoryRepository extends BaseRepository
      */
     public function delete(int $id): int
     {
-        return $this->db->delete(
+        return $this->db->update(
             'category',
+            ['deleted' => 1, 'updated_at' => date('Y-m-d H:i:s')],
             'id = ? AND franchise_code = ?',
-            [$id, $this->code]
+            [$id, $this->code],
         );
     }
 }

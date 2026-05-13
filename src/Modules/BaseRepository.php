@@ -31,7 +31,7 @@ abstract class BaseRepository
 
     protected string $table = '';
     protected string $alias = '';
-    protected array  $sys   = ['id', 'created_at', 'updated_at'];
+    protected array  $sys   = ['id', 'created_at', 'updated_at', 'deleted'];
     protected array  $own   = [];
     protected array  $rel   = [];
 
@@ -76,7 +76,7 @@ abstract class BaseRepository
         $from   = $this->alias !== '' ? "{$this->table} {$this->alias}" : $this->table;
 
         $row = $this->db->fetchOne(
-            "SELECT {$select} FROM {$from} WHERE {$a}id = ? AND {$a}franchise_code = ?",
+            "SELECT {$select} FROM {$from} WHERE {$a}id = ? AND {$a}franchise_code = ? AND {$a}deleted = 0",
             [$id, $this->code],
         );
 

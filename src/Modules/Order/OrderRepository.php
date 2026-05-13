@@ -95,6 +95,14 @@ class OrderRepository extends BaseRepository
             $params[] = $userId;
         }
 
+        // Extract 'deleted' from filter (default 0 = active only).
+        $filterArr  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
+        $deletedVal = isset($filterArr['deleted']) ? (int) $filterArr['deleted'] : 0;
+        unset($filterArr['deleted']);
+        $filter = count($filterArr) > 0 ? json_encode($filterArr) : '';
+        $where[]  = 'o.deleted = ?';
+        $params[] = $deletedVal;
+
         $f = SQL_FILTER($filter, 'o');
         if ($f['sql'] !== '') {
             $where[] = $f['sql'];
@@ -116,7 +124,7 @@ class OrderRepository extends BaseRepository
         $joinSql = '';
         $relSel  = '';
         if ($proj->needsJoin('user') || $needsUserFilter) {
-            $joinSql = 'LEFT JOIN user u ON u.id = o.user_id';
+            $joinSql = 'LEFT JOIN user u ON u.id = o.user_id AND u.deleted = 0';
             $relSel  = ', u.first_name, u.last_name, u.email';
         }
 
@@ -184,7 +192,7 @@ class OrderRepository extends BaseRepository
         $joinSql = '';
         $relSel  = '';
         if ($proj->needsJoin('user')) {
-            $joinSql = 'LEFT JOIN user u ON u.id = o.user_id';
+            $joinSql = 'LEFT JOIN user u ON u.id = o.user_id AND u.deleted = 0';
             $relSel  = ', u.first_name, u.last_name, u.email';
         }
 
@@ -192,7 +200,7 @@ class OrderRepository extends BaseRepository
 
         $order = $this->db->fetchOne(
             "SELECT {$select} FROM `order` o {$joinSql}
-             WHERE o.id = ? AND o.franchise_code = ?",
+             WHERE o.id = ? AND o.franchise_code = ? AND o.deleted = 0",
             [$id, $this->code],
         );
 
@@ -291,10 +299,11 @@ class OrderRepository extends BaseRepository
      */
     public function delete(int $id): int
     {
-        return $this->db->delete(
+        return $this->db->update(
             'order',
+            ['deleted' => 1, 'updated_at' => date('Y-m-d H:i:s')],
             'id = ? AND franchise_code = ?',
-            [$id, $this->code]
+            [$id, $this->code],
         );
     }
 

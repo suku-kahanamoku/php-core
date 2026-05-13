@@ -103,17 +103,17 @@ if ($prodId) {
 section('Products – filter by JSON attributes');
 if ($prodId) {
     $f = urlencode(json_encode(['data.quality' => ['value' => 'late_harvest']]));
-    $r = request('GET', "{$base}/products?filter={$f}", [], false);
+    $r = request('GET', "{$base}/products?q={$f}", [], false);
     assert_test('filter by data.quality → 200', $r['status'] === 200, dump_on_fail($r));
     assert_test('filter data.quality returns result', ($r['data']['meta']['total'] ?? 0) >= 1, dump_on_fail($r));
 
     $f = urlencode(json_encode(['data.year' => ['value' => 2022]]));
-    $r = request('GET', "{$base}/products?filter={$f}", [], false);
+    $r = request('GET', "{$base}/products?q={$f}", [], false);
     assert_test('filter by data.year → 200', $r['status'] === 200, dump_on_fail($r));
     assert_test('filter data.year returns result', ($r['data']['meta']['total'] ?? 0) >= 1, dump_on_fail($r));
 
     $f = urlencode(json_encode(['color' => ['value' => 'white']]));
-    $r = request('GET', "{$base}/products?filter={$f}", [], false);
+    $r = request('GET', "{$base}/products?q={$f}", [], false);
     assert_test('filter by color → 200', $r['status'] === 200, dump_on_fail($r));
     assert_test('filter color returns result', ($r['data']['meta']['total'] ?? 0) >= 1, dump_on_fail($r));
 }

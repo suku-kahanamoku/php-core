@@ -64,6 +64,14 @@ class AddressRepository extends BaseRepository
         $where  = ['a.franchise_code = ?'];
         $params = [$this->code];
 
+        // Extract 'deleted' from filter (default 0 = active only).
+        $filterArr  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
+        $deletedVal = isset($filterArr['deleted']) ? (int) $filterArr['deleted'] : 0;
+        unset($filterArr['deleted']);
+        $filter = count($filterArr) > 0 ? json_encode($filterArr) : '';
+        $where[]  = 'a.deleted = ?';
+        $params[] = $deletedVal;
+
         $f = SQL_FILTER($filter, 'a');
         if ($f['sql'] !== '') {
             $where[] = $f['sql'];
@@ -77,7 +85,7 @@ class AddressRepository extends BaseRepository
         $joinSql = '';
         $relSel  = '';
         if ($proj->needsJoin('user')) {
-            $joinSql = 'LEFT JOIN user u ON u.id = a.user_id';
+            $joinSql = 'LEFT JOIN user u ON u.id = a.user_id AND u.deleted = 0';
             $relSel  = ', u.id AS user_id_join, u.email AS user_email, u.first_name AS user_first_name, u.last_name AS user_last_name';
         }
         $select = "{$baseSelect}{$relSel}";
@@ -121,13 +129,13 @@ class AddressRepository extends BaseRepository
         $joinSql = '';
         $relSel  = '';
         if ($proj->needsJoin('user')) {
-            $joinSql = 'LEFT JOIN user u ON u.id = a.user_id';
+            $joinSql = 'LEFT JOIN user u ON u.id = a.user_id AND u.deleted = 0';
             $relSel  = ', u.id AS user_id_join, u.email AS user_email, u.first_name AS user_first_name, u.last_name AS user_last_name';
         }
         $select = "{$baseSelect}{$relSel}";
 
         $row = $this->db->fetchOne(
-            "SELECT {$select} FROM address a {$joinSql} WHERE a.id = ? AND a.franchise_code = ?",
+            "SELECT {$select} FROM address a {$joinSql} WHERE a.id = ? AND a.franchise_code = ? AND a.deleted = 0",
             [$id, $this->code],
         );
 
@@ -212,8 +220,9 @@ class AddressRepository extends BaseRepository
      */
     public function delete(int $id): int
     {
-        return $this->db->delete(
+        return $this->db->update(
             'address',
+            ['deleted' => 1, 'updated_at' => date('Y-m-d H:i:s')],
             'id = ? AND franchise_code = ?',
             [$id, $this->code],
         );

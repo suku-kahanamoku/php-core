@@ -67,6 +67,14 @@ class RoleRepository extends BaseRepository
         $where  = ['r.franchise_code = ?'];
         $params = [$this->code];
 
+        // Extract 'deleted' from filter (default 0 = active only).
+        $filterArr  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
+        $deletedVal = isset($filterArr['deleted']) ? (int) $filterArr['deleted'] : 0;
+        unset($filterArr['deleted']);
+        $filter = count($filterArr) > 0 ? json_encode($filterArr) : '';
+        $where[]  = 'r.deleted = ?';
+        $params[] = $deletedVal;
+
         $f = SQL_FILTER($filter, 'r');
         if ($f['sql'] !== '') {
             $where[] = $f['sql'];
@@ -155,10 +163,11 @@ class RoleRepository extends BaseRepository
      */
     public function delete(int $id): int
     {
-        return $this->db->delete(
+        return $this->db->update(
             'role',
+            ['deleted' => 1, 'updated_at' => date('Y-m-d H:i:s')],
             'id = ? AND franchise_code = ?',
-            [$id, $this->code]
+            [$id, $this->code],
         );
     }
 
@@ -173,12 +182,12 @@ class RoleRepository extends BaseRepository
     {
         if ($excludeId !== null) {
             $row = $this->db->fetchOne(
-                'SELECT id FROM role WHERE franchise_code = ? AND name = ? AND id != ?',
+                'SELECT id FROM role WHERE franchise_code = ? AND name = ? AND id != ? AND deleted = 0',
                 [$this->code, $name, $excludeId],
             );
         } else {
             $row = $this->db->fetchOne(
-                'SELECT id FROM role WHERE franchise_code = ? AND name = ?',
+                'SELECT id FROM role WHERE franchise_code = ? AND name = ? AND deleted = 0',
                 [$this->code, $name],
             );
         }
@@ -195,7 +204,7 @@ class RoleRepository extends BaseRepository
     public function findIdByName(string $name): ?int
     {
         $row = $this->db->fetchOne(
-            'SELECT id FROM `role` WHERE franchise_code = ? AND name = ?',
+            'SELECT id FROM `role` WHERE franchise_code = ? AND name = ? AND deleted = 0',
             [$this->code, $name],
         );
 

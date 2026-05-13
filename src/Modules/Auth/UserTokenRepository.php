@@ -38,8 +38,8 @@ class UserTokenRepository
         $row = $this->db->fetchOne(
             'SELECT u.id, u.email, r.name AS role, u.first_name, u.last_name
              FROM user_token t
-             JOIN `user` u ON u.id = t.user_id
-             JOIN `role` r ON r.id = u.role_id
+             JOIN `user` u ON u.id = t.user_id AND u.deleted = 0
+             JOIN `role` r ON r.id = u.role_id AND r.deleted = 0
              WHERE t.token = ? AND t.expires_at > NOW()
                AND u.franchise_code = ?
              LIMIT 1',

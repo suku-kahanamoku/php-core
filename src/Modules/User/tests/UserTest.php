@@ -71,11 +71,20 @@ if ($userId) {
 
 section('User model – delete()');
 if ($userId) {
+    // Verify 'deleted' field is 0 before deletion.
+    $r = request('GET', "{$base}/users/{$userId}");
+    assert_test('deleted field is 0 before delete', ($r['data']['data']['deleted'] ?? -1) === 0, dump_on_fail($r));
+
     $r = request('DELETE', "{$base}/users/{$userId}");
     assert_test('DELETE user 200', $r['status'] === 200, dump_on_fail($r));
 
+    // Soft delete: GET by ID returns 404.
     $r = request('GET', "{$base}/users/{$userId}");
     assert_test('deleted user returns 404', $r['status'] === 404, dump_on_fail($r));
+
+    // Soft delete: visible with deleted=1 filter.
+    $r = request('GET', "{$base}/users?q=" . urlencode(json_encode(['deleted' => 1])));
+    assert_test('deleted users visible with deleted:1', ($r['data']['meta']['total'] ?? 0) >= 1, dump_on_fail($r));
 }
 
 $token = null;

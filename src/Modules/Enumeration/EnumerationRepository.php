@@ -69,6 +69,14 @@ class EnumerationRepository extends BaseRepository
         $where  = ['e.franchise_code = ?'];
         $params = [$this->code];
 
+        // Extract 'deleted' from filter (default 0 = show active only; pass deleted:1 for trash).
+        $filterArr  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
+        $deletedVal = isset($filterArr['deleted']) ? (int) $filterArr['deleted'] : 0;
+        unset($filterArr['deleted']);
+        $filter = count($filterArr) > 0 ? json_encode($filterArr) : '';
+        $where[]  = 'e.deleted = ?';
+        $params[] = $deletedVal;
+
         $f = SQL_FILTER($filter, 'e');
         if ($f['sql'] !== '') {
             $where[] = $f['sql'];
@@ -109,7 +117,7 @@ class EnumerationRepository extends BaseRepository
     {
         $rows = $this->db->fetchAll(
             'SELECT DISTINCT type FROM enumeration
-             WHERE franchise_code = ? ORDER BY type ASC',
+             WHERE franchise_code = ? AND deleted = 0 ORDER BY type ASC',
             [$this->code],
         );
 
@@ -129,13 +137,13 @@ class EnumerationRepository extends BaseRepository
         if ($excludeId !== null) {
             $row = $this->db->fetchOne(
                 'SELECT id FROM enumeration
-                 WHERE franchise_code = ? AND type = ? AND syscode = ? AND id != ?',
+                 WHERE franchise_code = ? AND type = ? AND syscode = ? AND id != ? AND deleted = 0',
                 [$this->code, $type, $code, $excludeId],
             );
         } else {
             $row = $this->db->fetchOne(
                 'SELECT id FROM enumeration
-                 WHERE franchise_code = ? AND type = ? AND syscode = ?',
+                 WHERE franchise_code = ? AND type = ? AND syscode = ? AND deleted = 0',
                 [$this->code, $type, $code],
             );
         }
@@ -208,8 +216,9 @@ class EnumerationRepository extends BaseRepository
      */
     public function delete(int $id): int
     {
-        return $this->db->delete(
+        return $this->db->update(
             'enumeration',
+            ['deleted' => 1, 'updated_at' => date('Y-m-d H:i:s')],
             'id = ? AND franchise_code = ?',
             [$id, $this->code],
         );

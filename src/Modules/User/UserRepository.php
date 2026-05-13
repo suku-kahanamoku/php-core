@@ -24,7 +24,7 @@ class UserRepository extends BaseRepository
         parent::__construct($db, $franchiseCode);
         $this->table = 'user';
         $this->alias = 'u';
-        $this->sys   = ['id', 'created_at', 'updated_at', 'last_login_at'];
+        $this->sys   = ['id', 'created_at', 'updated_at', 'last_login_at', 'deleted'];
         $this->own   = [
             'first_name',
             'last_name',
@@ -79,6 +79,14 @@ class UserRepository extends BaseRepository
         $where  = ['u.franchise_code = ?'];
         $params = [$this->code];
 
+        // Extract 'deleted' from filter (default 0 = active only).
+        $filterArr  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
+        $deletedVal = isset($filterArr['deleted']) ? (int) $filterArr['deleted'] : 0;
+        unset($filterArr['deleted']);
+        $filter = count($filterArr) > 0 ? json_encode($filterArr) : '';
+        $where[]  = 'u.deleted = ?';
+        $params[] = $deletedVal;
+
         $f = SQL_FILTER($filter, 'u');
         if ($f['sql'] !== '') {
             $where[] = $f['sql'];
@@ -97,7 +105,7 @@ class UserRepository extends BaseRepository
             static fn($k) => str_starts_with((string) $k, 'role.')
         ));
         $needsRoleJoin = $proj->needsJoin('role') || $needsRoleFilter;
-        $joinSql       = $needsRoleJoin ? 'LEFT JOIN role r ON r.id = u.role_id' : '';
+        $joinSql       = $needsRoleJoin ? 'LEFT JOIN role r ON r.id = u.role_id AND r.deleted = 0' : '';
         $relSel        = $needsRoleJoin ? ', r.name AS role_name' : '';
 
         $select = "{$baseSelect}{$relSel}";
@@ -158,7 +166,7 @@ class UserRepository extends BaseRepository
         $joinSql = '';
         $relSel  = '';
         if ($proj->needsJoin('role')) {
-            $joinSql = 'LEFT JOIN role r ON r.id = u.role_id';
+            $joinSql = 'LEFT JOIN role r ON r.id = u.role_id AND r.deleted = 0';
             $relSel  = ', r.name AS role_name';
         }
 
@@ -166,7 +174,7 @@ class UserRepository extends BaseRepository
 
         $user = $this->db->fetchOne(
             "SELECT {$select} FROM user u {$joinSql}
-             WHERE u.id = ? AND u.franchise_code = ?",
+             WHERE u.id = ? AND u.franchise_code = ? AND u.deleted = 0",
             [$id, $this->code],
         );
 
@@ -195,12 +203,12 @@ class UserRepository extends BaseRepository
     {
         if ($excludeId !== null) {
             $row = $this->db->fetchOne(
-                'SELECT id FROM user WHERE franchise_code = ? AND email = ? AND id != ?',
+                'SELECT id FROM user WHERE franchise_code = ? AND email = ? AND id != ? AND deleted = 0',
                 [$this->code, $email, $excludeId],
             );
         } else {
             $row = $this->db->fetchOne(
-                'SELECT id FROM user WHERE franchise_code = ? AND email = ?',
+                'SELECT id FROM user WHERE franchise_code = ? AND email = ? AND deleted = 0',
                 [$this->code, $email],
             );
         }
@@ -218,7 +226,7 @@ class UserRepository extends BaseRepository
     {
         return (int) $this->db->fetchOne(
             'SELECT COUNT(*) AS cnt FROM user
-             WHERE role_id = ? AND franchise_code = ?',
+             WHERE role_id = ? AND franchise_code = ? AND deleted = 0',
             [$roleId, $this->code],
         )['cnt'];
     }
@@ -239,7 +247,7 @@ class UserRepository extends BaseRepository
     {
         return $this->db->fetchOne(
             'SELECT id, first_name, last_name, email, phone
-             FROM user WHERE franchise_code = ? AND email = ?',
+             FROM user WHERE franchise_code = ? AND email = ? AND deleted = 0',
             [$this->code, $email],
         ) ?: null;
     }
@@ -311,10 +319,11 @@ class UserRepository extends BaseRepository
      */
     public function delete(int $id): int
     {
-        return $this->db->delete(
+        return $this->db->update(
             'user',
+            ['deleted' => 1, 'updated_at' => date('Y-m-d H:i:s')],
             'id = ? AND franchise_code = ?',
-            [$id, $this->code]
+            [$id, $this->code],
         );
     }
 
