@@ -63,7 +63,6 @@ class UserTokenRepository
             'user_id'    => $userId,
             'token'      => $token,
             'expires_at' => $expiresAt,
-            'created_at' => date('Y-m-d H:i:s'),
         ]);
     }
 

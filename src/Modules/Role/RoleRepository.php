@@ -122,7 +122,6 @@ class RoleRepository extends BaseRepository
     {
         $id = $this->db->insert('role', array_merge($data, [
             'franchise_code' => $this->code,
-            'created_at'     => date('Y-m-d H:i:s'),
         ]));
 
         return $this->findById($id, $projection);

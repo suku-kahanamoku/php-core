@@ -275,7 +275,6 @@ class ProductRepository extends BaseRepository
 
         $id = $this->db->insert('product', array_merge($data, [
             'franchise_code' => $this->code,
-            'created_at'     => date('Y-m-d H:i:s'),
         ]));
 
         return $this->findById($id, $projection) ?? ['id' => $id];
