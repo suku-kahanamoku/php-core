@@ -166,13 +166,13 @@ function _sql_filter_operator(string $col, string $operator, mixed $value): ?arr
 {
     // ── Simple comparison operators ──────────────────────────────────────────
     $comparison = match ($operator) {
-        'eq'    => '=',
-        'neq'   => '!=',
-        'lt'    => '<',
-        'lte'   => '<=',
-        'gt'    => '>',
-        'gte'   => '>=',
-        default => null,
+        'eq'       => '=',
+        'ne', 'neq' => '!=',
+        'lt'       => '<',
+        'lte'      => '<=',
+        'gt'       => '>',
+        'gte'      => '>=',
+        default    => null,
     };
 
     if ($comparison !== null) {
