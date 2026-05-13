@@ -121,7 +121,6 @@ class InvoiceService
         }
 
         $orderItems = $order['items'];
-        $issuedAt   = date('Y-m-d H:i:s');
         $dueAt      = $input['due_at'] ?? date('Y-m-d', strtotime('+14 days'));
 
         $pdo = $this->invoice->getPdo();
@@ -135,7 +134,6 @@ class InvoiceService
                 'status'             => 'issued',
                 'total_amount'       => $order['total_amount'],
                 'currency'           => $order['currency'],
-                'issued_at'          => $issuedAt,
                 'due_at'             => $dueAt,
                 'billing_address_id' => $order['billing_address_id'] ?? null,
                 'note'               => $input['note']               ?? '',
