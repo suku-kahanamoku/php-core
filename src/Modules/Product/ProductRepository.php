@@ -357,7 +357,7 @@ class ProductRepository extends BaseRepository
     {
         return $this->db->update(
             'product',
-            ['deleted' => 1, 'updated_at' => date('Y-m-d H:i:s')],
+            ['deleted' => 1],
             'id = ? AND franchise_code = ?',
             [$id, $this->code],
         );
