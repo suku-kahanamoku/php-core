@@ -395,3 +395,19 @@ INSERT INTO `product_category` (`product_id`, `category_id`) VALUES
   ((SELECT id FROM product WHERE franchise_code = 'default' AND sku = 'ZAJ-RED-001'), (SELECT id FROM category WHERE franchise_code = 'default' AND syscode = 'top')),
   ((SELECT id FROM product WHERE franchise_code = 'default' AND sku = 'ZAJ-ROE-001'), (SELECT id FROM category WHERE franchise_code = 'default' AND syscode = 'top'));
 
+-- ── Seed: category "taste" ────────────────────────────────
+INSERT INTO `category` (`franchise_code`, `parent_id`, `syscode`, `name`, `description`, `position`) VALUES
+  ('default', NULL, 'taste', 'Degustace', 'Degustační balíčky', 20);
+
+-- ── Seed: 3 tasting packages ─────────────────────────────
+INSERT INTO `product` (`franchise_code`, `sku`, `name`, `description`, `price`, `vat_rate`, `stock_quantity`, `published`, `kind`, `data`) VALUES
+  ('default', 'ZAJ-TASTE-001', 'Basic',            NULL, 250.00, 21.00, 0, 1, 'tasting', JSON_OBJECT('drink', 'Ochutnávka 6 vzorků', 'food', 'Pečivo, voda', 'time', 'Doba trvání 1 hodina')),
+  ('default', 'ZAJ-TASTE-002', 'Medium',           NULL, 500.00, 21.00, 0, 1, 'tasting', JSON_OBJECT('drink', 'Ochutnávka 10 vzorků', 'food', 'Občerstvení, pečivo, voda', 'time', 'Doba trvání 2 až 2,5 hodiny')),
+  ('default', 'ZAJ-TASTE-003', 'All you can drink', NULL, 900.00, 21.00, 0, 1, 'tasting', JSON_OBJECT('drink', 'Ochutnávka všech vzorků (min. 9 bílých, 4 růžové, 4 červené)', 'food', 'Bohaté občerstvení, voda, nealko, pivo, cider, šláftruňk', 'time', 'Doba trvání podle nálady, max 5 hodin'));
+
+-- ── Seed: link tasting products to category "taste" ──────
+INSERT INTO `product_category` (`product_id`, `category_id`) VALUES
+  ((SELECT id FROM product WHERE franchise_code = 'default' AND sku = 'ZAJ-TASTE-001'), (SELECT id FROM category WHERE franchise_code = 'default' AND syscode = 'taste')),
+  ((SELECT id FROM product WHERE franchise_code = 'default' AND sku = 'ZAJ-TASTE-002'), (SELECT id FROM category WHERE franchise_code = 'default' AND syscode = 'taste')),
+  ((SELECT id FROM product WHERE franchise_code = 'default' AND sku = 'ZAJ-TASTE-003'), (SELECT id FROM category WHERE franchise_code = 'default' AND syscode = 'taste'));
+
