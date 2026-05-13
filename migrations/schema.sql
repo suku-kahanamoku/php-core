@@ -29,7 +29,7 @@ CREATE TABLE `enumeration` (
     `label`        VARCHAR(255) NOT NULL,
     `value`        VARCHAR(255) NOT NULL DEFAULT '',
     `position`   SMALLINT     NOT NULL DEFAULT 0,
-    `is_active`    TINYINT(1)   NOT NULL DEFAULT 1,
+    `published`    TINYINT(1)   NOT NULL DEFAULT 1,
     `created_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`   DATETIME              DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
@@ -137,7 +137,7 @@ CREATE TABLE `product` (
     `price`          DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
     `vat_rate`       DECIMAL(5, 2)  NOT NULL DEFAULT 21.00 COMMENT 'VAT percentage',
     `stock_quantity` INT            NOT NULL DEFAULT 0,
-    `is_active`      TINYINT(1)     NOT NULL DEFAULT 1,
+    `published`      TINYINT(1)     NOT NULL DEFAULT 1,
     -- filterable VARCHAR attributes
     `kind`           VARCHAR(64)             DEFAULT NULL COMMENT 'e.g. dry, sweet',
     `color`          VARCHAR(64)             DEFAULT NULL COMMENT 'e.g. white, red, rose',
@@ -172,7 +172,7 @@ CREATE TABLE `text` (
     `title`        VARCHAR(255) NOT NULL,
     `content`      LONGTEXT              DEFAULT NULL,
     `language`     VARCHAR(10)  NOT NULL DEFAULT 'cs',
-    `is_active`    TINYINT(1)   NOT NULL DEFAULT 1,
+    `published`    TINYINT(1)   NOT NULL DEFAULT 1,
     `created_by`   INT UNSIGNED          DEFAULT NULL,
     `created_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`   DATETIME              DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
@@ -362,7 +362,7 @@ INSERT INTO `category` (`franchise_code`, `parent_id`, `syscode`, `name`, `descr
   ('default', NULL, 'top', 'Top Produkty', 'Nejlepší vína z nabídky', 10);
 
 -- ── Seed: 4 wines ────────────────────────────────────────
-INSERT INTO `product` (`franchise_code`, `sku`, `name`, `description`, `price`, `vat_rate`, `stock_quantity`, `is_active`, `kind`, `color`, `variant`, `data`) VALUES
+INSERT INTO `product` (`franchise_code`, `sku`, `name`, `description`, `price`, `vat_rate`, `stock_quantity`, `published`, `kind`, `color`, `variant`, `data`) VALUES
   ('default', 'ZAJ-WHI-001', 'Zaječské Bílé', 'Jemné bílé víno ze Zaječí', 299.00, 21.00, 50, 1, 'dry', 'white', 'Veltlínské zelené', JSON_OBJECT('year', 2022, 'volume', 0.75, 'quality', 'kabinett', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 12.5, 'serving_temp', '8-10°C')),
   ('default', 'ZAJ-RED-001', 'Zaječské Červené', 'Kvalitní červené víno tradičního stylu', 349.00, 21.00, 40, 1, 'dry', 'red', 'Frankovka', JSON_OBJECT('year', 2021, 'volume', 0.75, 'quality', 'selection_of_grapes', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 13.5, 'serving_temp', '16-18°C')),
   ('default', 'ZAJ-ROE-001', 'Zaječské Rosé', 'Lehké rosé víno s ovocnými tóny', 329.00, 21.00, 35, 1, 'semi_dry', 'rose', 'Zweigeltrebe', JSON_OBJECT('year', 2023, 'volume', 0.75, 'quality', 'late_harvest', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 12.0, 'serving_temp', '6-8°C')),
