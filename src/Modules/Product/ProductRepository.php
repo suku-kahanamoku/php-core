@@ -305,7 +305,7 @@ class ProductRepository extends BaseRepository
 
         $this->db->update(
             'product',
-            array_merge($data, ['updated_at' => date('Y-m-d H:i:s')]),
+            $data,
             'id = ? AND franchise_code = ?',
             [$id, $this->code],
         );
@@ -386,7 +386,7 @@ class ProductRepository extends BaseRepository
         $newQty = $product['stock_quantity'] + $delta;
         $this->db->update(
             'product',
-            ['stock_quantity' => $newQty, 'updated_at' => date('Y-m-d H:i:s')],
+            ['stock_quantity' => $newQty],
             'id = ? AND franchise_code = ?',
             [$id, $this->code],
         );

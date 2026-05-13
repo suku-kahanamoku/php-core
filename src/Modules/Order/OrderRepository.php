@@ -285,7 +285,6 @@ class OrderRepository extends BaseRepository
     ): array {
         $this->db->update('order', [
             'status'     => $status,
-            'updated_at' => date('Y-m-d H:i:s'),
         ], 'id = ? AND franchise_code = ?', [$id, $this->code]);
 
         return $this->findById($id, $projection) ?? ['id' => $id];

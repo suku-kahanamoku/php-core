@@ -204,7 +204,7 @@ class AddressRepository extends BaseRepository
     {
         $this->db->update(
             'address',
-            array_merge($data, ['updated_at' => date('Y-m-d H:i:s')]),
+            $data,
             'id = ? AND franchise_code = ?',
             [$id, $this->code],
         );

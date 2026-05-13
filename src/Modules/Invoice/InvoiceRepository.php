@@ -314,7 +314,7 @@ class InvoiceRepository extends BaseRepository
         string $status,
         ?array $projection = null
     ): array {
-        $set = ['status' => $status, 'updated_at' => date('Y-m-d H:i:s')];
+        $set = ['status' => $status];
         if ($status === 'paid') {
             $set['paid_at'] = date('Y-m-d H:i:s');
         }
