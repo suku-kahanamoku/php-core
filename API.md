@@ -72,13 +72,11 @@ Response:
   "data": {
     "token": "abc123...",
     "expires_at": "2026-06-03T10:00:00",
-    "user": {
-      "id": 1,
-      "first_name": "Admin",
-      "last_name": "User",
-      "email": "admin@example.com",
-      "role": "admin"
-    }
+    "id": 1,
+    "first_name": "Admin",
+    "last_name": "User",
+    "email": "admin@example.com",
+    "role": "admin"
   }
 }
 ```
@@ -466,13 +464,11 @@ Response `200`:
   "data": {
     "token": "64-character-hex-token",
     "expires_at": "2026-06-03T12:00:00",
-    "user": {
-      "id": 1,
-      "first_name": "Admin",
-      "last_name": "User",
-      "email": "admin@example.com",
-      "role": "admin"
-    }
+    "id": 1,
+    "first_name": "Admin",
+    "last_name": "User",
+    "email": "admin@example.com",
+    "role": "admin"
   }
 }
 ```

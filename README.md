@@ -58,9 +58,13 @@ Response:
 ```json
 {
   "success": true,
+  "message": "Login successful",
   "data": {
     "token": "a3f9c2...",
+    "expires_at": "2026-06-03T10:00:00",
     "id": 1,
+    "first_name": "Admin",
+    "last_name": "User",
     "email": "admin@example.com",
     "role": "admin"
   }

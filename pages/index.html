@@ -1,106 +1,212 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="cs">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>php-core – Developer Hub</title>
-<script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-slate-100 min-h-screen font-sans text-slate-800 flex flex-col">
-<header class="bg-slate-900 text-white">
-  <div class="flex items-center gap-3 px-8 py-3">
-    <span class="font-extrabold tracking-tight text-white text-lg">&#9889; php-core</span>
-    <span class="text-slate-600">/</span>
-    <span class="text-slate-300 text-sm">Developer Hub</span>
-  </div>
-</header>
-<nav class="bg-white border-b border-slate-200 px-8 py-2 flex gap-2 flex-wrap items-center">
-  <a href="index.html"        class="px-3 py-1.5 rounded-md border bg-slate-900 text-white border-slate-900 no-underline text-xs">&#127968; Developer Hub</a>
-  <a href="architecture.html" class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#127959; Architektura</a>
-  <a href="api-reference.html" class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128196; API Reference</a>
-  <a href="flows.html"        class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128257; Flows</a>
-  <a href="db-schema.html"    class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128194; ER Diagram</a>
-  <a href="db-table.html"     class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128203; DB Tabulky</a>
-</nav>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>php-core – Developer Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body
+    class="bg-slate-100 min-h-screen font-sans text-slate-800 flex flex-col"
+  >
+    <header class="bg-slate-900 text-white">
+      <div class="flex items-center gap-3 px-8 py-3">
+        <span class="font-extrabold tracking-tight text-white text-lg"
+          >&#9889; php-core</span
+        >
+        <span class="text-slate-600">/</span>
+        <span class="text-slate-300 text-sm">Developer Hub</span>
+      </div>
+    </header>
+    <nav
+      class="bg-white border-b border-slate-200 px-8 py-2 flex gap-2 flex-wrap items-center"
+    >
+      <a
+        href="index.html"
+        class="px-3 py-1.5 rounded-md border bg-slate-900 text-white border-slate-900 no-underline text-xs"
+        >&#127968; Developer Hub</a
+      >
+      <a
+        href="architecture.html"
+        class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors"
+        >&#127959; Architektura</a
+      >
+      <a
+        href="api-reference.html"
+        class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors"
+        >&#128196; API Reference</a
+      >
+      <a
+        href="flows.html"
+        class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors"
+        >&#128257; Flows</a
+      >
+      <a
+        href="db-schema.html"
+        class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors"
+        >&#128194; ER Diagram</a
+      >
+      <a
+        href="db-table.html"
+        class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors"
+        >&#128203; DB Tabulky</a
+      >
+    </nav>
 
-<div class="max-w-5xl mx-auto w-full px-6 py-10 flex-1">
+    <div class="max-w-5xl mx-auto w-full px-6 py-10 flex-1">
+      <!-- Hero -->
+      <div
+        class="bg-gradient-to-br from-slate-900 to-slate-700 text-white rounded-2xl p-10 mb-10 flex flex-col md:flex-row justify-between items-start gap-6"
+      >
+        <div>
+          <div class="text-3xl font-extrabold tracking-tight mb-2">
+            &#9889; php-core
+          </div>
+          <div class="text-slate-300 text-base mb-4 max-w-lg">
+            PHP 8.1+ REST API bez frameworku. Multi-tenant architektura
+            (franchise_code), Bearer token autentizace, constructor dependency
+            injection.
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <span
+              class="px-3 py-1 bg-blue-600 text-white rounded-full text-xs font-bold"
+              >PHP 8.1+</span
+            >
+            <span
+              class="px-3 py-1 bg-emerald-600 text-white rounded-full text-xs font-bold"
+              >MySQL 8.0+</span
+            >
+            <span
+              class="px-3 py-1 bg-amber-600 text-white rounded-full text-xs font-bold"
+              >Apache mod_rewrite</span
+            >
+            <span
+              class="px-3 py-1 bg-violet-600 text-white rounded-full text-xs font-bold"
+              >Bez frameworku</span
+            >
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4 shrink-0">
+          <div class="bg-white/10 rounded-xl p-4 text-center">
+            <div class="text-3xl font-extrabold">13</div>
+            <div class="text-xs text-slate-300 mt-1">DB tabulek</div>
+          </div>
+          <div class="bg-white/10 rounded-xl p-4 text-center">
+            <div class="text-3xl font-extrabold">10</div>
+            <div class="text-xs text-slate-300 mt-1">modulů</div>
+          </div>
+          <div class="bg-white/10 rounded-xl p-4 text-center">
+            <div class="text-3xl font-extrabold">~60</div>
+            <div class="text-xs text-slate-300 mt-1">endpointů</div>
+          </div>
+          <div class="bg-white/10 rounded-xl p-4 text-center">
+            <div class="text-3xl font-extrabold">364</div>
+            <div class="text-xs text-slate-300 mt-1">testů</div>
+          </div>
+        </div>
+      </div>
 
-  <!-- Hero -->
-  <div class="bg-gradient-to-br from-slate-900 to-slate-700 text-white rounded-2xl p-10 mb-10 flex flex-col md:flex-row justify-between items-start gap-6">
-    <div>
-      <div class="text-3xl font-extrabold tracking-tight mb-2">&#9889; php-core</div>
-      <div class="text-slate-300 text-base mb-4 max-w-lg">PHP 8.1+ REST API bez frameworku. Multi-tenant architektura (franchise_code), Bearer token autentizace, constructor dependency injection.</div>
-      <div class="flex flex-wrap gap-3">
-        <span class="px-3 py-1 bg-blue-600 text-white rounded-full text-xs font-bold">PHP 8.1+</span>
-        <span class="px-3 py-1 bg-emerald-600 text-white rounded-full text-xs font-bold">MySQL 8.0+</span>
-        <span class="px-3 py-1 bg-amber-600 text-white rounded-full text-xs font-bold">Apache mod_rewrite</span>
-        <span class="px-3 py-1 bg-violet-600 text-white rounded-full text-xs font-bold">Bez frameworku</span>
+      <!-- Dokumentace -->
+      <h2 class="text-lg font-bold text-slate-700 mb-4">
+        &#128218; Dokumentace
+      </h2>
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
+        <a
+          href="architecture.html"
+          class="no-underline bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md hover:border-blue-300 transition-all group"
+        >
+          <div class="text-2xl mb-2">&#127959;</div>
+          <div
+            class="font-bold text-slate-800 group-hover:text-blue-600 transition-colors"
+          >
+            Architektura
+          </div>
+          <div class="text-xs text-slate-500 mt-1">
+            Request lifecycle, DI pattern, module anatomie, multi-tenancy, class
+            diagramy
+          </div>
+        </a>
+        <a
+          href="api-reference.html"
+          class="no-underline bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md hover:border-blue-300 transition-all group"
+        >
+          <div class="text-2xl mb-2">&#128196;</div>
+          <div
+            class="font-bold text-slate-800 group-hover:text-blue-600 transition-colors"
+          >
+            API Reference
+          </div>
+          <div class="text-xs text-slate-500 mt-1">
+            Všechny endpointy s příklady request/response, curl příkazy, auth
+            požadavky
+          </div>
+        </a>
+        <a
+          href="flows.html"
+          class="no-underline bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md hover:border-blue-300 transition-all group"
+        >
+          <div class="text-2xl mb-2">&#128257;</div>
+          <div
+            class="font-bold text-slate-800 group-hover:text-blue-600 transition-colors"
+          >
+            Controller Flows
+          </div>
+          <div class="text-xs text-slate-500 mt-1">
+            Sekvenční diagramy každého endpointu krok po kroku
+          </div>
+        </a>
+        <a
+          href="db-schema.html"
+          class="no-underline bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md hover:border-blue-300 transition-all group"
+        >
+          <div class="text-2xl mb-2">&#128194;</div>
+          <div
+            class="font-bold text-slate-800 group-hover:text-blue-600 transition-colors"
+          >
+            ER Diagram
+          </div>
+          <div class="text-xs text-slate-500 mt-1">
+            Entity-Relationship diagram všech 12 tabulek s vazbami
+          </div>
+        </a>
+        <a
+          href="db-table.html"
+          class="no-underline bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md hover:border-blue-300 transition-all group"
+        >
+          <div class="text-2xl mb-2">&#128203;</div>
+          <div
+            class="font-bold text-slate-800 group-hover:text-blue-600 transition-colors"
+          >
+            DB Tabulky
+          </div>
+          <div class="text-xs text-slate-500 mt-1">
+            Detailní popis sloupců každé tabulky, typy, FK vazby
+          </div>
+        </a>
       </div>
-    </div>
-    <div class="grid grid-cols-2 gap-4 shrink-0">
-      <div class="bg-white/10 rounded-xl p-4 text-center">
-        <div class="text-3xl font-extrabold">12</div>
-        <div class="text-xs text-slate-300 mt-1">DB tabulek</div>
-      </div>
-      <div class="bg-white/10 rounded-xl p-4 text-center">
-        <div class="text-3xl font-extrabold">10</div>
-        <div class="text-xs text-slate-300 mt-1">modulů</div>
-      </div>
-      <div class="bg-white/10 rounded-xl p-4 text-center">
-        <div class="text-3xl font-extrabold">~40</div>
-        <div class="text-xs text-slate-300 mt-1">endpointů</div>
-      </div>
-      <div class="bg-white/10 rounded-xl p-4 text-center">
-        <div class="text-3xl font-extrabold">364</div>
-        <div class="text-xs text-slate-300 mt-1">testů</div>
-      </div>
-    </div>
-  </div>
 
-  <!-- Dokumentace -->
-  <h2 class="text-lg font-bold text-slate-700 mb-4">&#128218; Dokumentace</h2>
-  <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
-    <a href="architecture.html" class="no-underline bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md hover:border-blue-300 transition-all group">
-      <div class="text-2xl mb-2">&#127959;</div>
-      <div class="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">Architektura</div>
-      <div class="text-xs text-slate-500 mt-1">Request lifecycle, DI pattern, module anatomie, multi-tenancy, class diagramy</div>
-    </a>
-    <a href="api-reference.html" class="no-underline bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md hover:border-blue-300 transition-all group">
-      <div class="text-2xl mb-2">&#128196;</div>
-      <div class="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">API Reference</div>
-      <div class="text-xs text-slate-500 mt-1">Všechny endpointy s příklady request/response, curl příkazy, auth požadavky</div>
-    </a>
-    <a href="flows.html" class="no-underline bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md hover:border-blue-300 transition-all group">
-      <div class="text-2xl mb-2">&#128257;</div>
-      <div class="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">Controller Flows</div>
-      <div class="text-xs text-slate-500 mt-1">Sekvenční diagramy každého endpointu krok po kroku</div>
-    </a>
-    <a href="db-schema.html" class="no-underline bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md hover:border-blue-300 transition-all group">
-      <div class="text-2xl mb-2">&#128194;</div>
-      <div class="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">ER Diagram</div>
-      <div class="text-xs text-slate-500 mt-1">Entity-Relationship diagram všech 12 tabulek s vazbami</div>
-    </a>
-    <a href="db-table.html" class="no-underline bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md hover:border-blue-300 transition-all group">
-      <div class="text-2xl mb-2">&#128203;</div>
-      <div class="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">DB Tabulky</div>
-      <div class="text-xs text-slate-500 mt-1">Detailní popis sloupců každé tabulky, typy, FK vazby</div>
-    </a>
-  </div>
-
-  <!-- Quick Start -->
-  <h2 class="text-lg font-bold text-slate-700 mb-4">&#9889; Quick Start</h2>
-  <div class="grid md:grid-cols-2 gap-6 mb-10">
-    <div class="bg-white rounded-xl border border-slate-200 p-5">
-      <div class="font-bold text-slate-700 mb-3 text-sm">1. Instalace &amp; konfigurace</div>
-      <pre class="bg-slate-900 text-green-400 rounded-lg p-4 text-xs overflow-x-auto leading-relaxed"><code>git clone &lt;repo&gt; &amp;&amp; cd php-core
+      <!-- Quick Start -->
+      <h2 class="text-lg font-bold text-slate-700 mb-4">&#9889; Quick Start</h2>
+      <div class="grid md:grid-cols-2 gap-6 mb-10">
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+          <div class="font-bold text-slate-700 mb-3 text-sm">
+            1. Instalace &amp; konfigurace
+          </div>
+          <pre
+            class="bg-slate-900 text-green-400 rounded-lg p-4 text-xs overflow-x-auto leading-relaxed"
+          ><code>git clone &lt;repo&gt; &amp;&amp; cd php-core
 composer install
 cp .env.example .env
 # Upravte .env: DB_HOST, DB_NAME, DB_USER, DB_PASS
 # FRANCHISE_CODES=default</code></pre>
-    </div>
-    <div class="bg-white rounded-xl border border-slate-200 p-5">
-      <div class="font-bold text-slate-700 mb-3 text-sm">2. Databáze &amp; spuštění</div>
-      <pre class="bg-slate-900 text-green-400 rounded-lg p-4 text-xs overflow-x-auto leading-relaxed"><code>mysql -u root -p -e "
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+          <div class="font-bold text-slate-700 mb-3 text-sm">
+            2. Databáze &amp; spuštění
+          </div>
+          <pre
+            class="bg-slate-900 text-green-400 rounded-lg p-4 text-xs overflow-x-auto leading-relaxed"
+          ><code>mysql -u root -p -e "
   CREATE DATABASE php_core;
   CREATE USER 'admin'@'localhost'
     IDENTIFIED BY 'admin';
@@ -108,102 +214,203 @@ cp .env.example .env
 "
 php bin/migrate.php
 php -S localhost:8000</code></pre>
-    </div>
-    <div class="bg-white rounded-xl border border-slate-200 p-5">
-      <div class="font-bold text-slate-700 mb-3 text-sm">3. První požadavek – login</div>
-      <pre class="bg-slate-900 text-green-400 rounded-lg p-4 text-xs overflow-x-auto leading-relaxed"><code>curl -X POST http://localhost:8000/api/auth/login \
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+          <div class="font-bold text-slate-700 mb-3 text-sm">
+            3. První požadavek – login
+          </div>
+          <pre
+            class="bg-slate-900 text-green-400 rounded-lg p-4 text-xs overflow-x-auto leading-relaxed"
+          ><code>curl -X POST http://localhost:8000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@example.com",
        "password":"password"}'
 # Vrátí token → uložte ho</code></pre>
-    </div>
-    <div class="bg-white rounded-xl border border-slate-200 p-5">
-      <div class="font-bold text-slate-700 mb-3 text-sm">4. Autentizovaný požadavek</div>
-      <pre class="bg-slate-900 text-green-400 rounded-lg p-4 text-xs overflow-x-auto leading-relaxed"><code>TOKEN="váš_token_zde"
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+          <div class="font-bold text-slate-700 mb-3 text-sm">
+            4. Autentizovaný požadavek
+          </div>
+          <pre
+            class="bg-slate-900 text-green-400 rounded-lg p-4 text-xs overflow-x-auto leading-relaxed"
+          ><code>TOKEN="váš_token_zde"
 curl http://localhost:8000/api/products \
   -H "Authorization: Bearer $TOKEN"
 # Spuštění testů:
 php tests/api_test.php</code></pre>
-    </div>
-  </div>
-
-  <!-- Klíčové koncepty -->
-  <h2 class="text-lg font-bold text-slate-700 mb-4">&#128161; Klíčové koncepty</h2>
-  <div class="grid md:grid-cols-2 gap-4 mb-10">
-
-    <div class="bg-white rounded-xl border border-slate-200 p-5">
-      <div class="flex items-center gap-2 mb-3">
-        <span class="text-lg">&#127970;</span>
-        <span class="font-bold text-slate-700 text-sm">Multi-tenancy (franchise_code)</span>
+        </div>
       </div>
-      <p class="text-xs text-slate-600 leading-relaxed mb-3">Každý HTTP požadavek je scoped na <code class="bg-slate-100 px-1 rounded">franchise_code</code>, který se odvodí z HTTP <code class="bg-slate-100 px-1 rounded">Host</code> headeru. Povolené kódy jsou v <code class="bg-slate-100 px-1 rounded">.env</code> jako <code class="bg-slate-100 px-1 rounded">FRANCHISE_CODES=default,shop1</code>. Neznámý host → 403.</p>
-      <div class="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 rounded-lg px-3 py-2 font-mono">Host: shop1.example.com → franchise_code = <span class="text-blue-600 font-bold ml-1">shop1</span></div>
-    </div>
 
-    <div class="bg-white rounded-xl border border-slate-200 p-5">
-      <div class="flex items-center gap-2 mb-3">
-        <span class="text-lg">&#128273;</span>
-        <span class="font-bold text-slate-700 text-sm">Bearer Token autentizace</span>
-      </div>
-      <p class="text-xs text-slate-600 leading-relaxed mb-3">Po přihlášení server vytvoří token (64 znaků) uložený v <code class="bg-slate-100 px-1 rounded">user_token</code> tabulce. Token se posílá v hlavičce <code class="bg-slate-100 px-1 rounded">Authorization: Bearer &lt;token&gt;</code>. Platí 24 hodin. Logout ho invaliduje na serveru.</p>
-      <div class="bg-slate-50 rounded-lg px-3 py-2 font-mono text-xs text-slate-500">Authorization: Bearer <span class="text-emerald-600">a3f9c2d8...</span></div>
-    </div>
+      <!-- Klíčové koncepty -->
+      <h2 class="text-lg font-bold text-slate-700 mb-4">
+        &#128161; Klíčové koncepty
+      </h2>
+      <div class="grid md:grid-cols-2 gap-4 mb-10">
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">&#127970;</span>
+            <span class="font-bold text-slate-700 text-sm"
+              >Multi-tenancy (franchise_code)</span
+            >
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed mb-3">
+            Každý HTTP požadavek je scoped na
+            <code class="bg-slate-100 px-1 rounded">franchise_code</code>, který
+            se odvodí z HTTP
+            <code class="bg-slate-100 px-1 rounded">Host</code> headeru.
+            Povolené kódy jsou v
+            <code class="bg-slate-100 px-1 rounded">.env</code> jako
+            <code class="bg-slate-100 px-1 rounded"
+              >FRANCHISE_CODES=default,shop1</code
+            >. Neznámý host → 403.
+          </p>
+          <div
+            class="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 rounded-lg px-3 py-2 font-mono"
+          >
+            Host: shop1.example.com → franchise_code =
+            <span class="text-blue-600 font-bold ml-1">shop1</span>
+          </div>
+        </div>
 
-    <div class="bg-white rounded-xl border border-slate-200 p-5">
-      <div class="flex items-center gap-2 mb-3">
-        <span class="text-lg">&#129520;</span>
-        <span class="font-bold text-slate-700 text-sm">Dependency Injection (konstruktor)</span>
-      </div>
-      <p class="text-xs text-slate-600 leading-relaxed mb-3">Žádné statické třídy. Každý <code class="bg-slate-100 px-1 rounded">*Api</code> a <code class="bg-slate-100 px-1 rounded">*Service</code> dostává závislosti přes konstruktor. Entry point (<code class="bg-slate-100 px-1 rounded">api/module/index.php</code>) vytvoří objekty a předá je dál.</p>
-      <pre class="bg-slate-900 text-green-400 rounded-lg p-2 text-xs"><code>$auth = new Auth($db);
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">&#128273;</span>
+            <span class="font-bold text-slate-700 text-sm"
+              >Bearer Token autentizace</span
+            >
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed mb-3">
+            Po přihlášení server vytvoří token (64 znaků) uložený v
+            <code class="bg-slate-100 px-1 rounded">user_token</code> tabulce.
+            Token se posílá v hlavičce
+            <code class="bg-slate-100 px-1 rounded"
+              >Authorization: Bearer &lt;token&gt;</code
+            >. Platí 24 hodin. Logout ho invaliduje na serveru.
+          </p>
+          <div
+            class="bg-slate-50 rounded-lg px-3 py-2 font-mono text-xs text-slate-500"
+          >
+            Authorization: Bearer
+            <span class="text-emerald-600">a3f9c2d8...</span>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">&#129520;</span>
+            <span class="font-bold text-slate-700 text-sm"
+              >Dependency Injection (konstruktor)</span
+            >
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed mb-3">
+            Žádné statické třídy. Každý
+            <code class="bg-slate-100 px-1 rounded">*Api</code> a
+            <code class="bg-slate-100 px-1 rounded">*Service</code> dostává
+            závislosti přes konstruktor. Entry point (<code
+              class="bg-slate-100 px-1 rounded"
+              >api/module/index.php</code
+            >) vytvoří objekty a předá je dál.
+          </p>
+          <pre
+            class="bg-slate-900 text-green-400 rounded-lg p-2 text-xs"
+          ><code>$auth = new Auth($db);
 $api  = new ProductApi($db, $code, $auth);</code></pre>
-    </div>
+        </div>
 
-    <div class="bg-white rounded-xl border border-slate-200 p-5">
-      <div class="flex items-center gap-2 mb-3">
-        <span class="text-lg">&#127981;</span>
-        <span class="font-bold text-slate-700 text-sm">Modulární struktura</span>
-      </div>
-      <p class="text-xs text-slate-600 leading-relaxed mb-3">Každý modul má 3 vrstvy: <code class="bg-slate-100 px-1 rounded">*Repository</code> (SQL), <code class="bg-slate-100 px-1 rounded">*Service</code> (business logika + auth), <code class="bg-slate-100 px-1 rounded">*Api</code> (routing + HTTP). Routy registruje metoda <code class="bg-slate-100 px-1 rounded">registerRoutes(Router $router)</code>.</p>
-      <div class="flex items-center gap-1 text-xs font-mono">
-        <span class="bg-violet-100 text-violet-700 px-2 py-1 rounded">Repository</span>
-        <span class="text-slate-400">←</span>
-        <span class="bg-amber-100 text-amber-700 px-2 py-1 rounded">Service</span>
-        <span class="text-slate-400">←</span>
-        <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded">Api</span>
-      </div>
-    </div>
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">&#127981;</span>
+            <span class="font-bold text-slate-700 text-sm"
+              >Modulární struktura</span
+            >
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed mb-3">
+            Každý modul má 3 vrstvy:
+            <code class="bg-slate-100 px-1 rounded">*Repository</code> (SQL),
+            <code class="bg-slate-100 px-1 rounded">*Service</code> (business
+            logika + auth),
+            <code class="bg-slate-100 px-1 rounded">*Api</code> (routing +
+            HTTP). Routy registruje metoda
+            <code class="bg-slate-100 px-1 rounded"
+              >registerRoutes(Router $router)</code
+            >.
+          </p>
+          <div class="flex items-center gap-1 text-xs font-mono">
+            <span class="bg-violet-100 text-violet-700 px-2 py-1 rounded"
+              >Repository</span
+            >
+            <span class="text-slate-400">←</span>
+            <span class="bg-amber-100 text-amber-700 px-2 py-1 rounded"
+              >Service</span
+            >
+            <span class="text-slate-400">←</span>
+            <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded">Api</span>
+          </div>
+        </div>
 
-    <div class="bg-white rounded-xl border border-slate-200 p-5">
-      <div class="flex items-center gap-2 mb-3">
-        <span class="text-lg">&#128228;</span>
-        <span class="font-bold text-slate-700 text-sm">Response formát</span>
-      </div>
-      <p class="text-xs text-slate-600 leading-relaxed mb-2">Všechny odpovědi jsou JSON ve stejném formátu:</p>
-      <pre class="bg-slate-900 text-green-400 rounded-lg p-2 text-xs"><code>// Úspěch
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">&#128228;</span>
+            <span class="font-bold text-slate-700 text-sm"
+              >Response formát</span
+            >
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed mb-2">
+            Všechny odpovědi jsou JSON ve stejném formátu:
+          </p>
+          <pre
+            class="bg-slate-900 text-green-400 rounded-lg p-2 text-xs"
+          ><code>// Úspěch
 {"success": true, "data": {...}}
 // Chyba
 {"success": false, "message": "..."}</code></pre>
-    </div>
+        </div>
 
-    <div class="bg-white rounded-xl border border-slate-200 p-5">
-      <div class="flex items-center gap-2 mb-3">
-        <span class="text-lg">&#128119;</span>
-        <span class="font-bold text-slate-700 text-sm">Role-based přístup</span>
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">&#128119;</span>
+            <span class="font-bold text-slate-700 text-sm"
+              >Role-based přístup</span
+            >
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed mb-3">
+            Tři výchozí role:
+            <code class="bg-slate-100 px-1 rounded">admin</code>,
+            <code class="bg-slate-100 px-1 rounded">manager</code>,
+            <code class="bg-slate-100 px-1 rounded">user</code>. Service volá
+            <code class="bg-slate-100 px-1 rounded"
+              >$this-&gt;auth-&gt;require()</code
+            >
+            nebo
+            <code class="bg-slate-100 px-1 rounded"
+              >$this-&gt;auth-&gt;requireRole('admin')</code
+            >. Neautorizovaný přístup vrátí 401/403.
+          </p>
+          <div class="flex gap-2">
+            <span
+              class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded font-bold"
+              >admin</span
+            >
+            <span
+              class="bg-amber-100 text-amber-700 text-xs px-2 py-1 rounded font-bold"
+              >manager</span
+            >
+            <span
+              class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded font-bold"
+              >user</span
+            >
+          </div>
+        </div>
       </div>
-      <p class="text-xs text-slate-600 leading-relaxed mb-3">Tři výchozí role: <code class="bg-slate-100 px-1 rounded">admin</code>, <code class="bg-slate-100 px-1 rounded">manager</code>, <code class="bg-slate-100 px-1 rounded">user</code>. Service volá <code class="bg-slate-100 px-1 rounded">$this-&gt;auth-&gt;require()</code> nebo <code class="bg-slate-100 px-1 rounded">$this-&gt;auth-&gt;requireRole('admin')</code>. Neautorizovaný přístup vrátí 401/403.</p>
-      <div class="flex gap-2">
-        <span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded font-bold">admin</span>
-        <span class="bg-amber-100 text-amber-700 text-xs px-2 py-1 rounded font-bold">manager</span>
-        <span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded font-bold">user</span>
-      </div>
-    </div>
-  </div>
 
-  <!-- Struktura projektu -->
-  <h2 class="text-lg font-bold text-slate-700 mb-4">&#128193; Struktura projektu</h2>
-  <div class="bg-white rounded-xl border border-slate-200 p-5 mb-10">
-    <pre class="text-xs text-slate-700 leading-relaxed overflow-x-auto"><code>php-core/
+      <!-- Struktura projektu -->
+      <h2 class="text-lg font-bold text-slate-700 mb-4">
+        &#128193; Struktura projektu
+      </h2>
+      <div class="bg-white rounded-xl border border-slate-200 p-5 mb-10">
+        <pre
+          class="text-xs text-slate-700 leading-relaxed overflow-x-auto"
+        ><code>php-core/
 ├── <span class="text-blue-600 font-bold">bootstrap.php</span>           # Autoload, .env, CORS, error handling
 ├── .env.example
 ├── composer.json
@@ -259,37 +466,94 @@ $api  = new ProductApi($db, $code, $auth);</code></pre>
 │
 └── <span class="text-rose-600 font-bold">tests/</span>
     └── api_test.php            # CLI test runner (364 testů)</code></pre>
-  </div>
+      </div>
 
-  <!-- Env proměnné -->
-  <h2 class="text-lg font-bold text-slate-700 mb-4">&#127981; Environment proměnné (.env)</h2>
-  <div class="bg-white rounded-xl border border-slate-200 overflow-hidden mb-10">
-    <table class="w-full text-xs">
-      <thead class="bg-slate-50 border-b border-slate-200">
-        <tr>
-          <th class="text-left px-4 py-2.5 font-semibold text-slate-600">Proměnná</th>
-          <th class="text-left px-4 py-2.5 font-semibold text-slate-600">Příklad</th>
-          <th class="text-left px-4 py-2.5 font-semibold text-slate-600">Popis</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-slate-100">
-        <tr><td class="px-4 py-2 font-mono text-blue-700">DB_HOST</td><td class="px-4 py-2 font-mono text-slate-500">localhost</td><td class="px-4 py-2 text-slate-600">MySQL host</td></tr>
-        <tr><td class="px-4 py-2 font-mono text-blue-700">DB_PORT</td><td class="px-4 py-2 font-mono text-slate-500">3306</td><td class="px-4 py-2 text-slate-600">MySQL port</td></tr>
-        <tr><td class="px-4 py-2 font-mono text-blue-700">DB_NAME</td><td class="px-4 py-2 font-mono text-slate-500">php_core</td><td class="px-4 py-2 text-slate-600">Název databáze</td></tr>
-        <tr><td class="px-4 py-2 font-mono text-blue-700">DB_USER</td><td class="px-4 py-2 font-mono text-slate-500">admin</td><td class="px-4 py-2 text-slate-600">DB uživatel</td></tr>
-        <tr><td class="px-4 py-2 font-mono text-blue-700">DB_PASS</td><td class="px-4 py-2 font-mono text-slate-500">admin</td><td class="px-4 py-2 text-slate-600">DB heslo</td></tr>
-        <tr class="bg-blue-50"><td class="px-4 py-2 font-mono text-blue-700">FRANCHISE_CODES</td><td class="px-4 py-2 font-mono text-slate-500">default,shop1,shop2</td><td class="px-4 py-2 text-slate-600">Povolené franchise kódy (čárkou oddělené)</td></tr>
-        <tr><td class="px-4 py-2 font-mono text-blue-700">TOKEN_LIFETIME</td><td class="px-4 py-2 font-mono text-slate-500">86400</td><td class="px-4 py-2 text-slate-600">Platnost tokenu v sekundách (výchozí 24h)</td></tr>
-        <tr><td class="px-4 py-2 font-mono text-blue-700">APP_ENV</td><td class="px-4 py-2 font-mono text-slate-500">development</td><td class="px-4 py-2 text-slate-600">Prostředí (development / production)</td></tr>
-        <tr><td class="px-4 py-2 font-mono text-blue-700">CORS_ORIGIN</td><td class="px-4 py-2 font-mono text-slate-500">*</td><td class="px-4 py-2 text-slate-600">Povolené CORS origin (výchozí *)</td></tr>
-      </tbody>
-    </table>
-  </div>
+      <!-- Env proměnné -->
+      <h2 class="text-lg font-bold text-slate-700 mb-4">
+        &#127981; Environment proměnné (.env)
+      </h2>
+      <div
+        class="bg-white rounded-xl border border-slate-200 overflow-hidden mb-10"
+      >
+        <table class="w-full text-xs">
+          <thead class="bg-slate-50 border-b border-slate-200">
+            <tr>
+              <th class="text-left px-4 py-2.5 font-semibold text-slate-600">
+                Proměnná
+              </th>
+              <th class="text-left px-4 py-2.5 font-semibold text-slate-600">
+                Příklad
+              </th>
+              <th class="text-left px-4 py-2.5 font-semibold text-slate-600">
+                Popis
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 font-mono text-blue-700">DB_HOST</td>
+              <td class="px-4 py-2 font-mono text-slate-500">localhost</td>
+              <td class="px-4 py-2 text-slate-600">MySQL host</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-mono text-blue-700">DB_PORT</td>
+              <td class="px-4 py-2 font-mono text-slate-500">3306</td>
+              <td class="px-4 py-2 text-slate-600">MySQL port</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-mono text-blue-700">DB_NAME</td>
+              <td class="px-4 py-2 font-mono text-slate-500">php_core</td>
+              <td class="px-4 py-2 text-slate-600">Název databáze</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-mono text-blue-700">DB_USER</td>
+              <td class="px-4 py-2 font-mono text-slate-500">admin</td>
+              <td class="px-4 py-2 text-slate-600">DB uživatel</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-mono text-blue-700">DB_PASS</td>
+              <td class="px-4 py-2 font-mono text-slate-500">admin</td>
+              <td class="px-4 py-2 text-slate-600">DB heslo</td>
+            </tr>
+            <tr class="bg-blue-50">
+              <td class="px-4 py-2 font-mono text-blue-700">FRANCHISE_CODES</td>
+              <td class="px-4 py-2 font-mono text-slate-500">
+                default,shop1,shop2
+              </td>
+              <td class="px-4 py-2 text-slate-600">
+                Povolené franchise kódy (čárkou oddělené)
+              </td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-mono text-blue-700">TOKEN_LIFETIME</td>
+              <td class="px-4 py-2 font-mono text-slate-500">86400</td>
+              <td class="px-4 py-2 text-slate-600">
+                Platnost tokenu v sekundách (výchozí 24h)
+              </td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-mono text-blue-700">APP_ENV</td>
+              <td class="px-4 py-2 font-mono text-slate-500">development</td>
+              <td class="px-4 py-2 text-slate-600">
+                Prostředí (development / production)
+              </td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-mono text-blue-700">CORS_ORIGIN</td>
+              <td class="px-4 py-2 font-mono text-slate-500">*</td>
+              <td class="px-4 py-2 text-slate-600">
+                Povolené CORS origin (výchozí *)
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
 
-</div>
-
-<footer class="bg-white border-t border-slate-200 px-8 py-4 text-center text-xs text-slate-400">
-  php-core &mdash; dokumentace generována pro nové vývojáře
-</footer>
-</body>
+    <footer
+      class="bg-white border-t border-slate-200 px-8 py-4 text-center text-xs text-slate-400"
+    >
+      php-core &mdash; dokumentace generována pro nové vývojáře
+    </footer>
+  </body>
 </html>
