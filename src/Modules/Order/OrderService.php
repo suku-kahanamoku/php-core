@@ -145,7 +145,7 @@ class OrderService
 
         $shippingPrice = (float)  ($shipping['price'] ?? 0);
         $shippingType  = (string) ($shipping['value'] ?? '');
-        $paymentType   = $this->mapPaymentMethod((string) ($billing['value'] ?? 'bank'));
+        $paymentType   = (string) ($billing['value'] ?? 'bank');
         $currency      = 'CZK';
 
         $pdo = $this->order->getPdo();
