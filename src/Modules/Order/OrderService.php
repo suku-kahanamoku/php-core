@@ -134,16 +134,16 @@ class OrderService
         $userId            = $this->resolveUserId($user);
         $shippingAddressId = $this->resolveAddress(
             $userId,
-            $shipping['address'] ?? [],
+            $user['address']['shipping'] ?? [],
             'shipping',
         );
         $billingAddressId = $this->resolveAddress(
             $userId,
-            $billing['address'] ?? [],
+            $user['address']['main'] ?? [],
             'billing',
         );
 
-        $shippingPrice = (float)  ($shipping['total_price'] ?? 0);
+        $shippingPrice = (float)  ($shipping['price'] ?? 0);
         $shippingType  = (string) ($shipping['value'] ?? '');
         $paymentType   = $this->mapPaymentMethod((string) ($billing['value'] ?? 'bank'));
         $currency      = 'CZK';
