@@ -402,6 +402,13 @@ INSERT INTO `enumeration` (`franchise_code`, `type`, `syscode`, `label`, `value`
   ('default', 'taste', 'medium',             'Medium',             'medium',             20, 1, JSON_OBJECT('price', 500.00, 'drink', 'Ochutnávka 10 vzorků', 'food', 'Občerstvení, pečivo, voda', 'time', 'Doba trvání 2 až 2,5 hodiny', 'description', '')),
   ('default', 'taste', 'all_you_can_drink',  'All you can drink',  'all_you_can_drink',  30, 1, JSON_OBJECT('price', 900.00, 'drink', 'Ochutnávka všech vzorků (min. 9 bílých, 4 růžové, 4 červené)', 'food', 'Bohaté občerstvení, voda, nealko, pivo, cider, šláftruňk', 'time', 'Doba trvání podle nálady, max 5 hodin', 'description', ''));
 
+-- ── Seed: shipping methods (as enumerations) ─────────────
+INSERT INTO `enumeration` (`franchise_code`, `type`, `syscode`, `label`, `value`, `position`, `published`, `data`) VALUES
+  ('default', 'shipping', 'free',      'Vyzvednutí v Zaječí', 'free',      10, 1, JSON_OBJECT('price', 0,   'icon', 'mdi:home-city-outline', 'help', '$.shipping.brno_free',      'disabled', false)),
+  ('default', 'shipping', 'post',      'Česká pošta',         'post',      20, 1, JSON_OBJECT('price', 209, 'icon', '/img/shipping/post.jpg', 'help', '$.shipping.not_quaranteed', 'disabled', false)),
+  ('default', 'shipping', 'dpd',       'DPD',                 'dpd',       30, 1, JSON_OBJECT('price', 150, 'icon', 'mdi:truck-outline',      'help', '$.shipping.not_quaranteed', 'disabled', false)),
+  ('default', 'shipping', 'messenger', 'Vlastní doručení',    'messenger', 40, 1, JSON_OBJECT('price', 175, 'icon', 'mdi:truck-outline',      'help', '$.shipping.third_day',      'disabled', false));
+
 -- ── Seed: payment methods (as enumerations) ──────────────
 INSERT INTO `enumeration` (`franchise_code`, `type`, `syscode`, `label`, `value`, `position`, `published`, `data`) VALUES
   ('default', 'payment', 'bank',       'Bankovní převod', 'bank',       10, 1, JSON_OBJECT('price', 0,    'icon', 'mdi:bank-outline',            'disabled', false)),
