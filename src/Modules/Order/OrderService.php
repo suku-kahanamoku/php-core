@@ -290,18 +290,6 @@ class OrderService
         ])['id'];
     }
 
-    private function mapPaymentMethod(string $value): string
-    {
-        return match ($value) {
-            'bank' => 'bank_transfer',
-            'cash' => 'cash',
-            'card' => 'card',
-            'paypal', 'gopay', 'apple_pay',
-            'google_pay', 'online' => 'online',
-            default                => $value,
-        };
-    }
-
     /**
      * Zmeni stav objednavky. Vyzaduje roli admin.
      * Pokud objednavka neexistuje, vraci 404.
