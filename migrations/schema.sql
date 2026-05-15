@@ -408,6 +408,10 @@ INSERT INTO `enumeration` (`franchise_code`, `type`, `syscode`, `label`, `value`
   ('default', 'shipping', 'dpd',       'DPD',                 'dpd',       30, 1, JSON_OBJECT('price', 150, 'icon', 'mdi:truck-outline',      'help', '$.shipping.not_quaranteed', 'disabled', false)),
   ('default', 'shipping', 'messenger', 'Vlastní doručení',    'messenger', 40, 1, JSON_OBJECT('price', 175, 'icon', 'mdi:truck-outline',      'help', '$.shipping.third_day',      'disabled', false));
 
+-- ── Seed: VAT rate (always use newest record) ────────────
+INSERT INTO `enumeration` (`franchise_code`, `type`, `syscode`, `label`, `value`, `position`, `published`, `data`) VALUES
+  ('default', 'vat_rate', 'vat_21', 'DPH 21 %', 'vat_21', 10, 1, JSON_OBJECT('rate', 21.00));
+
 -- ── Seed: payment methods (as enumerations) ──────────────
 INSERT INTO `enumeration` (`franchise_code`, `type`, `syscode`, `label`, `value`, `position`, `published`, `data`) VALUES
   ('default', 'payment', 'bank',       'Bankovní převod', 'bank',       10, 1, JSON_OBJECT('price', 0,    'icon', 'mdi:bank-outline',            'disabled', false)),

@@ -95,6 +95,8 @@ class ProductRepository extends BaseRepository
         $where[]  = 'p.deleted = ?';
         $params[] = $deletedVal;
 
+        $vatRate = $this->getVatRate();
+
         // Detect whether the filter references category.* columns (e.g. category.syscode).
         // If so, we need to JOIN the category table so SQL_FILTER can resolve category.col.
         $decodedFilter  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
@@ -157,6 +159,7 @@ class ProductRepository extends BaseRepository
                 $item['data'] = $item['data'] ? json_decode($item['data'], true) : null;
             }
             $item = $proj->apply($item, $sys, ['categories' => ['category_ids']]);
+            $this->applyVat($item, $vatRate);
         }
         unset($item);
 
@@ -225,11 +228,10 @@ class ProductRepository extends BaseRepository
             $row['category_names'] = array_column($categoryRows, 'category_name');
         }
 
-        return $proj->apply(
-            $row,
-            $sys,
-            ['categories' => ['category_ids', 'category_names']]
-        );
+        $result  = $proj->apply($row, $sys, ['categories' => ['category_ids', 'category_names']]);
+        $vatRate = $this->getVatRate();
+        $this->applyVat($result, $vatRate);
+        return $result;
     }
 
     /**
@@ -400,5 +402,42 @@ class ProductRepository extends BaseRepository
     public function generateSku(): string
     {
         return 'SKU-' . strtoupper(substr(uniqid(), -6));
+    }
+
+    /**
+     * Vrati aktualni sazbu DPH z enumeration (vzdy nejnovejsi zaznam typu vat_rate).
+     * Pokud zaznam neexistuje, vrati vychozi hodnotu 21.
+     *
+     * @return float
+     */
+    private function getVatRate(): float
+    {
+        $row = $this->db->fetchOne(
+            "SELECT data FROM enumeration
+             WHERE franchise_code = ? AND type = 'vat_rate' AND deleted = 0
+             ORDER BY created_at DESC
+             LIMIT 1",
+            [$this->code]
+        );
+        if (!$row) {
+            return 21.0;
+        }
+        $data = is_string($row['data']) ? json_decode($row['data'], true) : $row['data'];
+        return (float) ($data['rate'] ?? 21.0);
+    }
+
+    /**
+     * Prida dynamicke atributy vat_rate a price_with_vat ke produktu.
+     *
+     * @param  array<string, mixed> $item
+     * @param  float                $vatRate  Sazba DPH v procentech (napr. 21)
+     * @return void
+     */
+    private function applyVat(array &$item, float $vatRate): void
+    {
+        $item['vat_rate']       = $vatRate;
+        $item['price_with_vat'] = isset($item['price'])
+            ? round((float) $item['price'] * (1 + $vatRate / 100), 2)
+            : null;
     }
 }
