@@ -402,3 +402,13 @@ INSERT INTO `enumeration` (`franchise_code`, `type`, `syscode`, `label`, `value`
   ('default', 'taste', 'medium',             'Medium',             'medium',             20, 1, JSON_OBJECT('price', 500.00, 'drink', 'Ochutnávka 10 vzorků', 'food', 'Občerstvení, pečivo, voda', 'time', 'Doba trvání 2 až 2,5 hodiny', 'description', '')),
   ('default', 'taste', 'all_you_can_drink',  'All you can drink',  'all_you_can_drink',  30, 1, JSON_OBJECT('price', 900.00, 'drink', 'Ochutnávka všech vzorků (min. 9 bílých, 4 růžové, 4 červené)', 'food', 'Bohaté občerstvení, voda, nealko, pivo, cider, šláftruňk', 'time', 'Doba trvání podle nálady, max 5 hodin', 'description', ''));
 
+-- ── Seed: payment methods (as enumerations) ──────────────
+INSERT INTO `enumeration` (`franchise_code`, `type`, `syscode`, `label`, `value`, `position`, `published`, `data`) VALUES
+  ('default', 'payment', 'bank',       'Bankovní převod', 'bank',       10, 1, JSON_OBJECT('price', 0,    'icon', 'mdi:bank-outline',            'disabled', false)),
+  ('default', 'payment', 'cash',       'Hotovost',        'cash',       20, 1, JSON_OBJECT('price', 0,    'icon', 'mdi:cash-100',                 'disabled', false)),
+  ('default', 'payment', 'card',       'Platební karta',  'card',       30, 1, JSON_OBJECT('price', 0,    'icon', 'mdi:credit-card-outline',      'disabled', true)),
+  ('default', 'payment', 'paypal',     'PayPal',          'paypal',     40, 1, JSON_OBJECT('price', 0,    'icon', 'logos:paypal',                 'disabled', true)),
+  ('default', 'payment', 'gopay',      'GoPay',           'gopay',      50, 1, JSON_OBJECT('price', 0,    'icon', 'arcticons:gopay',              'disabled', true)),
+  ('default', 'payment', 'apple_pay',  'Apple Pay',       'apple_pay',  60, 1, JSON_OBJECT('price', 0,    'icon', 'simple-icons:applepay',        'disabled', true)),
+  ('default', 'payment', 'google_pay', 'Google Pay',      'google_pay', 70, 1, JSON_OBJECT('price', 0,    'icon', 'simple-icons:googlepay',       'disabled', true));
+
