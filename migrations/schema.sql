@@ -6,7 +6,7 @@ SET NAMES utf8mb4;
 SET foreign_key_checks = 0;
 
 -- ── Drop existing tables ───────────────────────────────────
-/* DROP TABLE IF EXISTS `invoice_item`;
+DROP TABLE IF EXISTS `invoice_item`;
 DROP TABLE IF EXISTS `invoice`;
 DROP TABLE IF EXISTS `order_item`;
 DROP TABLE IF EXISTS `order`;
@@ -18,7 +18,7 @@ DROP TABLE IF EXISTS `user_token`;
 DROP TABLE IF EXISTS `address`;
 DROP TABLE IF EXISTS `user`;
 DROP TABLE IF EXISTS `enumeration`;
-DROP TABLE IF EXISTS `role`; */
+DROP TABLE IF EXISTS `role`;
 
 -- ── enumeration (ciselnik) ────────────────────────────────
 CREATE TABLE `enumeration` (
@@ -396,19 +396,9 @@ INSERT INTO `product_category` (`product_id`, `category_id`) VALUES
   ((SELECT id FROM product WHERE franchise_code = 'default' AND sku = 'ZAJ-RED-001'), (SELECT id FROM category WHERE franchise_code = 'default' AND syscode = 'top')),
   ((SELECT id FROM product WHERE franchise_code = 'default' AND sku = 'ZAJ-ROE-001'), (SELECT id FROM category WHERE franchise_code = 'default' AND syscode = 'top'));
 
--- ── Seed: category "taste" ────────────────────────────────
-INSERT INTO `category` (`franchise_code`, `parent_id`, `syscode`, `name`, `description`, `position`) VALUES
-  ('default', NULL, 'taste', 'Degustace', 'Degustační balíčky', 20);
-
--- ── Seed: 3 tasting packages ─────────────────────────────
-INSERT INTO `product` (`franchise_code`, `sku`, `name`, `description`, `price`, `vat_rate`, `stock_quantity`, `published`, `kind`, `data`) VALUES
-  ('default', 'ZAJ-TASTE-001', 'Basic',            NULL, 250.00, 21.00, 0, 1, 'tasting', JSON_OBJECT('drink', 'Ochutnávka 6 vzorků', 'food', 'Pečivo, voda', 'time', 'Doba trvání 1 hodina')),
-  ('default', 'ZAJ-TASTE-002', 'Medium',           NULL, 500.00, 21.00, 0, 1, 'tasting', JSON_OBJECT('drink', 'Ochutnávka 10 vzorků', 'food', 'Občerstvení, pečivo, voda', 'time', 'Doba trvání 2 až 2,5 hodiny')),
-  ('default', 'ZAJ-TASTE-003', 'All you can drink', NULL, 900.00, 21.00, 0, 1, 'tasting', JSON_OBJECT('drink', 'Ochutnávka všech vzorků (min. 9 bílých, 4 růžové, 4 červené)', 'food', 'Bohaté občerstvení, voda, nealko, pivo, cider, šláftruňk', 'time', 'Doba trvání podle nálady, max 5 hodin'));
-
--- ── Seed: link tasting products to category "taste" ──────
-INSERT INTO `product_category` (`product_id`, `category_id`) VALUES
-  ((SELECT id FROM product WHERE franchise_code = 'default' AND sku = 'ZAJ-TASTE-001'), (SELECT id FROM category WHERE franchise_code = 'default' AND syscode = 'taste')),
-  ((SELECT id FROM product WHERE franchise_code = 'default' AND sku = 'ZAJ-TASTE-002'), (SELECT id FROM category WHERE franchise_code = 'default' AND syscode = 'taste')),
-  ((SELECT id FROM product WHERE franchise_code = 'default' AND sku = 'ZAJ-TASTE-003'), (SELECT id FROM category WHERE franchise_code = 'default' AND syscode = 'taste'));
+-- ── Seed: 3 tasting packages (as enumerations) ───────────
+INSERT INTO `enumeration` (`franchise_code`, `type`, `syscode`, `label`, `value`, `position`, `published`, `data`) VALUES
+  ('default', 'taste', 'basic',              'Basic',              'basic',              10, 1, JSON_OBJECT('price', 250.00, 'drink', 'Ochutnávka 6 vzorků', 'food', 'Pečivo, voda', 'time', 'Doba trvání 1 hodina', 'description', '')),
+  ('default', 'taste', 'medium',             'Medium',             'medium',             20, 1, JSON_OBJECT('price', 500.00, 'drink', 'Ochutnávka 10 vzorků', 'food', 'Občerstvení, pečivo, voda', 'time', 'Doba trvání 2 až 2,5 hodiny', 'description', '')),
+  ('default', 'taste', 'all_you_can_drink',  'All you can drink',  'all_you_can_drink',  30, 1, JSON_OBJECT('price', 900.00, 'drink', 'Ochutnávka všech vzorků (min. 9 bílých, 4 růžové, 4 červené)', 'food', 'Bohaté občerstvení, voda, nealko, pivo, cider, šláftruňk', 'time', 'Doba trvání podle nálady, max 5 hodin', 'description', ''));
 
