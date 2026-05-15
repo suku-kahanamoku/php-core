@@ -84,6 +84,7 @@ class EnumerationApi
                 'value'     => $request->get('value'),
                 'position'  => $request->get('position', 0),
                 'published' => $request->get('published', 1),
+                'data'      => $request->get('data'),
             ],
             $request->projection(),
         );
@@ -106,6 +107,7 @@ class EnumerationApi
             'value'     => $request->get('value'),
             'position'  => $request->get('position'),
             'published' => $request->get('published'),
+            'data'      => $request->get('data'),
         ], $request->projection());
         Response::success($item, 'Enumeration updated');
     }
@@ -128,6 +130,7 @@ class EnumerationApi
                 'value'     => $request->get('value'),
                 'position'  => $request->get('position', 0),
                 'published' => $request->get('published', 1),
+                'data'      => $request->get('data'),
             ],
             $request->projection(),
         );

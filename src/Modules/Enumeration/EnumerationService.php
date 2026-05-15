@@ -119,6 +119,7 @@ class EnumerationService
             'value'     => $input['value'] ?? $code,
             'position'  => (int) ($input['position'] ?? 0),
             'published' => (int) ($input['published'] ?? 1),
+            'data'      => $input['data'] ?? null,
         ], $projection);
     }
 
@@ -151,6 +152,9 @@ class EnumerationService
             if (array_key_exists($f, $input) && $input[$f] !== null) {
                 $set[$f] = (int) $input[$f];
             }
+        }
+        if (array_key_exists('data', $input) && $input['data'] !== null) {
+            $set['data'] = $input['data'];
         }
 
         if (!empty($set)) {
@@ -197,6 +201,7 @@ class EnumerationService
             'value'     => (string) ($input['value'] ?? $code),
             'position'  => (int)    ($input['position'] ?? 0),
             'published' => (int)    ($input['published'] ?? 1),
+            'data'      => $input['data'] ?? null,
         ]);
 
         return $this->enum->findById($id, $projection) ?? ['id' => $id];
