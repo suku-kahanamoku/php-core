@@ -24,7 +24,7 @@ class EnumerationRepository extends BaseRepository
         parent::__construct($db, $franchiseCode);
         $this->table = 'enumeration';
         $this->alias = 'e';
-        $this->own   = ['type', 'syscode', 'label', 'value', 'position', 'published'];
+        $this->own   = ['type', 'syscode', 'label', 'value', 'position', 'published', 'data'];
     }
 
     /**
@@ -45,7 +45,8 @@ class EnumerationRepository extends BaseRepository
      *     label: string,
      *     value: string|null,
      *     position: int,
-     *     published: int
+     *     published: int,
+     *     data: array<string, mixed>|null
      *   }>,
      *   total: int,
      *   page: int,
@@ -101,11 +102,30 @@ class EnumerationRepository extends BaseRepository
         );
 
         foreach ($items as &$item) {
+            if (isset($item['data'])) {
+                $item['data'] = $item['data'] ? json_decode($item['data'], true) : null;
+            }
             $item = $proj->apply($item, $sys);
         }
         unset($item);
 
         return $this->paginationResult($items, $total, $page, $limit);
+    }
+
+    /**
+     * Vrati ciselnikovou polozku dle ID.
+     *
+     * @param  int        $id
+     * @param  array|null $projection
+     * @return array<string, mixed>|null
+     */
+    public function findById(int $id, ?array $projection = null): ?array
+    {
+        $row = parent::findById($id, $projection);
+        if ($row !== null && isset($row['data'])) {
+            $row['data'] = $row['data'] ? json_decode($row['data'], true) : null;
+        }
+        return $row;
     }
 
     /**
@@ -170,6 +190,10 @@ class EnumerationRepository extends BaseRepository
      */
     public function create(array $data, ?array $projection = null): array
     {
+        if (isset($data['data']) && is_array($data['data'])) {
+            $data['data'] = json_encode($data['data'], JSON_UNESCAPED_UNICODE);
+        }
+
         $id = $this->db->insert('enumeration', array_merge($data, [
             'franchise_code' => $this->code,
         ]));
@@ -197,6 +221,10 @@ class EnumerationRepository extends BaseRepository
      */
     public function update(int $id, array $data, ?array $projection = null): array
     {
+        if (isset($data['data']) && is_array($data['data'])) {
+            $data['data'] = json_encode($data['data'], JSON_UNESCAPED_UNICODE);
+        }
+
         $this->db->update(
             'enumeration',
             $data,

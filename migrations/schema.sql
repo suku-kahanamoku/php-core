@@ -30,6 +30,7 @@ CREATE TABLE `enumeration` (
     `value`        VARCHAR(255) NOT NULL DEFAULT '',
     `position`   SMALLINT     NOT NULL DEFAULT 0,
     `published`    TINYINT(1)   NOT NULL DEFAULT 1,
+    `data`         JSON                  DEFAULT NULL,
     `deleted`      TINYINT(1)   NOT NULL DEFAULT 0,
     `created_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`   DATETIME              DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
