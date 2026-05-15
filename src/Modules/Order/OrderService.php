@@ -117,7 +117,7 @@ class OrderService
      * } $input
      * @return array{
      *   id: int|null,
-     *   total_amount: float
+     *   total_price: float
      * }
      */
     public function create(array $input): array
@@ -143,16 +143,16 @@ class OrderService
             'billing',
         );
 
-        $shippingCost  = (float)  ($shipping['total_price'] ?? 0);
+        $shippingPrice = (float)  ($shipping['total_price'] ?? 0);
         $shippingType  = (string) ($shipping['value'] ?? '');
-        $paymentMethod = $this->mapPaymentMethod((string) ($billing['value'] ?? 'bank'));
+        $paymentType   = $this->mapPaymentMethod((string) ($billing['value'] ?? 'bank'));
         $currency      = 'CZK';
 
         $pdo = $this->order->getPdo();
         $pdo->beginTransaction();
 
         try {
-            $totalAmount   = 0;
+            $totalPrice    = 0;
             $preparedItems = [];
 
             foreach ($carts as $cart) {
@@ -179,26 +179,26 @@ class OrderService
                 }
 
                 $lineTotal = round($product['price'] * $qty, 2);
-                $totalAmount += $lineTotal;
+                $totalPrice += $lineTotal;
                 $preparedItems[] = [
                     'product_id'  => $productId,
                     'quantity'    => $qty,
-                    'unit_price'  => $product['price'],
+                    'price'       => $product['price'],
                     'total_price' => $lineTotal,
                 ];
             }
 
-            $totalAmount += $shippingCost;
+            $totalPrice += $shippingPrice;
 
             $orderRow = $this->order->create([
                 'order_number'        => $this->order->generateNumber(),
                 'user_id'             => $userId,
                 'status'              => 'pending',
-                'total_amount'        => $totalAmount,
+                'total_price'         => $totalPrice,
                 'currency'            => $currency,
-                'payment_method'      => $paymentMethod,
+                'payment_type'        => $paymentType,
                 'shipping_type'       => $shippingType !== '' ? $shippingType : null,
-                'shipping_cost'       => $shippingCost,
+                'shipping_price'      => $shippingPrice,
                 'shipping_address_id' => $shippingAddressId,
                 'billing_address_id'  => $billingAddressId,
                 'note'                => $input['note'] ?? null,
@@ -216,7 +216,7 @@ class OrderService
             Response::error($e->getMessage(), 422);
         }
 
-        return ['id' => $orderId ?? null, 'total_amount' => $totalAmount ?? 0];
+        return ['id' => $orderId ?? null, 'total_price' => $totalPrice ?? 0];
     }
 
     /**
