@@ -101,7 +101,6 @@ class ProductService
             'name'           => $name,
             'description'    => (string) ($input['description'] ?? ''),
             'price'          => (float) $price,
-            'vat_rate'       => (float) ($input['vat_rate'] ?? 21),
             'stock_quantity' => (int) ($input['stock_quantity'] ?? 0),
             'published'      => isset($input['published'])
                 ? (int) $input['published'] : 1,
@@ -142,7 +141,7 @@ class ProductService
 
         $set         = [];
         $textFields  = ['sku', 'name', 'description', 'kind', 'color', 'variant'];
-        $floatFields = ['price', 'vat_rate'];
+        $floatFields = ['price'];
         $intFields   = ['stock_quantity', 'published'];
 
         foreach ($textFields as $f) {

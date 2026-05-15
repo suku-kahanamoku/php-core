@@ -29,7 +29,6 @@ class ProductRepository extends BaseRepository
             'name',
             'description',
             'price',
-            'vat_rate',
             'stock_quantity',
             'published',
             'kind',

@@ -147,7 +147,6 @@ CREATE TABLE `product` (
     `name`           VARCHAR(255)   NOT NULL,
     `description`    TEXT                    DEFAULT NULL,
     `price`          DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
-    `vat_rate`       DECIMAL(5, 2)  NOT NULL DEFAULT 21.00 COMMENT 'VAT percentage',
     `stock_quantity` INT            NOT NULL DEFAULT 0,
     `published`      TINYINT(1)     NOT NULL DEFAULT 1,
     `deleted`        TINYINT(1)     NOT NULL DEFAULT 0,
@@ -384,11 +383,11 @@ INSERT INTO `category` (`franchise_code`, `parent_id`, `syscode`, `name`, `descr
   ('default', NULL, 'top', 'Top Produkty', 'Nejlepší vína z nabídky', 10);
 
 -- ── Seed: 4 wines ────────────────────────────────────────
-INSERT INTO `product` (`franchise_code`, `sku`, `name`, `description`, `price`, `vat_rate`, `stock_quantity`, `published`, `kind`, `color`, `variant`, `data`) VALUES
-  ('default', 'ZAJ-WHI-001', 'Zaječské Bílé', 'Jemné bílé víno ze Zaječí', 299.00, 21.00, 50, 1, 'dry', 'white', 'Veltlínské zelené', JSON_OBJECT('year', 2022, 'volume', 0.75, 'quality', 'kabinett', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 12.5, 'serving_temp', '8-10°C')),
-  ('default', 'ZAJ-RED-001', 'Zaječské Červené', 'Kvalitní červené víno tradičního stylu', 349.00, 21.00, 40, 1, 'dry', 'red', 'Frankovka', JSON_OBJECT('year', 2021, 'volume', 0.75, 'quality', 'selection_of_grapes', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 13.5, 'serving_temp', '16-18°C')),
-  ('default', 'ZAJ-ROE-001', 'Zaječské Rosé', 'Lehké rosé víno s ovocnými tóny', 329.00, 21.00, 35, 1, 'semi_dry', 'rose', 'Zweigeltrebe', JSON_OBJECT('year', 2023, 'volume', 0.75, 'quality', 'late_harvest', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 12.0, 'serving_temp', '6-8°C')),
-  ('default', 'ZAJ-SWE-001', 'Zaječské Sladké', 'Sladké desertní víno s bohatou chutí', 399.00, 21.00, 20, 1, 'dessert', 'red', 'Cabernet Moravia', JSON_OBJECT('year', 2020, 'volume', 0.5, 'quality', 'ice_wine', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 11.0, 'serving_temp', '4-6°C'));
+INSERT INTO `product` (`franchise_code`, `sku`, `name`, `description`, `price`, `stock_quantity`, `published`, `kind`, `color`, `variant`, `data`) VALUES
+  ('default', 'ZAJ-WHI-001', 'Zaječské Bílé', 'Jemné bílé víno ze Zaječí', 299.00, 50, 1, 'dry', 'white', 'Veltlínské zelené', JSON_OBJECT('year', 2022, 'volume', 0.75, 'quality', 'kabinett', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 12.5, 'serving_temp', '8-10°C')),
+  ('default', 'ZAJ-RED-001', 'Zaječské Červené', 'Kvalitní červené víno tradičního stylu', 349.00, 40, 1, 'dry', 'red', 'Frankovka', JSON_OBJECT('year', 2021, 'volume', 0.75, 'quality', 'selection_of_grapes', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 13.5, 'serving_temp', '16-18°C')),
+  ('default', 'ZAJ-ROE-001', 'Zaječské Rosé', 'Lehké rosé víno s ovocnými tóny', 329.00, 35, 1, 'semi_dry', 'rose', 'Zweigeltrebe', JSON_OBJECT('year', 2023, 'volume', 0.75, 'quality', 'late_harvest', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 12.0, 'serving_temp', '6-8°C')),
+  ('default', 'ZAJ-SWE-001', 'Zaječské Sladké', 'Sladké desertní víno s bohatou chutí', 399.00, 20, 1, 'dessert', 'red', 'Cabernet Moravia', JSON_OBJECT('year', 2020, 'volume', 0.5, 'quality', 'ice_wine', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 11.0, 'serving_temp', '4-6°C'));
 
 -- ── Seed: link products 1, 2, 3 to category "top" ──────────
 INSERT INTO `product_category` (`product_id`, `category_id`) VALUES
