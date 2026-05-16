@@ -80,6 +80,10 @@ $tests = [
     "{$modulesDir}/Invoice/tests/InvoiceTest.php",
     "{$modulesDir}/Invoice/tests/InvoiceServiceTest.php",
     "{$modulesDir}/Invoice/tests/InvoiceApiTest.php",
+    // Templater
+    "{$modulesDir}/Templater/tests/TemplaterApiTest.php",
+    // Mailer
+    "{$modulesDir}/Mailer/tests/MailerApiTest.php",
 ];
 
 foreach ($tests as $file) {
