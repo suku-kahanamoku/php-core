@@ -456,9 +456,16 @@ if ($token !== null) {
         $r = request('GET', $base . '/products?limit=100&q=' . urlencode('{"name":{"value":"' . $prodName . '"}}'), [], false);
         assert_test('products eq filter: 200', $r['status'] === 200, dump_on_fail($r));
         assert_test('products eq filter: found', count($r['data']['data']) >= 1);
+
+        // Shorthand syntax: {"name":"value"} must work the same as {"name":{"value":"value","operator":"eq"}}
+        $r2 = request('GET', $base . '/products?limit=100&q=' . urlencode('{"name":"' . $prodName . '"}'), [], false);
+        assert_test('products shorthand eq: 200', $r2['status'] === 200, dump_on_fail($r2));
+        assert_test('products shorthand eq: same count as full syntax', count($r2['data']['data']) === count($r['data']['data']));
     } else {
         assert_test('products eq filter: skipped (no data)', true);
         assert_test('products eq filter: skipped (no data)', true);
+        assert_test('products shorthand eq: skipped (no data)', true);
+        assert_test('products shorthand eq: skipped (no data)', true);
     }
 
     $r = request('GET', $base . '/products?limit=100&q=' . urlencode('{"price":{"value":0,"operator":"gte"}}'), [], false);
