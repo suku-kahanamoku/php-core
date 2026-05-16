@@ -91,6 +91,17 @@ class ProductRepository extends BaseRepository
         $filterArr  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
         $deletedVal = isset($filterArr['deleted']) ? (int) $filterArr['deleted'] : 0;
         unset($filterArr['deleted']);
+
+        // Computed columns (SELECT aliases) cannot be used in WHERE — extract them for HAVING.
+        $computedCols  = ['price_with_vat', 'vat_rate'];
+        $havingFilters = [];
+        foreach ($computedCols as $col) {
+            if (isset($filterArr[$col])) {
+                $havingFilters[$col] = $filterArr[$col];
+                unset($filterArr[$col]);
+            }
+        }
+
         $filter = count($filterArr) > 0 ? json_encode($filterArr) : '';
         $where[]  = 'p.deleted = ?';
         $params[] = $deletedVal;
@@ -134,8 +145,19 @@ class ProductRepository extends BaseRepository
 
         $whereStr = implode(' AND ', $where);
 
-        // Params pro hlavni SELECT: vat franchise_code na zacatku (FROM clause), pak WHERE params.
-        $queryParams = array_merge([$this->code], $params);
+        // Build HAVING for computed columns (SELECT aliases).
+        $havingStr    = '';
+        $havingParams = [];
+        if ($havingFilters) {
+            $havingH = SQL_FILTER(json_encode($havingFilters));
+            if ($havingH['sql'] !== '') {
+                $havingStr    = 'HAVING ' . $havingH['sql'];
+                $havingParams = $havingH['params'];
+            }
+        }
+
+        // Params pro hlavni SELECT: vat franchise_code na zacatku (FROM clause), pak WHERE + HAVING params.
+        $queryParams = array_merge([$this->code], $params, $havingParams);
 
         $sys        = $this->sys;
         $baseSelect = $this->buildSelect($proj);
@@ -156,6 +178,7 @@ class ProductRepository extends BaseRepository
             "SELECT {$select} FROM product p {$catJoin} {$vatJoin}
              WHERE {$whereStr}
              GROUP BY p.id
+             {$havingStr}
              ORDER BY {$orderBy}
              LIMIT {$limit} OFFSET {$offset}",
             $queryParams,

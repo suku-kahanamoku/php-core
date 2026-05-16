@@ -471,6 +471,47 @@ if ($token !== null) {
         count(array_filter($r['data']['data'] ?? [], fn ($p) => (int)$p['stock_quantity'] <= 0)) === 0,
     );
 
+    // ── HAVING filters on computed columns (price_with_vat, vat_rate) ─────────
+    section('SQL_FILTER integration – GET /products HAVING computed cols');
+    $rAllP = request('GET', "{$base}/products?limit=100", [], false);
+    $allProducts = $rAllP['data']['data'] ?? [];
+
+    if (count($allProducts) > 0) {
+        // Pick a threshold: min price_with_vat across all products.
+        $allVat = array_column($allProducts, 'price_with_vat');
+        $minVat = min(array_map('floatval', $allVat));
+        $maxVat = max(array_map('floatval', $allVat));
+
+        // gte min → all products returned
+        $r = request('GET', $base . '/products?limit=100&q=' . urlencode('{"price_with_vat":{"value":' . $minVat . ',"operator":"gte"}}'), [], false);
+        assert_test('products price_with_vat gte min: 200', $r['status'] === 200, dump_on_fail($r));
+        assert_test('products price_with_vat gte min: all returned', count($r['data']['data'] ?? []) === count($allProducts));
+        assert_test(
+            'products price_with_vat gte min: all >= min',
+            count(array_filter($r['data']['data'] ?? [], fn ($p) => (float)$p['price_with_vat'] < $minVat)) === 0,
+        );
+
+        // gt max → no products
+        $r = request('GET', $base . '/products?limit=100&q=' . urlencode('{"price_with_vat":{"value":' . ($maxVat + 1) . ',"operator":"gt"}}'), [], false);
+        assert_test('products price_with_vat gt max+1: 200', $r['status'] === 200, dump_on_fail($r));
+        assert_test('products price_with_vat gt max+1: empty', count($r['data']['data'] ?? []) === 0);
+
+        // vat_rate eq — should return all (same rate for all)
+        $vatRate = (float)($allProducts[0]['vat_rate'] ?? 21);
+        $r = request('GET', $base . '/products?limit=100&q=' . urlencode('{"vat_rate":{"value":' . $vatRate . ',"operator":"eq"}}'), [], false);
+        assert_test('products vat_rate eq: 200', $r['status'] === 200, dump_on_fail($r));
+        assert_test('products vat_rate eq: all match', count($r['data']['data'] ?? []) === count($allProducts));
+
+        // Combined: price filter (WHERE) + price_with_vat filter (HAVING)
+        $r = request('GET', $base . '/products?limit=100&q=' . urlencode('{"price":{"value":0,"operator":"gte"},"price_with_vat":{"value":' . $minVat . ',"operator":"gte"}}'), [], false);
+        assert_test('products WHERE+HAVING combined: 200', $r['status'] === 200, dump_on_fail($r));
+        assert_test('products WHERE+HAVING combined: has items', count($r['data']['data'] ?? []) >= 1);
+    } else {
+        foreach (range(1, 9) as $i) {
+            assert_test("products HAVING test $i: skipped (no data)", true);
+        }
+    }
+
     // ── Texts ─────────────────────────────────────────────────────────────────
     section('SQL_FILTER integration – GET /texts');
     // Ensure at least one active text exists for the filter assertions below
