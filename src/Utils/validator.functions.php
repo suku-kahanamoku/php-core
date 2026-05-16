@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Modules\Router\Response;
+
 /**
  * Creates a fluent validation builder for the given data array.
  *
@@ -90,11 +92,78 @@ function VALIDATOR(array $data): object
             return $this;
         }
 
+        /** Field must be numeric and <= $max. */
+        public function max(string $field, float $max): static
+        {
+            if (isset($this->errors[$field])) {
+                return $this;
+            }
+            $val = $this->data[$field] ?? null;
+            if ($val !== null && is_numeric($val) && (float) $val > $max) {
+                $this->errors[$field] = "Must be <= {$max}";
+            }
+            return $this;
+        }
+
+        /** Field value must be one of the allowed values (skipped when empty). */
+        public function in(string $field, array $allowed): static
+        {
+            if (isset($this->errors[$field])) {
+                return $this;
+            }
+            $val = $this->data[$field] ?? null;
+            if ($val !== null && $val !== '' && !in_array($val, $allowed, true)) {
+                $this->errors[$field] = 'Invalid value';
+            }
+            return $this;
+        }
+
+        /** Field must be a valid URL (skipped when empty). */
+        public function url(string $field): static
+        {
+            if (isset($this->errors[$field])) {
+                return $this;
+            }
+            $val = (string) ($this->data[$field] ?? '');
+            if ($val !== '' && !filter_var($val, FILTER_VALIDATE_URL)) {
+                $this->errors[$field] = 'Invalid URL';
+            }
+            return $this;
+        }
+
+        /** Field must be a valid date parseable by strtotime (skipped when empty). */
+        public function date(string $field): static
+        {
+            if (isset($this->errors[$field])) {
+                return $this;
+            }
+            $val = (string) ($this->data[$field] ?? '');
+            if ($val !== '' && strtotime($val) === false) {
+                $this->errors[$field] = 'Invalid date';
+            }
+            return $this;
+        }
+
+        /** Field must be a boolean-like value: true/false/1/0/"1"/"0" (skipped when empty). */
+        public function boolean(string $field): static
+        {
+            if (isset($this->errors[$field])) {
+                return $this;
+            }
+            $val = $this->data[$field] ?? null;
+            if ($val !== null && $val !== '' && !in_array($val, [true, false, 1, 0, '1', '0'], true)) {
+                $this->errors[$field] = 'Must be a boolean';
+            }
+            return $this;
+        }
+
+        /** Get all validation errors. */
         public function errors(): array
         {
             return $this->errors;
         }
 
+        /** Check if any validation rules failed. */
         public function fails(): bool
         {
             return !empty($this->errors);
@@ -104,7 +173,7 @@ function VALIDATOR(array $data): object
         public function validate(): void
         {
             if (!empty($this->errors)) {
-                \App\Modules\Router\Response::validationError($this->errors);
+                Response::validationError($this->errors);
             }
         }
     };
