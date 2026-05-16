@@ -95,8 +95,6 @@ class ProductRepository extends BaseRepository
         $where[]  = 'p.deleted = ?';
         $params[] = $deletedVal;
 
-        $vatRate = $this->getVatRate();
-
         // Detect whether the filter references category.* columns (e.g. category.syscode).
         // If so, we need to JOIN the category table so SQL_FILTER can resolve category.col.
         $decodedFilter  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
@@ -113,6 +111,15 @@ class ProductRepository extends BaseRepository
                LEFT JOIN category ON category.id = pc.category_id AND category.deleted = 0'
             : '';
 
+        // Derived table: nacte nejnovejsi sazbu DPH jednou pro cely dotaz (ne per-row).
+        $vatJoin = "JOIN (
+            SELECT COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(data, '\$.rate')) AS DECIMAL(5,2)), 21) AS rate
+            FROM enumeration
+            WHERE franchise_code = ? AND type = 'vat_rate' AND deleted = 0
+            ORDER BY created_at DESC
+            LIMIT 1
+        ) vat ON TRUE";
+
         // When joining category, restrict it to the same franchise to avoid cross-tenant leaks.
         if ($needsCatFilter) {
             $where[] = '(category.franchise_code = ? OR category.id IS NULL)';
@@ -127,13 +134,18 @@ class ProductRepository extends BaseRepository
 
         $whereStr = implode(' AND ', $where);
 
+        // Params pro hlavni SELECT: vat franchise_code na zacatku (FROM clause), pak WHERE params.
+        $queryParams = array_merge([$this->code], $params);
+
         $sys        = $this->sys;
         $baseSelect = $this->buildSelect($proj);
         $catSel     = $proj->needsJoin('categories')
             ? ', GROUP_CONCAT(pc.category_id ORDER BY pc.category_id) AS category_ids'
             : '';
+        $vatSel     = ', ANY_VALUE(vat.rate) AS vat_rate'
+            . ', ANY_VALUE(ROUND(p.price * (1 + vat.rate / 100), 2)) AS price_with_vat';
 
-        $select = "{$baseSelect}{$catSel}";
+        $select = "{$baseSelect}{$catSel}{$vatSel}";
 
         $total = (int) $this->db->fetchOne(
             "SELECT COUNT(DISTINCT p.id) AS cnt FROM product p {$catJoin} WHERE {$whereStr}",
@@ -141,14 +153,15 @@ class ProductRepository extends BaseRepository
         )['cnt'];
 
         $items = $this->db->fetchAll(
-            "SELECT {$select} FROM product p {$catJoin}
+            "SELECT {$select} FROM product p {$catJoin} {$vatJoin}
              WHERE {$whereStr}
              GROUP BY p.id
              ORDER BY {$orderBy}
              LIMIT {$limit} OFFSET {$offset}",
-            $params,
+            $queryParams,
         );
 
+        $vatSys = array_merge($sys, ['vat_rate', 'price_with_vat']);
         foreach ($items as &$item) {
             if (isset($item['category_ids'])) {
                 $item['category_ids'] = $item['category_ids']
@@ -158,8 +171,7 @@ class ProductRepository extends BaseRepository
             if (isset($item['data'])) {
                 $item['data'] = $item['data'] ? json_decode($item['data'], true) : null;
             }
-            $item = $proj->apply($item, $sys, ['categories' => ['category_ids']]);
-            $this->applyVat($item, $vatRate);
+            $item = $proj->apply($item, $vatSys, ['categories' => ['category_ids']]);
         }
         unset($item);
 
@@ -192,17 +204,25 @@ class ProductRepository extends BaseRepository
      */
     public function findById(int $id, ?array $projection = null): ?array
     {
-        $proj = new Projection($projection);
+        $proj   = new Projection($projection);
+        $sys    = $this->sys;
+        $select = $this->buildSelect($proj);
 
-        $sys     = $this->sys;
-        $ownCols = $proj->getOwnCols($this->own, $this->rel);
-        $cols    = array_merge($sys, $ownCols);
-        $quoted  = array_map(fn($c) => "`{$c}`", $cols);
-        $select  = implode(', ', $quoted);
+        $vatJoin = "JOIN (
+            SELECT COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(data, '\$.rate')) AS DECIMAL(5,2)), 21) AS rate
+            FROM enumeration
+            WHERE franchise_code = ? AND type = 'vat_rate' AND deleted = 0
+            ORDER BY created_at DESC
+            LIMIT 1
+        ) vat ON TRUE";
 
         $row = $this->db->fetchOne(
-            "SELECT {$select} FROM product WHERE id = ? AND franchise_code = ? AND deleted = 0",
-            [$id, $this->code],
+            "SELECT {$select},
+                    vat.rate AS vat_rate,
+                    ROUND(p.price * (1 + vat.rate / 100), 2) AS price_with_vat
+             FROM product p {$vatJoin}
+             WHERE p.id = ? AND p.franchise_code = ? AND p.deleted = 0",
+            [$this->code, $id, $this->code],
         );
 
         if (!$row) {
@@ -228,10 +248,8 @@ class ProductRepository extends BaseRepository
             $row['category_names'] = array_column($categoryRows, 'category_name');
         }
 
-        $result  = $proj->apply($row, $sys, ['categories' => ['category_ids', 'category_names']]);
-        $vatRate = $this->getVatRate();
-        $this->applyVat($result, $vatRate);
-        return $result;
+        $vatSys = array_merge($sys, ['vat_rate', 'price_with_vat']);
+        return $proj->apply($row, $vatSys, ['categories' => ['category_ids', 'category_names']]);
     }
 
     /**
@@ -402,42 +420,5 @@ class ProductRepository extends BaseRepository
     public function generateSku(): string
     {
         return 'SKU-' . strtoupper(substr(uniqid(), -6));
-    }
-
-    /**
-     * Vrati aktualni sazbu DPH z enumeration (vzdy nejnovejsi zaznam typu vat_rate).
-     * Pokud zaznam neexistuje, vrati vychozi hodnotu 21.
-     *
-     * @return float
-     */
-    private function getVatRate(): float
-    {
-        $row = $this->db->fetchOne(
-            "SELECT data FROM enumeration
-             WHERE franchise_code = ? AND type = 'vat_rate' AND deleted = 0
-             ORDER BY created_at DESC
-             LIMIT 1",
-            [$this->code]
-        );
-        if (!$row) {
-            return 21.0;
-        }
-        $data = is_string($row['data']) ? json_decode($row['data'], true) : $row['data'];
-        return (float) ($data['rate'] ?? 21.0);
-    }
-
-    /**
-     * Prida dynamicke atributy vat_rate a price_with_vat ke produktu.
-     *
-     * @param  array<string, mixed> $item
-     * @param  float                $vatRate  Sazba DPH v procentech (napr. 21)
-     * @return void
-     */
-    private function applyVat(array &$item, float $vatRate): void
-    {
-        $item['vat_rate']       = $vatRate;
-        $item['price_with_vat'] = isset($item['price'])
-            ? round((float) $item['price'] * (1 + $vatRate / 100), 2)
-            : null;
     }
 }
