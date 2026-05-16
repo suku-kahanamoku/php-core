@@ -80,9 +80,15 @@ class TextApi
      */
     public function create(Request $request): void
     {
+        $syscode = trim((string) $request->get('syscode', ''));
+        $title   = trim((string) $request->get('title', ''));
+        VALIDATOR(['syscode' => $syscode, 'title' => $title])
+            ->required(['syscode', 'title'])
+            ->validate();
+
         $text = $this->service->create(
-            trim((string) $request->get('syscode', '')),
-            trim((string) $request->get('title', '')),
+            $syscode,
+            $title,
             trim((string) $request->get('language', 'cs')),
             [
                 'content'   => $request->get('content'),
@@ -121,10 +127,16 @@ class TextApi
      */
     public function replace(Request $request, array $params): void
     {
+        $syscode = trim((string) $request->get('syscode', ''));
+        $title   = trim((string) $request->get('title', ''));
+        VALIDATOR(['syscode' => $syscode, 'title' => $title])
+            ->required(['syscode', 'title'])
+            ->validate();
+
         $text = $this->service->replace(
             (int) $params['id'],
-            trim((string) $request->get('syscode', '')),
-            trim((string) $request->get('title', '')),
+            $syscode,
+            $title,
             [
                 'content'   => $request->get('content'),
                 'language'  => $request->get('language', 'cs'),
@@ -144,6 +156,7 @@ class TextApi
      */
     public function delete(Request $request, array $params): void
     {
+        VALIDATOR(['id' => $params['id'] ?? ''])->required('id')->validate();
         $this->service->delete((int) $params['id']);
         Response::success(null, 'Text deleted');
     }

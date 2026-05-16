@@ -53,7 +53,10 @@ class CategoryApi
      */
     public function get(Request $request, array $params): void
     {
-        $item    = $this->service->get((int) $params['id'], $request->projection());
+        $item    = $this->service->get(
+            (int) $params['id'],
+            $request->projection()
+        );
         Response::successItemWithFactory($item, $request);
     }
 
@@ -65,8 +68,11 @@ class CategoryApi
      */
     public function create(Request $request): void
     {
+        $name = trim((string) $request->get('name', ''));
+        VALIDATOR(['name' => $name])->required('name')->validate();
+
         $category = $this->service->create(
-            trim((string) $request->get('name', '')),
+            $name,
             [
                 'syscode'     => $request->get('syscode'),
                 'description' => $request->get('description'),
@@ -105,9 +111,12 @@ class CategoryApi
      */
     public function replace(Request $request, array $params): void
     {
+        $name = trim((string) $request->get('name', ''));
+        VALIDATOR(['name' => $name])->required('name')->validate();
+
         $category = $this->service->replace(
             (int) $params['id'],
-            trim((string) $request->get('name', '')),
+            $name,
             [
                 'syscode'     => $request->get('syscode'),
                 'description' => $request->get('description'),
@@ -128,6 +137,7 @@ class CategoryApi
      */
     public function delete(Request $request, array $params): void
     {
+        VALIDATOR(['id' => $params['id'] ?? ''])->required('id')->validate();
         $this->service->delete((int) $params['id']);
         Response::success(null, 'Category deleted');
     }

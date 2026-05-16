@@ -141,7 +141,7 @@ if ($prodId) {
     assert_test('PUT color = red', $r['data']['data']['color'] === 'red', dump_on_fail($r));
 
     $r = request('PUT', "{$base}/products/{$prodId}", ['name' => 'x']);
-    assert_test('PUT /products/:id 422 missing sku+price', $r['status'] === 422, dump_on_fail($r));
+    assert_test('PUT /products/:id 422 missing price', $r['status'] === 422, dump_on_fail($r));
 }
 
 // ── Stock ─────────────────────────────────────────────────────────────────────

@@ -96,7 +96,10 @@ class OrderService
     {
         $this->auth->require();
 
-        $order = $this->requireEntity($this->order->findById($id, $projection), 'Order not found');
+        $order = $this->requireEntity(
+            $this->order->findById($id, $projection),
+            'Order not found'
+        );
         $this->requireOwnerOrAdmin($order);
 
         return $order;
@@ -126,10 +129,6 @@ class OrderService
         $carts    = $input['carts']    ?? [];
         $shipping = $input['shipping'] ?? [];
         $billing  = $input['billing']  ?? [];
-
-        if (empty($carts)) {
-            Response::validationError(['carts' => 'At least one item required']);
-        }
 
         $userId            = $this->resolveUserId($user);
         $shippingAddressId = $this->resolveAddress(
@@ -305,8 +304,6 @@ class OrderService
         ?array $projection = null
     ): array {
         $this->auth->requireRole('admin');
-
-        VALIDATOR(['status' => $status])->required('status')->validate();
 
         $this->requireEntity($this->order->findById($id), 'Order not found');
 

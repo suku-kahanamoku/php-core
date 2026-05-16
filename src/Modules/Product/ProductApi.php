@@ -60,11 +60,18 @@ class ProductApi
     /**
      * POST /products — Vytvori novy produkt. Vyzaduje roli admin.
      *
-     * @param Request $request  body: name (required), price (required), sku, description, vat_rate, stock_quantity, published, kind, color, variant, data, category_ids
+     * @param Request $request  body: name (required), price (required), sku, description, stock_quantity, published, kind, color, variant, data, category_ids
      * @return void
      */
     public function create(Request $request): void
     {
+        VALIDATOR(
+            ['name' => $request->get('name', ''), 'price' => $request->get('price')]
+        )
+            ->required('name')
+            ->numeric('price', 0)
+            ->validate();
+
         $product = $this->service->create([
             'name'           => $request->get('name'),
             'sku'            => $request->get('sku'),
@@ -113,12 +120,22 @@ class ProductApi
     /**
      * PUT /products/:id — Uplna nahrada produktu. Vyzaduje roli admin.
      *
-     * @param Request $request  body: name, sku, price (required), ostatni volitelne
+     * @param Request $request  body: name, price (required), sku (optional), ostatni volitelne
      * @param array{id: string} $params
      * @return void
      */
     public function replace(Request $request, array $params): void
     {
+        VALIDATOR(
+            [
+                'name'  => $request->get('name', ''),
+                'price' => $request->get('price'),
+            ]
+        )
+            ->required('name')
+            ->numeric('price', 0)
+            ->validate();
+
         $product = $this->service->replace((int) $params['id'], [
             'name'           => $request->get('name'),
             'sku'            => $request->get('sku'),
@@ -144,6 +161,7 @@ class ProductApi
      */
     public function delete(Request $request, array $params): void
     {
+        VALIDATOR(['id' => $params['id'] ?? ''])->required('id')->validate();
         $this->service->delete((int) $params['id']);
         Response::success(null, 'Product deleted');
     }

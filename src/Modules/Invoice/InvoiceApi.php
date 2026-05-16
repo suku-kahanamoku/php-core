@@ -67,8 +67,11 @@ class InvoiceApi
      */
     public function create(Request $request): void
     {
+        $orderId = (int) $request->get('order_id', 0);
+        VALIDATOR(['order_id' => $orderId])->numeric('order_id', 1)->validate();
+
         $invoice = $this->service->create(
-            (int) $request->get('order_id', 0),
+            $orderId,
             [
                 'due_at' => $request->get('due_at'),
                 'note'   => $request->get('note', ''),
@@ -87,9 +90,12 @@ class InvoiceApi
      */
     public function updateStatus(Request $request, array $params): void
     {
+        $status = trim((string) $request->get('status', ''));
+        VALIDATOR(['status' => $status])->required('status')->validate();
+
         $invoice = $this->service->updateStatus(
             (int) $params['id'],
-            trim((string) $request->get('status', '')),
+            $status,
             $request->projection(),
         );
         Response::success($invoice, 'Invoice status updated');
@@ -104,6 +110,7 @@ class InvoiceApi
      */
     public function delete(Request $request, array $params): void
     {
+        VALIDATOR(['id' => $params['id'] ?? ''])->required('id')->validate();
         $this->service->delete((int) $params['id']);
         Response::success(null, 'Invoice deleted');
     }

@@ -65,9 +65,20 @@ class RoleApi
      */
     public function create(Request $request): void
     {
+        $name  = trim(strtolower((string) $request->get('name', '')));
+        $label = trim((string) $request->get('label', ''));
+        VALIDATOR(['name' => $name, 'label' => $label])
+            ->required(['name', 'label'])
+            ->pattern(
+                'name',
+                '/^[a-z0-9_]+$/',
+                'Only lowercase letters, digits and underscores'
+            )
+            ->validate();
+
         $role = $this->service->create(
-            trim(strtolower((string) $request->get('name', ''))),
-            trim((string) $request->get('label', '')),
+            $name,
+            $label,
             (int) $request->get('position', 0),
             $request->projection(),
         );
@@ -91,6 +102,18 @@ class RoleApi
                 $fields[$f] = $request->get($f);
             }
         }
+        if (isset($fields['name'])) {
+            $newName = trim(strtolower((string) $fields['name']));
+            VALIDATOR(['name' => $newName])
+                ->pattern(
+                    'name',
+                    '/^[a-z0-9_]+$/',
+                    'Only lowercase letters, digits and underscores'
+                )
+                ->validate();
+            $fields['name'] = $newName;
+        }
+
         $role = $this->service->update(
             (int) $params['id'],
             $fields,
@@ -108,10 +131,21 @@ class RoleApi
      */
     public function replace(Request $request, array $params): void
     {
+        $name  = trim(strtolower((string) $request->get('name', '')));
+        $label = trim((string) $request->get('label', ''));
+        VALIDATOR(['name' => $name, 'label' => $label])
+            ->required(['name', 'label'])
+            ->pattern(
+                'name',
+                '/^[a-z0-9_]+$/',
+                'Only lowercase letters, digits and underscores'
+            )
+            ->validate();
+
         $role = $this->service->replace(
             (int) $params['id'],
-            trim(strtolower((string) $request->get('name', ''))),
-            trim((string) $request->get('label', '')),
+            $name,
+            $label,
             (int) $request->get('position', 0),
             $request->projection(),
         );
@@ -127,6 +161,7 @@ class RoleApi
      */
     public function delete(Request $request, array $params): void
     {
+        VALIDATOR(['id' => $params['id'] ?? ''])->required('id')->validate();
         $this->service->delete((int) $params['id']);
         Response::success(null, 'Role deleted');
     }

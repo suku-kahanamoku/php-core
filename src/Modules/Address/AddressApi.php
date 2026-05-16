@@ -66,6 +66,12 @@ class AddressApi
      */
     public function create(Request $request): void
     {
+        VALIDATOR([
+            'street' => $request->get('street', ''),
+            'city'   => $request->get('city', ''),
+            'zip'    => $request->get('zip', ''),
+        ])->required(['street', 'city', 'zip'])->validate();
+
         $address = $this->service->create(
             [
                 'type'       => $request->get('type', 'billing'),
@@ -115,6 +121,13 @@ class AddressApi
      */
     public function replace(Request $request, array $params): void
     {
+        VALIDATOR([
+            'street'  => $request->get('street', ''),
+            'city'    => $request->get('city', ''),
+            'zip'     => $request->get('zip', ''),
+            'country' => $request->get('country', ''),
+        ])->required(['street', 'city', 'zip', 'country'])->validate();
+
         $address = $this->service->replace((int) $params['id'], [
             'type'       => $request->get('type', 'billing'),
             'company'    => $request->get('company', ''),
@@ -137,6 +150,7 @@ class AddressApi
      */
     public function delete(Request $request, array $params): void
     {
+        VALIDATOR(['id' => $params['id'] ?? ''])->required('id')->validate();
         Response::success($this->service->delete((int) $params['id']), 'Address deleted');
     }
 

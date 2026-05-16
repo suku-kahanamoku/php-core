@@ -36,9 +36,9 @@ class AuthApi
         $email    = trim((string) $request->get('email', ''));
         $password = (string) $request->get('password', '');
 
-        if ($email === '' || $password === '') {
-            Response::validationError(['message' => 'Email and password are required']);
-        }
+        VALIDATOR(['email' => $email, 'password' => $password])
+            ->required(['email', 'password'])
+            ->validate();
 
         $result = $this->service->login($email, $password);
         Response::success($result, 'Login successful');
@@ -112,9 +112,7 @@ class AuthApi
     {
         $email = trim((string) $request->get('email', ''));
 
-        if ($email === '') {
-            Response::validationError(['email' => 'Email is required']);
-        }
+        VALIDATOR(['email' => $email])->required('email')->email('email')->validate();
 
         $result = $this->service->resetPassword($email);
         Response::success($result, 'Password reset successful');
@@ -132,9 +130,7 @@ class AuthApi
         $firstName = trim((string) $request->get('first_name', ''));
         $lastName  = trim((string) $request->get('last_name', ''));
 
-        if ($email === '') {
-            Response::validationError(['email' => 'Email is required']);
-        }
+        VALIDATOR(['email' => $email])->required('email')->email('email')->validate();
 
         $result = $this->service->oauthLogin($email, $firstName, $lastName);
         Response::success($result, 'OAuth login successful');

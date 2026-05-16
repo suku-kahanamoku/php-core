@@ -103,15 +103,6 @@ class RoleService
     ): array {
         $this->auth->requireRole('admin');
 
-        VALIDATOR(['name' => $name, 'label' => $label])
-            ->required(['name', 'label'])
-            ->pattern(
-                'name',
-                '/^[a-z0-9_]+$/',
-                'Only lowercase letters, digits and underscores',
-            )
-            ->validate();
-
         if ($this->role->nameExists($name)) {
             Response::error('Role with this name already exists', 409);
         }
@@ -150,10 +141,8 @@ class RoleService
 
         if (array_key_exists('name', $fields)) {
             $newName = trim(strtolower((string) $fields['name']));
-            if (!preg_match('/^[a-z0-9_]+$/', $newName)) {
-                Response::validationError([
-                    'name' => 'Only lowercase letters, digits and underscores',
-                ]);
+            if ($this->role->nameExists($newName, $id)) {
+                Response::error('Role with this name already exists', 409);
             }
             if ($this->role->nameExists($newName, $id)) {
                 Response::error('Role with this name already exists', 409);
@@ -203,15 +192,6 @@ class RoleService
         if (!$this->role->findById($id)) {
             Response::notFound('Role not found');
         }
-
-        VALIDATOR(['name' => $name, 'label' => $label])
-            ->required(['name', 'label'])
-            ->pattern(
-                'name',
-                '/^[a-z0-9_]+$/',
-                'Only lowercase letters, digits and underscores',
-            )
-            ->validate();
 
         if ($this->role->nameExists($name, $id)) {
             Response::error('Role with this name already exists', 409);

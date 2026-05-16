@@ -99,8 +99,6 @@ class AddressService
             ? $overrideUserId
             : $this->auth->id();
 
-        VALIDATOR($input)->required(['street', 'city', 'zip'])->validate();
-
         $isDefault = (int) ($input['is_default'] ?? 0);
 
         // If setting as default, clear other defaults of same type first
@@ -134,7 +132,10 @@ class AddressService
     {
         $this->auth->require();
 
-        $address = $this->requireEntity($this->address->findById($id), 'Address not found');
+        $address = $this->requireEntity(
+            $this->address->findById($id),
+            'Address not found'
+        );
         $this->requireOwnerOrAdmin($address);
 
         $set        = [];
@@ -182,12 +183,11 @@ class AddressService
     {
         $this->auth->require();
 
-        $address = $this->requireEntity($this->address->findById($id), 'Address not found');
+        $address = $this->requireEntity(
+            $this->address->findById($id),
+            'Address not found'
+        );
         $this->requireOwnerOrAdmin($address);
-
-        VALIDATOR($input)
-            ->required(['street', 'city', 'zip', 'country'])
-            ->validate();
 
         $isDefault = (int) ($input['is_default'] ?? 0);
         if ($isDefault) {

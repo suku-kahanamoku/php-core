@@ -76,10 +76,17 @@ class EnumerationApi
      */
     public function create(Request $request): void
     {
+        $type  = trim((string) $request->get('type', ''));
+        $code  = trim((string) $request->get('syscode', ''));
+        $label = trim((string) $request->get('label', ''));
+        VALIDATOR(['type' => $type, 'syscode' => $code, 'label' => $label])
+            ->required(['type', 'syscode', 'label'])
+            ->validate();
+
         $item = $this->service->create(
-            trim((string) $request->get('type', '')),
-            trim((string) $request->get('syscode', '')),
-            trim((string) $request->get('label', '')),
+            $type,
+            $code,
+            $label,
             [
                 'value'     => $request->get('value'),
                 'position'  => $request->get('position', 0),
@@ -121,11 +128,18 @@ class EnumerationApi
      */
     public function replace(Request $request, array $params): void
     {
+        $type  = trim((string) $request->get('type', ''));
+        $code  = trim((string) $request->get('syscode', ''));
+        $label = trim((string) $request->get('label', ''));
+        VALIDATOR(['type' => $type, 'syscode' => $code, 'label' => $label])
+            ->required(['type', 'syscode', 'label'])
+            ->validate();
+
         $item = $this->service->replace(
             (int) $params['id'],
-            trim((string) $request->get('type', '')),
-            trim((string) $request->get('syscode', '')),
-            trim((string) $request->get('label', '')),
+            $type,
+            $code,
+            $label,
             [
                 'value'     => $request->get('value'),
                 'position'  => $request->get('position', 0),
@@ -146,6 +160,7 @@ class EnumerationApi
      */
     public function delete(Request $request, array $params): void
     {
+        VALIDATOR(['id' => $params['id'] ?? ''])->required('id')->validate();
         $this->service->delete((int) $params['id']);
         Response::success(null, 'Enumeration deleted');
     }

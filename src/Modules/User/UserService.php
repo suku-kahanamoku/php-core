@@ -108,21 +108,15 @@ class UserService
     {
         $this->auth->requireRole('admin');
 
-        VALIDATOR($input)
-            ->required(['first_name', 'last_name', 'email', 'password'])
-            ->email('email')
-            ->minLength('password', 8)
-            ->validate();
-
         if ($this->user->emailExists($input['email'])) {
             Response::error('Email already registered', 409);
         }
 
         $roleId = $input['role_id'] ?? null;
         if ($roleId !== null) {
-            if (!$this->role->findById((int) $roleId)) {
-                Response::validationError(['role_id' => 'Unknown role']);
-            }
+            VALIDATOR(['role_id' => $this->role->findById((int) $roleId) ? 'ok' : ''])
+                ->required('role_id')
+                ->validate();
             $roleId = (int) $roleId;
         } else {
             $roleId = $this->role->findIdByName('user');
@@ -173,9 +167,14 @@ class UserService
 
         if ($this->auth->hasRole('admin')) {
             if (array_key_exists('role_id', $input) && $input['role_id'] !== null) {
-                if (!$this->role->findById((int) $input['role_id'])) {
-                    Response::validationError(['role_id' => 'Unknown role']);
-                }
+                VALIDATOR(
+                    [
+                        'role_id' => $this->role->findById((int) $input['role_id'])
+                            ? 'ok' : ''
+                    ]
+                )
+                    ->required('role_id')
+                    ->validate();
                 $set['role_id'] = (int) $input['role_id'];
             }
         }
@@ -204,10 +203,6 @@ class UserService
 
         $this->requireEntity($this->user->findById($id), 'User not found');
 
-        VALIDATOR($input)
-            ->required(['first_name', 'last_name'])
-            ->validate();
-
         $set = [
             'first_name' => $input['first_name'],
             'last_name'  => $input['last_name'],
@@ -216,9 +211,14 @@ class UserService
 
         if ($this->auth->hasRole('admin')) {
             if (array_key_exists('role_id', $input) && $input['role_id'] !== null) {
-                if (!$this->role->findById((int) $input['role_id'])) {
-                    Response::validationError(['role_id' => 'Unknown role']);
-                }
+                VALIDATOR(
+                    [
+                        'role_id' => $this->role->findById((int) $input['role_id'])
+                            ? 'ok' : ''
+                    ]
+                )
+                    ->required('role_id')
+                    ->validate();
                 $set['role_id'] = (int) $input['role_id'];
             }
         }

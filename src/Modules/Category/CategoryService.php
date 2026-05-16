@@ -91,10 +91,6 @@ class CategoryService
     {
         $this->auth->requireRole('admin');
 
-        if ($name === '') {
-            Response::validationError(['name' => 'Required']);
-        }
-
         return $this->category->create([
             'syscode'     => $input['syscode'] ?? null,
             'name'        => $name,
@@ -163,10 +159,6 @@ class CategoryService
 
         if (!$this->category->findById($id)) {
             Response::notFound('Category not found');
-        }
-
-        if ($name === '') {
-            Response::validationError(['name' => 'Required']);
         }
 
         $parentId = ($input['parent_id'] ?? null);

@@ -66,7 +66,7 @@ class UserApi
      */
     public function create(Request $request): void
     {
-        $user = $this->service->create([
+        $input = [
             'first_name' => trim((string) $request->get('first_name', '')),
             'last_name'  => trim((string) $request->get('last_name', '')),
             'email'      => trim((string) $request->get('email', '')),
@@ -74,7 +74,14 @@ class UserApi
             'phone'      => $request->get('phone'),
             'role_id'    => $request->get('role_id') !== null
                 ? (int) $request->get('role_id') : null,
-        ], $request->projection());
+        ];
+        VALIDATOR($input)
+            ->required(['first_name', 'last_name', 'email', 'password'])
+            ->email('email')
+            ->minLength('password', 8)
+            ->validate();
+
+        $user = $this->service->create($input, $request->projection());
         Response::created($user, 'User created');
     }
 
@@ -106,13 +113,20 @@ class UserApi
      */
     public function replace(Request $request, array $params): void
     {
-        $user = $this->service->replace((int) $params['id'], [
+        $input = [
             'first_name' => trim((string) $request->get('first_name', '')),
             'last_name'  => trim((string) $request->get('last_name', '')),
             'phone'      => $request->get('phone'),
             'role_id'    => $request->get('role_id') !== null
                 ? (int) $request->get('role_id') : null,
-        ], $request->projection());
+        ];
+        VALIDATOR($input)->required(['first_name', 'last_name'])->validate();
+
+        $user = $this->service->replace(
+            (int) $params['id'],
+            $input,
+            $request->projection()
+        );
         Response::success($user, 'User replaced');
     }
 
@@ -125,6 +139,7 @@ class UserApi
      */
     public function delete(Request $request, array $params): void
     {
+        VALIDATOR(['id' => $params['id'] ?? ''])->required('id')->validate();
         $this->service->delete((int) $params['id']);
         Response::success(null, 'User deleted');
     }

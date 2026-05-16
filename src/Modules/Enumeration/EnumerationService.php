@@ -104,10 +104,6 @@ class EnumerationService
     ): array {
         $this->auth->requireRole('admin');
 
-        VALIDATOR(['type' => $type, 'syscode' => $code, 'label' => $label])
-            ->required(['type', 'syscode', 'label'])
-            ->validate();
-
         if ($this->enum->codeExists($type, $code)) {
             Response::error("Syscode '$code' already exists for type '$type'", 409);
         }
@@ -189,10 +185,6 @@ class EnumerationService
         if (!$this->enum->findById($id)) {
             Response::notFound('Enumeration not found');
         }
-
-        VALIDATOR(['type' => $type, 'syscode' => $code, 'label' => $label])
-            ->required(['type', 'syscode', 'label'])
-            ->validate();
 
         $this->enum->update($id, [
             'type'      => $type,

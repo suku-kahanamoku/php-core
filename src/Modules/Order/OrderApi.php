@@ -67,6 +67,10 @@ class OrderApi
      */
     public function create(Request $request): void
     {
+        VALIDATOR(['carts' => !empty($request->body['carts'] ?? []) ? 'ok' : ''])
+            ->required('carts')
+            ->validate();
+
         $result = $this->service->create($request->body);
         Response::created($result, 'Order created');
     }
@@ -80,9 +84,12 @@ class OrderApi
      */
     public function updateStatus(Request $request, array $params): void
     {
+        $status = trim((string) $request->get('status', ''));
+        VALIDATOR(['status' => $status])->required('status')->validate();
+
         $order = $this->service->updateStatus(
             (int) $params['id'],
-            trim((string) $request->get('status', '')),
+            $status,
             $request->projection(),
         );
         Response::success($order, 'Order status updated');
@@ -97,6 +104,7 @@ class OrderApi
      */
     public function delete(Request $request, array $params): void
     {
+        VALIDATOR(['id' => $params['id'] ?? ''])->required('id')->validate();
         $this->service->delete((int) $params['id']);
         Response::success(null, 'Order deleted');
     }

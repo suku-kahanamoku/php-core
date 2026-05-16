@@ -110,10 +110,6 @@ class TextService
     ): array {
         $this->auth->requireRole('admin');
 
-        VALIDATOR(['syscode' => $key, 'title' => $title])
-            ->required(['syscode', 'title'])
-            ->validate();
-
         if ($this->text->keyExists($key, $language)) {
             Response::error(
                 "Syscode '$key' already exists for language '$language'",
@@ -188,10 +184,6 @@ class TextService
         if (!$this->text->findById($id)) {
             Response::notFound('Text not found');
         }
-
-        VALIDATOR(['syscode' => $key, 'title' => $title])
-            ->required(['syscode', 'title'])
-            ->validate();
 
         $this->text->update($id, [
             'syscode'   => $key,

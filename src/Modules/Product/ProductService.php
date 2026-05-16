@@ -78,15 +78,13 @@ class ProductService
     /**
      * Vytvori novy produkt. Vyzaduje roli admin.
      *
-     * @param  array{name: string, price: float|int, sku?: string, description?: string, vat_rate?: float, stock_quantity?: int, published?: int, kind?: string, color?: string, variant?: string, data?: array<string, mixed>, category_ids?: list<int>} $input
+     * @param  array{name: string, price: float|int, sku?: string, description?: string, stock_quantity?: int, published?: int, kind?: string, color?: string, variant?: string, data?: array<string, mixed>, category_ids?: list<int>} $input
      * @param  array|null $projection
      * @return array<string, mixed>
      */
     public function create(array $input, ?array $projection = null): array
     {
         $this->auth->requireRole('admin');
-
-        VALIDATOR($input)->required('name')->numeric('price', 0)->validate();
 
         $name  = trim((string) ($input['name'] ?? ''));
         $price = $input['price'] ?? null;
@@ -189,10 +187,10 @@ class ProductService
 
     /**
      * Plne nahradi produkt (uplna nahrada). Vyzaduje roli admin.
-     * Vyzaduje name, sku a price. Ostatni pole jsou nastavena na vychozi hodnoty.
+     * Vyzaduje name a price. SKU je volitelne, pokud neni zadano, vygeneruje se automaticky.
      *
      * @param  int        $id
-     * @param  array{name: string, sku: string, price: float|int, description?: string, vat_rate?: float, stock_quantity?: int, published?: int, kind?: string, color?: string, variant?: string, data?: array<string, mixed>, category_ids?: list<int>} $input
+     * @param  array{name: string, sku?: string, price: float|int, description?: string, stock_quantity?: int, published?: int, kind?: string, color?: string, variant?: string, data?: array<string, mixed>, category_ids?: list<int>} $input
      * @param  array|null $projection
      * @return array<string, mixed>
      */
@@ -204,13 +202,10 @@ class ProductService
             Response::notFound('Product not found');
         }
 
-        VALIDATOR($input)
-            ->required(['name', 'sku'])
-            ->numeric('price', 0)
-            ->validate();
-
         $name  = trim((string) ($input['name'] ?? ''));
-        $sku   = trim((string) ($input['sku'] ?? ''));
+        $sku   = !empty($input['sku'])
+            ? trim((string) $input['sku'])
+            : $this->product->generateSku();
         $price = $input['price'] ?? null;
 
         $categoryIds = array_map('intval', (array) ($input['category_ids'] ?? []));
@@ -220,8 +215,6 @@ class ProductService
             'sku'            => $sku,
             'price'          => (float) $price,
             'description'    => (string) ($input['description'] ?? ''),
-            'vat_rate'       => isset($input['vat_rate'])
-                ? (float) $input['vat_rate'] : 21.0,
             'stock_quantity' => isset($input['stock_quantity'])
                 ? (int) $input['stock_quantity'] : 0,
             'published'      => isset($input['published'])

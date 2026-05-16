@@ -106,21 +106,23 @@ class InvoiceService
      * @param  array|null           $projection
      * @return array<string, mixed>
      */
-    public function create(int $orderId, array $input, ?array $projection = null): array
-    {
+    public function create(
+        int $orderId,
+        array $input,
+        ?array $projection = null
+    ): array {
         $this->auth->requireRole('admin');
 
-        if ($orderId <= 0) {
-            Response::validationError(['order_id' => 'Required']);
-        }
-
-        $order = $this->requireEntity($this->order->findById($orderId), 'Order not found');
+        $order = $this->requireEntity(
+            $this->order->findById($orderId),
+            'Order not found'
+        );
 
         if ($this->invoice->findByOrder($orderId)) {
             Response::error('Invoice already exists for this order', 409);
         }
 
-        $orderItems = $order['items'];
+        $orderItems = $order['order_items'] ?? [];
         $dueAt      = $input['due_at'] ?? date('Y-m-d', strtotime('+14 days'));
 
         $pdo = $this->invoice->getPdo();
@@ -132,7 +134,7 @@ class InvoiceService
                 'order_id'           => $orderId,
                 'user_id'            => $order['user_id'],
                 'status'             => 'issued',
-                'total_amount'       => $order['total_amount'],
+                'total_amount'       => $order['total_price'],
                 'currency'           => $order['currency'],
                 'due_at'             => $dueAt,
                 'billing_address_id' => $order['billing_address_id'] ?? null,
@@ -146,7 +148,7 @@ class InvoiceService
                     'product_id'  => $item['product_id'],
                     'description' => $item['product_name'] ?? '',
                     'quantity'    => $item['quantity'],
-                    'unit_price'  => $item['unit_price'],
+                    'unit_price'  => $item['price'],
                     'total_price' => $item['total_price'],
                 ]);
             }
@@ -178,10 +180,6 @@ class InvoiceService
         ?array $projection = null
     ): array {
         $this->auth->requireRole('admin');
-
-        if ($status === '') {
-            Response::validationError(['status' => 'Required']);
-        }
 
         $this->requireEntity($this->invoice->findById($id), 'Invoice not found');
 

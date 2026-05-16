@@ -32,7 +32,7 @@ $svcCatId   = $r['data']['data']['id'] ?? null;
 
 section('ProductService – create() validation');
 $r = request('POST', "{$base}/products", ['name' => 'x']);
-assert_test('missing sku + price → 422', $r['status'] === 422, dump_on_fail($r));
+assert_test('missing price → 422', $r['status'] === 422, dump_on_fail($r));
 
 $r = request('POST', "{$base}/products", ['name' => '', 'sku' => 'x', 'price' => 10]);
 assert_test('empty name → 422', $r['status'] === 422, dump_on_fail($r));
