@@ -3,12 +3,15 @@ DirectorySlash Off
 RewriteEngine On
 
 # Pass Authorization header to PHP (needed for Bearer token auth)
+
 RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
 # Route known module prefixes to their own index.php (lazy loading)
-RewriteRule ^(auth|roles|users|address|categories|products|texts|enumerations|orders|invoices)(/.*)?$ $1/index.php [L,QSA]
+
+RewriteRule ^(auth|roles|users|address|categories|products|texts|enumerations|orders|invoices|mailer|templater)(/.\*)?$ $1/index.php [L,QSA]
 
 # Everything else (root / and unknown paths) → index.php
+
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ index.php [L,QSA]

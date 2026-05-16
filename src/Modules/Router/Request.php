@@ -113,6 +113,16 @@ class Request
     }
 
     /**
+     * Vrati vsechny parametry z body i query stringu jako jeden pole.
+     * 
+     * @return array
+     */
+    public function all(): array
+    {
+        return array_merge($this->query, $this->body);
+    }
+
+    /**
      * Vrati hodnotu HTTP hlavicky dle nazvu (case-insensitive).
      *
      * @param  string $name     Nazev hlavicky (napr. 'Authorization')
