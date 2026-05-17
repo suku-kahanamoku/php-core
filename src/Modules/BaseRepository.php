@@ -13,7 +13,7 @@ use App\Utils\Projection;
  * Poskytuje sdilene pomocne metody:
  *   - findById()       — standardni vyhledani dle ID s projekci
  *   - buildSelect()    — sestaveni SELECT klauzule s aliasem a projekci
- *   - paginationResult() — standardni pole strankovaci odpovedi
+ *   - resultList() — standardni pole strankovaci odpovedi
  *
  * Kazda podtrida musi v konstruktoru nastavit:
  *   $this->table  — nazev tabulky v DB
@@ -105,7 +105,7 @@ abstract class BaseRepository
      *
      * @param  list<array<string, mixed>> $items
      */
-    protected function paginationResult(
+    protected function resultList(
         array $items,
         int $total,
         int $page,

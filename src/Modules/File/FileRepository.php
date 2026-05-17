@@ -83,7 +83,7 @@ class FileRepository extends BaseRepository
             [...$params, $limit, $offset],
         );
 
-        return $this->paginationResult($items, $total, $page, $limit);
+        return $this->resultList($items, $total, $page, $limit);
     }
 
     /**

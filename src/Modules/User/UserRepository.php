@@ -135,7 +135,7 @@ class UserRepository extends BaseRepository
         }
         unset($item);
 
-        return $this->paginationResult($items, $total, $page, $limit);
+        return $this->resultList($items, $total, $page, $limit);
     }
 
     /**
