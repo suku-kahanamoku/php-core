@@ -130,7 +130,7 @@ class FileRepository extends BaseRepository
      * @param  int    $entityId
      * @return list<array{id: int, path: string, name: string, mime_type: string}>
      */
-    public function findByJunction(string $junctionTable, string $entityFkColumn, int $entityId): array
+    public function findByJunctionItem(string $junctionTable, string $entityFkColumn, int $entityId): array
     {
         $rows = $this->db->fetchAll(
             "SELECT j.file_id, f.path, f.name, f.mime_type
@@ -157,7 +157,7 @@ class FileRepository extends BaseRepository
      * @param  list<int> $entityIds
      * @return array<int, list<array{id: int, path: string, name: string, mime_type: string}>>
      */
-    public function findByJunctionBatch(string $junctionTable, string $entityFkColumn, array $entityIds): array
+    public function findByJunctionList(string $junctionTable, string $entityFkColumn, array $entityIds): array
     {
         if (empty($entityIds)) {
             return [];

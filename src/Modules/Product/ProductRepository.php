@@ -193,12 +193,12 @@ class ProductRepository extends BaseRepository
 
         $categoriesMap = [];
         if ($proj->needsJoin('categories')) {
-            $categoriesMap = $this->categoryRepo->findByJunctionBatch('product_category', 'product_id', $ids);
+            $categoriesMap = $this->categoryRepo->findByJunctionList('product_category', 'product_id', $ids);
         }
 
         $filesMap = [];
         if ($proj->needsJoin('files')) {
-            $filesMap = $this->fileRepo->findByJunctionBatch('product_file', 'product_id', $ids);
+            $filesMap = $this->fileRepo->findByJunctionList('product_file', 'product_id', $ids);
         }
 
         $vatSys = array_merge($sys, ['vat_rate', 'price_with_vat']);
@@ -281,13 +281,13 @@ class ProductRepository extends BaseRepository
         }
 
         if ($proj->needsJoin('categories')) {
-            $categories = $this->categoryRepo->findByJunction('product_category', 'product_id', $id);
+            $categories = $this->categoryRepo->findByJunctionItem('product_category', 'product_id', $id);
             $row['category_ids'] = array_column($categories, 'id');
             $row['categories']   = $categories;
         }
 
         if ($proj->needsJoin('files')) {
-            $files = $this->fileRepo->findByJunction('product_file', 'product_id', $id);
+            $files = $this->fileRepo->findByJunctionItem('product_file', 'product_id', $id);
             $row['file_ids'] = array_column($files, 'id');
             $row['files']    = $files;
         }

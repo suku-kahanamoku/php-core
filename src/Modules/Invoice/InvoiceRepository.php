@@ -152,7 +152,7 @@ class InvoiceRepository extends BaseRepository
         $filesMap = [];
         if ($proj->needsJoin('files')) {
             $ids = array_column($items, 'id');
-            $filesMap = $this->fileRepo->findByJunctionBatch('invoice_file', 'invoice_id', $ids);
+            $filesMap = $this->fileRepo->findByJunctionList('invoice_file', 'invoice_id', $ids);
         }
 
         foreach ($items as &$item) {
@@ -246,7 +246,7 @@ class InvoiceRepository extends BaseRepository
         );
 
         if ($proj->needsJoin('files')) {
-            $files = $this->fileRepo->findByJunction('invoice_file', 'invoice_id', $id);
+            $files = $this->fileRepo->findByJunctionItem('invoice_file', 'invoice_id', $id);
             $invoice['file_ids'] = array_column($files, 'id');
             $invoice['files']    = $files;
         }

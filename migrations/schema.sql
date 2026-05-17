@@ -319,7 +319,7 @@ CREATE TABLE `invoice_file` (
 CREATE TABLE `file` (
     `id`             INT UNSIGNED   NOT NULL AUTO_INCREMENT,
     `franchise_code` VARCHAR(64)    NOT NULL DEFAULT 'default',
-    `type`           VARCHAR(32)    NOT NULL COMMENT 'pripona: pdf, jpg, csv...',,
+    `type`           VARCHAR(32)    NOT NULL COMMENT 'pripona: pdf, jpg, csv...',
     `mime_type`      VARCHAR(100)   NOT NULL COMMENT 'application/pdf, image/jpeg...',
     `path`           VARCHAR(512)   NOT NULL COMMENT 'relativni cesta v /files/ po commitu',
     `name`           VARCHAR(255)   NOT NULL COMMENT 'puvodni nazev souboru',

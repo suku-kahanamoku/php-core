@@ -215,7 +215,7 @@ class CategoryRepository extends BaseRepository
      * @param  int    $entityId
      * @return list<array{id: int, syscode: string, name: string, description: string|null, position: int, parent_id: int|null}>
      */
-    public function findByJunction(string $junctionTable, string $entityFkColumn, int $entityId): array
+    public function findByJunctionItem(string $junctionTable, string $entityFkColumn, int $entityId): array
     {
         $rows = $this->db->fetchAll(
             "SELECT c.id, c.syscode, c.name, c.description, c.position, c.parent_id
@@ -245,7 +245,7 @@ class CategoryRepository extends BaseRepository
      * @param  list<int> $entityIds
      * @return array<int, list<array{id: int, syscode: string, name: string, description: string|null, position: int, parent_id: int|null}>>
      */
-    public function findByJunctionBatch(string $junctionTable, string $entityFkColumn, array $entityIds): array
+    public function findByJunctionList(string $junctionTable, string $entityFkColumn, array $entityIds): array
     {
         if (empty($entityIds)) {
             return [];
