@@ -102,7 +102,7 @@ if ($invoiceId) {
     $r = request('PATCH', "{$base}/invoices/{$invoiceId}/status", ['status' => 'paid']);
     assert_test('PATCH /invoices/:id/status paid 200', $r['status'] === 200, dump_on_fail($r));
 
-    $r = request('DELETE', "{$base}/invoices/{$invoiceId}");
+    $r = request('DELETE', "{$base}/invoices/{$invoiceId}?force=true");
     assert_test('DELETE /invoices/:id 200', $r['status'] === 200, dump_on_fail($r));
 
     $r = request('GET', "{$base}/invoices/{$invoiceId}");
@@ -112,16 +112,16 @@ if ($invoiceId) {
 // ── Cleanup ───────────────────────────────────────────────────────────────────
 
 if ($invOrderId) {
-    request('DELETE', "{$base}/orders/{$invOrderId}");
+    request('DELETE', "{$base}/orders/{$invOrderId}?force=true");
 }
 if ($invProductId) {
-    request('DELETE', "{$base}/products/{$invProductId}");
+    request('DELETE', "{$base}/products/{$invProductId}?force=true");
 }
 if ($invCatId) {
-    request('DELETE', "{$base}/categories/{$invCatId}");
+    request('DELETE', "{$base}/categories/{$invCatId}?force=true");
 }
 if ($invUserId) {
-    request('DELETE', "{$base}/users/{$invUserId}");
+    request('DELETE', "{$base}/users/{$invUserId}?force=true");
 }
 $token = null;
 

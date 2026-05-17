@@ -224,6 +224,23 @@ class FileService extends BaseService
         $this->files->softDelete($id);
     }
 
+    /**
+     * Soft-smazani souboru (oznaci jako smazany, ponecha v DB).
+     * Vyzaduje roli admin.
+     *
+     * @param  int $id
+     * @return int  Pocet ovlivnenych zaznamu (0 nebo 1)
+     */
+    public function remove(int $id): int
+    {
+        $this->auth->requireRole('admin');
+
+        $file = $this->files->findById($id);
+        $this->requireEntity($file, 'File not found');
+
+        return $this->files->softDelete($id);
+    }
+
     // ── Helpers ─────────────────────────────────────────────────────────────
 
     private function validateUpload(array $file): void

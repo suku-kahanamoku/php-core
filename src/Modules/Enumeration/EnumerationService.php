@@ -207,4 +207,20 @@ class EnumerationService extends BaseService
 
         return $this->enum->delete($id);
     }
+
+    /**
+     * Soft-smazani ciselnikove polozky (oznaci jako smazanou, ponecha v DB).
+     * Vyzaduje roli admin.
+     *
+     * @param  int $id
+     * @return int  Pocet ovlivnenych zaznamu (0 nebo 1)
+     */
+    public function remove(int $id): int
+    {
+        $this->auth->requireRole('admin');
+
+        $this->requireEntity($this->enum->findById($id), 'Enumeration not found');
+
+        return $this->enum->softDelete($id);
+    }
 }

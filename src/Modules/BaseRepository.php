@@ -101,6 +101,22 @@ abstract class BaseRepository
     }
 
     /**
+     * Soft-smazani zaznamu (nastavi deleted = 1).
+     *
+     * @param  int $id
+     * @return int  Pocet ovlivnenych radku (0 nebo 1)
+     */
+    public function softDelete(int $id): int
+    {
+        return $this->db->update(
+            $this->table,
+            ['deleted' => 1],
+            'id = ? AND franchise_code = ?',
+            [$id, $this->code]
+        );
+    }
+
+    /**
      * Vrati standardni pole strankovaci odpovedi.
      *
      * @param  list<array<string, mixed>> $items

@@ -194,4 +194,21 @@ class InvoiceService extends BaseService
 
         return $this->invoice->delete($id);
     }
+
+    /**
+     * Soft-smazani faktury (oznaci jako smazanou, ponecha v DB).
+     * Vyzaduje roli admin.
+     *
+     * @param  int $id
+     * @return int  Pocet ovlivnenych zaznamu (0 nebo 1)
+     */
+    public function remove(int $id): int
+    {
+        $this->auth->requireRole('admin');
+
+        $invoice = $this->invoice->findById($id);
+        $this->requireEntity($invoice, 'Invoice not found');
+
+        return $this->invoice->softDelete($id);
+    }
 }

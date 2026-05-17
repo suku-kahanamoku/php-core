@@ -144,7 +144,7 @@ if ($tempToken !== null) {
         // ── DELETE /files/:id ──────────────────────────────────────────────────
 
         section('Files – DELETE /files/:id');
-        $r = request('DELETE', "{$base}/files/{$committedId}");
+        $r = request('DELETE', "{$base}/files/{$committedId}?force=true");
         assert_test('DELETE committed file → 200', $r['status'] === 200, dump_on_fail($r));
 
         section('Files – GET /files/:id after delete (should 404)');
@@ -165,7 +165,7 @@ if ($tempToken !== null) {
 // ── DELETE /files/:id – missing ID validation ─────────────────────────────────
 
 section('Files – DELETE /files/0 (invalid id)');
-$r = request('DELETE', "{$base}/files/0");
+$r = request('DELETE', "{$base}/files/0?force=true");
 assert_test('DELETE /files/0 → 422', $r['status'] === 422, dump_on_fail($r));
 
 // ── Cleanup ───────────────────────────────────────────────────────────────────

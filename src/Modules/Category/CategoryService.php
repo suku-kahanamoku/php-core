@@ -189,6 +189,22 @@ class CategoryService extends BaseService
         return $this->category->delete($id);
     }
 
+    /**
+     * Soft-smazani kategorie (oznaci jako smazanou, ponecha v DB).
+     * Vyzaduje roli admin.
+     *
+     * @param  int $id
+     * @return int  Pocet ovlivnenych zaznamu (0 nebo 1)
+     */
+    public function remove(int $id): int
+    {
+        $this->auth->requireRole('admin');
+
+        $this->requireEntity($this->category->findById($id), 'Category not found');
+
+        return $this->category->softDelete($id);
+    }
+
     private function buildTree(array $items, ?int $parentId = null): array
     {
         $branch = [];

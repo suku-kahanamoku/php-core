@@ -56,7 +56,7 @@ assert_test('POST /products → 403 for non-admin', $r['status'] === 403, dump_o
 $r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 $token = $r['data']['data']['token'] ?? null;
 if ($prodRegId) {
-    request('DELETE', "{$base}/users/{$prodRegId}");
+    request('DELETE', "{$base}/users/{$prodRegId}?force=true");
 }
 
 // ── Create ────────────────────────────────────────────────────────────────────
@@ -159,10 +159,10 @@ if ($prodId) {
 // ── Cleanup ───────────────────────────────────────────────────────────────────
 
 if ($prodId) {
-    request('DELETE', "{$base}/products/{$prodId}");
+    request('DELETE', "{$base}/products/{$prodId}?force=true");
 }
 if ($prodCatId) {
-    request('DELETE', "{$base}/categories/{$prodCatId}");
+    request('DELETE', "{$base}/categories/{$prodCatId}?force=true");
 }
 $token = null;
 

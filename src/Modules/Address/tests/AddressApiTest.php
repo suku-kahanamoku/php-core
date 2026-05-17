@@ -78,14 +78,14 @@ if ($addrId) {
     $r = request('PUT', "{$base}/address/{$addrId}", ['street' => 'x', 'city' => '', 'zip' => '1', 'country' => 'CZ']);
     assert_test('PUT /address/:id 422 missing city', $r['status'] === 422, dump_on_fail($r));
 
-    $r = request('DELETE', "{$base}/address/{$addrId}");
+    $r = request('DELETE', "{$base}/address/{$addrId}?force=true");
     assert_test('DELETE /address/:id 200', $r['status'] === 200, dump_on_fail($r));
 }
 
 // ── Cleanup ───────────────────────────────────────────────────────────────────
 
 if ($addrUserId) {
-    request('DELETE', "{$base}/users/{$addrUserId}");
+    request('DELETE', "{$base}/users/{$addrUserId}?force=true");
 }
 $token = null;
 

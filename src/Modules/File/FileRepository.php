@@ -129,20 +129,4 @@ class FileRepository extends BaseRepository
         );
         return $this->findById($id, $projection);
     }
-
-    /**
-     * Soft-delete zaznamu.
-     *
-     * @param  int $id
-     * @return int  Pocet ovlivnenych radku (0 nebo 1)
-     */
-    public function softDelete(int $id): int
-    {
-        return $this->db->update(
-            'file',
-            ['deleted' => 1],
-            'id = ? AND franchise_code = ?',
-            [$id, $this->code]
-        );
-    }
 }

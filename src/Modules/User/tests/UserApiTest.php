@@ -78,7 +78,7 @@ if ($userCreatedId) {
 
 section('Users – delete');
 if ($userCreatedId) {
-    $r = request('DELETE', "{$base}/users/{$userCreatedId}");
+    $r = request('DELETE', "{$base}/users/{$userCreatedId}?force=true");
     assert_test('DELETE /users/:id 200', $r['status'] === 200, dump_on_fail($r));
 }
 

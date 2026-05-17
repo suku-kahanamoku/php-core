@@ -76,7 +76,7 @@ assert_test('POST /roles → 403 for non-admin', $r['status'] === 403, dump_on_f
 
 $token = $tmpToken;
 if ($roleRegUserId) {
-    request('DELETE', "{$base}/users/{$roleRegUserId}");
+    request('DELETE', "{$base}/users/{$roleRegUserId}?force=true");
 }
 
 // ── CRUD ──────────────────────────────────────────────────────────────────────
@@ -109,7 +109,7 @@ if ($newRoleId) {
     $r = request('PUT', "{$base}/roles/{$newRoleId}", ['name' => '', 'label' => 'x']);
     assert_test('PUT /roles/:id 422 empty name', $r['status'] === 422, dump_on_fail($r));
 
-    $r = request('DELETE', "{$base}/roles/{$newRoleId}");
+    $r = request('DELETE', "{$base}/roles/{$newRoleId}?force=true");
     assert_test('DELETE /roles/:id 200', $r['status'] === 200, dump_on_fail($r));
 }
 
@@ -117,7 +117,7 @@ if ($newRoleId) {
 
 section('Roles – built-in protection');
 if ($adminRoleId) {
-    $r = request('DELETE', "{$base}/roles/{$adminRoleId}");
+    $r = request('DELETE', "{$base}/roles/{$adminRoleId}?force=true");
     assert_test('DELETE /roles/admin → 409', $r['status'] === 409, dump_on_fail($r));
 }
 
@@ -139,13 +139,13 @@ if ($tempRoleId) {
     assert_test('create user with temp_role 201', $r['status'] === 201, dump_on_fail($r));
     $tempUserId = $r['data']['data']['id'] ?? null;
 
-    $r = request('DELETE', "{$base}/roles/{$tempRoleId}");
+    $r = request('DELETE', "{$base}/roles/{$tempRoleId}?force=true");
     assert_test('DELETE role with user → 409', $r['status'] === 409, dump_on_fail($r));
 
     if ($tempUserId) {
-        request('DELETE', "{$base}/users/{$tempUserId}");
+        request('DELETE', "{$base}/users/{$tempUserId}?force=true");
     }
-    request('DELETE', "{$base}/roles/{$tempRoleId}");
+    request('DELETE', "{$base}/roles/{$tempRoleId}?force=true");
 }
 
 // ── Role filter on users ──────────────────────────────────────────────────────

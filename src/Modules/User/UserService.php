@@ -233,4 +233,21 @@ class UserService extends BaseService
 
         return $this->user->delete($id);
     }
+
+    /**
+     * Soft-smazani uzivatele (oznaci jako smazaneho, ponecha v DB).
+     * Vyzaduje roli admin.
+     *
+     * @param  int $id
+     * @return int  Pocet ovlivnenych zaznamu (0 nebo 1)
+     */
+    public function remove(int $id): int
+    {
+        $this->auth->requireRole('admin');
+
+        $user = $this->user->findById($id);
+        $this->requireEntity($user, 'User not found');
+
+        return $this->user->softDelete($id);
+    }
 }

@@ -230,4 +230,21 @@ class RoleService extends BaseService
 
         return $this->role->delete($id);
     }
+
+    /**
+     * Soft-smazani role (oznaci jako smazanou, ponecha v DB).
+     * Vyzaduje roli admin.
+     *
+     * @param  int $id
+     * @return int  Pocet ovlivnenych zaznamu (0 nebo 1)
+     */
+    public function remove(int $id): int
+    {
+        $this->auth->requireRole('admin');
+
+        $role = $this->role->findById($id);
+        $this->requireEntity($role, 'Role not found');
+
+        return $this->role->softDelete($id);
+    }
 }

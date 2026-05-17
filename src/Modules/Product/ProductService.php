@@ -244,6 +244,22 @@ class ProductService extends BaseService
     }
 
     /**
+     * Soft-smazani produktu (oznaci jako smazany, ponecha v DB).
+     * Vyzaduje roli admin.
+     *
+     * @param  int $id
+     * @return int  Pocet ovlivnenych zaznamu (0 nebo 1)
+     */
+    public function remove(int $id): int
+    {
+        $this->auth->requireRole('admin');
+
+        $this->requireEntity($this->product->findById($id), 'Product not found');
+
+        return $this->product->softDelete($id);
+    }
+
+    /**
      * Upravi mnozstvi na sklade o zadanou hodnotu (kladna = pridat, zaporna = odebrat).
      * Mnozstvi nemuze klesnout pod 0. Vyzaduje roli admin.
      *

@@ -81,7 +81,7 @@ if ($enumId) {
     $r = request('PUT', "{$base}/enumerations/{$enumId}", ['type' => $enumType]);
     assert_test('PUT /enumerations/:id 422 missing syscode+label', $r['status'] === 422, dump_on_fail($r));
 
-    $r = request('DELETE', "{$base}/enumerations/{$enumId}");
+    $r = request('DELETE', "{$base}/enumerations/{$enumId}?force=true");
     assert_test('DELETE /enumerations/:id 200', $r['status'] === 200, dump_on_fail($r));
 }
 

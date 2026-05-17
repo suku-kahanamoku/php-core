@@ -318,4 +318,21 @@ class OrderService extends BaseService
 
         return $this->order->delete($id);
     }
+
+    /**
+     * Soft-smazani objednavky (oznaci jako smazanou, ponecha v DB).
+     * Vyzaduje roli admin.
+     *
+     * @param  int $id
+     * @return int  Pocet ovlivnenych zaznamu (0 nebo 1)
+     */
+    public function remove(int $id): int
+    {
+        $this->auth->requireRole('admin');
+
+        $order = $this->order->findById($id);
+        $this->requireEntity($order, 'Order not found');
+
+        return $this->order->softDelete($id);
+    }
 }

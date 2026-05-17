@@ -59,7 +59,7 @@ assert_test('POST /categories → 403 for non-admin', $r['status'] === 403, dump
 $r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 $token = $r['data']['data']['token'] ?? null;
 if ($catRegId) {
-    request('DELETE', "{$base}/users/{$catRegId}");
+    request('DELETE', "{$base}/users/{$catRegId}?force=true");
 }
 
 // ── Create ────────────────────────────────────────────────────────────────────
@@ -108,18 +108,18 @@ if ($catId) {
     ]);
     $catProdId = $r['data']['data']['id'] ?? null;
 
-    $r = request('DELETE', "{$base}/categories/{$catId}");
+    $r = request('DELETE', "{$base}/categories/{$catId}?force=true");
     assert_test('DELETE /categories/:id 409 (has product)', $r['status'] === 409, dump_on_fail($r));
 
     if ($catProdId) {
-        request('DELETE', "{$base}/products/{$catProdId}");
+        request('DELETE', "{$base}/products/{$catProdId}?force=true");
     }
-    $r = request('DELETE', "{$base}/categories/{$catId}");
+    $r = request('DELETE', "{$base}/categories/{$catId}?force=true");
     assert_test('DELETE /categories/:id 200 (after product removed)', $r['status'] === 200, dump_on_fail($r));
 }
 
 if ($emptyCatId) {
-    $r = request('DELETE', "{$base}/categories/{$emptyCatId}");
+    $r = request('DELETE', "{$base}/categories/{$emptyCatId}?force=true");
     assert_test('DELETE /categories/:id 200 (empty)', $r['status'] === 200, dump_on_fail($r));
 }
 

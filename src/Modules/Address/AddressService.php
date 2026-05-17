@@ -204,4 +204,21 @@ class AddressService extends BaseService
 
         return $this->address->delete($id);
     }
+
+    /**
+     * Soft-smazani adresy (oznaci jako smazanou, ponecha v DB).
+     * Vyzaduje prihlaseni.
+     *
+     * @param  int $id
+     * @return int  Pocet ovlivnenych zaznamu (0 nebo 1)
+     */
+    public function remove(int $id): int
+    {
+        $this->auth->require();
+
+        $address = $this->address->findById($id);
+        $this->requireEntity($address, 'Address not found');
+
+        return $this->address->softDelete($id);
+    }
 }

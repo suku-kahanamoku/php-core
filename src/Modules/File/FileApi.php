@@ -148,8 +148,13 @@ class FileApi
             ->required('id')
             ->numeric('id', 1)
             ->validate();
-        $this->service->delete((int) $params['id']);
-        Response::success(['message' => 'File deleted']);
+        $force = filter_var($request->query['force'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        if ($force) {
+            $this->service->delete((int) $params['id']);
+        } else {
+            $this->service->remove((int) $params['id']);
+        }
+        Response::success(null, 'File deleted');
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────

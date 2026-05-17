@@ -150,7 +150,13 @@ class AddressApi
     public function delete(Request $request, array $params): void
     {
         VALIDATOR(['id' => $params['id'] ?? ''])->required('id')->validate();
-        Response::success($this->service->delete((int) $params['id']), 'Address deleted');
+        $force = filter_var($request->query['force'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        if ($force) {
+            $this->service->delete((int) $params['id']);
+        } else {
+            $this->service->remove((int) $params['id']);
+        }
+        Response::success(null, 'Address deleted');
     }
 
     /**

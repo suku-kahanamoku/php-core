@@ -69,7 +69,7 @@ if ($textId) {
     $r = request('PUT', "{$base}/texts/{$textId}", ['key' => '', 'title' => 'x']);
     assert_test('PUT /texts/:id 422 empty key', $r['status'] === 422, dump_on_fail($r));
 
-    $r = request('DELETE', "{$base}/texts/{$textId}");
+    $r = request('DELETE', "{$base}/texts/{$textId}?force=true");
     assert_test('DELETE /texts/:id 200', $r['status'] === 200, dump_on_fail($r));
 
     $r = request('GET', "{$base}/texts/{$textId}");

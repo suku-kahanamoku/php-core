@@ -100,16 +100,16 @@ if ($orderId) {
 // ── Cleanup ───────────────────────────────────────────────────────────────────
 
 if ($orderId) {
-    request('DELETE', "{$base}/orders/{$orderId}");
+    request('DELETE', "{$base}/orders/{$orderId}?force=true");
 }
 if ($ordProductId) {
-    request('DELETE', "{$base}/products/{$ordProductId}");
+    request('DELETE', "{$base}/products/{$ordProductId}?force=true");
 }
 if ($ordCatId) {
-    request('DELETE', "{$base}/categories/{$ordCatId}");
+    request('DELETE', "{$base}/categories/{$ordCatId}?force=true");
 }
 if ($ordUserId) {
-    request('DELETE', "{$base}/users/{$ordUserId}");
+    request('DELETE', "{$base}/users/{$ordUserId}?force=true");
 }
 $token = null;
 
