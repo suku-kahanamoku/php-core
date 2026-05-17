@@ -346,7 +346,7 @@ class UserRepository extends BaseRepository
             'SELECT u.id, u.email, u.password,
                     r.name AS role, u.first_name, u.last_name, u.status
              FROM `user` u
-             JOIN `role` r ON r.id = u.role_id
+             JOIN `role` r ON r.id = u.role_id AND r.deleted = 0
              WHERE u.email = ? AND u.franchise_code = ?
              LIMIT 1',
             [$email, $this->code],

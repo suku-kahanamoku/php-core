@@ -245,6 +245,19 @@ class RoleService extends BaseService
         $role = $this->role->findById($id);
         $this->requireEntity($role, 'Role not found');
 
+        $builtInRoles = ['admin', 'user'];
+        if (in_array($role['name'], $builtInRoles, true)) {
+            Response::error("Built-in role '{$role['name']}' cannot be deleted", 409);
+        }
+
+        $userCount = $this->user->countByRoleId($id);
+        if ($userCount > 0) {
+            Response::error(
+                "Cannot delete role: {$userCount} user(s) are assigned to it",
+                409,
+            );
+        }
+
         return $this->role->softDelete($id);
     }
 }

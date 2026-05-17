@@ -22,7 +22,7 @@ class OrderRepository extends BaseRepository
     public function __construct(Database $db, string $franchiseCode)
     {
         parent::__construct($db, $franchiseCode);
-        $this->table = '`order`';
+        $this->table = 'order';
         $this->alias = 'o';
         $this->own   = [
             'order_number',

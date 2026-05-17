@@ -202,6 +202,10 @@ class CategoryService extends BaseService
 
         $this->requireEntity($this->category->findById($id), 'Category not found');
 
+        if ($this->product->existsForCategory($id)) {
+            Response::error('Category is in use by products', 409);
+        }
+
         return $this->category->softDelete($id);
     }
 
