@@ -121,7 +121,8 @@ class ProductRepository extends BaseRepository
             static fn($k) => str_starts_with((string) $k, 'category.')
         ));
 
-        $needsCatJoin = $proj->needsJoin('categories') || $needsCatFilter;
+        // JOIN je potreba jen pro filtrovani dle category.* — data nacitame pres batch
+        $needsCatJoin = $needsCatFilter;
 
         // Sestav JOINy — bez znacky '?' aby zutal poradak parametru jednoduchy.
         $catJoin = $needsCatJoin
@@ -168,13 +169,10 @@ class ProductRepository extends BaseRepository
 
         $sys        = $this->sys;
         $baseSelect = $this->buildSelect($proj);
-        $catSel     = $proj->needsJoin('categories')
-            ? ', GROUP_CONCAT(pc.category_id ORDER BY pc.category_id) AS category_ids'
-            : '';
         $vatSel     = ', ANY_VALUE(vat.rate) AS vat_rate'
             . ', ANY_VALUE(ROUND(p.price * (1 + vat.rate / 100), 2)) AS price_with_vat';
 
-        $select = "{$baseSelect}{$catSel}{$vatSel}";
+        $select = "{$baseSelect}{$vatSel}";
 
         $total = (int) $this->db->fetchOne(
             "SELECT COUNT(DISTINCT p.id) AS cnt FROM product p {$catJoin} WHERE {$whereStr}",
@@ -191,28 +189,37 @@ class ProductRepository extends BaseRepository
             $queryParams,
         );
 
+        $ids = array_column($items, 'id');
+
+        $categoriesMap = [];
+        if ($proj->needsJoin('categories')) {
+            $categoriesMap = $this->categoryRepo->findByJunctionBatch('product_category', 'product_id', $ids);
+        }
+
         $filesMap = [];
         if ($proj->needsJoin('files')) {
-            $ids = array_column($items, 'id');
             $filesMap = $this->fileRepo->findByJunctionBatch('product_file', 'product_id', $ids);
         }
 
         $vatSys = array_merge($sys, ['vat_rate', 'price_with_vat']);
         foreach ($items as &$item) {
-            if (isset($item['category_ids'])) {
-                $item['category_ids'] = $item['category_ids']
-                    ? array_map('intval', explode(',', $item['category_ids']))
-                    : [];
-            }
             if (isset($item['data'])) {
                 $item['data'] = $item['data'] ? json_decode($item['data'], true) : null;
+            }
+            if ($proj->needsJoin('categories')) {
+                $itemCats = $categoriesMap[(int) $item['id']] ?? [];
+                $item['category_ids'] = array_column($itemCats, 'id');
+                $item['categories']   = $itemCats;
             }
             if ($proj->needsJoin('files')) {
                 $itemFiles = $filesMap[(int) $item['id']] ?? [];
                 $item['file_ids'] = array_column($itemFiles, 'id');
                 $item['files']    = $itemFiles;
             }
-            $item = $proj->apply($item, $vatSys, ['categories' => ['category_ids'], 'files' => ['file_ids', 'files']]);
+            $item = $proj->apply($item, $vatSys, [
+                'categories' => ['category_ids', 'categories'],
+                'files'      => ['file_ids', 'files'],
+            ]);
         }
         unset($item);
 
@@ -274,7 +281,9 @@ class ProductRepository extends BaseRepository
         }
 
         if ($proj->needsJoin('categories')) {
-            $row['category_ids'] = $this->categoryRepo->findIdsByJunction('product_category', 'product_id', $id);
+            $categories = $this->categoryRepo->findByJunction('product_category', 'product_id', $id);
+            $row['category_ids'] = array_column($categories, 'id');
+            $row['categories']   = $categories;
         }
 
         if ($proj->needsJoin('files')) {
@@ -288,8 +297,8 @@ class ProductRepository extends BaseRepository
             $row,
             $vatSys,
             [
-                'categories' => ['category_ids'],
-                'files' => ['file_ids', 'files'],
+                'categories' => ['category_ids', 'categories'],
+                'files'      => ['file_ids', 'files'],
             ]
         );
     }

@@ -206,4 +206,73 @@ class CategoryRepository extends BaseRepository
         return array_map('intval', array_column($rows, 'category_id'));
     }
 
+    /**
+     * Nacte kategorie entity pres junction tabulku.
+     * Vraci pole objektu [{id, syscode, name, description, position, parent_id}].
+     *
+     * @param  string $junctionTable
+     * @param  string $entityFkColumn
+     * @param  int    $entityId
+     * @return list<array{id: int, syscode: string, name: string, description: string|null, position: int, parent_id: int|null}>
+     */
+    public function findByJunction(string $junctionTable, string $entityFkColumn, int $entityId): array
+    {
+        $rows = $this->db->fetchAll(
+            "SELECT c.id, c.syscode, c.name, c.description, c.position, c.parent_id
+             FROM {$junctionTable} j
+             INNER JOIN category c ON c.id = j.category_id AND c.deleted = 0
+             WHERE j.{$entityFkColumn} = ?
+             ORDER BY c.position ASC",
+            [$entityId],
+        );
+
+        return array_map(static fn($r) => [
+            'id'          => (int) $r['id'],
+            'syscode'     => $r['syscode'],
+            'name'        => $r['name'],
+            'description' => $r['description'],
+            'position'    => (int) $r['position'],
+            'parent_id'   => $r['parent_id'] !== null ? (int) $r['parent_id'] : null,
+        ], $rows);
+    }
+
+    /**
+     * Batch load kategorii pro vice entit pres junction tabulku.
+     * Vraci mapu [entityId => [{id, syscode, name, ...}]].
+     *
+     * @param  string    $junctionTable
+     * @param  string    $entityFkColumn
+     * @param  list<int> $entityIds
+     * @return array<int, list<array{id: int, syscode: string, name: string, description: string|null, position: int, parent_id: int|null}>>
+     */
+    public function findByJunctionBatch(string $junctionTable, string $entityFkColumn, array $entityIds): array
+    {
+        if (empty($entityIds)) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($entityIds), '?'));
+        $rows = $this->db->fetchAll(
+            "SELECT j.{$entityFkColumn} AS entity_id, c.id, c.syscode, c.name, c.description, c.position, c.parent_id
+             FROM {$junctionTable} j
+             INNER JOIN category c ON c.id = j.category_id AND c.deleted = 0
+             WHERE j.{$entityFkColumn} IN ({$placeholders})
+             ORDER BY c.position ASC",
+            $entityIds,
+        );
+
+        $map = [];
+        foreach ($rows as $row) {
+            $map[(int) $row['entity_id']][] = [
+                'id'          => (int) $row['id'],
+                'syscode'     => $row['syscode'],
+                'name'        => $row['name'],
+                'description' => $row['description'],
+                'position'    => (int) $row['position'],
+                'parent_id'   => $row['parent_id'] !== null ? (int) $row['parent_id'] : null,
+            ];
+        }
+
+        return $map;
+    }
 }
