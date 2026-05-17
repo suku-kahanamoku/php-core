@@ -56,7 +56,7 @@ class FileApi
             (string) $request->get('q', ''),
             $request->projection(),
         );
-        Response::successWithFactory($result, $request);
+        Response::successList($result, $request);
     }
 
     // ── GET /files/:id ────────────────────────────────────────────────────
@@ -68,7 +68,7 @@ class FileApi
             ->numeric('id')
             ->validate();
         $item = $this->service->get((int) $params['id'], $request->projection());
-        Response::successItemWithFactory($item, $request);
+        Response::successItem($item, $request);
     }
 
     // ── GET /files/:id/download ───────────────────────────────────────────

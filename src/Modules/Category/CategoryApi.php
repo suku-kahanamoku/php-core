@@ -41,7 +41,7 @@ class CategoryApi
             (string) $request->get('q', ''),
             $request->projection(),
         );
-        Response::successWithFactory($result, $request);
+        Response::successList($result, $request);
     }
 
     /**
@@ -57,7 +57,7 @@ class CategoryApi
             (int) $params['id'],
             $request->projection()
         );
-        Response::successItemWithFactory($item, $request);
+        Response::successItem($item, $request);
     }
 
     /**

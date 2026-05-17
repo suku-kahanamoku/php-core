@@ -41,7 +41,7 @@ class EnumerationApi
             (string) $request->get('q', ''),
             $request->projection(),
         );
-        Response::successWithFactory($result, $request);
+        Response::successList($result, $request);
     }
 
     /**
@@ -65,7 +65,7 @@ class EnumerationApi
     public function get(Request $request, array $params): void
     {
         $item    = $this->service->get((int) $params['id'], $request->projection());
-        Response::successItemWithFactory($item, $request);
+        Response::successItem($item, $request);
     }
 
     /**

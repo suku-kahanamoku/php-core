@@ -152,7 +152,7 @@ class Response
      * @param  Request              $request
      * @return never
      */
-    public static function successWithFactory(array $data, Request $request): never
+    public static function successList(array $data, Request $request): never
     {
         $factory = $request->factory();
         if ($factory !== null && isset($data['data'])) {
@@ -181,7 +181,7 @@ class Response
      * @param  Request              $request
      * @return never
      */
-    public static function successItemWithFactory(array $item, Request $request): never
+    public static function successItem(array $item, Request $request): never
     {
         $factory = $request->factory();
         if ($factory !== null) {
