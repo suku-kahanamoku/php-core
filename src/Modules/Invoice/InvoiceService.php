@@ -5,18 +5,15 @@ declare(strict_types=1);
 namespace App\Modules\Invoice;
 
 use App\Modules\Auth\Auth;
+use App\Modules\BaseService;
 use App\Modules\Database\Database;
 use App\Modules\Order\OrderRepository;
 use App\Modules\Router\Response;
-use App\Modules\ServiceAuthTrait;
 
-class InvoiceService
+class InvoiceService extends BaseService
 {
-    use ServiceAuthTrait;
-
     private InvoiceRepository $invoice;
     private OrderRepository   $order;
-    private Auth $auth;
 
     /**
      * Konstruktor tridy InvoiceService.
@@ -30,11 +27,6 @@ class InvoiceService
         $this->invoice = new InvoiceRepository($db, $franchiseCode);
         $this->order   = new OrderRepository($db, $franchiseCode);
         $this->auth    = $auth;
-    }
-
-    protected function getAuth(): Auth
-    {
-        return $this->auth;
     }
 
     /**
@@ -87,10 +79,8 @@ class InvoiceService
     {
         $this->auth->require();
 
-        $invoice = $this->requireEntity(
-            $this->invoice->findById($id, $projection),
-            'Invoice not found',
-        );
+        $invoice = $this->invoice->findById($id, $projection);
+        $this->requireEntity($invoice, 'Invoice not found');
         if (!$this->auth->hasRole('admin') && (int) $invoice['user_id'] !== $this->auth->id()) {
             Response::forbidden();
         }
@@ -115,10 +105,8 @@ class InvoiceService
     ): array {
         $this->auth->requireRole('admin');
 
-        $order = $this->requireEntity(
-            $this->order->findById($orderId),
-            'Order not found'
-        );
+        $order = $this->order->findById($orderId);
+        $this->requireEntity($order, 'Order not found');
 
         if ($this->invoice->findByOrder($orderId)) {
             Response::error('Invoice already exists for this order', 409);
@@ -183,7 +171,8 @@ class InvoiceService
     ): array {
         $this->auth->requireRole('admin');
 
-        $this->requireEntity($this->invoice->findById($id), 'Invoice not found');
+        $invoice = $this->invoice->findById($id);
+        $this->requireEntity($invoice, 'Invoice not found');
 
         $this->invoice->updateStatus($id, $status);
 
@@ -200,7 +189,8 @@ class InvoiceService
     {
         $this->auth->requireRole('admin');
 
-        $this->requireEntity($this->invoice->findById($id), 'Invoice not found');
+        $invoice = $this->invoice->findById($id);
+        $this->requireEntity($invoice, 'Invoice not found');
 
         return $this->invoice->delete($id);
     }

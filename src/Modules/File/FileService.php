@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Modules\File;
 
 use App\Modules\Auth\Auth;
+use App\Modules\BaseService;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
-use App\Modules\ServiceAuthTrait;
 
 /**
  * FileService – business logika pro spravu souboru.
@@ -19,12 +19,9 @@ use App\Modules\ServiceAuthTrait;
  * Smazani:
  *   delete() → soft-delete DB zaznamu + fyzicke smazani souboru
  */
-class FileService
+class FileService extends BaseService
 {
-    use ServiceAuthTrait;
-
     private FileRepository $files;
-    private Auth $auth;
 
     /** Povolene MIME typy (whitelist) */
     private const ALLOWED_MIME = [
@@ -47,11 +44,6 @@ class FileService
     {
         $this->files = new FileRepository($db, $franchiseCode);
         $this->auth  = $auth;
-    }
-
-    protected function getAuth(): Auth
-    {
-        return $this->auth;
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────
@@ -88,7 +80,8 @@ class FileService
     {
         $this->auth->require();
         $file = $this->files->findById($id, $projection);
-        return $this->requireEntity($file, 'File not found');
+        $this->requireEntity($file, 'File not found');
+        return $file;
     }
 
     /**
@@ -101,7 +94,8 @@ class FileService
     {
         $this->auth->require();
         $file     = $this->files->findById($id);
-        $fileData = $this->requireEntity($file, 'File not found');
+        $this->requireEntity($file, 'File not found');
+        $fileData = $file;
 
         $absPath = $this->root() . '/' . ltrim($fileData['path'], '/');
         if (!file_exists($absPath)) {

@@ -4,17 +4,14 @@ declare(strict_types=1);
 
 namespace App\Modules\Address;
 
-use App\Modules\ServiceAuthTrait;
+use App\Modules\BaseService;
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
 
-class AddressService
+class AddressService extends BaseService
 {
-    use ServiceAuthTrait;
-
     private AddressRepository $address;
-    private Auth $auth;
 
     /**
      * Inicializuje AddressService.
@@ -27,11 +24,6 @@ class AddressService
     {
         $this->address = new AddressRepository($db, $franchiseCode);
         $this->auth    = $auth;
-    }
-
-    protected function getAuth(): Auth
-    {
-        return $this->auth;
     }
 
     /**
@@ -69,10 +61,8 @@ class AddressService
     {
         $this->auth->require();
 
-        $address = $this->requireEntity(
-            $this->address->findById($id, $projection),
-            'Address not found',
-        );
+        $address = $this->address->findById($id, $projection);
+        $this->requireEntity($address, 'Address not found');
 
         return $address;
     }
@@ -127,10 +117,8 @@ class AddressService
     {
         $this->auth->require();
 
-        $address = $this->requireEntity(
-            $this->address->findById($id),
-            'Address not found'
-        );
+        $address = $this->address->findById($id);
+        $this->requireEntity($address, 'Address not found');
 
         $set        = [];
         $textFields = [
@@ -177,10 +165,8 @@ class AddressService
     {
         $this->auth->require();
 
-        $address = $this->requireEntity(
-            $this->address->findById($id),
-            'Address not found'
-        );
+        $address = $this->address->findById($id);
+        $this->requireEntity($address, 'Address not found');
 
         $isDefault = (int) ($input['is_default'] ?? 0);
         if ($isDefault) {
@@ -213,7 +199,8 @@ class AddressService
     {
         $this->auth->require();
 
-        $address = $this->requireEntity($this->address->findById($id), 'Address not found');
+        $address = $this->address->findById($id);
+        $this->requireEntity($address, 'Address not found');
 
         return $this->address->delete($id);
     }

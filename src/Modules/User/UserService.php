@@ -5,18 +5,15 @@ declare(strict_types=1);
 namespace App\Modules\User;
 
 use App\Modules\Auth\Auth;
+use App\Modules\BaseService;
 use App\Modules\Database\Database;
 use App\Modules\Role\RoleRepository;
 use App\Modules\Router\Response;
-use App\Modules\ServiceAuthTrait;
 
-class UserService
+class UserService extends BaseService
 {
-    use ServiceAuthTrait;
-
     private UserRepository $user;
     private RoleRepository $role;
-    private Auth $auth;
 
     /**
      * Konstruktor tridy UserService.
@@ -30,11 +27,6 @@ class UserService
         $this->user = new UserRepository($db, $franchiseCode);
         $this->role = new RoleRepository($db, $franchiseCode);
         $this->auth = $auth;
-    }
-
-    protected function getAuth(): Auth
-    {
-        return $this->auth;
     }
 
     /**
@@ -87,10 +79,8 @@ class UserService
             Response::forbidden();
         }
 
-        $user = $this->requireEntity(
-            $this->user->findById($id, $projection),
-            'User not found'
-        );
+        $user = $this->user->findById($id, $projection);
+        $this->requireEntity($user, 'User not found');
 
         return $user;
     }
@@ -154,7 +144,8 @@ class UserService
             Response::forbidden();
         }
 
-        $this->requireEntity($this->user->findById($id), 'User not found');
+        $user = $this->user->findById($id);
+        $this->requireEntity($user, 'User not found');
 
         $set        = [];
         $textFields = ['first_name', 'last_name', 'phone'];
@@ -201,7 +192,8 @@ class UserService
             Response::forbidden();
         }
 
-        $this->requireEntity($this->user->findById($id), 'User not found');
+        $user = $this->user->findById($id);
+        $this->requireEntity($user, 'User not found');
 
         $set = [
             'first_name' => $input['first_name'],
@@ -236,7 +228,8 @@ class UserService
     {
         $this->auth->requireRole('admin');
 
-        $this->requireEntity($this->user->findById($id), 'User not found');
+        $user = $this->user->findById($id);
+        $this->requireEntity($user, 'User not found');
 
         return $this->user->delete($id);
     }

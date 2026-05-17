@@ -6,23 +6,20 @@ namespace App\Modules\Order;
 
 use App\Modules\Address\AddressRepository;
 use App\Modules\Auth\Auth;
+use App\Modules\BaseService;
 use App\Modules\Database\Database;
 use App\Modules\Product\ProductRepository;
 use App\Modules\Role\RoleRepository;
 use App\Modules\Router\Response;
-use App\Modules\ServiceAuthTrait;
 use App\Modules\User\UserRepository;
 
-class OrderService
+class OrderService extends BaseService
 {
-    use ServiceAuthTrait;
-
     private OrderRepository   $order;
     private UserRepository    $user;
     private AddressRepository $address;
     private ProductRepository $product;
     private RoleRepository    $role;
-    private Auth $auth;
 
     /**
      * Konstruktor tridy OrderService.
@@ -39,11 +36,6 @@ class OrderService
         $this->product = new ProductRepository($db, $franchiseCode);
         $this->role    = new RoleRepository($db, $franchiseCode);
         $this->auth    = $auth;
-    }
-
-    protected function getAuth(): Auth
-    {
-        return $this->auth;
     }
 
     /**
@@ -96,10 +88,8 @@ class OrderService
     {
         $this->auth->require();
 
-        $order = $this->requireEntity(
-            $this->order->findById($id, $projection),
-            'Order not found'
-        );
+        $order = $this->order->findById($id, $projection);
+        $this->requireEntity($order, 'Order not found');
         if (!$this->auth->hasRole('admin') && (int) $order['user_id'] !== $this->auth->id()) {
             Response::forbidden();
         }
@@ -307,7 +297,8 @@ class OrderService
     ): array {
         $this->auth->requireRole('admin');
 
-        $this->requireEntity($this->order->findById($id), 'Order not found');
+        $order = $this->order->findById($id);
+        $this->requireEntity($order, 'Order not found');
 
         return $this->order->updateStatus($id, $status, $projection);
     }
@@ -322,7 +313,8 @@ class OrderService
     {
         $this->auth->requireRole('admin');
 
-        $this->requireEntity($this->order->findById($id), 'Order not found');
+        $order = $this->order->findById($id);
+        $this->requireEntity($order, 'Order not found');
 
         return $this->order->delete($id);
     }
