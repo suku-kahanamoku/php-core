@@ -19,7 +19,9 @@ class Response
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode(
             $data,
-            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRESERVE_ZERO_FRACTION
+            JSON_UNESCAPED_UNICODE
+                | JSON_UNESCAPED_SLASHES
+                | JSON_PRESERVE_ZERO_FRACTION
         );
         exit;
     }
@@ -36,21 +38,19 @@ class Response
         mixed $data = null,
         string $message = 'OK',
         int $status = 200,
+        ?array $meta = null,
     ): never {
-        self::json([
+        $payload = [
             'success' => true,
             'message' => $message,
             'data'    => $data,
-        ], $status);
+        ];
+        if ($meta !== null) {
+            $payload['meta'] = $meta;
+        }
+        self::json($payload, $status);
     }
 
-    /**
-     * Odesle odpoved 201 Created.
-     *
-     * @param  mixed  $data
-     * @param  string $message
-     * @return never
-     */
     /**
      * Odesle HTML odpoved a ukonci pozadavek.
      *
@@ -169,13 +169,7 @@ class Response
             'skip'       => (($data['page'] ?? 1) - 1) * ($data['limit'] ?? 20),
         ];
 
-        // Vrať s items v data a metadata v meta
-        self::json([
-            'success' => true,
-            'message' => 'OK',
-            'data'    => $items,
-            'meta'    => $meta,
-        ]);
+        self::success($items, 'OK', 200, $meta);
     }
 
     /**
