@@ -19,7 +19,7 @@ class UserService
     private Auth $auth;
 
     /**
-     * UserService constructor.
+     * Konstruktor tridy UserService.
      *
      * @param Database $db
      * @param string   $franchiseCode

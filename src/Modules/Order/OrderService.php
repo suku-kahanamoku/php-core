@@ -25,7 +25,7 @@ class OrderService
     private Auth $auth;
 
     /**
-     * OrderService constructor.
+     * Konstruktor tridy OrderService.
      *
      * @param Database $db
      * @param string   $franchiseCode
@@ -269,7 +269,7 @@ class OrderService
             return null;
         }
 
-        // Normalise country: "cs" (locale code) → "CZ" (ISO 3166)
+        // Normalizace zeme: "cs" (locale kod) → "CZ" (ISO 3166)
         $rawCountry = $addr['state'] ?? $addr['country'] ?? 'CZ';
         $country = is_string($rawCountry) ? strtoupper($rawCountry) : 'CZ';
         if ($country === 'CS') {

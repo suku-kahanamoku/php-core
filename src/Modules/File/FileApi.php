@@ -11,7 +11,7 @@ use App\Modules\Router\Response;
 use App\Modules\Router\Router;
 
 /**
- * FileApi – HTTP vrstva pro spravU souboru.
+ * FileApi – HTTP vrstva pro spravu souboru.
  *
  * Routy:
  *   GET    /files              → list()      admin
@@ -36,7 +36,7 @@ class FileApi
     public function registerRoutes(Router $router): void
     {
         $router->get('/',                 [$this, 'list']);
-        $router->get('/upload',           [$this, 'methodNotAllowed']); // guard against GET /upload
+        $router->get('/upload',           [$this, 'methodNotAllowed']); // ochrana pred GET /upload
         $router->get('/:id/download',     [$this, 'download']);
         $router->get('/:id/preview',      [$this, 'preview']);
         $router->get('/:id',              [$this, 'get']);

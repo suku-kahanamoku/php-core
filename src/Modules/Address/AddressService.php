@@ -101,7 +101,7 @@ class AddressService
 
         $isDefault = (int) ($input['is_default'] ?? 0);
 
-        // If setting as default, clear other defaults of same type first
+        // Pri nastaveni jako vychozi vycisti ostatni vychozi adresy stejneho typu
         if ($isDefault) {
             $this->address->clearDefault($userId, $input['type'] ?? 'billing');
         }

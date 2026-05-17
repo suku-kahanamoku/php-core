@@ -10,7 +10,7 @@ use App\Modules\Router\Response;
 use App\Modules\ServiceAuthTrait;
 
 /**
- * FileService – business logika pro spravU souboru.
+ * FileService – business logika pro spravu souboru.
  *
  * Upload flow:
  *   1. upload()  → ulozi soubor do /temp/{code}/{uuid}.{ext}, vytvori DB zaznam s temp_token

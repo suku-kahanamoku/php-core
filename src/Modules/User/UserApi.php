@@ -16,7 +16,7 @@ class UserApi
     private UserService $service;
 
     /**
-     * UserApi constructor.
+     * Konstruktor tridy UserApi.
      *
      * @param Database $db
      * @param string   $franchiseCode

@@ -16,7 +16,7 @@ class CategoryService
     private Auth $auth;
 
     /**
-     * CategoryService constructor.
+     * Konstruktor tridy CategoryService.
      *
      * @param Database $db
      * @param string   $franchiseCode

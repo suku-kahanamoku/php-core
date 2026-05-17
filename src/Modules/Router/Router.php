@@ -87,7 +87,7 @@ class Router
      */
     public function middleware(callable $middleware): self
     {
-        // Applied to the last registered route
+        // Prida se k posledni zaregistrovane route
         $lastKey = array_key_last($this->compiledRoutes);
         if ($lastKey !== null) {
             $this->compiledRoutes[$lastKey]['middleware'][] = $middleware;
@@ -109,7 +109,7 @@ class Router
 
     private function addRoute(string $method, string $path, callable $handler): self
     {
-        // Convert :param to named regex groups
+        // Preved :param na pojmenovane regex skupiny
         $pattern = preg_replace('/\/:([a-zA-Z_][a-zA-Z0-9_]*)/', '/(?P<$1>[^/]+)', $path);
         $pattern = '#^' . $pattern . '$#';
 
@@ -121,13 +121,13 @@ class Router
             'middleware' => [],
         ];
 
-        // Store for listing
+        // Uloz pro prehled dostupnych rout
         $this->routes[$method][$path] = $handler;
 
         return $this;
     }
 
-    // ─── Dispatch ──────────────────────────────────────────────────────────────
+    // ─── Zpracovani ──────────────────────────────────────────────────────────────────
 
     /**
      * Zpracuje prichozi HTTP pozadavek a zavola odpovidajici handler.
@@ -141,7 +141,7 @@ class Router
         $method = $request->method;
         $uri    = $request->uri;
 
-        // Handle CORS preflight
+        // Zpracuj CORS preflight pozadavek
         if ($method === 'OPTIONS') {
             http_response_code(204);
             exit;
@@ -156,10 +156,10 @@ class Router
                 continue;
             }
 
-            // Extract named params
+            // Extrahuj pojmenovane parametry
             $params = array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY);
 
-            // Run global then route middleware
+            // Spust globalni a pak routovaci middleware
             $allMiddleware = array_merge($this->globalMiddleware, $route['middleware']);
             foreach ($allMiddleware as $mw) {
                 $mw($request);
@@ -169,7 +169,7 @@ class Router
             return;
         }
 
-        // Check if path exists with different method → 405
+        // Zkontroluj, zda cesta existuje s jinou metodou → 405
         foreach ($this->compiledRoutes as $route) {
             if (preg_match($route['pattern'], $uri)) {
                 Response::error('Method Not Allowed', 405);

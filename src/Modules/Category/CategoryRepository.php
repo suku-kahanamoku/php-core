@@ -9,12 +9,12 @@ use App\Modules\Database\Database;
 use App\Utils\Projection;
 
 /**
- * Category – DB entity layer.
+ * Category – DB vrstva entity.
  */
 class CategoryRepository extends BaseRepository
 {
     /**
-     * CategoryRepository constructor.
+     * Konstruktor tridy CategoryRepository.
      *
      * @param Database $db
      * @param string   $franchiseCode
@@ -68,7 +68,7 @@ class CategoryRepository extends BaseRepository
         $where  = ['c.franchise_code = ?'];
         $params = [$this->code];
 
-        // Extract 'deleted' from filter (default 0 = active only).
+        // Extrahuj 'deleted' z filtru (vychozi 0 = pouze aktivni).
         $filterArr  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
         $deletedVal = isset($filterArr['deleted']) ? (int) $filterArr['deleted'] : 0;
         unset($filterArr['deleted']);

@@ -15,7 +15,7 @@ class InvoiceApi
     private InvoiceService $service;
 
     /**
-     * InvoiceApi constructor.
+     * Konstruktor tridy InvoiceApi.
      *
      * @param Database $db
      * @param string   $franchiseCode

@@ -9,12 +9,12 @@ use App\Modules\Database\Database;
 use App\Utils\Projection;
 
 /**
- * User – DB entity layer.
+ * User – DB vrstva entity.
  */
 class UserRepository extends BaseRepository
 {
     /**
-     * UserRepository constructor.
+     * Konstruktor tridy UserRepository.
      *
      * @param Database $db
      * @param string   $franchiseCode
@@ -37,7 +37,7 @@ class UserRepository extends BaseRepository
     }
 
     /**
-     * Paginated list with optional filters.
+     * Strankovany seznam s volitelnymi filtry.
      *
      * @param  int         $page
      * @param  int         $limit
@@ -79,7 +79,7 @@ class UserRepository extends BaseRepository
         $where  = ['u.franchise_code = ?'];
         $params = [$this->code];
 
-        // Extract 'deleted' from filter (default 0 = active only).
+        // Extrahuj 'deleted' z filtru (vychozi 0 = pouze aktivni).
         $filterArr  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
         $deletedVal = isset($filterArr['deleted']) ? (int) $filterArr['deleted'] : 0;
         unset($filterArr['deleted']);
@@ -98,7 +98,7 @@ class UserRepository extends BaseRepository
         $sys         = $this->sys;
         $baseSelect  = $this->buildSelect($proj);
 
-        // JOIN role when projection requires it OR filter references role.* columns.
+        // JOIN role kdyz projekce vyzaduje nebo filtr odkazuje na sloupce role.*.
         $decodedFilter  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
         $needsRoleFilter = !empty(array_filter(
             array_keys($decodedFilter),
@@ -139,7 +139,7 @@ class UserRepository extends BaseRepository
     }
 
     /**
-     * Find single user by ID.
+     * Najde jednoho uzivatele dle ID.
      *
      * @param  int        $id
      * @param  array|null $projection
@@ -193,7 +193,7 @@ class UserRepository extends BaseRepository
     }
 
     /**
-     * Check if email is taken.
+     * Overi, zda je email jiz pouzit.
      *
      * @param  string   $email
      * @param  int|null $excludeId

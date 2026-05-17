@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 /**
- * Parses the `filter` query parameter into a SQL WHERE fragment + bound params.
+ * Parsuje parametr filtru do SQL WHERE fragmentu + vazanych parametru.
  *
- * Accepted format – JSON object where each key is a column name:
+ * Prijimany format – JSON objekt kde kazdy klic je nazev sloupce:
  *   {"col": {"value": "foo"}}                             → col = ?
  *   {"col": {"value": "foo", "operator": "neq"}}          → col != ?
  *   {"price": {"value": 100, "operator": "gte"}}          → price >= ?
@@ -17,20 +17,20 @@ declare(strict_types=1);
  *   {"col":   {"operator": "null"}}                       → col IS NULL
  *   {"col":   {"operator": "notnull"}}                    → col IS NOT NULL
  *
- * Supported operators: eq, neq, lt, lte, gt, gte, range, regex, start, end, in, null, notnull
+ * Podporovane operatory: eq, neq, lt, lte, gt, gte, range, regex, start, end, in, null, notnull
  *
- * Column names are validated to prevent SQL injection. Simple columns must match
- * /^[a-zA-Z_][a-zA-Z0-9_]*$/. JSON sub-fields use dot-notation: "data.year"
- * is translated to JSON_UNQUOTE(JSON_EXTRACT(alias.data, '$.year')).
+ * Nazvy sloupcu jsou validovany kvuli prevenci SQL injection. Jednoduche sloupce musi odpovidat
+ * /^[a-zA-Z_][a-zA-Z0-9_]*$/. JSON podpole pouzivaji tecka-notaci: "data.year"
+ * je prelozeno na JSON_UNQUOTE(JSON_EXTRACT(alias.data, '$.year')).
  *
- * @param string   $filter    Raw query parameter (JSON string).
- * @param string   $prefix    Optional table alias (e.g. "u") prepended as "u.col".
- * @param string[] $jsonCols  List of column names whose dot-notation means JSON sub-field
- *                            (e.g. ["data"]). Any other "table.column" dot-notation is
- *                            treated as a direct alias.column reference (related table).
+ * @param string   $filter    Hodnota parametru (JSON retezec).
+ * @param string   $prefix    Volitelny alias tabulky (napr. "u") predrazeny jako "u.col".
+ * @param string[] $jsonCols  Seznam nazvu sloupcu, u nichz tecka-notace znamena JSON podpole
+ *                            (napr. ["data"]). Jina "tabulka.sloupec" notace je
+ *                            povazovana za primo alias.sloupec odkaz (cizi tabulka).
  * @return array{sql: string, params: array<mixed>}
- *   sql    – Ready-to-embed AND-joined SQL fragment (empty string when nothing parsed).
- *   params – Positional bound parameter values.
+ *   sql    – SQL fragment AND-spojenych podminek (prazdny retezec kdyz nic nenalezeno).
+ *   params – Pozicni hodnoty vazanych parametru.
  */
 function SQL_FILTER(string $filter, string $prefix = '', array $jsonCols = ['data']): array
 {
@@ -50,7 +50,7 @@ function SQL_FILTER(string $filter, string $prefix = '', array $jsonCols = ['dat
     $params     = [];
 
     foreach ($decoded as $col => $spec) {
-        // Support scalar shorthand: {"col": "val"} → implicit eq filter.
+        // Podpora zkracenych skalarov: {"col": "val"} → implicitni filtr eq.
         if (!is_array($spec)) {
             if ($spec === null || $spec === '') {
                 continue;
@@ -80,15 +80,15 @@ function SQL_FILTER(string $filter, string $prefix = '', array $jsonCols = ['dat
 }
 
 /**
- * Build a single WHERE condition for one column + spec pair.
+ * Sestavi jednu WHERE podmiku pro par sloupec + spec.
  *
  * @internal
- * @param string   $col       Bare column name (validated here).
+ * @param string   $col       Holy nazev sloupce (validace probiha zde).
  * @param array    $spec      {'value': mixed, 'operator': string}
- * @param string   $prefix    Table alias prefix for the main table.
- * @param string[] $jsonCols  Column names treated as JSON (dot = JSON_EXTRACT).
- *                            All other dot-notation is treated as tableAlias.column.
- * @return array{sql: string, params: array<mixed>}|null  null when invalid input.
+ * @param string   $prefix    Alias tabulky pro hlavni tabulku.
+ * @param string[] $jsonCols  Nazvy sloupcu povazovane za JSON (tecka = JSON_EXTRACT).
+ *                            Vsechna ostatni tecka-notace je povazovana za tableAlias.sloupec.
+ * @return array{sql: string, params: array<mixed>}|null  null pri neplatnem vstupu.
  */
 function _sql_filter_condition(
     string $col,
@@ -96,7 +96,7 @@ function _sql_filter_condition(
     string $prefix,
     array $jsonCols = ['data']
 ): ?array {
-    // dot-notation: "data.field" → JSON_EXTRACT  |  "category.syscode" → category.syscode
+        // tecka-notace: "data.field" → JSON_EXTRACT  |  "category.syscode" → category.syscode
     if (str_contains($col, '.')) {
         [$left, $right] = explode('.', $col, 2);
         if (
@@ -106,12 +106,12 @@ function _sql_filter_condition(
             return null;
         }
         if (in_array($left, $jsonCols, true)) {
-            // JSON sub-field: data.year → JSON_UNQUOTE(JSON_EXTRACT(p.data, '$.year'))
+            // JSON podpole: data.year → JSON_UNQUOTE(JSON_EXTRACT(p.data, '$.year'))
             $qualified = $prefix !== ''
                 ? "JSON_UNQUOTE(JSON_EXTRACT({$prefix}.{$left}, '\$.{$right}'))"
                 : "JSON_UNQUOTE(JSON_EXTRACT({$left}, '\$.{$right}'))";
         } else {
-            // Related table column: category.syscode → category.syscode
+            // Sloupec cizi tabulky: category.syscode → category.syscode
             $qualified = "{$left}.{$right}";
         }
     } else {
@@ -122,12 +122,12 @@ function _sql_filter_condition(
     }
 
     $rawOperator = $spec['operator'] ?? null;
-    // Frontend sends operator as {"value": "$regex"} object; accept both formats.
+    // Frontend posila operator jako {"value": "$regex"}; akceptujeme oba formaty.
     if (is_array($rawOperator)) {
         $rawOperator = $rawOperator['value'] ?? null;
     }
 
-    // ── MongoDB-style spec: {"$regex":"val","$options":"i"} or {"$eq":"val"} ──
+    // ── MongoDB-style spec: {"$regex":"val","$options":"i"} nebo {"$eq":"val"} ──
     $mongoKeys = array_filter(array_keys($spec), static fn($k) => str_starts_with((string) $k, '$'));
     if (!empty($mongoKeys)) {
         if (isset($spec['$regex'])) {
@@ -146,7 +146,7 @@ function _sql_filter_condition(
     }
 
     // ── Our format: {"value": ..., "operator": "regex"|"eq"|...} ─────────────
-    // Strip leading $ sign used by frontend convention (e.g. "$regex" → "regex").
+    // Odeber uvodni znak $ pouzivany frontendovou konvenci (napr. "$regex" → "regex").
     $operator  = strtolower(trim(ltrim((string) ($rawOperator ?? 'eq'), '$')));
     $value     = $spec['value'] ?? null;
 
@@ -154,17 +154,17 @@ function _sql_filter_condition(
 }
 
 /**
- * Map a validated SQL operator + value to a fragment + params.
+ * Preklada validovany SQL operator + hodnotu na fragment + parametry.
  *
  * @internal
- * @param string $col      Fully-qualified column (e.g. "u.created_at").
- * @param string $operator One of the supported operator names.
- * @param mixed  $value    Scalar, array (for range/in), or null (for null/notnull).
- * @return array{sql: string, params: array<mixed>}|null  null when operator/value invalid.
+ * @param string $col      Plne kvalifikovany sloupec (napr. "u.created_at").
+ * @param string $operator Jeden z podporovanych nazvu operatoru.
+ * @param mixed  $value    Skalar, pole (pro range/in) nebo null (pro null/notnull).
+ * @return array{sql: string, params: array<mixed>}|null  null pri neplatnem operatoru/hodnote.
  */
 function _sql_filter_operator(string $col, string $operator, mixed $value): ?array
 {
-    // ── Simple comparison operators ──────────────────────────────────────────
+    // ── Jednoduche porovnavaci operatory ──────────────────────────────────────────
     $comparison = match ($operator) {
         'eq'       => '=',
         'ne', 'neq' => '!=',
@@ -182,7 +182,7 @@ function _sql_filter_operator(string $col, string $operator, mixed $value): ?arr
         return ['sql' => "{$col} {$comparison} ?", 'params' => [$value]];
     }
 
-    // ── All other operators ──────────────────────────────────────────────────
+    // ── Vsechny ostatni operatory ──────────────────────────────────────────────────
     switch ($operator) {
         case 'range':
             if (!is_array($value) || count($value) !== 2) {

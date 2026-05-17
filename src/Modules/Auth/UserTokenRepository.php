@@ -11,7 +11,7 @@ class UserTokenRepository
     private Database $db;
 
     /**
-     * UserTokenRepository constructor.
+     * Konstruktor tridy UserTokenRepository.
      * 
      * @param Database $db
      */
@@ -21,7 +21,7 @@ class UserTokenRepository
     }
 
     /**
-     * Find user data by a valid, non-expired token for the given franchise.
+     * Najde data uzivatele podle platneho a nevyprseleho tokenu pro danou franchizu.
      *
      * @param string $token
      * @param string $franchiseCode
@@ -50,7 +50,7 @@ class UserTokenRepository
     }
 
     /**
-     * Persist a new token for the given user.
+     * Ulozi novy token pro daneho uzivatele.
      *
      * @param int $userId
      * @param string $token
@@ -67,10 +67,10 @@ class UserTokenRepository
     }
 
     /**
-     * Delete a token (logout).
+     * Smaze token (odhlaseni).
      *
      * @param string $token
-     * @return int  Number of deleted records (0 or 1)
+     * @return int  Pocet smazanych zaznamu (0 nebo 1)
      */
     public function delete(string $token): int
     {

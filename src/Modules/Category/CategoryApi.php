@@ -15,7 +15,7 @@ class CategoryApi
     private CategoryService $service;
 
     /**
-     * CategoryApi constructor.
+     * Konstruktor tridy CategoryApi.
      *
      * @param Database $db
      * @param string   $franchiseCode

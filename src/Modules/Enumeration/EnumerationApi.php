@@ -15,7 +15,7 @@ class EnumerationApi
     private EnumerationService $service;
 
     /**
-     * EnumerationApi constructor.
+     * Konstruktor tridy EnumerationApi.
      *
      * @param Database $db
      * @param string   $franchiseCode

@@ -105,7 +105,7 @@ class Database
      *
      * @param  string               $table  Nazev tabulky
      * @param  array<string, mixed> $data   Asociativni pole sloupec => hodnota
-     * @return int                          Last insert ID
+     * @return int  ID posledniho vlozeneho zaznamu
      */
     public function insert(string $table, array $data): int
     {
@@ -152,7 +152,7 @@ class Database
         return $stmt->rowCount();
     }
 
-    // Prevent cloning/unserialization
+    // Zabrankuje klonovani/deserializaci
     private function __clone() {}
     public function __wakeup(): never
     {

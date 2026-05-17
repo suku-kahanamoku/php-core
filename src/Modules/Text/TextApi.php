@@ -15,7 +15,7 @@ class TextApi
     private TextService $service;
 
     /**
-     * TextApi constructor.
+     * Konstruktor tridy TextApi.
      *
      * @param Database $db
      * @param string   $franchiseCode

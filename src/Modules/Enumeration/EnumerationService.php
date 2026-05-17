@@ -14,7 +14,7 @@ class EnumerationService
     private Auth $auth;
 
     /**
-     * EnumerationService constructor.
+     * Konstruktor tridy EnumerationService.
      *
      * @param Database $db
      * @param string   $franchiseCode
@@ -59,7 +59,7 @@ class EnumerationService
     }
 
     /**
-     * Vrati seznam vsech unikatnich typu ciselnikú. Verejne dostupne.
+     * Vrati seznam vsech unikatnich typu ciselniku. Verejne dostupne.
      *
      * @return list<string>
      */

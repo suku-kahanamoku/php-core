@@ -19,7 +19,7 @@ class InvoiceService
     private Auth $auth;
 
     /**
-     * InvoiceService constructor.
+     * Konstruktor tridy InvoiceService.
      *
      * @param Database $db
      * @param string   $franchiseCode

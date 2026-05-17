@@ -14,7 +14,7 @@ class TextService
     private Auth $auth;
 
     /**
-     * TextService constructor.
+     * Konstruktor tridy TextService.
      *
      * @param Database $db
      * @param string   $franchiseCode

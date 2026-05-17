@@ -18,7 +18,7 @@ class AuthService
     private Auth                $auth;
 
     /**
-     * AuthService constructor.
+     * Konstruktor tridy AuthService.
      *
      * @param Database $db
      * @param string $franchiseCode
@@ -33,7 +33,7 @@ class AuthService
     }
 
     /**
-     * Prihlasí uzivatele.
+     * Prihlasi uzivatele.
      *
      * @param  string $email
      * @param  string $password
@@ -106,7 +106,7 @@ class AuthService
     }
 
     /**
-     * Registrace nového uživatele.
+     * Registrace noveho uzivatele.
      *
      * @param string $firstName
      * @param string $lastName

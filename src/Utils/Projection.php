@@ -5,52 +5,52 @@ declare(strict_types=1);
 namespace App\Utils;
 
 /**
- * Projection – controls which columns are returned by repository queries.
+ * Projection – rizeni toho, ktere sloupce vracejí repozitare.
  *
- * Rules
- * -----
- *   null             → no projection set; return ALL columns (backward-compatible)
- *   []               → empty; return system columns only
- *   ['col']          → system cols + col
- *   ['rel_id']       → FK column only, no JOIN
- *   ['rel']          → JOIN relation, return all its columns
- *   ['rel.col']      → JOIN relation, return only that column
- *   ['json.key']     → JSON column + filter to only that sub-key (if 'json' is in OWN, not REL)
+ * Pravidla
+ * --------
+ *   null             → projekce neni nastavena; vrat VSECHNY sloupce (zpetna kompatibilita)
+ *   []               → prazdna; vrat jen systemove sloupce
+ *   ['col']          → systemove sloupce + col
+ *   ['rel_id']       → jen FK sloupec, bez JOINu
+ *   ['rel']          → JOIN relace, vrat vsechny jeji sloupce
+ *   ['rel.col']      → JOIN relace, vrat jen tento sloupec
+ *   ['json.key']     → JSON sloupec + filtrovat jen tento podklic (pokud je 'json' v OWN, ne REL)
  *
- * Usage in a repository
- * ---------------------
+ * Pouziti v repozitari
+ * --------------------
  *   private const SYS = ['id', 'created_at', 'updated_at'];
- *   private const OWN = ['name', 'email', 'role_id', ...];  // excl. SYS, excl. password
- *   private const REL = ['role'];                            // known relation names
+ *   private const OWN = ['name', 'email', 'role_id', ...];  // bez SYS, bez password
+ *   private const REL = ['role'];                            // znama jmena relaci
  *
  *   $proj = new Projection($projection);
  *
- *   // 1. Get own columns to SELECT
+ *   // 1. Ziskej vlastni sloupce pro SELECT
  *   $ownCols = $proj->getOwnCols(self::OWN, self::REL);
  *
- *   // 2. Whether to add a JOIN (false for JSON columns)
+ *   // 2. Zda pridat JOIN (false pro JSON sloupce)
  *   if ($proj->needsJoin('role')) { ... }
  *
- *   // 3. Which relation columns to SELECT (null=skip, []=all, [...]=specific)
+ *   // 3. Ktere sloupce relace SELECTovat (null=preskoc, []=vsechny, [...]=specificke)
  *   $relCols = $proj->getRelationCols('role');
  *
- *   // 4. Filter result row (JSON column sub-keys are filtered automatically)
+ *   // 4. Filtruj radek vysledku (podklice JSON sloupcu jsou filtrovany automaticky)
  *   $row = $proj->apply($row, self::SYS, ['role' => ['role', 'role_id']]);
  */
 class Projection
 {
-    /** Own-table columns explicitly requested (no dot). */
+    /** Vlastni sloupce tabulky explicitne pozadovane (bez tecky). */
     private array $ownCols = [];
 
     /**
-     * Dot-notation entries split by prefix.
-     * For relations: ['user' => ['first_name', 'email']]
-     * For JSON cols: ['data' => ['quality', 'volume']]
+     * Zaznamy s teckovym zapisem rozdelene dle prefixu.
+     * Pro relace: ['user' => ['first_name', 'email']]
+     * Pro JSON sloupce: ['data' => ['quality', 'volume']]
      */
     private array $dotRels = [];
 
     /**
-     * @param array<string>|null $fields  null = all (no restriction); [] = system only; [...] = specified.
+     * @param array<string>|null $fields  null = vsechny (bez omezeni); [] = jen systemove; [...] = specificke.
      */
     public function __construct(private readonly ?array $fields = null)
     {
@@ -69,7 +69,7 @@ class Projection
     }
 
     /**
-     * true → no projection supplied → return everything.
+     * true → projekce neni nastavena → vrat vse.
      *
      * @return bool
      */
@@ -79,7 +79,7 @@ class Projection
     }
 
     /**
-     * true → projection is explicitly [] → system columns only.
+     * true → projekce je explicitne [] → jen systemove sloupce.
      *
      * @return bool
      */
@@ -89,14 +89,14 @@ class Projection
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // SQL helpers
+    // SQL pomocnici
     // ─────────────────────────────────────────────────────────────────────
 
     /**
-     * Return which OWN table columns should be selected (system cols are added by the repo separately).
+     * Vrati ktere vlastni sloupce tabulky maji byt selectovany (systemove sloupce prida repozitar samostatne).
      *
-     * @param string[] $all       All selectable own columns (no system cols, no password, etc.)
-     * @param string[] $relNames  Known logical relation names ('role', 'user', …)
+     * @param string[] $all       Vsechny selektovatelne vlastni sloupce (bez systemovych, bez hesla atd.)
+     * @param string[] $relNames  Znama logicka jmena relaci ('role', 'user', ...)
      * @return string[]
      */
     public function getOwnCols(array $all, array $relNames = []): array
@@ -113,7 +113,7 @@ class Projection
 
         foreach ($this->ownCols as $col) {
             if (in_array($col, $relNames, true)) {
-                // Relation name → include its FK (e.g. 'user' → 'user_id')
+                // Jmeno relace → zahr jeho FK (napr. 'user' → 'user_id')
                 $fk = "{$col}_id";
                 if (in_array($fk, $all, true) && !in_array($fk, $cols, true)) {
                     $cols[] = $fk;
@@ -123,16 +123,16 @@ class Projection
             }
         }
 
-        // For dot-notation entries, include FK for relations OR the column itself for JSON cols.
+        // Pro zaznamy s teckovym zapisem: zahr FK pro relace NEBO samotny sloupec pro JSON.
         foreach (array_keys($this->dotRels) as $rel) {
             if (in_array($rel, $relNames, true)) {
-                // Known relation: include its FK
+                // Znama relace: zahr jeho FK
                 $fk = "{$rel}_id";
                 if (in_array($fk, $all, true) && !in_array($fk, $cols, true)) {
                     $cols[] = $fk;
                 }
             } elseif (in_array($rel, $all, true) && !in_array($rel, $cols, true)) {
-                // JSON column (dot-notation sub-field): include the column itself
+                // JSON sloupec (podpole s teckovym zapisem): zahr samotny sloupec
                 $cols[] = $rel;
             }
         }
@@ -141,12 +141,12 @@ class Projection
     }
 
     /**
-     * Whether a named relation should be JOINed/fetched.
-     * Returns false for JSON columns (those are OWN columns, not relations).
+     * Urcuje zda ma byt pojmenovana relace JOINovana.
+     * Vrati false pro JSON sloupce (ty jsou OWN sloupce, nikoli relace).
      *
      * @param  string   $name       Logicky nazev relace (napr. 'role', 'user')
-     * @param  string[] $relNames   Known relation names — if provided, dot-notation prefix
-     *                              matching an OWN column (not a relation) returns false.
+     * @param  string[] $relNames   Znama jmena relaci — pokud jsou zadana, prefix teckoveho zapisu
+     *                              odpovidajici OWN sloupci (nikoli relaci) vraci false.
      * @return bool
      */
     public function needsJoin(string $name, array $relNames = []): bool
@@ -163,8 +163,8 @@ class Projection
             return false;
         }
 
-        // If caller supplied known relation names and the dot-notation prefix is NOT among them,
-        // it is a JSON column — no JOIN needed.
+        // Pokud volajici zadal znama jmena relaci a prefix teckoveho zapisu NENI mezi nimi,
+        // jde o JSON sloupec — JOIN neni potreba.
         if (
             $relNames !== [] &&
             isset($this->dotRels[$name]) &&
@@ -177,12 +177,12 @@ class Projection
     }
 
     /**
-     * Returns the requested sub-field names for a JSON column accessed via dot-notation.
-     * Returns null  → column not accessed via dot-notation (include fully or not at all).
-     * Returns []    → all sub-keys requested (col was listed without dot-notation).
-     * Returns [...] → only these specific sub-keys.
+     * Vrati pozadovana jmena podpoli JSON sloupce pristupovaneho pres teckovy zapis.
+     * Vrati null  → sloupec neni pristupovan pres teckovy zapis (zahr plne nebo vubec).
+     * Vrati []    → pozadovany vsechny podklice (sloupec byl uveden bez teckoveho zapisu).
+     * Vrati [...] → jen tyto specificke podklice.
      *
-     * @param  string $col  Column name (e.g. 'data')
+     * @param  string $col  Nazev sloupce (napr. 'data')
      * @return string[]|null
      */
     public function getDotSubfields(string $col): ?array
@@ -194,12 +194,12 @@ class Projection
     }
 
     /**
-     * Which columns of the relation to SELECT.
+     * Ktere sloupce relace SELECTovat.
      *
      * @param  string       $name  Logicky nazev relace
-     * @return null          → relation not needed (don't JOIN)
-     * @return array{}       → all columns
-     * @return string[]      → specific column names
+     * @return null          → relace neni potreba (neprovadej JOIN)
+     * @return array{}       → vsechny sloupce
+     * @return string[]      → specificka jmena sloupcu
      */
     public function getRelationCols(string $name): ?array
     {
@@ -207,48 +207,48 @@ class Projection
             return null;
         }
 
-        // Plain relation name ('user') → all columns
+        // Jednoduche jmeno relace ('user') → vsechny sloupce
         if ($this->isAll() || in_array($name, $this->ownCols, true)) {
             return [];
         }
 
-        // Dot-notation only
+        // Jen teckovy zapis
         return $this->dotRels[$name] ?? [];
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // Post-fetch filter + nesting
+    // Filtrovani a vnoreni po nacteni
     // ─────────────────────────────────────────────────────────────────────
 
     /**
-     * Filter a fetched row according to the projection and nest relation columns into sub-objects.
+     * Filtruje nacteny radek dle projekce a vnori sloupce relaci do podobjektu.
      *
-     * @param array    $row       The raw row from the database.
-     * @param string[] $sys       System columns that are always kept.
-     * @param array    $relMap    Relation map. Two formats are supported:
+     * @param array    $row       Surovy radek z databaze.
+     * @param string[] $sys       Systemove sloupce, ktere jsou vzdy zachovany.
+     * @param array    $relMap    Mapa relaci. Jsou podporovany dva formaty:
      *
-     *   Old format (flat, no nesting):
+     *   Stary format (ploche, bez vnoreni):
      *     ['categories' => ['category_ids', 'category_names']]
      *
-     *   New format (nested sub-object):
+     *   Novy format (vnoreny podobjekt):
      *     ['user' => [
-     *         'fk'   => 'user_id',                              // FK stays at root
-     *         'nest' => ['first_name', 'last_name', 'email'],   // flat list OR
-     *                   ['name' => 'role_name', 'id' => 'role_id'], // assoc: outputKey => rowKey
+     *         'fk'   => 'user_id',                              // FK zustava v koreni
+     *         'nest' => ['first_name', 'last_name', 'email'],   // plany seznam NEBO
+     *                   ['name' => 'role_name', 'id' => 'role_id'], // assoc: vystupniKlic => radkovyKlic
      *     ]]
      *
-     *   New format always produces a nested sub-object, e.g.:
+     *   Novy format vzdy vytvari vnoreny podobjekt, napr.:
      *     { "user_id": 5, "user": { "first_name": "Jan", ... } }
      */
     public function apply(array $row, array $sys, array $relMap = []): array
     {
         if ($this->isAll()) {
-            // No filtering – just apply nesting for new-format relations.
+            // Bez filtrovani – jen aplikuj vnoreni pro relace noveho formatu.
             return $this->nestRelations($row, $relMap);
         }
 
-        // Collect row-keys that belong to relations (FK excluded from allRelKeys so it can
-        // still be requested as a plain own-column).
+        // Shromazdi radkove klice patrici relacim (FK je vyloucen z allRelKeys, aby mohl
+        // byt pozadovan jako bezny vlastni sloupec).
         $allRelKeys = [];
         foreach ($relMap as $def) {
             if (is_array($def) && isset($def['nest'])) {
@@ -271,13 +271,13 @@ class Projection
                 if (isset($relMap[$col])) {
                     $def = $relMap[$col];
                     if (is_array($def) && isset($def['nest'])) {
-                        // New format: whole relation requested → keep FK + all nest row-keys.
+                        // Novy format: cela relace pozadovana → zachovej FK + vsechny nest radkove klice.
                         if (isset($def['fk'])) {
                             $keep[] = $def['fk'];
                         }
                         array_push($keep, ...array_values($def['nest']));
                     } else {
-                        // Old format.
+                        // Stary format.
                         array_push($keep, ...array_values($def));
                     }
                 } elseif (!in_array($col, $allRelKeys, true)) {
@@ -287,35 +287,35 @@ class Projection
 
             foreach ($this->dotRels as $rel => $reqCols) {
                 if (!isset($relMap[$rel])) {
-                    // JSON column accessed via dot-notation — include it so apply() can filter sub-keys.
+                    // JSON sloupec pristupovany pres teckovy zapis — zahr ho, aby apply() mohl filtrovat podklice.
                     $keep[] = $rel;
                     continue;
                 }
                 $def = $relMap[$rel];
                 if (is_array($def) && isset($def['nest'])) {
-                    // New format: always keep FK, then resolve each requested column.
+                    // Novy format: vzdy zachovej FK, pak resolvi kazdy pozadovany sloupec.
                     if (isset($def['fk'])) {
                         $keep[] = $def['fk'];
                     }
                     foreach ($reqCols as $c) {
-                        // 1. Assoc nest: 'outputKey' => 'rowKey'
+                        // 1. Asociativni nest: 'vystupniKlic' => 'radkovyKlic'
                         if (isset($def['nest'][$c])) {
                             $keep[] = $def['nest'][$c];
                             continue;
                         }
-                        // 2. Flat: col appears as a nest value
+                        // 2. Plany seznam: sloupec je uvedeny jako nest hodnota
                         if (in_array($c, array_values($def['nest']), true)) {
                             $keep[] = $c;
                             continue;
                         }
-                        // 3. Aliased as {rel}_{col}
+                        // 3. Alias jako {rel}_{col}
                         $aliased = "{$rel}_{$c}";
                         if (in_array($aliased, array_values($def['nest']), true)) {
                             $keep[] = $aliased;
                         }
                     }
                 } else {
-                    // Old format.
+                    // Stary format.
                     $available = $def;
                     foreach ($reqCols as $c) {
                         if (isset($available[$c])) {
@@ -337,7 +337,7 @@ class Projection
 
         $filtered = array_intersect_key($row, array_flip(array_unique($keep)));
 
-        // Filter sub-keys of JSON columns accessed via dot-notation.
+        // Filtruj podklice JSON sloupcu pristupovanych pres teckovy zapis.
         foreach ($this->dotRels as $rel => $reqCols) {
             if (
                 !isset($relMap[$rel]) &&
@@ -356,25 +356,25 @@ class Projection
     }
 
     /**
-     * Move new-format relation columns from flat row into a nested sub-object.
-     * Old-format relations (flat array) are left untouched.
+     * Presune sloupce relaci noveho formatu z planeho radku do vnoreneho podobjektu.
+     * Relace stareho formatu (plany seznam) zustavaji beze zmeny.
      */
     private function nestRelations(array $row, array $relMap): array
     {
         foreach ($relMap as $rel => $def) {
             if (!is_array($def) || !isset($def['nest'])) {
-                continue; // Old format – no nesting.
+                continue; // Stary format – bez vnoreni.
             }
             $nested = [];
             $fk     = $def['fk'] ?? null;
             foreach ($def['nest'] as $outKey => $rowKey) {
                 if (is_int($outKey)) {
-                    $outKey = $rowKey; // Flat list: use row-key as output key.
+                    $outKey = $rowKey; // Plany seznam: pouzij radkovy klic jako vystupni klic.
                 }
                 if (array_key_exists($rowKey, $row)) {
                     $nested[$outKey] = $row[$rowKey];
                     if ($rowKey !== $fk) {
-                        unset($row[$rowKey]); // Remove from root (FK stays at root).
+                        unset($row[$rowKey]); // Odeber z korene (FK zustava v koreni).
                     }
                 }
             }

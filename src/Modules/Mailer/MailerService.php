@@ -23,7 +23,7 @@ class MailerService
      * Odesle HTML email jednomu nebo vice prijemcum.
      *
      * Pokud je $to pole, odesle kazde adrese samostatny email (prijemci
-     * se navzajem nevidí). Pokud chcete skupinovy email (vsichni vidi
+     * se navzajem nevidi). Pokud chcete skupinovy email (vsichni vidi
      * na ostatni), predejte adresy jako jeden retezec oddeleny carkou.
      *
      * @param  string|string[]      $to           Prijemce nebo seznam prijemcu

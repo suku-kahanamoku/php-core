@@ -9,12 +9,12 @@ use App\Modules\Database\Database;
 use App\Utils\Projection;
 
 /**
- * Invoice – DB entity layer.
+ * Invoice – DB vrstva entity.
  */
 class InvoiceRepository extends BaseRepository
 {
     /**
-     * InvoiceRepository constructor.
+     * Konstruktor tridy InvoiceRepository.
      *
      * @param Database $db
      * @param string   $franchiseCode
@@ -97,7 +97,7 @@ class InvoiceRepository extends BaseRepository
             $params[] = $userId;
         }
 
-        // Extract 'deleted' from filter (default 0 = active only).
+        // Extrahuj 'deleted' z filtru (vychozi 0 = pouze aktivni).
         $filterArr  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
         $deletedVal = isset($filterArr['deleted']) ? (int) $filterArr['deleted'] : 0;
         unset($filterArr['deleted']);
@@ -116,7 +116,7 @@ class InvoiceRepository extends BaseRepository
         $sys        = $this->sys;
         $baseSelect = $this->buildSelect($proj);
 
-        // Auto-JOIN user when filter references user.* columns or projection needs it.
+        // Auto-JOIN user kdyz filtr obsahuje user.* sloupce nebo projekce to vyzaduje.
         $decodedFilter  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
         $needsUserFilter = !empty(array_filter(
             array_keys($decodedFilter),

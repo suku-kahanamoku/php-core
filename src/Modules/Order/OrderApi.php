@@ -15,7 +15,7 @@ class OrderApi
     private OrderService $service;
 
     /**
-     * OrderApi constructor.
+     * Konstruktor tridy OrderApi.
      *
      * @param Database $db
      * @param string   $franchiseCode

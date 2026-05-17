@@ -11,13 +11,13 @@ use App\Modules\Router\Response;
 class Auth
 {
     private const TOKEN_BYTES    = 32;
-    private const TOKEN_LIFETIME = 86400; // 24 hours default
+    private const TOKEN_LIFETIME = 86400; // vychozi doba platnosti: 24 hodin
 
     private UserTokenRepository $userToken;
     private ?array    $currentUser = null;
 
     /**
-     * Auth constructor.
+     * Konstruktor tridy Auth.
      *
      * @param Database $db
      */

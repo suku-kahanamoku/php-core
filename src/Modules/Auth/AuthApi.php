@@ -14,7 +14,7 @@ class AuthApi
     private AuthService $service;
 
     /**
-     * AuthApi constructor.
+     * Konstruktor tridy AuthApi.
      *
      * @param Database $db
      * @param string   $franchiseCode

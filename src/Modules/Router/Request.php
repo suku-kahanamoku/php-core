@@ -26,10 +26,10 @@ class Request
     }
 
     /**
-     * Resolve and validate the franchise code from the HTTP Host header.
-     * Allowed codes are defined in FRANCHISE_CODES env var (comma-separated).
-     * Aborts with 403 if the resolved code is not in the allowed list.
-     * Called statically from Auth (which has no Request instance).
+     * Zjisti a overi franchise kod z HTTP hlavicky Host.
+     * Povolene kody jsou definovany v env promenne FRANCHISE_CODES (oddelene carkou).
+     * Ukonci pozadavek s 403 pokud zjisteny kod neni v povolene liste.
+     * Volano staticky z Auth (kde neni dostupna instance Request).
      */
     public static function resolveCode(): string
     {
@@ -63,7 +63,7 @@ class Request
         $uri  = $_SERVER['REQUEST_URI'] ?? '/';
         $path = parse_url($uri, PHP_URL_PATH) ?: '/';
 
-        // Strip the script's base directory so the app works in a subdirectory
+        // Odstran zakladni adresar skriptu, aby aplikace fungovala v podadresari
         $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
         if ($scriptDir !== '' && str_starts_with($path, $scriptDir)) {
             $path = substr($path, strlen($scriptDir));
@@ -145,13 +145,13 @@ class Request
     }
 
     /**
-     * Parse the `projection` query/body parameter into an array.
+     * Parsuje parametr `projection` z query/body do pole.
      *
-     * - No parameter present → null  (all columns)
-     * - Empty string / empty array  → []    (system columns only)
-     * - 'field1,field2'             → ['field1', 'field2']
-     * - ['field1', 'field2']        → ['field1', 'field2']
-     * - '["field1","field2"]'       → ['field1', 'field2']  (JSON array string)
+     * - Parametr neni pritomen     → null  (vsechny sloupce)
+     * - Prazdny retezec / pole     → []    (pouze systemove sloupce)
+     * - 'field1,field2'            → ['field1', 'field2']
+     * - ['field1', 'field2']       → ['field1', 'field2']
+     * - '["field1","field2"]'      → ['field1', 'field2']  (JSON pole jako retezec)
      *
      * @return array<string>|null
      */
@@ -173,7 +173,7 @@ class Request
             );
         }
 
-        // Try to decode JSON array string: ["field1","field2",...]
+        // Pokus o dekodovani JSON pole jako retezec: ["field1","field2",...]
         if (is_string($raw) && str_starts_with(ltrim($raw), '[')) {
             $decoded = json_decode($raw, true);
             if (is_array($decoded)) {
@@ -192,13 +192,13 @@ class Request
     }
 
     /**
-     * Parse the `factory` query/body parameter.
+     * Parsuje parametr `factory` z query/body.
      *
      * Format: {"url": "/wine/${name}--$${id}", "slug": "${name}-${id}"}
-     * - `${field}` is replaced by the value of `field` from each row
-     * - `$${field}` is replaced by literal `$` + value (escaped dollar)
+     * - `${field}` je nahrazeno hodnotou pole `field` z kazdeho zaznamu
+     * - `$${field}` je nahrazeno literalnim `$` + hodnotou pole `field`
      *
-     * @return array<string, string>|null  Map of generated field name → template string, or null if not provided
+     * @return array<string, string>|null  Mapa nazvu generovaneho pole => sablona, nebo null pokud neni zadano
      */
     public function factory(): ?array
     {

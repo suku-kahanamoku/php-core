@@ -9,12 +9,12 @@ use App\Modules\Database\Database;
 use App\Utils\Projection;
 
 /**
- * Enumeration (codebook) – DB entity layer.
+ * Enumeration (ciselniky) – DB vrstva entity.
  */
 class EnumerationRepository extends BaseRepository
 {
     /**
-     * EnumerationRepository constructor.
+     * Konstruktor tridy EnumerationRepository.
      *
      * @param Database $db
      * @param string   $franchiseCode
@@ -70,7 +70,7 @@ class EnumerationRepository extends BaseRepository
         $where  = ['e.franchise_code = ?'];
         $params = [$this->code];
 
-        // Extract 'deleted' from filter (default 0 = show active only; pass deleted:1 for trash).
+        // Extrahuj 'deleted' z filtru (vychozi 0 = jen aktivni; deleted:1 pro kos).
         $filterArr  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
         $deletedVal = isset($filterArr['deleted']) ? (int) $filterArr['deleted'] : 0;
         unset($filterArr['deleted']);

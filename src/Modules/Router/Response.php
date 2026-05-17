@@ -215,7 +215,7 @@ class Response
             $gen  = [];
 
             foreach ($factory as $key => $template) {
-                // First replace $${ (escaped dollar) then ${ (plain interpolation)
+                // Nejprve nahrad $${ (escapovany dolar), pak ${ (interpolace)
                 $result = preg_replace_callback(
                     '/\$\$\{([^}]+)\}/',
                     fn($m) => '$' . ($flat[$m[1]] ?? ''),
@@ -253,7 +253,7 @@ class Response
                 $result += self::flattenForFactory($value, $fullKey);
             } else {
                 $result[$fullKey] = (string) ($value ?? '');
-                // Also register short key without prefix for convenience
+                // Registruj tez zkraceny klic bez prefixu pro pohodli
                 if ($prefix !== '') {
                     $result[$key] ??= (string) ($value ?? '');
                 }

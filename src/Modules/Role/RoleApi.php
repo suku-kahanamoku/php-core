@@ -15,7 +15,7 @@ class RoleApi
     private RoleService $service;
 
     /**
-     * RoleApi constructor.
+     * Konstruktor tridy RoleApi.
      *
      * @param Database $db
      * @param string   $franchiseCode

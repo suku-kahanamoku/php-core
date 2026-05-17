@@ -16,7 +16,7 @@ class RoleService
     private Auth $auth;
 
     /**
-     * RoleService constructor.
+     * Konstruktor tridy RoleService.
      *
      * @param Database $db
      * @param string   $franchiseCode

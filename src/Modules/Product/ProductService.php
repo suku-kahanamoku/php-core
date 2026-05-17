@@ -14,7 +14,7 @@ class ProductService
     private Auth $auth;
 
     /**
-     * ProductService constructor.
+     * Konstruktor tridy ProductService.
      *
      * @param Database $db
      * @param string   $franchiseCode
@@ -122,7 +122,7 @@ class ProductService
 
     /**
      * Aktualizuje existujici produkt (castecna aktualizace). Vyzaduje roli admin.
-     * Pole data jsou mergována s existujicimi; null data pole maze.
+     * Pole data jsou mergovana s existujicimi; null data pole maze.
      *
      * @param  int                  $id
      * @param  array<string, mixed> $input  Libovolna podmnozina sloupcu produktu + category_ids, data

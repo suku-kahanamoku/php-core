@@ -9,12 +9,12 @@ use App\Modules\Database\Database;
 use App\Utils\Projection;
 
 /**
- * Address – DB entity layer.
+ * Address – DB vrstva entity.
  */
 class AddressRepository extends BaseRepository
 {
     /**
-     * AddressRepository constructor.
+     * Konstruktor tridy AddressRepository.
      *
      * @param Database $db
      * @param string   $franchiseCode
@@ -64,7 +64,7 @@ class AddressRepository extends BaseRepository
         $where  = ['a.franchise_code = ?'];
         $params = [$this->code];
 
-        // Extract 'deleted' from filter (default 0 = active only).
+        // Extrahuj 'deleted' z filtru (vychozi 0 = pouze aktivni).
         $filterArr  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
         $deletedVal = isset($filterArr['deleted']) ? (int) $filterArr['deleted'] : 0;
         unset($filterArr['deleted']);

@@ -9,12 +9,12 @@ use App\Modules\Database\Database;
 use App\Utils\Projection;
 
 /**
- * Product – DB entity layer.
+ * Product – DB vrstva entity.
  */
 class ProductRepository extends BaseRepository
 {
     /**
-     * ProductRepository constructor.
+     * Konstruktor tridy ProductRepository.
      *
      * @param Database $db
      * @param string   $franchiseCode
@@ -87,12 +87,12 @@ class ProductRepository extends BaseRepository
         $where  = ['p.franchise_code = ?'];
         $params = [$this->code];
 
-        // Extract 'deleted' from filter (default 0 = active only).
+        // Extrahuj 'deleted' z filtru (vychozi 0 = pouze aktivni).
         $filterArr  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
         $deletedVal = isset($filterArr['deleted']) ? (int) $filterArr['deleted'] : 0;
         unset($filterArr['deleted']);
 
-        // Computed columns (SELECT aliases) cannot be used in WHERE — extract them for HAVING.
+        // Vypoctene sloupce (SELECT aliasy) nelze pouzit v WHERE — extrahuj je pro HAVING.
         $computedCols  = ['price_with_vat', 'vat_rate'];
         $havingFilters = [];
         foreach ($computedCols as $col) {
@@ -106,8 +106,8 @@ class ProductRepository extends BaseRepository
         $where[]  = 'p.deleted = ?';
         $params[] = $deletedVal;
 
-        // Detect whether the filter references category.* columns (e.g. category.syscode).
-        // If so, we need to JOIN the category table so SQL_FILTER can resolve category.col.
+        // Zjisti, zda filtr odkazuje na sloupce category.* (napr. category.syscode).
+        // Pokud ano, potrebujeme JOIN tabulky category, aby SQL_FILTER mohl resolvovat category.col.
         $decodedFilter  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
         $needsCatFilter = !empty(array_filter(
             array_keys($decodedFilter),
@@ -116,7 +116,7 @@ class ProductRepository extends BaseRepository
 
         $needsCatJoin = $proj->needsJoin('categories') || $needsCatFilter;
 
-        // Build JOINs — no ? placeholders so param order stays simple.
+        // Sestav JOINy — bez znacky '?' aby zutal poradak parametru jednoduchy.
         $catJoin = $needsCatJoin
             ? 'LEFT JOIN product_category pc ON pc.product_id = p.id
                LEFT JOIN category ON category.id = pc.category_id AND category.deleted = 0'
@@ -131,7 +131,7 @@ class ProductRepository extends BaseRepository
             LIMIT 1
         ) vat ON TRUE";
 
-        // When joining category, restrict it to the same franchise to avoid cross-tenant leaks.
+        // Pri joinu category omezit na stejnou franchizu, aby se predchazelo cross-tenant uniku.
         if ($needsCatFilter) {
             $where[] = '(category.franchise_code = ? OR category.id IS NULL)';
             $params[] = $this->code;
@@ -145,7 +145,7 @@ class ProductRepository extends BaseRepository
 
         $whereStr = implode(' AND ', $where);
 
-        // Build HAVING for computed columns (SELECT aliases).
+        // Sestav HAVING pro vypoctene sloupce (SELECT aliasy).
         $havingStr    = '';
         $havingParams = [];
         if ($havingFilters) {

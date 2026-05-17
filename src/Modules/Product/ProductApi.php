@@ -15,7 +15,7 @@ class ProductApi
     private ProductService $service;
 
     /**
-     * ProductApi constructor.
+     * Konstruktor tridy ProductApi.
      *
      * @param Database $db
      * @param string   $franchiseCode
@@ -109,7 +109,7 @@ class ProductApi
             'variant'        => $request->get('variant'),
             'category_ids'   => $request->get('category_ids'),
         ];
-        // Include 'data' only when explicitly sent — prevents wiping existing data
+        // Zahrn 'data' pouze kdyz byla explicitne odeslana — zabrankuje prepisu existujicich dat
         if (array_key_exists('data', $request->body)) {
             $input['data'] = $request->get('data');
         }

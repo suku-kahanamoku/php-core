@@ -9,7 +9,7 @@ use App\Modules\Database\Database;
 use App\Utils\Projection;
 
 /**
- * File – DB entity layer.
+ * File – DB vrstva entity.
  */
 class FileRepository extends BaseRepository
 {

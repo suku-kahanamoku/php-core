@@ -9,12 +9,12 @@ use App\Modules\Database\Database;
 use App\Utils\Projection;
 
 /**
- * Text (CMS) – DB entity layer.
+ * Text (CMS) – DB vrstva entity.
  */
 class TextRepository extends BaseRepository
 {
     /**
-     * TextRepository constructor.
+     * Konstruktor tridy TextRepository.
      *
      * @param Database $db
      * @param string   $franchiseCode
@@ -76,7 +76,7 @@ class TextRepository extends BaseRepository
         $where  = ['tx.franchise_code = ?'];
         $params = [$this->code];
 
-        // Extract 'deleted' from filter (default 0 = active only).
+        // Extrahuj 'deleted' z filtru (vychozi 0 = pouze aktivni).
         $filterArr  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
         $deletedVal = isset($filterArr['deleted']) ? (int) $filterArr['deleted'] : 0;
         unset($filterArr['deleted']);

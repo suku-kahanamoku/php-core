@@ -9,13 +9,13 @@ use App\Modules\Database\Database;
 use App\Utils\Projection;
 
 /**
- * Role – DB entity layer.
- * Handles all direct database operations for the `role` table.
+ * Role – DB vrstva entity.
+ * Spravuje vsechny prime databazove operace pro tabulku `role`.
  */
 class RoleRepository extends BaseRepository
 {
     /**
-     * RoleRepository constructor.
+     * Konstruktor tridy RoleRepository.
      *
      * @param Database $db
      * @param string   $franchiseCode
@@ -29,7 +29,7 @@ class RoleRepository extends BaseRepository
     }
 
     /**
-     * Return all roles, optionally filtered and sorted.
+     * Vrati vsechny role, volitelne filtrovane a serazene.
      *
      * @param  int        $page
      * @param  int        $limit
@@ -67,7 +67,7 @@ class RoleRepository extends BaseRepository
         $where  = ['r.franchise_code = ?'];
         $params = [$this->code];
 
-        // Extract 'deleted' from filter (default 0 = active only).
+        // Extrahuj 'deleted' z filtru (vychozi 0 = pouze aktivni).
         $filterArr  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
         $deletedVal = isset($filterArr['deleted']) ? (int) $filterArr['deleted'] : 0;
         unset($filterArr['deleted']);
@@ -105,7 +105,7 @@ class RoleRepository extends BaseRepository
     }
 
     /**
-     * Insert a new role and return the created row.
+     * Vlozi novou roli a vrati vytvoreny zaznam.
      *
      * @param  array<string, mixed> $data
      * @param  array|null           $projection
@@ -128,7 +128,7 @@ class RoleRepository extends BaseRepository
     }
 
     /**
-     * Update fields on an existing role and return the updated row.
+     * Aktualizuje pole existujici role a vrati aktualizovany zaznam.
      *
      * @param  int                  $id
      * @param  array<string, mixed> $data
@@ -155,7 +155,7 @@ class RoleRepository extends BaseRepository
     }
 
     /**
-     * Hard-delete a role.
+     * Tvrde smaze roli.
      *
      * @param  int $id
      * @return int  Pocet smazanych radku (0 nebo 1)
@@ -171,7 +171,7 @@ class RoleRepository extends BaseRepository
     }
 
     /**
-     * Check if a name is already taken (excluding a specific ID).
+     * Overi, zda je nazev jiz obsazen (s vyjimkou konkretniho ID).
      *
      * @param  string   $name
      * @param  int|null $excludeId
