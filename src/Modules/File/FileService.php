@@ -95,18 +95,17 @@ class FileService extends BaseService
         $this->auth->require();
         $file     = $this->files->findById($id);
         $this->requireEntity($file, 'File not found');
-        $fileData = $file;
 
-        $absPath = $this->root() . '/' . ltrim($fileData['path'], '/');
+        $absPath = $this->root() . '/' . ltrim($file['path'], '/');
         if (!file_exists($absPath)) {
             Response::notFound('File not found on disk');
         }
 
         return [
             'path'      => $absPath,
-            'name'      => $fileData['name'],
-            'mime_type' => $fileData['mime_type'],
-            'file'      => $fileData,
+            'name'      => $file['name'],
+            'mime_type' => $file['mime_type'],
+            'file'      => $file,
         ];
     }
 
@@ -173,9 +172,7 @@ class FileService extends BaseService
         $this->auth->require();
 
         $file = $this->files->findByTempToken($tempToken);
-        if ($file === null) {
-            Response::notFound('Temp token not found or already committed');
-        }
+        $this->requireEntity($file, 'Temp token not found or already committed');
 
         $code    = $this->files->getCode();
         $tmpAbs  = $this->root() . '/' . ltrim($file['path'], '/');

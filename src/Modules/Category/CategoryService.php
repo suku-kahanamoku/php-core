@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace App\Modules\Category;
 
 use App\Modules\Auth\Auth;
+use App\Modules\BaseService;
 use App\Modules\Database\Database;
 use App\Modules\Product\ProductRepository;
 use App\Modules\Router\Response;
 
-class CategoryService
+class CategoryService extends BaseService
 {
     private CategoryRepository $category;
     private ProductRepository  $product;
-    private Auth $auth;
 
     /**
      * Konstruktor tridy CategoryService.
@@ -70,9 +70,7 @@ class CategoryService
     public function get(int $id, ?array $projection = null): array
     {
         $category = $this->category->findById($id, $projection);
-        if (!$category) {
-            Response::notFound('Category not found');
-        }
+        $this->requireEntity($category, 'Category not found');
 
         $category['products'] = $this->product->findByCategoryId($id);
         return $category;
@@ -114,9 +112,7 @@ class CategoryService
     {
         $this->auth->requireRole('admin');
 
-        if (!$this->category->findById($id)) {
-            Response::notFound('Category not found');
-        }
+        $this->requireEntity($this->category->findById($id), 'Category not found');
 
         $set = [];
         if (isset($input['name'])) {
@@ -157,9 +153,7 @@ class CategoryService
     ): array {
         $this->auth->requireRole('admin');
 
-        if (!$this->category->findById($id)) {
-            Response::notFound('Category not found');
-        }
+        $this->requireEntity($this->category->findById($id), 'Category not found');
 
         $parentId = ($input['parent_id'] ?? null);
         $parentId = ($parentId !== null && $parentId !== '') ? (int) $parentId : null;
@@ -186,9 +180,7 @@ class CategoryService
     {
         $this->auth->requireRole('admin');
 
-        if (!$this->category->findById($id)) {
-            Response::notFound('Category not found');
-        }
+        $this->requireEntity($this->category->findById($id), 'Category not found');
 
         if ($this->product->existsForCategory($id)) {
             Response::error('Category is in use by products', 409);

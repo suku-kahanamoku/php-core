@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Modules\Product;
 
 use App\Modules\Auth\Auth;
+use App\Modules\BaseService;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
 
-class ProductService
+class ProductService extends BaseService
 {
     private ProductRepository $product;
-    private Auth $auth;
 
     /**
      * Konstruktor tridy ProductService.
@@ -68,9 +68,7 @@ class ProductService
     public function get(int $id, ?array $projection = null): array
     {
         $product = $this->product->findById($id, $projection);
-        if (!$product) {
-            Response::notFound('Product not found');
-        }
+        $this->requireEntity($product, 'Product not found');
 
         return $product;
     }
@@ -133,9 +131,7 @@ class ProductService
     {
         $this->auth->requireRole('admin');
 
-        if (!$this->product->findById($id)) {
-            Response::notFound('Product not found');
-        }
+        $this->requireEntity($this->product->findById($id), 'Product not found');
 
         $set         = [];
         $textFields  = ['sku', 'name', 'description', 'kind', 'color', 'variant'];
@@ -198,9 +194,7 @@ class ProductService
     {
         $this->auth->requireRole('admin');
 
-        if (!$this->product->findById($id)) {
-            Response::notFound('Product not found');
-        }
+        $this->requireEntity($this->product->findById($id), 'Product not found');
 
         $name  = trim((string) ($input['name'] ?? ''));
         $sku   = !empty($input['sku'])
@@ -244,9 +238,7 @@ class ProductService
     {
         $this->auth->requireRole('admin');
 
-        if (!$this->product->findById($id)) {
-            Response::notFound('Product not found');
-        }
+        $this->requireEntity($this->product->findById($id), 'Product not found');
 
         return $this->product->delete($id);
     }

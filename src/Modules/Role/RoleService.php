@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace App\Modules\Role;
 
 use App\Modules\Auth\Auth;
+use App\Modules\BaseService;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
 use App\Modules\User\UserRepository;
 
-class RoleService
+class RoleService extends BaseService
 {
     private RoleRepository $role;
     private UserRepository  $user;
-    private Auth $auth;
 
     /**
      * Konstruktor tridy RoleService.
@@ -72,9 +72,7 @@ class RoleService
     public function get(int $id, ?array $projection = null): array
     {
         $role = $this->role->findById($id);
-        if (!$role) {
-            Response::notFound('Role not found');
-        }
+        $this->requireEntity($role, 'Role not found');
 
         $role['user_count'] = $this->user->countByRoleId($id);
         return $role;
@@ -133,9 +131,7 @@ class RoleService
         $this->auth->requireRole('admin');
 
         $existing = $this->role->findById($id);
-        if (!$existing) {
-            Response::notFound('Role not found');
-        }
+        $this->requireEntity($existing, 'Role not found');
 
         $set = [];
 
@@ -189,9 +185,7 @@ class RoleService
     ): array {
         $this->auth->requireRole('admin');
 
-        if (!$this->role->findById($id)) {
-            Response::notFound('Role not found');
-        }
+        $this->requireEntity($this->role->findById($id), 'Role not found');
 
         if ($this->role->nameExists($name, $id)) {
             Response::error('Role with this name already exists', 409);
@@ -218,9 +212,7 @@ class RoleService
         $this->auth->requireRole('admin');
 
         $role = $this->role->findById($id);
-        if (!$role) {
-            Response::notFound('Role not found');
-        }
+        $this->requireEntity($role, 'Role not found');
 
         $builtInRoles = ['admin', 'user'];
 

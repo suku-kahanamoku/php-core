@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Modules\Enumeration;
 
 use App\Modules\Auth\Auth;
+use App\Modules\BaseService;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
 
-class EnumerationService
+class EnumerationService extends BaseService
 {
     private EnumerationRepository $enum;
-    private Auth $auth;
 
     /**
      * Konstruktor tridy EnumerationService.
@@ -78,9 +78,7 @@ class EnumerationService
     public function get(int $id, ?array $projection = null): array
     {
         $item = $this->enum->findById($id, $projection);
-        if (!$item) {
-            Response::notFound('Enumeration not found');
-        }
+        $this->requireEntity($item, 'Enumeration not found');
         return $item;
     }
 
@@ -131,9 +129,7 @@ class EnumerationService
     {
         $this->auth->requireRole('admin');
 
-        if (!$this->enum->findById($id)) {
-            Response::notFound('Enumeration not found');
-        }
+        $this->requireEntity($this->enum->findById($id), 'Enumeration not found');
 
         $set        = [];
         $textFields = ['type', 'syscode', 'label', 'value'];
@@ -182,9 +178,7 @@ class EnumerationService
     ): array {
         $this->auth->requireRole('admin');
 
-        if (!$this->enum->findById($id)) {
-            Response::notFound('Enumeration not found');
-        }
+        $this->requireEntity($this->enum->findById($id), 'Enumeration not found');
 
         $this->enum->update($id, [
             'type'      => $type,
@@ -209,9 +203,7 @@ class EnumerationService
     {
         $this->auth->requireRole('admin');
 
-        if (!$this->enum->findById($id)) {
-            Response::notFound('Enumeration not found');
-        }
+        $this->requireEntity($this->enum->findById($id), 'Enumeration not found');
 
         return $this->enum->delete($id);
     }
