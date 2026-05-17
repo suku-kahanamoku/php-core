@@ -37,9 +37,6 @@ class TemplaterApi
 
         unset($data['template']);
 
-        http_response_code(200);
-        header('Content-Type: text/html; charset=utf-8');
-        echo $this->service->render($template, $data);
-        exit;
+        Response::html($this->service->render($template, $data));
     }
 }

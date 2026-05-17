@@ -51,6 +51,21 @@ class Response
      * @param  string $message
      * @return never
      */
+    /**
+     * Odesle HTML odpoved a ukonci pozadavek.
+     *
+     * @param  string $html    HTML obsah
+     * @param  int    $status  HTTP stavovy kod (vychozi 200)
+     * @return never
+     */
+    public static function html(string $html, int $status = 200): never
+    {
+        http_response_code($status);
+        header('Content-Type: text/html; charset=utf-8');
+        echo $html;
+        exit;
+    }
+
     public static function created(
         mixed $data = null,
         string $message = 'Created'
