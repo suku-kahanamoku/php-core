@@ -319,8 +319,7 @@ CREATE TABLE `invoice_file` (
 CREATE TABLE `file` (
     `id`             INT UNSIGNED   NOT NULL AUTO_INCREMENT,
     `franchise_code` VARCHAR(64)    NOT NULL DEFAULT 'default',
-    `temp_token`     VARCHAR(64)             DEFAULT NULL COMMENT 'UUID platny pred commitem, NULL po commitu',
-    `type`           VARCHAR(32)    NOT NULL COMMENT 'pripona: pdf, jpg, csv...',
+    `type`           VARCHAR(32)    NOT NULL COMMENT 'pripona: pdf, jpg, csv...',,
     `mime_type`      VARCHAR(100)   NOT NULL COMMENT 'application/pdf, image/jpeg...',
     `path`           VARCHAR(512)   NOT NULL COMMENT 'relativni cesta v /files/ po commitu',
     `name`           VARCHAR(255)   NOT NULL COMMENT 'puvodni nazev souboru',
@@ -333,7 +332,6 @@ CREATE TABLE `file` (
     `updated_at`     DATETIME                DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     `expires_at`     DATETIME                DEFAULT NULL COMMENT 'TTL pro tmp soubory, cron target',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_file_temp_token` (`temp_token`),
     KEY `idx_file_franchise`   (`franchise_code`),
     KEY `idx_file_entity`      (`entity_type`, `entity_id`),
     KEY `idx_file_deleted`     (`deleted`),

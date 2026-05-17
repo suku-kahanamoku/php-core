@@ -19,7 +19,6 @@ class FileRepository extends BaseRepository
         $this->table = 'file';
         $this->alias = 'f';
         $this->own   = [
-            'temp_token',
             'type',
             'mime_type',
             'path',
@@ -34,7 +33,7 @@ class FileRepository extends BaseRepository
     }
 
     /**
-     * Vrati strankovany seznam souboru (pouze commitnute – temp_token IS NULL).
+     * Vrati strankovany seznam souboru.
      *
      * @param  int        $page
      * @param  int        $limit
@@ -59,7 +58,7 @@ class FileRepository extends BaseRepository
         unset($filterArr['deleted']);
         $search = $filterArr['search'] ?? ($filter !== '' && !str_starts_with($filter, '{') ? $filter : '');
 
-        $where  = 'f.franchise_code = ? AND f.deleted = ? AND f.temp_token IS NULL';
+        $where  = 'f.franchise_code = ? AND f.deleted = ?';
         $params = [$this->code, $deletedVal];
 
         if ($search !== '') {
@@ -89,20 +88,6 @@ class FileRepository extends BaseRepository
         );
 
         return $this->resultList($items, $total, $page, $limit);
-    }
-
-    /**
-     * Najde zaznam dle temp_token (pred commitem).
-     *
-     * @param  string $token
-     * @return array<string, mixed>|null
-     */
-    public function findByTempToken(string $token): ?array
-    {
-        return $this->db->fetchOne(
-            'SELECT * FROM file WHERE temp_token = ? AND franchise_code = ? AND deleted = 0',
-            [$token, $this->code],
-        ) ?: null;
     }
 
     /**
