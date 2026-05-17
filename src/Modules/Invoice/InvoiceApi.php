@@ -73,8 +73,9 @@ class InvoiceApi
         $invoice = $this->service->create(
             $orderId,
             [
-                'due_at' => $request->get('due_at'),
-                'note'   => $request->get('note', ''),
+                'due_at'   => $request->get('due_at'),
+                'note'     => $request->get('note', ''),
+                'file_ids' => $request->get('file_ids'),
             ],
             $request->projection(),
         );
@@ -121,6 +122,28 @@ class InvoiceApi
     }
 
     /**
+     * PATCH /invoices/:id/files — Synchronizuje soubory faktury. Vyzaduje roli admin.
+     *
+     * @param Request $request  body: file_ids (array of ints)
+     * @param array{id: string} $params
+     * @return void
+     */
+    public function syncFiles(Request $request, array $params): void
+    {
+        VALIDATOR(['id' => $params['id'] ?? ''])
+            ->required('id')
+            ->numeric('id', 1)
+            ->validate();
+
+        $invoice = $this->service->syncFiles(
+            (int) $params['id'],
+            array_map('intval', (array) ($request->get('file_ids') ?? [])),
+            $request->projection(),
+        );
+        Response::success($invoice, 'Invoice files updated');
+    }
+
+    /**
      * Zaregistruje vsechny routy tohoto modulu do routeru.
      *
      * @param  Router $router
@@ -132,6 +155,7 @@ class InvoiceApi
         $router->post('/', [$this, 'create']);
         $router->get('/:id', [$this, 'get']);
         $router->patch('/:id/status', [$this, 'updateStatus']);
+        $router->patch('/:id/files', [$this, 'syncFiles']);
         $router->delete('/:id', [$this, 'delete']);
     }
 }

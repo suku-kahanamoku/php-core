@@ -149,10 +149,32 @@ class InvoiceService extends BaseService
             Response::error($e->getMessage(), 500);
         }
 
-        return $this->invoice->findById(
-            $invoiceId ?? 0,
-            $projection
-        ) ?? ['id' => $invoiceId ?? 0];
+        $invoiceId = $invoiceId ?? 0;
+
+        $fileIds = array_map('intval', (array) ($input['file_ids'] ?? []));
+        if ($fileIds) {
+            $this->invoice->syncFiles($invoiceId, $fileIds);
+        }
+
+        return $this->invoice->findById($invoiceId, $projection) ?? ['id' => $invoiceId];
+    }
+
+    /**
+     * Synchronizuje soubory faktury. Vyzaduje roli admin.
+     *
+     * @param  int        $id
+     * @param  list<int>  $fileIds
+     * @param  array|null $projection
+     * @return array<string, mixed>
+     */
+    public function syncFiles(int $id, array $fileIds, ?array $projection = null): array
+    {
+        $this->auth->requireRole('admin');
+
+        $this->requireEntity($this->invoice->findById($id), 'Invoice not found');
+        $this->invoice->syncFiles($id, $fileIds);
+
+        return $this->invoice->findById($id, $projection) ?? ['id' => $id];
     }
 
     /**

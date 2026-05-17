@@ -36,7 +36,7 @@ class ProductRepository extends BaseRepository
             'variant',
             'data',
         ];
-        $this->rel = ['categories'];
+        $this->rel = ['categories', 'files'];
     }
 
     /**
@@ -271,8 +271,25 @@ class ProductRepository extends BaseRepository
             $row['category_names'] = array_column($categoryRows, 'category_name');
         }
 
+        if ($proj->needsJoin('files')) {
+            $fileRows = $this->db->fetchAll(
+                'SELECT pf.file_id FROM product_file pf
+                 INNER JOIN file f ON f.id = pf.file_id AND f.deleted = 0
+                 WHERE pf.product_id = ?',
+                [$id],
+            );
+            $row['file_ids'] = array_map('intval', array_column($fileRows, 'file_id'));
+        }
+
         $vatSys = array_merge($sys, ['vat_rate', 'price_with_vat']);
-        return $proj->apply($row, $vatSys, ['categories' => ['category_ids', 'category_names']]);
+        return $proj->apply(
+            $row,
+            $vatSys,
+            [
+                'categories' => ['category_ids', 'category_names'],
+                'files' => ['file_ids']
+            ]
+        );
     }
 
     /**
@@ -290,6 +307,25 @@ class ProductRepository extends BaseRepository
             $this->db->insert('product_category', [
                 'product_id'  => $productId,
                 'category_id' => (int) $catId,
+            ]);
+        }
+    }
+
+    /**
+     * Synchronizuje soubory produktu — smaze stare a vlozi nove.
+     *
+     * @param  int        $productId
+     * @param  list<int>  $fileIds
+     * @return void
+     */
+    public function syncFiles(int $productId, array $fileIds): void
+    {
+        $this->db->delete('product_file', 'product_id = ?', [$productId]);
+
+        foreach ($fileIds as $fileId) {
+            $this->db->insert('product_file', [
+                'product_id' => $productId,
+                'file_id'    => (int) $fileId,
             ]);
         }
     }

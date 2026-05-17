@@ -45,7 +45,8 @@ class ProductService extends BaseService
     public function list(
         int $page = 1,
         int $limit = 20,
-        string $sort = '',        string $filter = '',
+        string $sort = '',
+        string $filter = '',
         ?array $projection = null,
     ): array {
         return $this->product->findAll(
@@ -91,6 +92,7 @@ class ProductService extends BaseService
             : $this->product->generateSku();
 
         $categoryIds = array_map('intval', (array) ($input['category_ids'] ?? []));
+        $fileIds     = array_map('intval', (array) ($input['file_ids'] ?? []));
 
         $created = $this->product->create([
             'sku'            => $sku,
@@ -113,6 +115,9 @@ class ProductService extends BaseService
         $id = $created['id'];
         if ($categoryIds) {
             $this->product->syncCategories($id, $categoryIds);
+        }
+        if ($fileIds) {
+            $this->product->syncFiles($id, $fileIds);
         }
 
         return $this->product->findById($id, $projection) ?? $created;
@@ -168,6 +173,16 @@ class ProductService extends BaseService
             );
         }
 
+        if (
+            array_key_exists('file_ids', $input) &&
+            is_array($input['file_ids'])
+        ) {
+            $this->product->syncFiles(
+                $id,
+                array_map('intval', $input['file_ids'])
+            );
+        }
+
         if (array_key_exists('data', $input)) {
             if (is_array($input['data']) && !empty($input['data'])) {
                 $existing = $this->product->findById($id);
@@ -203,6 +218,7 @@ class ProductService extends BaseService
         $price = $input['price'] ?? null;
 
         $categoryIds = array_map('intval', (array) ($input['category_ids'] ?? []));
+        $fileIds     = array_map('intval', (array) ($input['file_ids'] ?? []));
 
         $this->product->update($id, [
             'name'           => $name,
@@ -224,6 +240,7 @@ class ProductService extends BaseService
         ]);
 
         $this->product->syncCategories($id, $categoryIds);
+        $this->product->syncFiles($id, $fileIds);
 
         return $this->product->findById($id, $projection) ?? ['id' => $id];
     }

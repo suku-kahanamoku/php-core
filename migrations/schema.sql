@@ -7,9 +7,11 @@ SET foreign_key_checks = 0;
 
 -- ── Drop existing tables ───────────────────────────────────
 DROP TABLE IF EXISTS `invoice_item`;
+DROP TABLE IF EXISTS `invoice_file`;
 DROP TABLE IF EXISTS `invoice`;
 DROP TABLE IF EXISTS `order_item`;
 DROP TABLE IF EXISTS `order`;
+DROP TABLE IF EXISTS `product_file`;
 DROP TABLE IF EXISTS `product_category`;
 DROP TABLE IF EXISTS `product`;
 DROP TABLE IF EXISTS `category`;
@@ -178,6 +180,16 @@ CREATE TABLE `product_category` (
     CONSTRAINT `fk_pc_category` FOREIGN KEY (`category_id`) REFERENCES `category` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ── product_file (M:N pivot) ───────────────────────────────
+CREATE TABLE `product_file` (
+    `product_id` INT UNSIGNED NOT NULL,
+    `file_id`    INT UNSIGNED NOT NULL,
+    PRIMARY KEY (`product_id`, `file_id`),
+    KEY `idx_pf_file` (`file_id`),
+    CONSTRAINT `fk_pf_product` FOREIGN KEY (`product_id`) REFERENCES `product` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_pf_file`    FOREIGN KEY (`file_id`)    REFERENCES `file`    (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ── text (CMS content blocks) ─────────────────────────────
 CREATE TABLE `text` (
     `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -291,6 +303,16 @@ CREATE TABLE `invoice_item` (
     KEY `idx_ii_product` (`product_id`),
     CONSTRAINT `fk_ii_invoice` FOREIGN KEY (`invoice_id`) REFERENCES `invoice` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_ii_product` FOREIGN KEY (`product_id`) REFERENCES `product` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ── invoice_file (M:N pivot) ───────────────────────────────
+CREATE TABLE `invoice_file` (
+    `invoice_id` INT UNSIGNED NOT NULL,
+    `file_id`    INT UNSIGNED NOT NULL,
+    PRIMARY KEY (`invoice_id`, `file_id`),
+    KEY `idx_if_file` (`file_id`),
+    CONSTRAINT `fk_if_invoice` FOREIGN KEY (`invoice_id`) REFERENCES `invoice` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_if_file`    FOREIGN KEY (`file_id`)    REFERENCES `file`    (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── file ─────────────────────────────────────────────────

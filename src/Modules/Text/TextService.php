@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Modules\Text;
 
 use App\Modules\Auth\Auth;
+use App\Modules\BaseService;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
 
-class TextService
+class TextService extends BaseService
 {
     private TextRepository $text;
-    private Auth $auth;
 
     /**
      * Konstruktor tridy TextService.
@@ -210,5 +210,21 @@ class TextService
         }
 
         return $this->text->hardDelete($id);
+    }
+
+    /**
+     * Soft-smazani textu (oznaci jako smazany, ponecha v DB).
+     * Vyzaduje roli admin.
+     *
+     * @param  int $id
+     * @return int  Pocet ovlivnenych zaznamu (0 nebo 1)
+     */
+    public function remove(int $id): int
+    {
+        $this->auth->requireRole('admin');
+
+        $this->requireEntity($this->text->findById($id), 'Text not found');
+
+        return $this->text->softDelete($id);
     }
 }

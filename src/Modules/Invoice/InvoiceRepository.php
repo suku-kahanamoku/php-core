@@ -36,7 +36,7 @@ class InvoiceRepository extends BaseRepository
             'user_id',
             'billing_address_id',
         ];
-        $this->rel = ['user'];
+        $this->rel = ['user', 'files'];
     }
 
     /**
@@ -230,13 +230,26 @@ class InvoiceRepository extends BaseRepository
             [$id],
         );
 
+        if ($proj->needsJoin('files')) {
+            $fileRows = $this->db->fetchAll(
+                'SELECT inf.file_id FROM invoice_file inf
+                 INNER JOIN file f ON f.id = inf.file_id AND f.deleted = 0
+                 WHERE inf.invoice_id = ?',
+                [$id],
+            );
+            $invoice['file_ids'] = array_map(
+                'intval',
+                array_column($fileRows, 'file_id')
+            );
+        }
+
         return $proj->apply(
             $invoice,
             $sys,
             ['user' => [
                 'fk' => 'user_id',
                 'nest' => ['first_name', 'last_name', 'email']
-            ]]
+            ], 'files' => ['file_ids']]
         );
     }
 
@@ -288,8 +301,26 @@ class InvoiceRepository extends BaseRepository
      */
     public function createItem(array $data): int
     {
-        return $this->db->insert('invoice_item', array_merge($data, [
-        ]));
+        return $this->db->insert('invoice_item', array_merge($data, []));
+    }
+
+    /**
+     * Synchronizuje soubory faktury — smaze stare a vlozi nove.
+     *
+     * @param  int        $invoiceId
+     * @param  list<int>  $fileIds
+     * @return void
+     */
+    public function syncFiles(int $invoiceId, array $fileIds): void
+    {
+        $this->db->delete('invoice_file', 'invoice_id = ?', [$invoiceId]);
+
+        foreach ($fileIds as $fileId) {
+            $this->db->insert('invoice_file', [
+                'invoice_id' => $invoiceId,
+                'file_id'    => (int) $fileId,
+            ]);
+        }
     }
 
     /**
