@@ -118,7 +118,133 @@ if ($prodId) {
     assert_test('filter color returns result', ($r['data']['meta']['total'] ?? 0) >= 1, dump_on_fail($r));
 }
 
-// ── Update ────────────────────────────────────────────────────────────────────
+// ── Filter by category (JOIN path) ───────────────────────────────────────────
+
+section('Products – filter by category.syscode');
+if ($prodId && $prodCatId) {
+    // Nacti syscode kategorie ktera byla vytvorena
+    $r = request('GET', "{$base}/categories/{$prodCatId}", [], false);
+    $prodCatSyscode = $r['data']['data']['syscode'] ?? null;
+
+    if ($prodCatSyscode) {
+        $f = urlencode(json_encode(['category.syscode' => ['value' => $prodCatSyscode]]));
+        $r = request('GET', "{$base}/products?q={$f}", [], false);
+        assert_test('filter by category.syscode → 200', $r['status'] === 200, dump_on_fail($r));
+        assert_test('filter category.syscode returns ≥1 result', ($r['data']['meta']['total'] ?? 0) >= 1, dump_on_fail($r));
+        $foundIds = array_column($r['data']['data'] ?? [], 'id');
+        assert_test('filter category.syscode: our product is in results', in_array($prodId, $foundIds, true), dump_on_fail($r));
+    }
+}
+
+section('Products – filter by category.id');
+if ($prodId && $prodCatId) {
+    $f = urlencode(json_encode(['category.id' => ['value' => $prodCatId]]));
+    $r = request('GET', "{$base}/products?q={$f}", [], false);
+    assert_test('filter by category.id → 200', $r['status'] === 200, dump_on_fail($r));
+    assert_test('filter category.id returns ≥1 result', ($r['data']['meta']['total'] ?? 0) >= 1, dump_on_fail($r));
+    $foundIds = array_column($r['data']['data'] ?? [], 'id');
+    assert_test('filter category.id: our product is in results', in_array($prodId, $foundIds, true), dump_on_fail($r));
+}
+
+section('Products – filter by category.id (nonexistent → 0 results)');
+{
+    $f = urlencode(json_encode(['category.id' => ['value' => 999999]]));
+    $r = request('GET', "{$base}/products?q={$f}", [], false);
+    assert_test('filter by category.id nonexistent → 200', $r['status'] === 200, dump_on_fail($r));
+    assert_test('filter category.id nonexistent returns 0', ($r['data']['meta']['total'] ?? -1) === 0, dump_on_fail($r));
+}
+
+section('Products – filter by category.name');
+if ($prodId) {
+    // Nacti nazev kategorie
+    $r       = request('GET', "{$base}/categories/{$prodCatId}", [], false);
+    $catName = $r['data']['data']['name'] ?? null;
+
+    if ($catName) {
+        $f = urlencode(json_encode(['category.name' => ['value' => $catName]]));
+        $r = request('GET', "{$base}/products?q={$f}", [], false);
+        assert_test('filter by category.name → 200', $r['status'] === 200, dump_on_fail($r));
+        assert_test('filter category.name returns ≥1 result', ($r['data']['meta']['total'] ?? 0) >= 1, dump_on_fail($r));
+        $foundIds = array_column($r['data']['data'] ?? [], 'id');
+        assert_test('filter category.name: our product is in results', in_array($prodId, $foundIds, true), dump_on_fail($r));
+    }
+}
+
+section('Products – categories projection in list');
+if ($prodId && $prodCatId) {
+    $r = request('GET', "{$base}/products?projection=id,name,categories", [], false);
+    assert_test('GET /products?projection=categories → 200', $r['status'] === 200, dump_on_fail($r));
+
+    $items   = $r['data']['data'] ?? [];
+    $ourProd = null;
+    foreach ($items as $item) {
+        if ($item['id'] === $prodId) { $ourProd = $item; break; }
+    }
+
+    if ($ourProd) {
+        assert_test('list: categories field is array', is_array($ourProd['categories'] ?? null), json_encode($ourProd));
+        assert_test('list: category_ids field is array', is_array($ourProd['category_ids'] ?? null), json_encode($ourProd));
+        assert_test('list: categories count ≥ 1', count($ourProd['categories'] ?? []) >= 1, json_encode($ourProd));
+
+        $cat = $ourProd['categories'][0] ?? [];
+        assert_test('list: category has id', isset($cat['id']), json_encode($ourProd));
+        assert_test('list: category has syscode', array_key_exists('syscode', $cat), json_encode($ourProd));
+        assert_test('list: category has name', isset($cat['name']), json_encode($ourProd));
+        assert_test('list: category has position', isset($cat['position']), json_encode($ourProd));
+        assert_test('list: category_ids contains cat id', in_array($cat['id'], $ourProd['category_ids'], true), json_encode($ourProd));
+    }
+}
+
+section('Products – categories projection in getById');
+if ($prodId && $prodCatId) {
+    $r = request('GET', "{$base}/products/{$prodId}?projection=id,name,categories", [], false);
+    assert_test('GET /products/:id?projection=categories → 200', $r['status'] === 200, dump_on_fail($r));
+
+    $data = $r['data']['data'] ?? [];
+    assert_test('getById: categories field is array', is_array($data['categories'] ?? null), dump_on_fail($r));
+    assert_test('getById: category_ids field is array', is_array($data['category_ids'] ?? null), dump_on_fail($r));
+    assert_test('getById: categories count = 1', count($data['categories'] ?? []) === 1, dump_on_fail($r));
+
+    $cat = $data['categories'][0] ?? [];
+    assert_test('getById: category id matches', ($cat['id'] ?? null) === $prodCatId, dump_on_fail($r));
+    assert_test('getById: category has syscode', array_key_exists('syscode', $cat), dump_on_fail($r));
+    assert_test('getById: category_ids contains cat id', in_array($prodCatId, $data['category_ids'] ?? [], true), dump_on_fail($r));
+}
+
+section('Products – no categories when not in projection');
+if ($prodId) {
+    $r = request('GET', "{$base}/products/{$prodId}?projection=id,name,price", [], false);
+    assert_test('GET /products/:id without categories projection → 200', $r['status'] === 200, dump_on_fail($r));
+    $data = $r['data']['data'] ?? [];
+    assert_test('no categories field when not projected', !isset($data['categories']), dump_on_fail($r));
+    assert_test('no category_ids field when not projected', !isset($data['category_ids']), dump_on_fail($r));
+}
+
+section('Products – filter category + other filter combined');
+if ($prodId && $prodCatId) {
+    $f = urlencode(json_encode([
+        'category.id' => ['value' => $prodCatId],
+        'color'       => ['value' => 'white'],
+    ]));
+    $r = request('GET', "{$base}/products?q={$f}", [], false);
+    assert_test('combined filter category.id + color → 200', $r['status'] === 200, dump_on_fail($r));
+    // Produkt ma red color po PUT updatu
+    $foundIds = array_column($r['data']['data'] ?? [], 'id');
+    assert_test('combined filter: our product found', in_array($prodId, $foundIds, true), dump_on_fail($r));
+}
+
+section('Products – filter category.id + nonexistent color = 0 results');
+if ($prodCatId) {
+    $f = urlencode(json_encode([
+        'category.id' => ['value' => $prodCatId],
+        'color'       => ['value' => '__no_such_color__'],
+    ]));
+    $r = request('GET', "{$base}/products?q={$f}", [], false);
+    assert_test('combined filter category + impossible color → 200', $r['status'] === 200, dump_on_fail($r));
+    assert_test('combined impossible filter returns 0', ($r['data']['meta']['total'] ?? -1) === 0, dump_on_fail($r));
+}
+
+
 
 section('Products – update');
 if ($prodId) {
