@@ -182,17 +182,27 @@ class FileService extends BaseService
         if ($entityPrefix !== null) {
             $destDir .= '/' . $entityPrefix;
         }
+        // Add entity ID to path if provided
+        if ($entityId !== null && $entityPrefix !== null) {
+            $destDir .= '/' . $entityId;
+        }
         if (!is_dir($destDir) && !mkdir($destDir, 0755, true)) {
             Response::error('Could not create files directory', 500);
         }
 
-        $destFile = $entityPrefix !== null
+        // Filename: with prefix if no ID, without prefix if ID is provided
+        $destFile = ($entityId === null && $entityPrefix !== null)
             ? ($entityPrefix . '_' . $uuid . '.' . $ext)
             : ($uuid . '.' . $ext);
 
-        $destRel = 'files/' . $code . '/'
-            . ($entityPrefix !== null ? ($entityPrefix . '/') : '')
-            . $destFile;
+        $destRel = 'files/' . $code . '/';
+        if ($entityPrefix !== null) {
+            $destRel .= $entityPrefix . '/';
+        }
+        if ($entityId !== null && $entityPrefix !== null) {
+            $destRel .= $entityId . '/';
+        }
+        $destRel .= $destFile;
         $destAbs = $this->root() . '/' . $destRel;
 
         if (!rename($absTemp, $destAbs)) {
