@@ -54,8 +54,9 @@ function cleanup_test_data(): void
         $pdo->prepare('DELETE FROM category    WHERE name    LIKE ?')->execute([$prefix]);
         $pdo->prepare('DELETE FROM enumeration WHERE type    LIKE ?')->execute([$prefix]);
         $pdo->prepare('DELETE FROM text        WHERE syscode LIKE ?')->execute([$prefix]);
+        $pdo->prepare('DELETE FROM file        WHERE name    LIKE ?')->execute([$prefix]);
     } catch (\PDOException $e) {
-        echo "\033[33m  [cleanup] DB error: {$e->getMessage()}\033[0m\n";
+        echo "  [cleanup] DB error: {$e->getMessage()}\n";
     }
 }
 
@@ -99,17 +100,17 @@ function assert_test(string $name, bool $condition, string $detail = ''): void
 {
     global $passed, $failed;
     if ($condition) {
-        echo "\033[32m  ✓\033[0m {$name}\n";
+        echo "  ✓ {$name}\n";
         $passed++;
     } else {
-        echo "\033[31m  ✗\033[0m {$name}" . ($detail ? "  → {$detail}" : '') . "\n";
+        echo "  ✗ {$name}" . ($detail ? "  → {$detail}" : '') . "\n";
         $failed++;
     }
 }
 
 function section(string $title): void
 {
-    echo "\n\033[1;34m══ {$title} \033[0m\n";
+    echo "\n══ {$title}\n";
 }
 
 function dump_on_fail(array $res): string
@@ -121,13 +122,13 @@ function print_results(): void
 {
     global $passed, $failed;
     $total = $passed + $failed;
-    echo "\n\033[1m──────────────────────────────\033[0m\n";
-    echo "\033[1mVýsledky:\033[0m  ";
-    echo "\033[32m{$passed} passed\033[0m  ";
+    echo "\n──────────────────────────────\n";
+    echo "Výsledky:  ";
+    echo "{$passed} passed  ";
     if ($failed > 0) {
-        echo "\033[31m{$failed} failed\033[0m";
+        echo "{$failed} failed";
     } else {
-        echo "\033[32m0 failed\033[0m";
+        echo "0 failed";
     }
     echo "  /  {$total} total\n\n";
 }

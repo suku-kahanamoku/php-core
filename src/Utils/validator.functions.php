@@ -27,9 +27,12 @@ function VALIDATOR(array $data): object
         public function required(string|array $fields): static
         {
             foreach ((array) $fields as $field) {
-                $val = isset($this->data[$field])
-                    ? trim((string) $this->data[$field]) : '';
-                if ($val === '') {
+                $val = $this->data[$field] ?? null;
+                $empty = $val === null
+                    || $val === ''
+                    || (is_string($val) && trim($val) === '')
+                    || (is_array($val) && empty($val));
+                if ($empty) {
                     $this->errors[$field] = 'Required';
                 }
             }

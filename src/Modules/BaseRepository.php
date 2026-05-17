@@ -92,6 +92,19 @@ abstract class BaseRepository
      * @param  int                        $limit
      * @return array{items: list<array<string, mixed>>, total: int, page: int, limit: int, totalPages: int}
      */
+    /**
+     * Vrati franchise_code tohoto repozitare.
+     */
+    public function getCode(): string
+    {
+        return $this->code;
+    }
+
+    /**
+     * Vrati standardni pole strankovaci odpovedi.
+     *
+     * @param  list<array<string, mixed>> $items
+     */
     protected function paginationResult(
         array $items,
         int $total,

@@ -252,4 +252,32 @@ class Response
         }
         return $result;
     }
+
+    /**
+     * Streamuje soubor na vystup s Content-Disposition.
+     *
+     * @param  string            $path         Absolutni cesta k souboru na disku
+     * @param  string            $name         Puvodni nazev souboru
+     * @param  string            $mime         MIME typ
+     * @param  'attachment'|'inline' $disposition
+     * @return never
+     */
+    public static function stream(
+        string $path,
+        string $name,
+        string $mime,
+        string $disposition = 'attachment',
+    ): never {
+        $encodedName = rawurlencode(basename($name));
+        $size        = filesize($path);
+
+        header('Content-Type: ' . $mime);
+        header('Content-Disposition: ' . $disposition . '; filename="' . $encodedName . '"');
+        header('Content-Length: ' . $size);
+        header('Cache-Control: private, no-cache');
+        header('X-Content-Type-Options: nosniff');
+
+        readfile($path);
+        exit;
+    }
 }

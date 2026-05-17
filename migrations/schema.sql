@@ -14,6 +14,7 @@ DROP TABLE IF EXISTS `product_category`;
 DROP TABLE IF EXISTS `product`;
 DROP TABLE IF EXISTS `category`;
 DROP TABLE IF EXISTS `text`;
+DROP TABLE IF EXISTS `file`;
 DROP TABLE IF EXISTS `user_token`;
 DROP TABLE IF EXISTS `address`;
 DROP TABLE IF EXISTS `user`;
@@ -292,6 +293,34 @@ CREATE TABLE `invoice_item` (
     KEY `idx_ii_product` (`product_id`),
     CONSTRAINT `fk_ii_invoice` FOREIGN KEY (`invoice_id`) REFERENCES `invoice` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_ii_product` FOREIGN KEY (`product_id`) REFERENCES `product` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ── file ─────────────────────────────────────────────────
+CREATE TABLE `file` (
+    `id`             INT UNSIGNED   NOT NULL AUTO_INCREMENT,
+    `franchise_code` VARCHAR(64)    NOT NULL DEFAULT 'default',
+    `temp_token`     VARCHAR(64)             DEFAULT NULL COMMENT 'UUID platny pred commitem, NULL po commitu',
+    `type`           VARCHAR(32)    NOT NULL COMMENT 'pripona: pdf, jpg, csv...',
+    `mime_type`      VARCHAR(100)   NOT NULL COMMENT 'application/pdf, image/jpeg...',
+    `path`           VARCHAR(512)   NOT NULL COMMENT 'relativni cesta v /files/ po commitu',
+    `name`           VARCHAR(255)   NOT NULL COMMENT 'puvodni nazev souboru',
+    `size`           INT UNSIGNED   NOT NULL DEFAULT 0 COMMENT 'velikost v bytech',
+    `visibility`     ENUM('public','private') NOT NULL DEFAULT 'private',
+    `entity_type`    VARCHAR(64)             DEFAULT NULL COMMENT 'product, user, invoice...',
+    `entity_id`      INT UNSIGNED            DEFAULT NULL,
+    `created_by`     INT UNSIGNED            DEFAULT NULL,
+    `deleted`        TINYINT(1)     NOT NULL DEFAULT 0,
+    `created_at`     DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`     DATETIME                DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    `expires_at`     DATETIME                DEFAULT NULL COMMENT 'TTL pro tmp soubory, cron target',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_file_temp_token` (`temp_token`),
+    KEY `idx_file_franchise`   (`franchise_code`),
+    KEY `idx_file_entity`      (`entity_type`, `entity_id`),
+    KEY `idx_file_created_by`  (`created_by`),
+    KEY `idx_file_deleted`     (`deleted`),
+    KEY `idx_file_expires`     (`expires_at`),
+    CONSTRAINT `fk_file_user` FOREIGN KEY (`created_by`) REFERENCES `user` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET foreign_key_checks = 1;

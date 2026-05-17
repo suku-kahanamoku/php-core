@@ -17,9 +17,9 @@ $base       = rtrim($argv[1] ?? 'http://localhost/php/php-core/api', '/');
 $runnerMode = true;
 
 // ── Pre-test cleanup: remove any leftover test data ──────────────────────────
-echo "\033[1;33m[setup] Cleaning test data...\033[0m\n";
+echo "[setup] Cleaning test data...\n";
 cleanup_test_data();
-echo "\033[1;33m[setup] Done.\033[0m\n";
+echo "[setup] Done.\n";
 
 // ── Misc: 404 ────────────────────────────────────────────────────────────────
 
@@ -84,6 +84,8 @@ $tests = [
     "{$modulesDir}/Templater/tests/TemplaterApiTest.php",
     // Mailer
     "{$modulesDir}/Mailer/tests/MailerApiTest.php",
+    // File
+    "{$modulesDir}/File/tests/FileApiTest.php",
 ];
 
 foreach ($tests as $file) {
@@ -94,9 +96,9 @@ foreach ($tests as $file) {
 // ── Summary ───────────────────────────────────────────────────────────────────
 
 // Post-test cleanup: remove all test data created during this run
-echo "\n\033[1;33m[teardown] Cleaning test data...\033[0m\n";
+echo "\n[teardown] Cleaning test data...\n";
 cleanup_test_data();
-echo "\033[1;33m[teardown] Done.\033[0m\n";
+echo "[teardown] Done.\n";
 
 print_results();
 exit($failed > 0 ? 1 : 0);
