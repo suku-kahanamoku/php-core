@@ -221,8 +221,7 @@ class ProductRepository extends BaseRepository
      *   color: string|null,
      *   variant: string|null,
      *   data: array<string, mixed>|null,
-     *   category_ids?: list<int>,
-     *   category_names?: list<string>
+    *   category_ids?: list<int>
      * }|null
      */
     public function findById(int $id, ?array $projection = null): ?array
@@ -258,7 +257,7 @@ class ProductRepository extends BaseRepository
 
         if ($proj->needsJoin('categories')) {
             $categoryRows = $this->db->fetchAll(
-                'SELECT pc.category_id, c.name AS category_name
+                'SELECT pc.category_id
                  FROM product_category pc
                  LEFT JOIN category c ON c.id = pc.category_id AND c.deleted = 0
                  WHERE pc.product_id = ?',
@@ -268,7 +267,6 @@ class ProductRepository extends BaseRepository
                 'intval',
                 array_column($categoryRows, 'category_id')
             );
-            $row['category_names'] = array_column($categoryRows, 'category_name');
         }
 
         if ($proj->needsJoin('files')) {
@@ -286,7 +284,7 @@ class ProductRepository extends BaseRepository
             $row,
             $vatSys,
             [
-                'categories' => ['category_ids', 'category_names'],
+                'categories' => ['category_ids'],
                 'files' => ['file_ids']
             ]
         );

@@ -56,7 +56,6 @@ if ($modelProdId) {
     $r = request('GET', "{$base}/products/{$modelProdId}", [], false);
     assert_test('getById 200', $r['status'] === 200, dump_on_fail($r));
     assert_test('name matches', $r['data']['data']['name'] === 'Model Product', dump_on_fail($r));
-    assert_test('has category_names', isset($r['data']['data']['category_names']));
     assert_test('stock_quantity = 5', $r['data']['data']['stock_quantity'] === 5);
     assert_test('kind = dry', $r['data']['data']['kind'] === 'dry', dump_on_fail($r));
     assert_test('color = white', $r['data']['data']['color'] === 'white', dump_on_fail($r));

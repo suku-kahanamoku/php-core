@@ -900,7 +900,6 @@ GET /categories?sort=[{"position":1},{"name":1}]&filter={"parent_id":{"operator"
 {
   "id": 10,
   "category_ids": [3, 7],
-  "category_names": ["T-Shirts", "Sale"],
   "sku": "TSH-001",
   "name": "Classic Tee",
   "description": "100% cotton t-shirt",
@@ -929,7 +928,6 @@ GET /categories?sort=[{"position":1},{"name":1}]&filter={"parent_id":{"operator"
 | `variant`        | string or null | Project-specific attribute, e.g. variant variety            |
 | `data`           | object or null | Flexible JSON attributes — project-defined keys           |
 | `category_ids`   | integer[]      | IDs of all assigned categories (M:N)                      |
-| `category_names` | string[]       | Names of all assigned categories (GET `/:id` only)        |
 | `file_ids`       | integer[]      | IDs of attached files (M:N via `product_file`)            |
 
 #### `GET /products`

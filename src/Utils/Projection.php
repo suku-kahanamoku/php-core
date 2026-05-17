@@ -228,7 +228,7 @@ class Projection
      * @param array    $relMap    Mapa relaci. Jsou podporovany dva formaty:
      *
      *   Stary format (ploche, bez vnoreni):
-     *     ['categories' => ['category_ids', 'category_names']]
+    *     ['categories' => ['category_ids']]
      *
      *   Novy format (vnoreny podobjekt):
      *     ['user' => [
