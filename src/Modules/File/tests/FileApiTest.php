@@ -88,42 +88,46 @@ assert_test('Upload without auth → 401', $r['status'] === 401, dump_on_fail($r
 section('Files – POST /files/upload: valid text/plain');
 $r = upload_file($base, $tmpFile, 'text/plain', true);
 assert_test('Upload valid file → 201', $r['status'] === 201, dump_on_fail($r));
-assert_test('Response has temp_token', isset($r['data']['data']['temp_token']), dump_on_fail($r));
-assert_test('Response has id', isset($r['data']['data']['id']), dump_on_fail($r));
+assert_test('Response has path', isset($r['data']['data']['path']), dump_on_fail($r));
 
-$tempToken = $r['data']['data']['temp_token'] ?? null;
+$tempPath = $r['data']['data']['path'] ?? null;
 
-// ── POST /files/commit – missing temp_token ───────────────────────────────────
+// ── POST /files/commit – missing path ─────────────────────────────────────────
 
-section('Files – POST /files/commit: missing temp_token');
+section('Files – POST /files/commit: missing path');
 $r = request('POST', "{$base}/files/commit", ['name' => 'test_document.txt']);
-assert_test('Commit without temp_token → 422', $r['status'] === 422, dump_on_fail($r));
+assert_test('Commit without path → 422', $r['status'] === 422, dump_on_fail($r));
 
 // ── POST /files/commit – missing name ────────────────────────────────────────
 
 section('Files – POST /files/commit: missing name');
-$r = request('POST', "{$base}/files/commit", ['temp_token' => 'some-token']);
+$r = request('POST', "{$base}/files/commit", ['path' => 'temp/some/path.txt']);
 assert_test('Commit without name → 422', $r['status'] === 422, dump_on_fail($r));
 
-// ── POST /files/commit – invalid token ───────────────────────────────────────
+// ── POST /files/commit – invalid path ────────────────────────────────────────
 
-section('Files – POST /files/commit: invalid token');
-$r = request('POST', "{$base}/files/commit", ['temp_token' => 'invalid-uuid-token', 'name' => 'test_doc.txt']);
-assert_test('Commit with invalid token → 404', $r['status'] === 404, dump_on_fail($r));
+section('Files – POST /files/commit: invalid path (not in temp/)');
+$r = request('POST', "{$base}/files/commit", ['path' => 'files/some/path.txt', 'name' => 'test.txt']);
+assert_test('Commit with non-temp path → 422', $r['status'] === 422, dump_on_fail($r));
+
+// ── POST /files/commit – non-existent file ────────────────────────────────────
+
+section('Files – POST /files/commit: non-existent temp file');
+$r = request('POST', "{$base}/files/commit", ['path' => 'temp/dev/nonexistent-uuid.txt', 'name' => 'test_doc.txt']);
+assert_test('Commit with missing file → 404', $r['status'] === 404, dump_on_fail($r));
 
 // ── POST /files/commit – valid commit ────────────────────────────────────────
 
-if ($tempToken !== null) {
+if ($tempPath !== null) {
     section('Files – POST /files/commit: valid commit');
     $r = request('POST', "{$base}/files/commit", [
-        'temp_token'  => $tempToken,
+        'path'        => $tempPath,
         'name'        => 'test_committed_document.txt',
         'visibility'  => 'private',
         'entity_type' => 'test',
     ]);
-    assert_test('Commit valid token → 200', $r['status'] === 200, dump_on_fail($r));
+    assert_test('Commit valid path → 200', $r['status'] === 200, dump_on_fail($r));
     assert_test('Response has id', isset($r['data']['data']['id']), dump_on_fail($r));
-    assert_test('temp_token is NULL after commit', empty($r['data']['data']['temp_token']), dump_on_fail($r));
 
     $committedId = $r['data']['data']['id'] ?? null;
 
@@ -152,14 +156,14 @@ if ($tempToken !== null) {
         assert_test('GET deleted file → 404', $r['status'] === 404, dump_on_fail($r));
     }
 
-    // ── Re-commit already committed token ─────────────────────────────────────
+    // ── Re-commit same path (file already moved) ──────────────────────────────
 
-    section('Files – POST /files/commit: already committed token');
+    section('Files – POST /files/commit: already committed path (file gone)');
     $r = request('POST', "{$base}/files/commit", [
-        'temp_token' => $tempToken,
-        'name'       => 'test_duplicate.txt',
+        'path' => $tempPath,
+        'name' => 'test_duplicate.txt',
     ]);
-    assert_test('Re-commit same token → 404', $r['status'] === 404, dump_on_fail($r));
+    assert_test('Re-commit same path → 404', $r['status'] === 404, dump_on_fail($r));
 }
 
 // ── DELETE /files/:id – missing ID validation ─────────────────────────────────

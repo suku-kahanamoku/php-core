@@ -111,8 +111,7 @@ class FileApi
     {
         VALIDATOR($_FILES)->required('file')->validate();
 
-        $userId = $this->auth->id();
-        $result = $this->service->upload($_FILES['file'], $userId);
+        $result = $this->service->upload($_FILES['file']);
         Response::created($result);
     }
 
@@ -123,15 +122,15 @@ class FileApi
         $body = $request->body;
 
         VALIDATOR([
-            'temp_token' => $body['temp_token'] ?? '',
-            'name'       => $body['name'] ?? '',
+            'path' => $body['path'] ?? '',
+            'name' => $body['name'] ?? '',
         ])
-            ->required('temp_token')
+            ->required('path')
             ->required('name')
             ->validate();
 
         $result = $this->service->commit(
-            (string) $body['temp_token'],
+            (string) $body['path'],
             (string) $body['name'],
             (string) ($body['visibility'] ?? 'private'),
             isset($body['entity_type']) ? (string) $body['entity_type'] : null,

@@ -110,60 +110,49 @@ class FileService extends BaseService
     }
 
     /**
-     * Nahraje soubor do /temp/{code}/{uuid}.{ext} a vytvori DB zaznam.
-     * Vraci temp_token pro nasledny commit.
+     * Nahraje soubor do /temp/{code}/{uuid}.{ext} a vrati relativni cestu.
+     * Zadne ukladani do DB — to probehne az pri commit().
      *
      * @param  array<string, mixed> $uploadedFile  $_FILES entry
-     * @param  int|null             $userId
-     * @return array{temp_token: string, id: int}
+     * @return array{path: string}
      */
-    public function upload(array $uploadedFile, ?int $userId): array
+    public function upload(array $uploadedFile): array
     {
         $this->auth->require();
         $this->validateUpload($uploadedFile);
 
-        $mime   = mime_content_type($uploadedFile['tmp_name']) ?: $uploadedFile['type'];
-        $ext    = strtolower(pathinfo($uploadedFile['name'], PATHINFO_EXTENSION));
-        $uuid   = $this->generateUuid();
-        $token  = $this->generateUuid();
-        $code   = $this->files->getCode();
+        $ext  = strtolower(pathinfo($uploadedFile['name'], PATHINFO_EXTENSION));
+        $uuid = $this->generateUuid();
+        $code = $this->files->getCode();
 
-        $dir    = $this->tempRoot() . '/' . $code;
+        $dir = $this->tempRoot() . '/' . $code;
         if (!is_dir($dir) && !mkdir($dir, 0755, true)) {
             Response::error('Could not create temp directory', 500);
         }
 
-        $tmpPath = $dir . '/' . $uuid . '.' . $ext;
-        if (!move_uploaded_file($uploadedFile['tmp_name'], $tmpPath)) {
+        $relPath = 'temp/' . $code . '/' . $uuid . '.' . $ext;
+        $absPath = $this->root() . '/' . $relPath;
+
+        if (!move_uploaded_file($uploadedFile['tmp_name'], $absPath)) {
             Response::error('Failed to save uploaded file', 500);
         }
 
-        $id = $this->files->insert([
-            'temp_token'  => $token,
-            'type'        => $ext,
-            'mime_type'   => $mime,
-            'path'        => 'temp/' . $code . '/' . $uuid . '.' . $ext,
-            'name'        => basename($uploadedFile['name']),
-            'size'        => (int) $uploadedFile['size'],
-            'visibility'  => 'private',
-            'expires_at'  => date('Y-m-d H:i:s', strtotime('+24 hours')),
-        ]);
-
-        return ['temp_token' => $token, 'id' => $id];
+        return ['path' => $relPath];
     }
 
     /**
-     * Commitne tmp soubor: presune z temp/ do files/, vymaze temp_token.
+     * Commitne tmp soubor: presune z temp/ do files/ a vytvori zaznam v DB.
+     * Cesta musi byt relativni od FILE_ROOT a zacinat 'temp/'.
      *
-     * @param  string      $tempToken
-     * @param  string      $name        Pozadovany nazev souboru (zobrazovany)
+     * @param  string      $path        Relativni cesta vracena z upload() (napr. temp/dev/uuid.txt)
+     * @param  string      $name        Zobrazovany nazev souboru
      * @param  string      $visibility  'public' | 'private'
      * @param  string|null $entityType
      * @param  int|null    $entityId
      * @return array<string, mixed>  finalni zaznam
      */
     public function commit(
-        string $tempToken,
+        string $path,
         string $name,
         string $visibility = 'private',
         ?string $entityType = null,
@@ -171,13 +160,21 @@ class FileService extends BaseService
     ): array {
         $this->auth->require();
 
-        $file = $this->files->findByTempToken($tempToken);
-        $this->requireEntity($file, 'Temp token not found or already committed');
+        // Bezpecnostni kontrola — povolujeme jen soubory z adresare temp/
+        if (!str_starts_with($path, 'temp/')) {
+            Response::error('Invalid temp path', 422);
+        }
+
+        $absTemp = $this->root() . '/' . $path;
+        if (!file_exists($absTemp)) {
+            Response::notFound('Temp file not found');
+        }
 
         $code    = $this->files->getCode();
-        $tmpAbs  = $this->root() . '/' . ltrim($file['path'], '/');
-        $ext     = $file['type'];
-        $uuid    = pathinfo($tmpAbs, PATHINFO_FILENAME);
+        $uuid    = pathinfo($absTemp, PATHINFO_FILENAME);
+        $ext     = strtolower(pathinfo($absTemp, PATHINFO_EXTENSION));
+        $mime    = mime_content_type($absTemp) ?: 'application/octet-stream';
+        $size    = (int) filesize($absTemp);
 
         $destDir = $this->filesRoot() . '/' . $code;
         if (!is_dir($destDir) && !mkdir($destDir, 0755, true)) {
@@ -187,26 +184,27 @@ class FileService extends BaseService
         $destRel = 'files/' . $code . '/' . $uuid . '.' . $ext;
         $destAbs = $this->root() . '/' . $destRel;
 
-        if (!rename($tmpAbs, $destAbs)) {
+        if (!rename($absTemp, $destAbs)) {
             Response::error('Failed to move file from temp to files', 500);
         }
 
-        $update = [
-            'temp_token'  => null,
-            'path'        => $destRel,
-            'name'        => $name,
-            'visibility'  => in_array($visibility, ['public', 'private']) ? $visibility : 'private',
-            'expires_at'  => null,
+        $data = [
+            'type'       => $ext,
+            'mime_type'  => $mime,
+            'path'       => $destRel,
+            'name'       => $name,
+            'size'       => $size,
+            'visibility' => in_array($visibility, ['public', 'private']) ? $visibility : 'private',
         ];
         if ($entityType !== null) {
-            $update['entity_type'] = $entityType;
+            $data['entity_type'] = $entityType;
         }
         if ($entityId !== null) {
-            $update['entity_id'] = $entityId;
+            $data['entity_id'] = $entityId;
         }
 
-        $this->files->update((int) $file['id'], $update);
-        return $this->files->findById((int) $file['id']) ?? [];
+        $id = $this->files->insert($data);
+        return $this->files->findById($id) ?? [];
     }
 
     /**
