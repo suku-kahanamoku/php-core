@@ -185,4 +185,25 @@ class CategoryRepository extends BaseRepository
         return $this->findById($id, $projection);
     }
 
+    /**
+     * Nacte IDs kategorii z junction tabulky pro danou entitu.
+     *
+     * @param  string $junctionTable   Nazev junction tabulky (napr. 'product_category')
+     * @param  string $entityFkColumn  FK sloupec entity v junction tabulce (napr. 'product_id')
+     * @param  int    $entityId
+     * @return list<int>
+     */
+    public function findIdsByJunction(string $junctionTable, string $entityFkColumn, int $entityId): array
+    {
+        $rows = $this->db->fetchAll(
+            "SELECT j.category_id
+             FROM {$junctionTable} j
+             LEFT JOIN category c ON c.id = j.category_id AND c.deleted = 0
+             WHERE j.{$entityFkColumn} = ?",
+            [$entityId],
+        );
+
+        return array_map('intval', array_column($rows, 'category_id'));
+    }
+
 }

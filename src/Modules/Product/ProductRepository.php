@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Modules\Product;
 
 use App\Modules\BaseRepository;
+use App\Modules\Category\CategoryRepository;
 use App\Modules\Database\Database;
+use App\Modules\File\FileRepository;
 use App\Utils\Projection;
 
 /**
@@ -13,6 +15,9 @@ use App\Utils\Projection;
  */
 class ProductRepository extends BaseRepository
 {
+    private FileRepository $fileRepo;
+    private CategoryRepository $categoryRepo;
+
     /**
      * Konstruktor tridy ProductRepository.
      *
@@ -22,6 +27,8 @@ class ProductRepository extends BaseRepository
     public function __construct(Database $db, string $franchiseCode)
     {
         parent::__construct($db, $franchiseCode);
+        $this->fileRepo     = new FileRepository($db, $franchiseCode);
+        $this->categoryRepo = new CategoryRepository($db, $franchiseCode);
         $this->table = 'product';
         $this->alias = 'p';
         $this->own   = [
@@ -184,6 +191,12 @@ class ProductRepository extends BaseRepository
             $queryParams,
         );
 
+        $filesMap = [];
+        if ($proj->needsJoin('files')) {
+            $ids = array_column($items, 'id');
+            $filesMap = $this->fileRepo->findByJunctionBatch('product_file', 'product_id', $ids);
+        }
+
         $vatSys = array_merge($sys, ['vat_rate', 'price_with_vat']);
         foreach ($items as &$item) {
             if (isset($item['category_ids'])) {
@@ -194,7 +207,12 @@ class ProductRepository extends BaseRepository
             if (isset($item['data'])) {
                 $item['data'] = $item['data'] ? json_decode($item['data'], true) : null;
             }
-            $item = $proj->apply($item, $vatSys, ['categories' => ['category_ids']]);
+            if ($proj->needsJoin('files')) {
+                $itemFiles = $filesMap[(int) $item['id']] ?? [];
+                $item['file_ids'] = array_column($itemFiles, 'id');
+                $item['files']    = $itemFiles;
+            }
+            $item = $proj->apply($item, $vatSys, ['categories' => ['category_ids'], 'files' => ['file_ids', 'files']]);
         }
         unset($item);
 
@@ -221,7 +239,7 @@ class ProductRepository extends BaseRepository
      *   color: string|null,
      *   variant: string|null,
      *   data: array<string, mixed>|null,
-    *   category_ids?: list<int>
+     *   category_ids?: list<int>
      * }|null
      */
     public function findById(int $id, ?array $projection = null): ?array
@@ -256,27 +274,13 @@ class ProductRepository extends BaseRepository
         }
 
         if ($proj->needsJoin('categories')) {
-            $categoryRows = $this->db->fetchAll(
-                'SELECT pc.category_id
-                 FROM product_category pc
-                 LEFT JOIN category c ON c.id = pc.category_id AND c.deleted = 0
-                 WHERE pc.product_id = ?',
-                [$id],
-            );
-            $row['category_ids']   = array_map(
-                'intval',
-                array_column($categoryRows, 'category_id')
-            );
+            $row['category_ids'] = $this->categoryRepo->findIdsByJunction('product_category', 'product_id', $id);
         }
 
         if ($proj->needsJoin('files')) {
-            $fileRows = $this->db->fetchAll(
-                'SELECT pf.file_id FROM product_file pf
-                 INNER JOIN file f ON f.id = pf.file_id AND f.deleted = 0
-                 WHERE pf.product_id = ?',
-                [$id],
-            );
-            $row['file_ids'] = array_map('intval', array_column($fileRows, 'file_id'));
+            $files = $this->fileRepo->findByJunction('product_file', 'product_id', $id);
+            $row['file_ids'] = array_column($files, 'id');
+            $row['files']    = $files;
         }
 
         $vatSys = array_merge($sys, ['vat_rate', 'price_with_vat']);
@@ -285,7 +289,7 @@ class ProductRepository extends BaseRepository
             $vatSys,
             [
                 'categories' => ['category_ids'],
-                'files' => ['file_ids']
+                'files' => ['file_ids', 'files'],
             ]
         );
     }

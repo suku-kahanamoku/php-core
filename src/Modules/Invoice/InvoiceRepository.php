@@ -6,6 +6,7 @@ namespace App\Modules\Invoice;
 
 use App\Modules\BaseRepository;
 use App\Modules\Database\Database;
+use App\Modules\File\FileRepository;
 use App\Utils\Projection;
 
 /**
@@ -13,6 +14,8 @@ use App\Utils\Projection;
  */
 class InvoiceRepository extends BaseRepository
 {
+    private FileRepository $fileRepo;
+
     /**
      * Konstruktor tridy InvoiceRepository.
      *
@@ -22,6 +25,7 @@ class InvoiceRepository extends BaseRepository
     public function __construct(Database $db, string $franchiseCode)
     {
         parent::__construct($db, $franchiseCode);
+        $this->fileRepo = new FileRepository($db, $franchiseCode);
         $this->table = 'invoice';
         $this->alias = 'i';
         $this->own   = [
@@ -145,14 +149,25 @@ class InvoiceRepository extends BaseRepository
             $params,
         );
 
+        $filesMap = [];
+        if ($proj->needsJoin('files')) {
+            $ids = array_column($items, 'id');
+            $filesMap = $this->fileRepo->findByJunctionBatch('invoice_file', 'invoice_id', $ids);
+        }
+
         foreach ($items as &$item) {
+            if ($proj->needsJoin('files')) {
+                $itemFiles = $filesMap[(int) $item['id']] ?? [];
+                $item['file_ids'] = array_column($itemFiles, 'id');
+                $item['files']    = $itemFiles;
+            }
             $item = $proj->apply(
                 $item,
                 $sys,
                 ['user' => [
                     'fk' => 'user_id',
                     'nest' => ['first_name', 'last_name', 'email']
-                ]]
+                ], 'files' => ['file_ids', 'files']]
             );
         }
         unset($item);
@@ -231,16 +246,9 @@ class InvoiceRepository extends BaseRepository
         );
 
         if ($proj->needsJoin('files')) {
-            $fileRows = $this->db->fetchAll(
-                'SELECT inf.file_id FROM invoice_file inf
-                 INNER JOIN file f ON f.id = inf.file_id AND f.deleted = 0
-                 WHERE inf.invoice_id = ?',
-                [$id],
-            );
-            $invoice['file_ids'] = array_map(
-                'intval',
-                array_column($fileRows, 'file_id')
-            );
+            $files = $this->fileRepo->findByJunction('invoice_file', 'invoice_id', $id);
+            $invoice['file_ids'] = array_column($files, 'id');
+            $invoice['files']    = $files;
         }
 
         return $proj->apply(
@@ -249,7 +257,7 @@ class InvoiceRepository extends BaseRepository
             ['user' => [
                 'fk' => 'user_id',
                 'nest' => ['first_name', 'last_name', 'email']
-            ], 'files' => ['file_ids']]
+            ], 'files' => ['file_ids', 'files']]
         );
     }
 

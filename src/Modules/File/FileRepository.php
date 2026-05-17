@@ -120,4 +120,68 @@ class FileRepository extends BaseRepository
         );
         return $this->findById($id, $projection);
     }
+
+    /**
+     * Nacte soubory entity pres junction tabulku.
+     * Vraci pole objektu [{id, path, name, mime_type}].
+     *
+     * @param  string $junctionTable   Nazev junction tabulky (napr. 'product_file')
+     * @param  string $entityFkColumn  FK sloupec entity v junction tabulce (napr. 'product_id')
+     * @param  int    $entityId
+     * @return list<array{id: int, path: string, name: string, mime_type: string}>
+     */
+    public function findByJunction(string $junctionTable, string $entityFkColumn, int $entityId): array
+    {
+        $rows = $this->db->fetchAll(
+            "SELECT j.file_id, f.path, f.name, f.mime_type
+             FROM {$junctionTable} j
+             INNER JOIN file f ON f.id = j.file_id AND f.deleted = 0
+             WHERE j.{$entityFkColumn} = ?",
+            [$entityId],
+        );
+
+        return array_map(static fn($r) => [
+            'id'        => (int) $r['file_id'],
+            'path'      => $r['path'],
+            'name'      => $r['name'],
+            'mime_type' => $r['mime_type'],
+        ], $rows);
+    }
+
+    /**
+     * Batch load souboru pro vice entit pres junction tabulku.
+     * Vraci mapu [entityId => [{id, path, name, mime_type}]].
+     *
+     * @param  string    $junctionTable
+     * @param  string    $entityFkColumn
+     * @param  list<int> $entityIds
+     * @return array<int, list<array{id: int, path: string, name: string, mime_type: string}>>
+     */
+    public function findByJunctionBatch(string $junctionTable, string $entityFkColumn, array $entityIds): array
+    {
+        if (empty($entityIds)) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($entityIds), '?'));
+        $rows = $this->db->fetchAll(
+            "SELECT j.{$entityFkColumn} AS entity_id, j.file_id, f.path, f.name, f.mime_type
+             FROM {$junctionTable} j
+             INNER JOIN file f ON f.id = j.file_id AND f.deleted = 0
+             WHERE j.{$entityFkColumn} IN ({$placeholders})",
+            $entityIds,
+        );
+
+        $map = [];
+        foreach ($rows as $row) {
+            $map[(int) $row['entity_id']][] = [
+                'id'        => (int) $row['file_id'],
+                'path'      => $row['path'],
+                'name'      => $row['name'],
+                'mime_type' => $row['mime_type'],
+            ];
+        }
+
+        return $map;
+    }
 }
