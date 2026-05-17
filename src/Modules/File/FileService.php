@@ -14,7 +14,7 @@ use App\Modules\Router\Response;
  *
  * Upload flow:
  *   1. upload()  → ulozi soubor do /temp/{code}/{uuid}.{ext}, vrati relativni path
- *   2. commit()  → presune soubor do /files/{code}/{uuid}.{ext}, vytvori DB zaznam
+ *   2. commit()  → presune soubor do /files/{code}/[entity_type/] a vytvori DB zaznam
  *
  * Smazani:
  *   remove() → soft-delete DB zaznamu
@@ -177,12 +177,22 @@ class FileService extends BaseService
         $mime    = mime_content_type($absTemp) ?: 'application/octet-stream';
         $size    = (int) filesize($absTemp);
 
+        $entityPrefix = $this->normalizeEntityPrefix($entityType);
         $destDir = $this->filesRoot() . '/' . $code;
+        if ($entityPrefix !== null) {
+            $destDir .= '/' . $entityPrefix;
+        }
         if (!is_dir($destDir) && !mkdir($destDir, 0755, true)) {
             Response::error('Could not create files directory', 500);
         }
 
-        $destRel = 'files/' . $code . '/' . $uuid . '.' . $ext;
+        $destFile = $entityPrefix !== null
+            ? ($entityPrefix . '_' . $uuid . '.' . $ext)
+            : ($uuid . '.' . $ext);
+
+        $destRel = 'files/' . $code . '/'
+            . ($entityPrefix !== null ? ($entityPrefix . '/') : '')
+            . $destFile;
         $destAbs = $this->root() . '/' . $destRel;
 
         if (!rename($absTemp, $destAbs)) {
@@ -288,5 +298,20 @@ class FileService extends BaseService
     private function filesRoot(): string
     {
         return $this->root() . '/files';
+    }
+
+    /**
+     * Normalizuje entity_type na bezpecny prefix/slozku (napr. "Product" -> "product").
+     */
+    private function normalizeEntityPrefix(?string $entityType): ?string
+    {
+        if ($entityType === null) {
+            return null;
+        }
+
+        $prefix = strtolower(trim($entityType));
+        $prefix = preg_replace('/[^a-z0-9_-]+/', '', $prefix) ?? '';
+
+        return $prefix !== '' ? $prefix : null;
     }
 }
