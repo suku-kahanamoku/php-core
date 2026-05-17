@@ -148,19 +148,19 @@ class Response
      * Transformuje data z formatu { items: [...], total, page, limit, totalPages }
      * na format { success, message, data: [...], meta: { total, page, limit, totalPages } }
      *
-     * @param  array<string, mixed> $data     Musi obsahovat klic 'items'
+     * @param  array<string, mixed> $data     Musi obsahovat klic 'data'
      * @param  Request              $request
      * @return never
      */
     public static function successWithFactory(array $data, Request $request): never
     {
         $factory = $request->factory();
-        if ($factory !== null && isset($data['items'])) {
-            $data['items'] = self::applyFactory($data['items'], $factory);
+        if ($factory !== null && isset($data['data'])) {
+            $data['data'] = self::applyFactory($data['data'], $factory);
         }
 
         // Extrahuj metadata z data
-        $items = $data['items'] ?? [];
+        $items = $data['data'] ?? [];
         $meta  = [
             'total'      => $data['total'] ?? 0,
             'page'       => $data['page'] ?? 1,

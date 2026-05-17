@@ -112,7 +112,7 @@ abstract class BaseRepository
         int $limit
     ): array {
         return [
-            'items'      => $items,
+            'data'       => $items,
             'total'      => $total,
             'page'       => $page,
             'limit'      => $limit,
