@@ -31,6 +31,7 @@
 <button class="text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-500 hover:border-slate-400 hover:text-slate-700 cursor-pointer font-semibold transition-colors" onclick="showTab('product')">&#128230; Product</button>
 <button class="text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-500 hover:border-slate-400 hover:text-slate-700 cursor-pointer font-semibold transition-colors" onclick="showTab('order')">&#128722; Order</button>
 <button class="text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-500 hover:border-slate-400 hover:text-slate-700 cursor-pointer font-semibold transition-colors" onclick="showTab('invoice')">&#129534; Invoice</button>
+<button class="text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-500 hover:border-slate-400 hover:text-slate-700 cursor-pointer font-semibold transition-colors" onclick="showTab('file')">&#128196; File</button>
 <button class="text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-500 hover:border-slate-400 hover:text-slate-700 cursor-pointer font-semibold transition-colors" onclick="showTab('text')">&#128221; Text (CMS)</button>
 <button class="text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-500 hover:border-slate-400 hover:text-slate-700 cursor-pointer font-semibold transition-colors" onclick="showTab('enumeration')">&#128290; Enumeration</button>
 <button class="text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-500 hover:border-slate-400 hover:text-slate-700 cursor-pointer font-semibold transition-colors" onclick="showTab('role')">&#128737; Role</button></div>
@@ -2169,6 +2170,33 @@
 </div>
 
 </div></div></div></div>
+
+<div id="tab-file" class="hidden">
+  <div class="bg-white rounded-xl border border-slate-200 p-5">
+    <h3 class="text-sm font-bold text-slate-700 mb-3">&#128196; File module flows</h3>
+    <div class="grid md:grid-cols-2 gap-3 text-xs">
+      <div class="rounded-lg border border-slate-200 p-3 bg-slate-50">
+        <div class="font-bold text-slate-700 mb-1">POST /files/upload</div>
+        <div class="text-slate-600">Validace MIME/size → uložení do temp (`temp/{franchise}/{uuid}.{ext}`) → response s `path`.</div>
+      </div>
+      <div class="rounded-lg border border-slate-200 p-3 bg-slate-50">
+        <div class="font-bold text-slate-700 mb-1">POST /files/commit</div>
+        <div class="text-slate-600">Kontrola temp path + existence souboru → přesun do `files/` → INSERT do tabulky `file`.</div>
+      </div>
+      <div class="rounded-lg border border-slate-200 p-3 bg-slate-50">
+        <div class="font-bold text-slate-700 mb-1">GET /files/:id/download + /preview</div>
+        <div class="text-slate-600">Načtení metadat (`file`) → kontrola fyzické existence → stream souboru (attachment/inline).</div>
+      </div>
+      <div class="rounded-lg border border-slate-200 p-3 bg-slate-50">
+        <div class="font-bold text-slate-700 mb-1">DELETE /files/:id</div>
+        <div class="text-slate-600">Default: soft delete (`deleted=1`). `?force=true`: hard delete (unlink + DELETE row).</div>
+      </div>
+    </div>
+    <div class="mt-4 text-xs text-slate-500">
+      Stejný `?force=true` pattern je použitý i u ostatních DELETE endpointů (Product, Invoice, Order, Text, Role, ...).
+    </div>
+  </div>
+</div>
 <script>
 function showTab(id) {
   document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.replace('block','hidden'));

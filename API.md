@@ -27,9 +27,10 @@
    - [Texts](#texts)
    - [Orders](#orders)
    - [Invoices](#invoices)
-9. [Projection](#projection)
-10. [Field Reference](#field-reference)
-11. [Common Patterns & Frontend Recipes](#common-patterns--frontend-recipes)
+   - [Files](#files)
+10. [Soft delete vs. hard delete](#soft-delete-vs-hard-delete)
+11. [Field Reference](#field-reference)
+12. [Common Patterns & Frontend Recipes](#common-patterns--frontend-recipes)
 
 ---
 
@@ -400,8 +401,8 @@ Comma-separated list of field names (snake_case).
 |--------|-------------------|
 | Users | `role` |
 | Orders | `user` |
-| Invoices | `user` |
-| Products | `categories` |
+| Invoices | `user`, `files` |
+| Products | `categories`, `files` |
 | Others | *(none)* |
 
 ### Examples
@@ -929,6 +930,7 @@ GET /categories?sort=[{"position":1},{"name":1}]&filter={"parent_id":{"operator"
 | `data`           | object or null | Flexible JSON attributes — project-defined keys           |
 | `category_ids`   | integer[]      | IDs of all assigned categories (M:N)                      |
 | `category_names` | string[]       | Names of all assigned categories (GET `/:id` only)        |
+| `file_ids`       | integer[]      | IDs of attached files (M:N via `product_file`)            |
 
 #### `GET /products`
 
@@ -965,7 +967,8 @@ GET /products?filter={"is_active":{"value":1},"data.year":{"value":2022},"color"
   "color": "white",
   "variant": "riesling",
   "data": { "quality": "kabinett", "volume": 0.75, "year": 2022 },
-  "category_ids": [3, 7]
+  "category_ids": [3, 7],
+  "file_ids": [1, 2]
 }
 ```
 
@@ -982,6 +985,7 @@ GET /products?filter={"is_active":{"value":1},"data.year":{"value":2022},"color"
 | `variant`      | —        | Project-specific string attribute                               |
 | `data`         | —        | Flexible JSON object — any project-defined key/value pairs      |
 | `category_ids` | —        | Array of category IDs (M:N)                                     |
+| `file_ids`     | —        | Array of file IDs to attach (M:N via `product_file`)            |
 
 #### `PATCH /products/:id`
 
@@ -1428,7 +1432,8 @@ Any → `cancelled` or `refunded`
 {
   "order_id": 100,
   "due_at": "2026-05-15",
-  "note": "Please pay within 14 days"
+  "note": "Please pay within 14 days",
+  "file_ids": [1, 2]
 }
 ```
 
@@ -1438,6 +1443,142 @@ Any → `cancelled` or `refunded`
 
 ```json
 { "status": "paid" }
+```
+
+#### `PATCH /invoices/:id/files`
+
+Replaces the full set of attached files (sync):
+
+```json
+{ "file_ids": [1, 5, 7] }
+```
+
+Response `200`: full invoice object with updated `file_ids`.
+
+---
+
+### Files
+
+Two-phase file upload: `upload` saves the file to a temporary directory and returns a path; `commit` moves it to permanent storage and creates the DB record.
+
+| Method | Endpoint                  | Auth       | Description                              |
+|--------|---------------------------|------------|------------------------------------------|
+| GET    | `/files`                  | Admin only | List all committed files                 |
+| GET    | `/files/:id`              | Required   | Get file metadata                        |
+| GET    | `/files/:id/download`     | Required   | Download file (attachment)               |
+| GET    | `/files/:id/preview`      | Required   | Preview file inline (browser)            |
+| POST   | `/files/upload`           | Required   | Phase 1 — save to temp, return path      |
+| POST   | `/files/commit`           | Required   | Phase 2 — move to permanent, insert DB  |
+| DELETE | `/files/:id`              | Admin only | Soft delete / hard delete (`?force=true`)|
+
+#### File object
+
+```json
+{
+  "id": 1,
+  "type": "pdf",
+  "mime_type": "application/pdf",
+  "path": "files/default/abc123.pdf",
+  "name": "invoice_100.pdf",
+  "size": 102400,
+  "visibility": "private",
+  "entity_type": "invoice",
+  "entity_id": 50,
+  "deleted": 0,
+  "created_at": "2026-05-01T09:05:00",
+  "updated_at": null
+}
+```
+
+| Field         | Type    | Notes                                                     |
+|---------------|---------|-----------------------------------------------------------|
+| `type`        | string  | File extension, e.g. `pdf`, `jpg`                         |
+| `mime_type`   | string  | MIME type, e.g. `application/pdf`                         |
+| `path`        | string  | Relative path from `FILE_ROOT`                            |
+| `visibility`  | string  | `"public"` or `"private"`                                 |
+| `entity_type` | string  | Optional reference type, e.g. `product`, `invoice`        |
+| `entity_id`   | integer | Optional reference ID                                     |
+
+#### Upload flow
+
+```
+POST /files/upload   (multipart/form-data: file)
+  → { path: "temp/default/uuid.pdf" }
+
+POST /files/commit   { path, name, visibility?, entity_type?, entity_id? }
+  → committed File object
+```
+
+#### `POST /files/upload`
+
+Multipart form-data with a `file` field.
+
+**Allowed MIME types:** `image/jpeg`, `image/png`, `image/gif`, `image/webp`, `application/pdf`, `text/plain`, `text/csv`, `application/vnd.ms-excel`, `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`, `application/zip`
+
+**Max size:** 20 MB
+
+Response `201`:
+```json
+{ "success": true, "data": { "path": "temp/default/abc-uuid.pdf" } }
+```
+
+#### `POST /files/commit`
+
+```json
+{
+  "path":        "temp/default/abc-uuid.pdf",
+  "name":        "invoice_100.pdf",
+  "visibility":  "private",
+  "entity_type": "invoice",
+  "entity_id":   50
+}
+```
+
+| Field         | Required | Notes                                         |
+|---------------|----------|-----------------------------------------------|
+| `path`        | ✓        | Relative temp path returned by `/upload`       |
+| `name`        | ✓        | Display filename                               |
+| `visibility`  | —        | `"public"` or `"private"` (default: `"private"`)|
+| `entity_type` | —        | Optional polymorphic reference type            |
+| `entity_id`   | —        | Optional polymorphic reference ID              |
+
+Response `200`: committed File object.
+
+#### `DELETE /files/:id`
+
+| Query param   | Behaviour                                      |
+|---------------|------------------------------------------------|
+| *(none)*      | Soft delete — sets `deleted=1` in DB           |
+| `?force=true` | Hard delete — removes physical file + DB row   |
+
+#### `GET /files` — query parameters
+
+| Parameter | Description                                                        |
+|-----------|--------------------------------------------------------------------|
+| `page`    | Page number                                                        |
+| `limit`   | Per page (max: 100)                                                |
+| `sort`    | JSON sort (columns: `name`, `size`, `created_at`)                  |
+| `q`       | JSON filter — supports `deleted` (default `0`), `search` (LIKE in `name`/`type`) |
+
+```
+GET /files?q={"deleted":1}            # soft-deleted files
+GET /files?q={"search":"invoice"}     # name/type contains 'invoice'
+```
+
+---
+
+## Soft delete vs. hard delete
+
+All DELETE endpoints support an optional `?force=true` query parameter:
+
+| `?force=true` | Behaviour |
+|---|---|
+| absent (default) | **Soft delete** — sets `deleted=1` in DB; record remains, `GET` returns 404, visible with `?q={"deleted":1}` |
+| present | **Hard delete** — permanent removal from DB (and physical file for `/files`) |
+
+```
+DELETE /products/5          # soft delete
+DELETE /products/5?force=true  # hard delete
 ```
 
 ---
@@ -1452,9 +1593,10 @@ Any → `cancelled` or `refunded`
 | `/users`        | `first_name`, `last_name`, `email`, `phone`, `role_id`, `created_at`, `last_login_at` |
 | `/users/:id/address` | `type`, `city`, `zip`, `country`, `is_default`, `created_at`  |
 | `/categories`   | `name`, `description`, `parent_id`, `position`, `created_at`        |
-| `/products`     | `name`, `sku`, `price`, `vat_rate`, `stock_quantity`, `created_at` |
+| `/products`     | `name`, `sku`, `price`, `vat_rate`, `stock_quantity`, `created_at`, `kind`, `color`, `variant`, `data.*` |
 | `/enumerations` | `type`, `syscode`, `label`, `value`, `position`, `is_active`, `created_at` |
-| `/texts`        | `syscode`, `title`, `language`, `is_active`, `created_at`           |
+| `/texts`        | `syscode`, `title`, `language`, `is_active`, `created_at` |
+| `/files`        | `name`, `type`, `size`, `visibility`, `entity_type`, `entity_id`, `deleted`, `created_at` |
 | `/orders`       | `order_number`, `status`, `total_amount`, `currency`, `payment_method`, `user_id`, `created_at` |
 | `/invoices`     | `invoice_number`, `status`, `total_amount`, `currency`, `user_id`, `order_id`, `issued_at`, `due_at`, `paid_at` |
 

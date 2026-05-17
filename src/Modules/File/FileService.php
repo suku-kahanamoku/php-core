@@ -13,11 +13,12 @@ use App\Modules\Router\Response;
  * FileService – business logika pro spravu souboru.
  *
  * Upload flow:
- *   1. upload()  → ulozi soubor do /temp/{code}/{uuid}.{ext}, vytvori DB zaznam s temp_token
- *   2. commit()  → presune soubor do /files/{code}/{uuid}.{ext}, vymaze temp_token v DB
+ *   1. upload()  → ulozi soubor do /temp/{code}/{uuid}.{ext}, vrati relativni path
+ *   2. commit()  → presune soubor do /files/{code}/{uuid}.{ext}, vytvori DB zaznam
  *
  * Smazani:
- *   delete() → soft-delete DB zaznamu + fyzicke smazani souboru
+ *   remove() → soft-delete DB zaznamu
+ *   delete() → hard-delete DB zaznamu + fyzicke smazani souboru
  */
 class FileService extends BaseService
 {

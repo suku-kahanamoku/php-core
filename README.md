@@ -103,9 +103,10 @@ php-core/
 ├── pages/
 │   ├── db-schema.html     # Mermaid ER diagram
 │   ├── db-table.html      # HTML schema viewer with FK table
-│   └── flows.html         # Sequence diagrams for all endpoints
+│   ├── flows.html         # Sequence diagrams for all endpoints
+│   └── api-reference.html # Interactive API reference
 ├── tests/
-│   └── api_test.php       # CLI test runner (364 tests)
+│   └── api_test.php       # CLI test runner (785 tests)
 ├── api/
 │   ├── .htaccess          # Routes /api/<module>/... to module index.php
 │   ├── index.php          # Fallback (404)
@@ -118,7 +119,8 @@ php-core/
 │   ├── texts/index.php
 │   ├── enumerations/index.php
 │   ├── orders/index.php
-│   └── invoices/index.php
+│   ├── invoices/index.php
+│   └── files/index.php
 └── src/
     ├── Middleware/
     │   └── CorsMiddleware.php        # Applied globally in bootstrap.php
@@ -136,8 +138,8 @@ php-core/
         │   └── Router.php            # Regex router with middleware support
         ├── Validator/
         │   └── Validator.php
-        └── <Module>/                 # Address, Category, Enumeration, Invoice,
-            ├── <Module>Repository.php  #   Order, Product, Role, Text, User
+        └── <Module>/                 # Address, Category, Enumeration, File,
+            ├── <Module>Repository.php  #   Invoice, Order, Product, Role, Text, User
             ├── <Module>Service.php
             ├── <Module>Api.php
             └── tests/
@@ -211,7 +213,7 @@ php tests/api_test.php http://myserver.com/api
 | GET    | `/products/:id` | public | Get product |
 | PATCH  | `/products/:id` | admin | Partial update |
 | PUT    | `/products/:id` | admin | Full replace |
-| DELETE | `/products/:id` | admin | Delete |
+| DELETE | `/products/:id` | admin | Soft delete / `?force=true` for hard delete |
 | PATCH  | `/products/:id/stock` | admin | Adjust stock quantity |
 
 ### Texts (CMS)
@@ -240,58 +242,55 @@ php tests/api_test.php http://myserver.com/api
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | GET    | `/orders` | required | My orders (admin: all) |
-| POST   | `/orders` | required | Create order |
+| POST   | `/orders` | public | Create order |
 | GET    | `/orders/:id` | required | Get order with items |
 | PATCH  | `/orders/:id/status` | admin | Update status |
-| DELETE | `/orders/:id` | admin | Delete |
+| DELETE | `/orders/:id` | admin | Soft delete / `?force=true` for hard delete |
 
 ### Invoices
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET    | `/invoices` | required | My invoices (admin: all) |
+| GET    | `/invoices` | admin | List all invoices |
 | POST   | `/invoices` | admin | Generate from order |
-| GET    | `/invoices/:id` | required | Get invoice with items |
+| GET    | `/invoices/:id` | admin | Get invoice with items |
 | PATCH  | `/invoices/:id/status` | admin | Update status |
-| DELETE | `/invoices/:id` | admin | Delete |
+| PATCH  | `/invoices/:id/files` | admin | Sync attached files |
+| DELETE | `/invoices/:id` | admin | Soft delete / `?force=true` for hard delete |
 
-## Soft delete
+### Files
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET    | `/files` | admin | List committed files |
+| GET    | `/files/:id` | required | Get file metadata |
+| GET    | `/files/:id/download` | required | Download file |
+| GET    | `/files/:id/preview` | required | Preview inline |
+| POST   | `/files/upload` | required | Phase 1 — save to temp, return path |
+| POST   | `/files/commit` | required | Phase 2 — move to permanent, insert DB |
+| DELETE | `/files/:id` | admin | Soft delete / `?force=true` for hard delete |
 
-All entities support **soft delete** — a `DELETE` request sets `deleted = 1` rather than removing the row from the database. Data is never physically deleted.
+## Soft delete vs. hard delete
 
-### Default behaviour
-- Every `SELECT` query automatically appends `AND {table}.deleted = 0`.
-- `JOIN`s to related tables also filter by `deleted = 0` on the joined table, preventing orphaned references from appearing in results.
-- `GET /{resource}/:id` on a soft-deleted record returns **404**.
+All DELETE endpoints support an optional `?force=true` query parameter:
 
-### Querying deleted records
-Pass `deleted=1` inside the `q` filter parameter to retrieve soft-deleted items (admin only in practice):
+| `?force=true` | Behaviour |
+|---|---|
+| absent (default) | **Soft delete** — sets `deleted=1` in DB; record remains in DB but `GET` returns 404 |
+| present | **Hard delete** — permanent removal from DB (and physical file for `/files`) |
 
-```bash
-# Show deleted products
-GET /products?q={"deleted":1}
-
-# Show deleted orders
-GET /orders?q={"deleted":1}
 ```
-
-The `deleted` field is always included in all API responses (`deleted: 0` or `deleted: 1`).
-
-### Re-activating a record
-Use a `PATCH` to set `deleted` back to `0`:
-
-```bash
-PATCH /products/42   Body: {"deleted": 0}
+DELETE /products/5             # soft delete
+DELETE /products/5?force=true  # hard delete
 ```
 
 ## Database schema
 
-Tables: `role`, `user`, `user_token`, `address`, `category`, `product`, `product_category`, `text`, `enumeration`, `order`, `order_item`, `invoice`, `invoice_item`
+Tables (16): `enumeration`, `role`, `user`, `address`, `user_token`, `category`, `product`, `product_category`, `product_file`, `text`, `order`, `order_item`, `invoice`, `invoice_item`, `invoice_file`, `file`
 
-- **`product_category`** — M:N pivot table linking products to categories (one product can belong to multiple categories).
-- **`category.syscode`** — machine-readable identifier (e.g. `top`, `new`) for filtering via `category_syscode` query param.
-- **`product.data`** — flexible JSON column for project-specific attributes. Filter via dot-notation: `q={"data.year":{"value":2022}}`.
-- **`deleted`** — soft-delete flag (`TINYINT(1) DEFAULT 0`) present on every entity table. Indexed for fast filtering.
-
-All tables (except `product_category`) are scoped by `franchise_code`.
+- **`product_category`** — M:N pivot: products ↔ categories.
+- **`product_file`** — M:N pivot: products ↔ files.
+- **`invoice_file`** — M:N pivot: invoices ↔ files.
+- **`category.syscode`** — machine-readable identifier for filtering via `category_syscode` query param.
+- **`product.data`** — flexible JSON column. Filter via dot-notation: `q={"data.year":{"value":2022}}`.
+- **`deleted`** — soft-delete flag (`TINYINT(1) DEFAULT 0`) present on every entity table.
 
 

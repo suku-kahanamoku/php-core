@@ -24,7 +24,7 @@
   <a href="db-table.html"      class="px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 no-underline text-xs transition-colors">&#128203; DB Tabulky</a>
 </nav>
 <div class="bg-white border-b border-slate-200 px-8 py-2 flex items-center justify-between flex-wrap gap-2">
-  <span class="text-sm text-slate-500">13 tabulek &middot; Entity-Relationship Diagram</span>
+  <span class="text-sm text-slate-500">16 tabulek &middot; Entity-Relationship Diagram</span>
   <div class="flex gap-2">
     <button onclick="exportSvg()" class="text-xs px-3 py-1.5 rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors">&#8595; Export SVG</button>
     <button onclick="zoomIn()"    class="text-xs px-3 py-1.5 rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors">&#65291; Zoom in</button>
@@ -93,6 +93,22 @@ erDiagram
         json data }
     product_category { int product_id FK
         int category_id FK }
+    product_file { int product_id FK
+        int file_id FK }
+    invoice_file { int invoice_id FK
+        int file_id FK }
+    file { int id PK
+        varchar franchise_code
+        varchar type
+        varchar mime_type
+        varchar path
+        varchar name
+        int size
+        varchar visibility
+        varchar entity_type
+        int entity_id
+        tinyint deleted
+        datetime expires_at }
     text { int id PK
         varchar franchise_code
         varchar syscode
@@ -164,11 +180,15 @@ erDiagram
     category ||--o{ category : "subcategory"
     category ||--o{ product_category : "in"
     product ||--o{ product_category : "has"
+    product ||--o{ product_file : "has"
+    file ||--o{ product_file : "in"
     product ||--o{ order_item : "ordered as"
     product ||--o{ invoice_item : "invoiced as"
     order ||--o{ order_item : "has items"
     order ||--o| invoice : "generates"
     invoice ||--o{ invoice_item : "has items"
+    invoice ||--o{ invoice_file : "has"
+    file ||--o{ invoice_file : "in"
   </div>
 </div>
 <script>

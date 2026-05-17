@@ -8,7 +8,7 @@ declare(strict_types=1);
  *
  * Tests /files/* routes.
  * NOTE: Upload tests use a real tmp file (text/plain) created in /tmp.
- *       After upload the temp_token is used to test commit flow.
+ *       After upload, returned temp path is used to test commit flow.
  */
 
 if (!function_exists('assert_test')) {

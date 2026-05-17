@@ -30,7 +30,7 @@
     </nav>
     <div class="p-6 max-w-[1200px] mx-auto">
       <p class="text-sm text-slate-500 mb-4">
-        13 tabulek &middot; klikni na název tabulky pro zobrazení sloupců
+        16 tabulek &middot; klikni na název tabulky pro zobrazení sloupců
       </p>
       <div class="flex flex-wrap gap-4 mb-4">
         <div
@@ -1718,6 +1718,69 @@
         </div>
       </div>
       <div
+        class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm min-w-[220px] flex-1 basis-[220px] max-w-xs"
+      >
+        <div
+          class="px-4 py-2 text-xs font-bold uppercase tracking-wider text-white bg-indigo-500"
+        >
+          Soubory
+        </div>
+        <div class="border-b border-slate-100 last:border-0">
+          <button
+            onclick="toggle(this)"
+            class="w-full flex justify-between items-center px-4 py-2 text-sm font-semibold text-slate-800 bg-slate-50 hover:bg-slate-100 transition-colors text-left cursor-pointer"
+          >
+            <span>file</span
+            ><span class="text-slate-400 text-xs">&#9654;</span>
+          </button>
+          <div class="hidden">
+            <div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0">
+              <span class="text-xs text-slate-800 font-semibold">id</span>
+              <div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">PK</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div>
+            </div>
+            <div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0"><span class="text-xs text-slate-600">franchise_code</span><div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div></div>
+            <div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0"><span class="text-xs text-slate-600">type</span><div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div></div>
+            <div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0"><span class="text-xs text-slate-600">mime_type</span><div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div></div>
+            <div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0"><span class="text-xs text-slate-600">path</span><div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div></div>
+            <div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0"><span class="text-xs text-slate-600">name</span><div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div></div>
+            <div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0"><span class="text-xs text-slate-600">size</span><div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div></div>
+            <div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0"><span class="text-xs text-slate-600">visibility</span><div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div></div>
+            <div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0"><span class="text-xs text-slate-600">entity_type</span><div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">VARCHAR</span></div></div>
+            <div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0"><span class="text-xs text-slate-600">entity_id</span><div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div></div>
+            <div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0"><span class="text-xs text-slate-600">expires_at</span><div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">DATETIME</span></div></div>
+            <div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0"><span class="text-xs text-slate-600">created_at</span><div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">DATETIME</span></div></div>
+            <div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0"><span class="text-xs text-slate-600">updated_at</span><div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">DATETIME</span></div></div>
+            <div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0"><span class="text-xs text-slate-600">deleted</span><div class="flex gap-1 items-center"><span class="text-xs px-1.5 py-0.5 rounded bg-orange-100 text-orange-600">TINYINT</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-400">DEFAULT 0</span></div></div>
+          </div>
+        </div>
+        <div class="border-b border-slate-100 last:border-0">
+          <button
+            onclick="toggle(this)"
+            class="w-full flex justify-between items-center px-4 py-2 text-sm font-semibold text-slate-800 bg-slate-50 hover:bg-slate-100 transition-colors text-left cursor-pointer"
+          >
+            <span>product_file</span
+            ><span class="text-slate-400 text-xs">&#9654;</span>
+          </button>
+          <div class="hidden">
+            <div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0"><span class="text-xs text-slate-800 font-semibold">product_id</span><div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">PK</span><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">FK→product</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div></div>
+            <div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0"><span class="text-xs text-slate-800 font-semibold">file_id</span><div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">PK</span><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">FK→file</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div></div>
+          </div>
+        </div>
+        <div class="border-b border-slate-100 last:border-0">
+          <button
+            onclick="toggle(this)"
+            class="w-full flex justify-between items-center px-4 py-2 text-sm font-semibold text-slate-800 bg-slate-50 hover:bg-slate-100 transition-colors text-left cursor-pointer"
+          >
+            <span>invoice_file</span
+            ><span class="text-slate-400 text-xs">&#9654;</span>
+          </button>
+          <div class="hidden">
+            <div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0"><span class="text-xs text-slate-800 font-semibold">invoice_id</span><div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">PK</span><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">FK→invoice</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div></div>
+            <div class="flex justify-between items-center px-4 py-1.5 border-b border-slate-50 last:border-0"><span class="text-xs text-slate-800 font-semibold">file_id</span><div class="flex gap-1 items-center"><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">PK</span><span class="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">FK→file</span><span class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">INT</span></div></div>
+          </div>
+        </div>
+      </div>
+      <div
         class="w-full bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm"
       >
         <div
@@ -2022,6 +2085,34 @@
                 </td>
                 <td class="px-4 py-1.5 text-slate-500">SET NULL</td>
                 <td class="px-4 py-1.5 text-slate-600">fakturovaný produkt</td>
+              </tr>
+              <tr class="hover:bg-slate-50">
+                <td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">product_file</code></td>
+                <td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">product_id</code></td>
+                <td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">product.id</code></td>
+                <td class="px-4 py-1.5 text-slate-500">CASCADE</td>
+                <td class="px-4 py-1.5 text-slate-600">M:N pivot produkt–soubor</td>
+              </tr>
+              <tr class="hover:bg-slate-50">
+                <td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">product_file</code></td>
+                <td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">file_id</code></td>
+                <td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">file.id</code></td>
+                <td class="px-4 py-1.5 text-slate-500">CASCADE</td>
+                <td class="px-4 py-1.5 text-slate-600">M:N pivot produkt–soubor</td>
+              </tr>
+              <tr class="hover:bg-slate-50">
+                <td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">invoice_file</code></td>
+                <td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">invoice_id</code></td>
+                <td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">invoice.id</code></td>
+                <td class="px-4 py-1.5 text-slate-500">CASCADE</td>
+                <td class="px-4 py-1.5 text-slate-600">M:N pivot faktura–soubor</td>
+              </tr>
+              <tr class="hover:bg-slate-50">
+                <td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">invoice_file</code></td>
+                <td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">file_id</code></td>
+                <td class="px-4 py-1.5"><code class="font-mono bg-slate-100 px-1 rounded">file.id</code></td>
+                <td class="px-4 py-1.5 text-slate-500">CASCADE</td>
+                <td class="px-4 py-1.5 text-slate-600">M:N pivot faktura–soubor</td>
               </tr>
               <tr class="hover:bg-slate-50">
                 <td class="px-4 py-1.5">
