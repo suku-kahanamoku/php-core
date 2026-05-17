@@ -188,15 +188,13 @@ CREATE TABLE `text` (
     `language`     VARCHAR(10)  NOT NULL DEFAULT 'cs',
     `published`    TINYINT(1)   NOT NULL DEFAULT 1,
     `deleted`      TINYINT(1)   NOT NULL DEFAULT 0,
-    `created_by`   INT UNSIGNED          DEFAULT NULL,
     `created_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`   DATETIME              DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_text_franchise_syscode_lang` (`franchise_code`, `syscode`, `language`),
     KEY `idx_text_franchise` (`franchise_code`),
     KEY `idx_text_lang`      (`language`),
-    KEY `idx_text_deleted`   (`deleted`),
-    CONSTRAINT `fk_text_user` FOREIGN KEY (`created_by`) REFERENCES `user` (`id`) ON DELETE SET NULL
+    KEY `idx_text_deleted`   (`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── order ─────────────────────────────────────────────────
@@ -308,7 +306,6 @@ CREATE TABLE `file` (
     `visibility`     ENUM('public','private') NOT NULL DEFAULT 'private',
     `entity_type`    VARCHAR(64)             DEFAULT NULL COMMENT 'product, user, invoice...',
     `entity_id`      INT UNSIGNED            DEFAULT NULL,
-    `created_by`     INT UNSIGNED            DEFAULT NULL,
     `deleted`        TINYINT(1)     NOT NULL DEFAULT 0,
     `created_at`     DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`     DATETIME                DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
@@ -317,10 +314,8 @@ CREATE TABLE `file` (
     UNIQUE KEY `uq_file_temp_token` (`temp_token`),
     KEY `idx_file_franchise`   (`franchise_code`),
     KEY `idx_file_entity`      (`entity_type`, `entity_id`),
-    KEY `idx_file_created_by`  (`created_by`),
     KEY `idx_file_deleted`     (`deleted`),
-    KEY `idx_file_expires`     (`expires_at`),
-    CONSTRAINT `fk_file_user` FOREIGN KEY (`created_by`) REFERENCES `user` (`id`) ON DELETE SET NULL
+    KEY `idx_file_expires`     (`expires_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET foreign_key_checks = 1;

@@ -100,7 +100,9 @@ class OrderService
             $this->order->findById($id, $projection),
             'Order not found'
         );
-        $this->requireOwnerOrAdmin($order);
+        if (!$this->auth->hasRole('admin') && (int) $order['user_id'] !== $this->auth->id()) {
+            Response::forbidden();
+        }
 
         return $order;
     }

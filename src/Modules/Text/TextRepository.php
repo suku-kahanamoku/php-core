@@ -30,7 +30,6 @@ class TextRepository extends BaseRepository
             'content',
             'language',
             'published',
-            'created_by',
         ];
     }
 
@@ -52,7 +51,6 @@ class TextRepository extends BaseRepository
      *     content: string,
      *     language: string,
      *     published: int,
-     *     created_by: int|null
      *   }>,
      *   total: int,
      *   page: int,
@@ -128,7 +126,6 @@ class TextRepository extends BaseRepository
      *   content: string,
      *   language: string,
      *   published: int,
-     *   created_by: int|null
      * }|null
      */
     public function findByKey(string $key, string $language): ?array
@@ -185,7 +182,6 @@ class TextRepository extends BaseRepository
      *   content: string,
      *   language: string,
      *   published: int,
-     *   created_by: int|null
      * }
      */
     public function create(array $data, ?array $projection = null): array
@@ -212,7 +208,6 @@ class TextRepository extends BaseRepository
      *   content: string,
      *   language: string,
      *   published: int,
-     *   created_by: int|null
      * }
      */
     public function update(int $id, array $data, ?array $projection = null): array

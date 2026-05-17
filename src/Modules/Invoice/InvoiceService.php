@@ -91,7 +91,9 @@ class InvoiceService
             $this->invoice->findById($id, $projection),
             'Invoice not found',
         );
-        $this->requireOwnerOrAdmin($invoice);
+        if (!$this->auth->hasRole('admin') && (int) $invoice['user_id'] !== $this->auth->id()) {
+            Response::forbidden();
+        }
 
         return $invoice;
     }

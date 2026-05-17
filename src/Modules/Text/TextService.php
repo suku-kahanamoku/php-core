@@ -123,7 +123,6 @@ class TextService
             'content'    => $input['content'] ?? '',
             'language'   => $language,
             'published'  => (int) ($input['published'] ?? 1),
-            'created_by' => $this->auth->id(),
         ], $projection);
     }
 

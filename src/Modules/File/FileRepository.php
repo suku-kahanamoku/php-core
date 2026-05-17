@@ -28,7 +28,6 @@ class FileRepository extends BaseRepository
             'visibility',
             'entity_type',
             'entity_id',
-            'created_by',
             'expires_at',
         ];
         $this->rel = [];
@@ -113,25 +112,37 @@ class FileRepository extends BaseRepository
     }
 
     /**
-     * Aktualizuje zaznam dle ID.
+     * Aktualizuje zaznam dle ID a vrati aktualizovany zaznam.
      *
      * @param  int                  $id
      * @param  array<string, mixed> $data
-     * @return void
+     * @param  array|null           $projection
+     * @return array<string, mixed>
      */
-    public function update(int $id, array $data): void
+    public function update(int $id, array $data, ?array $projection = null): array
     {
-        $this->db->update('file', $data, 'id = ? AND franchise_code = ?', [$id, $this->code]);
+        $this->db->update(
+            'file',
+            $data,
+            'id = ? AND franchise_code = ?',
+            [$id, $this->code]
+        );
+        return $this->findById($id, $projection);
     }
 
     /**
      * Soft-delete zaznamu.
      *
      * @param  int $id
-     * @return void
+     * @return int  Pocet ovlivnenych radku (0 nebo 1)
      */
-    public function softDelete(int $id): void
+    public function softDelete(int $id): int
     {
-        $this->db->update('file', ['deleted' => 1], 'id = ? AND franchise_code = ?', [$id, $this->code]);
+        return $this->db->update(
+            'file',
+            ['deleted' => 1],
+            'id = ? AND franchise_code = ?',
+            [$id, $this->code]
+        );
     }
 }

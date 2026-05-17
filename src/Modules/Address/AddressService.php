@@ -73,31 +73,26 @@ class AddressService
             $this->address->findById($id, $projection),
             'Address not found',
         );
-        $this->requireOwnerOrAdmin($address);
 
         return $address;
     }
 
     /**
-     * Vytvori novou adresu pro prihlaseneho uzivatele (nebo pro $overrideUserId pokud je caller admin).
+     * Vytvori novou adresu pro prihlaseneho uzivatele.
      * Pokud je is_default=1, zrusi predchozi default stejneho typu.
      * Vyzaduje validaci: street, city, zip jsou povinna pole.
      *
      * @param  array<string, mixed> $input
-     * @param  int|null             $overrideUserId
      * @param  array|null           $projection
      * @return array<string, mixed>
      */
     public function create(
         array $input,
-        ?int $overrideUserId = null,
         ?array $projection = null
     ): array {
         $this->auth->require();
 
-        $userId = ($this->auth->hasRole('admin') && $overrideUserId !== null)
-            ? $overrideUserId
-            : $this->auth->id();
+        $userId = $this->auth->id();
 
         $isDefault = (int) ($input['is_default'] ?? 0);
 
@@ -136,7 +131,6 @@ class AddressService
             $this->address->findById($id),
             'Address not found'
         );
-        $this->requireOwnerOrAdmin($address);
 
         $set        = [];
         $textFields = [
@@ -187,7 +181,6 @@ class AddressService
             $this->address->findById($id),
             'Address not found'
         );
-        $this->requireOwnerOrAdmin($address);
 
         $isDefault = (int) ($input['is_default'] ?? 0);
         if ($isDefault) {
@@ -221,7 +214,6 @@ class AddressService
         $this->auth->require();
 
         $address = $this->requireEntity($this->address->findById($id), 'Address not found');
-        $this->requireOwnerOrAdmin($address);
 
         return $this->address->delete($id);
     }

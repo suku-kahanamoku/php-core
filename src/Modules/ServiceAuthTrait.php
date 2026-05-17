@@ -31,23 +31,4 @@ trait ServiceAuthTrait
         }
         return $entity;
     }
-
-    /**
-     * Overi, ze aktualni uzivatel je vlastnik entity nebo ma roli admin.
-     * Pokud ne, vola Response::forbidden() (403).
-     *
-     * @param  array<string, mixed> $entity      Entita s polem $ownerField
-     * @param  string               $ownerField  Nazev pole s ID vlastnika (default 'user_id')
-     */
-    protected function requireOwnerOrAdmin(
-        array $entity,
-        string $ownerField = 'user_id'
-    ): void {
-        if (
-            !$this->getAuth()->hasRole('admin') &&
-            (int) $entity[$ownerField] !== $this->getAuth()->id()
-        ) {
-            Response::forbidden();
-        }
-    }
 }

@@ -66,8 +66,13 @@ class FileService
      * @param  array|null $projection
      * @return array{items: list<array<string, mixed>>, total: int, page: int, limit: int, totalPages: int}
      */
-    public function list(int $page, int $limit, string $sort, string $filter, ?array $projection): array
-    {
+    public function list(
+        int $page,
+        int $limit,
+        string $sort,
+        string $filter,
+        ?array $projection
+    ): array {
         $this->auth->requireRole('admin');
         return $this->files->findAll($page, $limit, $sort, $filter, $projection);
     }
@@ -148,7 +153,6 @@ class FileService
             'name'        => basename($uploadedFile['name']),
             'size'        => (int) $uploadedFile['size'],
             'visibility'  => 'private',
-            'created_by'  => $userId,
             'expires_at'  => date('Y-m-d H:i:s', strtotime('+24 hours')),
         ]);
 

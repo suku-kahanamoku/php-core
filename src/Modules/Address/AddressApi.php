@@ -83,7 +83,6 @@ class AddressApi
                 'country'    => trim((string) $request->get('country', 'CZ')),
                 'is_default' => $request->get('is_default', 0),
             ],
-            $request->get('user_id') !== null ? (int) $request->get('user_id') : null,
             $request->projection()
         );
 
