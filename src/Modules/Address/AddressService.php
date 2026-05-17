@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Address;
 
-use App\Modules\BaseService;
 use App\Modules\Auth\Auth;
+use App\Modules\BaseService;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
 
