@@ -53,13 +53,19 @@ class FileRepository extends BaseRepository
         $proj   = new Projection($projection);
         $select = $this->buildSelect($proj);
 
-        $where  = 'f.franchise_code = ? AND f.deleted = 0 AND f.temp_token IS NULL';
-        $params = [$this->code];
+        // Extrahuj 'deleted' z filtru (vychozi 0 = pouze aktivni).
+        $filterArr  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
+        $deletedVal = isset($filterArr['deleted']) ? (int) $filterArr['deleted'] : 0;
+        unset($filterArr['deleted']);
+        $search = $filterArr['search'] ?? ($filter !== '' && !str_starts_with($filter, '{') ? $filter : '');
 
-        if ($filter !== '') {
+        $where  = 'f.franchise_code = ? AND f.deleted = ? AND f.temp_token IS NULL';
+        $params = [$this->code, $deletedVal];
+
+        if ($search !== '') {
             $where   .= ' AND (f.name LIKE ? OR f.type LIKE ?)';
-            $params[] = "%{$filter}%";
-            $params[] = "%{$filter}%";
+            $params[] = "%{$search}%";
+            $params[] = "%{$search}%";
         }
 
         $orderBy = match ($sort) {
