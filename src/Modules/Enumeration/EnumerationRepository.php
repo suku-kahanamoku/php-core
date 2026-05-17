@@ -235,19 +235,4 @@ class EnumerationRepository extends BaseRepository
         return $this->findById($id, $projection) ?? ['id' => $id];
     }
 
-    /**
-     * Smaze ciselnikovou polozku.
-     *
-     * @param  int $id
-     * @return int  Pocet smazanych radku (0 nebo 1)
-     */
-    public function delete(int $id): int
-    {
-        return $this->db->update(
-            'enumeration',
-            ['deleted' => 1],
-            'id = ? AND franchise_code = ?',
-            [$id, $this->code],
-        );
-    }
 }

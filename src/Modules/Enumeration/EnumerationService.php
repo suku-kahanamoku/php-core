@@ -205,7 +205,7 @@ class EnumerationService extends BaseService
 
         $this->requireEntity($this->enum->findById($id), 'Enumeration not found');
 
-        return $this->enum->delete($id);
+        return $this->enum->hardDelete($id);
     }
 
     /**

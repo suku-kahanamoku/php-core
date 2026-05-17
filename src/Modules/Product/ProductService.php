@@ -240,7 +240,7 @@ class ProductService extends BaseService
 
         $this->requireEntity($this->product->findById($id), 'Product not found');
 
-        return $this->product->delete($id);
+        return $this->product->hardDelete($id);
     }
 
     /**

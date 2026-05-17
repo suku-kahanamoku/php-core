@@ -288,22 +288,6 @@ class OrderRepository extends BaseRepository
     }
 
     /**
-     * Smaze objednavku.
-     *
-     * @param  int $id
-     * @return int  Pocet smazanych radku (0 nebo 1)
-     */
-    public function delete(int $id): int
-    {
-        return $this->db->update(
-            'order',
-            ['deleted' => 1],
-            'id = ? AND franchise_code = ?',
-            [$id, $this->code],
-        );
-    }
-
-    /**
      * Vygeneruje unikatni cislo objednavky ve formatu ORD-YYYYMMDD-XXXXX.
      *
      * @return string

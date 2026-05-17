@@ -212,22 +212,6 @@ class AddressRepository extends BaseRepository
     }
 
     /**
-     * Smaze adresu.
-     *
-     * @param int $id
-     * @return int Pocet smazanych radku (0 nebo 1)
-     */
-    public function delete(int $id): int
-    {
-        return $this->db->update(
-            'address',
-            ['deleted' => 1],
-            'id = ? AND franchise_code = ?',
-            [$id, $this->code],
-        );
-    }
-
-    /**
      * Oznaci vsechny adresy daneho uzivatele a typu jako nevychozi (is_default = 0).
      *
      * @param int $userId

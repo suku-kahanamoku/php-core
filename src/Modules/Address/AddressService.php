@@ -202,7 +202,7 @@ class AddressService extends BaseService
         $address = $this->address->findById($id);
         $this->requireEntity($address, 'Address not found');
 
-        return $this->address->delete($id);
+        return $this->address->hardDelete($id);
     }
 
     /**

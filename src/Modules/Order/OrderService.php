@@ -316,7 +316,7 @@ class OrderService extends BaseService
         $order = $this->order->findById($id);
         $this->requireEntity($order, 'Order not found');
 
-        return $this->order->delete($id);
+        return $this->order->hardDelete($id);
     }
 
     /**

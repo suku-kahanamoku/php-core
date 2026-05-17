@@ -192,7 +192,7 @@ class InvoiceService extends BaseService
         $invoice = $this->invoice->findById($id);
         $this->requireEntity($invoice, 'Invoice not found');
 
-        return $this->invoice->delete($id);
+        return $this->invoice->hardDelete($id);
     }
 
     /**

@@ -228,7 +228,7 @@ class RoleService extends BaseService
             );
         }
 
-        return $this->role->delete($id);
+        return $this->role->hardDelete($id);
     }
 
     /**

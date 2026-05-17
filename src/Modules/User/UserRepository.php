@@ -311,22 +311,6 @@ class UserRepository extends BaseRepository
     }
 
     /**
-     * Smaze uzivatele.
-     *
-     * @param  int $id
-     * @return int  Pocet smazanych radku (0 nebo 1)
-     */
-    public function delete(int $id): int
-    {
-        return $this->db->update(
-            'user',
-            ['deleted' => 1],
-            'id = ? AND franchise_code = ?',
-            [$id, $this->code],
-        );
-    }
-
-    /**
      * Najde uzivatele dle e-mailu vcetne hesla a role — pouziva se pouze pro prihlaseni.
      *
      * @param  string $email

@@ -209,6 +209,6 @@ class TextService
             Response::notFound('Text not found');
         }
 
-        return $this->text->delete($id);
+        return $this->text->hardDelete($id);
     }
 }

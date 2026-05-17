@@ -327,22 +327,6 @@ class InvoiceRepository extends BaseRepository
     }
 
     /**
-     * Smaze fakturu.
-     *
-     * @param  int $id
-     * @return int  Pocet smazanych radku (0 nebo 1)
-     */
-    public function delete(int $id): int
-    {
-        return $this->db->update(
-            'invoice',
-            ['deleted' => 1],
-            'id = ? AND franchise_code = ?',
-            [$id, $this->code],
-        );
-    }
-
-    /**
      * Vygeneruje unikatni cislo faktury ve formatu YYYY-NNNNN.
      *
      * @return string

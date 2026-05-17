@@ -185,19 +185,4 @@ class CategoryRepository extends BaseRepository
         return $this->findById($id, $projection);
     }
 
-    /**
-     * Smaze kategorii.
-     *
-     * @param  int $id
-     * @return int  Pocet smazanych radku (0 nebo 1)
-     */
-    public function delete(int $id): int
-    {
-        return $this->db->update(
-            'category',
-            ['deleted' => 1],
-            'id = ? AND franchise_code = ?',
-            [$id, $this->code],
-        );
-    }
 }

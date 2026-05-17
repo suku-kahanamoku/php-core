@@ -186,7 +186,7 @@ class CategoryService extends BaseService
             Response::error('Category is in use by products', 409);
         }
 
-        return $this->category->delete($id);
+        return $this->category->hardDelete($id);
     }
 
     /**

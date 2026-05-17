@@ -389,22 +389,6 @@ class ProductRepository extends BaseRepository
     }
 
     /**
-     * Smaze produkt vcetne vazeb na kategorie.
-     *
-     * @param  int $id
-     * @return int  Pocet smazanych radku (0 nebo 1)
-     */
-    public function delete(int $id): int
-    {
-        return $this->db->update(
-            'product',
-            ['deleted' => 1],
-            'id = ? AND franchise_code = ?',
-            [$id, $this->code],
-        );
-    }
-
-    /**
      * Upravi skladove mnozstvi produktu o delta (kladne = pridat, zaporne = odebrat).
      * Vraci nove mnozstvi nebo -1 pokud produkt neexistuje.
      *

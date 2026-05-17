@@ -231,7 +231,7 @@ class UserService extends BaseService
         $user = $this->user->findById($id);
         $this->requireEntity($user, 'User not found');
 
-        return $this->user->delete($id);
+        return $this->user->hardDelete($id);
     }
 
     /**

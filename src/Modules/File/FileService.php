@@ -210,7 +210,8 @@ class FileService extends BaseService
     }
 
     /**
-     * Soft-delete + fyzicke smazani souboru. Vyzaduje admin.
+     * Hard-delete: fyzicky smaze soubor z disku + smaze zaznam z DB.
+     * Vyzaduje admin.
      *
      * @param  int $id
      * @return void
@@ -221,7 +222,12 @@ class FileService extends BaseService
         $file = $this->files->findById($id);
         $this->requireEntity($file, 'File not found');
 
-        $this->files->softDelete($id);
+        $absPath = $this->root() . '/' . ltrim($file['path'], '/');
+        if (file_exists($absPath)) {
+            unlink($absPath);
+        }
+
+        $this->files->hardDelete($id);
     }
 
     /**

@@ -155,22 +155,6 @@ class RoleRepository extends BaseRepository
     }
 
     /**
-     * Tvrde smaze roli.
-     *
-     * @param  int $id
-     * @return int  Pocet smazanych radku (0 nebo 1)
-     */
-    public function delete(int $id): int
-    {
-        return $this->db->update(
-            'role',
-            ['deleted' => 1],
-            'id = ? AND franchise_code = ?',
-            [$id, $this->code],
-        );
-    }
-
-    /**
      * Overi, zda je nazev jiz obsazen (s vyjimkou konkretniho ID).
      *
      * @param  string   $name
