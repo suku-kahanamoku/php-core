@@ -1,5 +1,7 @@
 vendor/
 .env
+.env.example
 temp/
 files/
 .vscode/
+.php-cs-fixer.php
