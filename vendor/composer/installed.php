@@ -3,11 +3,11 @@
         'name' => 'php-core/app',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => 'd15a2eb1e9366412a09a1ba98581d784604c8749',
+        'reference' => '40de1e5d199c21e8d6f8a3375182ee8b0f4ffcc3',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
-        'dev' => true,
+        'dev' => false,
     ),
     'versions' => array(
         'graham-campbell/result-type' => array(
@@ -22,7 +22,7 @@
         'php-core/app' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => 'd15a2eb1e9366412a09a1ba98581d784604c8749',
+            'reference' => '40de1e5d199c21e8d6f8a3375182ee8b0f4ffcc3',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
