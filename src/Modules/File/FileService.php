@@ -50,7 +50,7 @@ class FileService extends BaseService
     // ── Helpers ─────────────────────────────────────────────────────────────
 
     /**
-     * Vrati strankovany seznam (jen commitnute soubory). Vyzaduje admin.
+     * Vrati strankovany seznam (jen commitnute soubory). Vyzaduje prihlaseni.
      *
      * @param  int        $page
      * @param  int        $limit
@@ -66,7 +66,7 @@ class FileService extends BaseService
         string $filter,
         ?array $projection
     ): array {
-        $this->_auth->requireRole('admin');
+        $this->_auth->require();
         return $this->_files->findAll($page, $limit, $sort, $filter, $projection);
     }
 
@@ -91,7 +91,7 @@ class FileService extends BaseService
      * @param  int $id
      * @return array{path: string, name: string, mime_type: string, file: array<string, mixed>}
      */
-    public function resolve(int $id): array
+    public function getFile(int $id): array
     {
         $this->_auth->require();
         $file     = $this->_files->findById($id);

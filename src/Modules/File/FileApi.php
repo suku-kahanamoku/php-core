@@ -79,7 +79,7 @@ class FileApi
             ->required('id')
             ->numeric('id')
             ->validate();
-        $resolved = $this->_service->resolve((int) $params['id']);
+        $resolved = $this->_service->getFile((int) $params['id']);
         Response::stream(
             $resolved['path'],
             $resolved['name'],
@@ -96,7 +96,7 @@ class FileApi
             ->required('id')
             ->numeric('id')
             ->validate();
-        $resolved = $this->_service->resolve((int) $params['id']);
+        $resolved = $this->_service->getFile((int) $params['id']);
         Response::stream(
             $resolved['path'],
             $resolved['name'],
