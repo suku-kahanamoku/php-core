@@ -79,11 +79,11 @@ class FileApi
             ->required('id')
             ->numeric('id')
             ->validate();
-        $resolved = $this->_service->getFile((int) $params['id']);
+        $file = $this->_service->getFile((int) $params['id']);
         Response::stream(
-            $resolved['path'],
-            $resolved['name'],
-            $resolved['mime_type'],
+            $file['path'],
+            $file['name'],
+            $file['mime_type'],
             'attachment'
         );
     }
@@ -96,11 +96,11 @@ class FileApi
             ->required('id')
             ->numeric('id')
             ->validate();
-        $resolved = $this->_service->getFile((int) $params['id']);
+        $file = $this->_service->getFile((int) $params['id']);
         Response::stream(
-            $resolved['path'],
-            $resolved['name'],
-            $resolved['mime_type'],
+            $file['path'],
+            $file['name'],
+            $file['mime_type'],
             'inline'
         );
     }

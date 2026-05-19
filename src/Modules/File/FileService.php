@@ -93,7 +93,6 @@ class FileService extends BaseService
      */
     public function getFile(int $id): array
     {
-        $this->_auth->require();
         $file     = $this->_files->findById($id);
         $this->_requireEntity($file, 'File not found');
 
