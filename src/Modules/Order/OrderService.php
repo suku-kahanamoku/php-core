@@ -15,11 +15,11 @@ use App\Modules\User\UserRepository;
 
 class OrderService extends BaseService
 {
-    private OrderRepository   $order;
-    private UserRepository    $user;
-    private AddressRepository $address;
-    private ProductRepository $product;
-    private RoleRepository    $role;
+    private OrderRepository   $_order;
+    private UserRepository    $_user;
+    private AddressRepository $_address;
+    private ProductRepository $_product;
+    private RoleRepository    $_role;
 
     /**
      * Konstruktor tridy OrderService.
@@ -30,12 +30,12 @@ class OrderService extends BaseService
      */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->order   = new OrderRepository($db, $franchiseCode);
-        $this->user    = new UserRepository($db, $franchiseCode);
-        $this->address = new AddressRepository($db, $franchiseCode);
-        $this->product = new ProductRepository($db, $franchiseCode);
-        $this->role    = new RoleRepository($db, $franchiseCode);
-        $this->auth    = $auth;
+        $this->_order   = new OrderRepository($db, $franchiseCode);
+        $this->_user    = new UserRepository($db, $franchiseCode);
+        $this->_address = new AddressRepository($db, $franchiseCode);
+        $this->_product = new ProductRepository($db, $franchiseCode);
+        $this->_role    = new RoleRepository($db, $franchiseCode);
+        $this->_auth    = $auth;
     }
 
     /**
@@ -62,11 +62,11 @@ class OrderService extends BaseService
         string $filter = '',
         ?array $projection = null,
     ): array {
-        $this->auth->require();
+        $this->_auth->require();
 
-        $userId = $this->auth->hasRole('admin') ? null : $this->auth->id();
+        $userId = $this->_auth->hasRole('admin') ? null : $this->_auth->id();
 
-        return $this->order->findAll(
+        return $this->_order->findAll(
             $page,
             $limit,
             $userId,
@@ -86,11 +86,11 @@ class OrderService extends BaseService
      */
     public function get(int $id, ?array $projection = null): array
     {
-        $this->auth->require();
+        $this->_auth->require();
 
-        $order = $this->order->findById($id, $projection);
-        $this->requireEntity($order, 'Order not found');
-        if (!$this->auth->hasRole('admin') && (int) $order['user_id'] !== $this->auth->id()) {
+        $order = $this->_order->findById($id, $projection);
+        $this->_requireEntity($order, 'Order not found');
+        if (!$this->_auth->hasRole('admin') && (int) $order['user_id'] !== $this->_auth->id()) {
             Response::forbidden();
         }
 
@@ -139,7 +139,7 @@ class OrderService extends BaseService
         $paymentType   = (string) ($billing['value'] ?? 'bank');
         $currency      = 'CZK';
 
-        $pdo = $this->order->getPdo();
+        $pdo = $this->_order->getPdo();
         $pdo->beginTransaction();
 
         try {
@@ -156,7 +156,7 @@ class OrderService extends BaseService
                     );
                 }
 
-                $product = $this->product->findById($productId);
+                $product = $this->_product->findById($productId);
 
                 if (!$product || !$product['published']) {
                     throw new \RuntimeException(
@@ -181,8 +181,8 @@ class OrderService extends BaseService
 
             $totalPrice += $shippingPrice;
 
-            $orderRow = $this->order->create([
-                'order_number'        => $this->order->generateNumber(),
+            $orderRow = $this->_order->create([
+                'order_number'        => $this->_order->generateNumber(),
                 'user_id'             => $userId,
                 'status'              => 'pending',
                 'total_price'         => $totalPrice,
@@ -197,8 +197,8 @@ class OrderService extends BaseService
             $orderId = (int) $orderRow['id'];
 
             foreach ($preparedItems as $item) {
-                $this->order->createItem(array_merge($item, ['order_id' => $orderId]));
-                $this->product->adjustStock($item['product_id'], -$item['quantity']);
+                $this->_order->createItem(array_merge($item, ['order_id' => $orderId]));
+                $this->_product->adjustStock($item['product_id'], -$item['quantity']);
             }
 
             $pdo->commit();
@@ -218,8 +218,8 @@ class OrderService extends BaseService
      */
     private function resolveUserId(array $user): ?int
     {
-        if ($this->auth->check()) {
-            return $this->auth->id();
+        if ($this->_auth->check()) {
+            return $this->_auth->id();
         }
 
         $email = trim($user['email'] ?? '');
@@ -227,17 +227,17 @@ class OrderService extends BaseService
             return null;
         }
 
-        $existing = $this->user->findByEmail($email);
+        $existing = $this->_user->findByEmail($email);
         if ($existing) {
             return (int) $existing['id'];
         }
 
-        $roleId = $this->role->findIdByName('user');
+        $roleId = $this->_role->findIdByName('user');
         if (!$roleId) {
             return null;
         }
 
-        return (int) $this->user->create([
+        return (int) $this->_user->create([
             'first_name' => $user['first_name'] ?? '',
             'last_name'  => $user['last_name']  ?? '',
             'email'      => $email,
@@ -268,7 +268,7 @@ class OrderService extends BaseService
             $country = 'CZ';
         }
 
-        return (int) $this->address->create([
+        return (int) $this->_address->create([
             'user_id'    => $userId,
             'type'       => $type,
             'name'       => $addr['name']    ?? null,
@@ -295,12 +295,12 @@ class OrderService extends BaseService
         string $status,
         ?array $projection = null
     ): array {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        $order = $this->order->findById($id);
-        $this->requireEntity($order, 'Order not found');
+        $order = $this->_order->findById($id);
+        $this->_requireEntity($order, 'Order not found');
 
-        return $this->order->updateStatus($id, $status, $projection);
+        return $this->_order->updateStatus($id, $status, $projection);
     }
 
     /**
@@ -311,12 +311,12 @@ class OrderService extends BaseService
      */
     public function delete(int $id): int
     {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        $order = $this->order->findById($id);
-        $this->requireEntity($order, 'Order not found');
+        $order = $this->_order->findById($id);
+        $this->_requireEntity($order, 'Order not found');
 
-        return $this->order->hardDelete($id);
+        return $this->_order->hardDelete($id);
     }
 
     /**
@@ -328,11 +328,11 @@ class OrderService extends BaseService
      */
     public function remove(int $id): int
     {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        $order = $this->order->findById($id);
-        $this->requireEntity($order, 'Order not found');
+        $order = $this->_order->findById($id);
+        $this->_requireEntity($order, 'Order not found');
 
-        return $this->order->softDelete($id);
+        return $this->_order->softDelete($id);
     }
 }

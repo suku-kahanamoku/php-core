@@ -22,7 +22,7 @@ use App\Modules\Router\Response;
  */
 class FileService extends BaseService
 {
-    private FileRepository $files;
+    private FileRepository $_files;
 
     /** Povolene MIME typy (whitelist) */
     private const ALLOWED_MIME = [
@@ -43,8 +43,8 @@ class FileService extends BaseService
 
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->files = new FileRepository($db, $franchiseCode);
-        $this->auth  = $auth;
+        $this->_files = new FileRepository($db, $franchiseCode);
+        $this->_auth  = $auth;
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────
@@ -66,8 +66,8 @@ class FileService extends BaseService
         string $filter,
         ?array $projection
     ): array {
-        $this->auth->requireRole('admin');
-        return $this->files->findAll($page, $limit, $sort, $filter, $projection);
+        $this->_auth->requireRole('admin');
+        return $this->_files->findAll($page, $limit, $sort, $filter, $projection);
     }
 
     /**
@@ -79,9 +79,9 @@ class FileService extends BaseService
      */
     public function get(int $id, ?array $projection): array
     {
-        $this->auth->require();
-        $file = $this->files->findById($id, $projection);
-        $this->requireEntity($file, 'File not found');
+        $this->_auth->require();
+        $file = $this->_files->findById($id, $projection);
+        $this->_requireEntity($file, 'File not found');
         return $file;
     }
 
@@ -93,11 +93,11 @@ class FileService extends BaseService
      */
     public function resolve(int $id): array
     {
-        $this->auth->require();
-        $file     = $this->files->findById($id);
-        $this->requireEntity($file, 'File not found');
+        $this->_auth->require();
+        $file     = $this->_files->findById($id);
+        $this->_requireEntity($file, 'File not found');
 
-        $absPath = $this->root() . '/' . ltrim($file['path'], '/');
+        $absPath = $this->_root() . '/' . ltrim($file['path'], '/');
         if (!file_exists($absPath)) {
             Response::notFound('File not found on disk');
         }
@@ -119,20 +119,20 @@ class FileService extends BaseService
      */
     public function upload(array $uploadedFile): array
     {
-        $this->auth->require();
-        $this->validateUpload($uploadedFile);
+        $this->_auth->require();
+        $this->_validateUpload($uploadedFile);
 
         $ext  = strtolower(pathinfo($uploadedFile['name'], PATHINFO_EXTENSION));
-        $uuid = $this->generateUuid();
-        $code = $this->files->getCode();
+        $uuid = $this->_generateUuid();
+        $code = $this->_files->getCode();
 
-        $dir = $this->tempRoot() . '/' . $code;
+        $dir = $this->_tempRoot() . '/' . $code;
         if (!is_dir($dir) && !mkdir($dir, 0755, true)) {
             Response::error('Could not create temp directory', 500);
         }
 
         $relPath = 'temp/' . $code . '/' . $uuid . '.' . $ext;
-        $absPath = $this->root() . '/' . $relPath;
+        $absPath = $this->_root() . '/' . $relPath;
 
         if (!move_uploaded_file($uploadedFile['tmp_name'], $absPath)) {
             Response::error('Failed to save uploaded file', 500);
@@ -159,26 +159,26 @@ class FileService extends BaseService
         ?string $entityType = null,
         ?int $entityId = null,
     ): array {
-        $this->auth->require();
+        $this->_auth->require();
 
         // Bezpecnostni kontrola — povolujeme jen soubory z adresare temp/
         if (!str_starts_with($path, 'temp/')) {
             Response::error('Invalid temp path', 422);
         }
 
-        $absTemp = $this->root() . '/' . $path;
+        $absTemp = $this->_root() . '/' . $path;
         if (!file_exists($absTemp)) {
             Response::notFound('Temp file not found');
         }
 
-        $code    = $this->files->getCode();
+        $code    = $this->_files->getCode();
         $uuid    = pathinfo($absTemp, PATHINFO_FILENAME);
         $ext     = strtolower(pathinfo($absTemp, PATHINFO_EXTENSION));
         $mime    = mime_content_type($absTemp) ?: 'application/octet-stream';
         $size    = (int) filesize($absTemp);
 
-        $entityPrefix = $this->normalizeEntityPrefix($entityType);
-        $destDir = $this->filesRoot() . '/' . $code;
+        $entityPrefix = $this->_normalizeEntityPrefix($entityType);
+        $destDir = $this->_filesRoot() . '/' . $code;
         if ($entityPrefix !== null) {
             $destDir .= '/' . $entityPrefix;
         }
@@ -203,7 +203,7 @@ class FileService extends BaseService
             $destRel .= $entityId . '/';
         }
         $destRel .= $destFile;
-        $destAbs = $this->root() . '/' . $destRel;
+        $destAbs = $this->_root() . '/' . $destRel;
 
         if (!rename($absTemp, $destAbs)) {
             Response::error('Failed to move file from temp to files', 500);
@@ -224,8 +224,8 @@ class FileService extends BaseService
             $data['entity_id'] = $entityId;
         }
 
-        $id = $this->files->insert($data);
-        return $this->files->findById($id) ?? [];
+        $id = $this->_files->insert($data);
+        return $this->_files->findById($id) ?? [];
     }
 
     /**
@@ -237,16 +237,16 @@ class FileService extends BaseService
      */
     public function delete(int $id): void
     {
-        $this->auth->requireRole('admin');
-        $file = $this->files->findById($id);
-        $this->requireEntity($file, 'File not found');
+        $this->_auth->requireRole('admin');
+        $file = $this->_files->findById($id);
+        $this->_requireEntity($file, 'File not found');
 
-        $absPath = $this->root() . '/' . ltrim($file['path'], '/');
+        $absPath = $this->_root() . '/' . ltrim($file['path'], '/');
         if (file_exists($absPath)) {
             unlink($absPath);
         }
 
-        $this->files->hardDelete($id);
+        $this->_files->hardDelete($id);
     }
 
     /**
@@ -258,17 +258,17 @@ class FileService extends BaseService
      */
     public function remove(int $id): int
     {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        $file = $this->files->findById($id);
-        $this->requireEntity($file, 'File not found');
+        $file = $this->_files->findById($id);
+        $this->_requireEntity($file, 'File not found');
 
-        return $this->files->softDelete($id);
+        return $this->_files->softDelete($id);
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────
 
-    private function validateUpload(array $file): void
+    private function _validateUpload(array $file): void
     {
         if (!isset($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
             Response::error('No valid file uploaded', 422);
@@ -286,7 +286,7 @@ class FileService extends BaseService
         }
     }
 
-    private function generateUuid(): string
+    private function _generateUuid(): string
     {
         $data    = random_bytes(16);
         $data[6] = chr(ord($data[6]) & 0x0f | 0x40);
@@ -295,25 +295,25 @@ class FileService extends BaseService
     }
 
     /** Absolutni cesta ke korenu projektu (kde jsou temp/ a files/). */
-    private function root(): string
+    private function _root(): string
     {
         return rtrim($_ENV['FILE_ROOT'] ?? dirname(__DIR__, 3), '/');
     }
 
-    private function tempRoot(): string
+    private function _tempRoot(): string
     {
-        return $this->root() . '/temp';
+        return $this->_root() . '/temp';
     }
 
-    private function filesRoot(): string
+    private function _filesRoot(): string
     {
-        return $this->root() . '/files';
+        return $this->_root() . '/files';
     }
 
     /**
      * Normalizuje entity_type na bezpecny prefix/slozku (napr. "Product" -> "product").
      */
-    private function normalizeEntityPrefix(?string $entityType): ?string
+    private function _normalizeEntityPrefix(?string $entityType): ?string
     {
         if ($entityType === null) {
             return null;

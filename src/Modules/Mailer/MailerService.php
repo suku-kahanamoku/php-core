@@ -8,15 +8,15 @@ use App\Modules\Templater\TemplaterService;
 
 class MailerService
 {
-    private string $from;
-    private string $fromName;
-    private TemplaterService $tpl;
+    private string $_from;
+    private string $_fromName;
+    private TemplaterService $_tpl;
 
     public function __construct()
     {
-        $this->from     = $_ENV['MAILER_FROM'] ?? 'noreply@example.com';
-        $this->fromName = $_ENV['MAILER_FROM_NAME'] ?? 'App';
-        $this->tpl      = new TemplaterService();
+        $this->_from     = $_ENV['MAILER_FROM'] ?? 'noreply@example.com';
+        $this->_fromName = $_ENV['MAILER_FROM_NAME'] ?? 'App';
+        $this->_tpl      = new TemplaterService();
     }
 
     /**
@@ -42,7 +42,7 @@ class MailerService
         array $attachments = [],
         string|array|null $bcc = null,
     ): bool {
-        $html       = $this->tpl->render($template, $templateData);
+        $html       = $this->_tpl->render($template, $templateData);
         $recipients = is_array($to) ? $to : [$to];
         $allSent    = true;
 
@@ -96,11 +96,11 @@ class MailerService
         string|null $fromEmail = null,
         string|null $fromName = null,
     ): string {
-        $resolvedFrom     = $fromEmail ?? $this->from;
-        $resolvedFromName = $fromName ?? $this->fromName;
+        $resolvedFrom     = $fromEmail ?? $this->_from;
+        $resolvedFromName = $fromName ?? $this->_fromName;
 
         $lines = [
-            'From: ' . $resolvedFromName . ' <' . $this->from . '>',
+            'From: ' . $resolvedFromName . ' <' . $this->_from . '>',
             'Reply-To: ' . $resolvedFrom,
             'MIME-Version: 1.0',
             'Content-Type: multipart/mixed; boundary="' . $boundary . '"',

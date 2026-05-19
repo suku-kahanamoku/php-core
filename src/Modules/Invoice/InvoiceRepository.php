@@ -14,7 +14,7 @@ use App\Utils\Projection;
  */
 class InvoiceRepository extends BaseRepository
 {
-    private FileRepository $fileRepo;
+    private FileRepository $_fileRepo;
 
     /**
      * Konstruktor tridy InvoiceRepository.
@@ -25,10 +25,10 @@ class InvoiceRepository extends BaseRepository
     public function __construct(Database $db, string $franchiseCode)
     {
         parent::__construct($db, $franchiseCode);
-        $this->fileRepo = new FileRepository($db, $franchiseCode);
-        $this->table = 'invoice';
-        $this->alias = 'i';
-        $this->own   = [
+        $this->_fileRepo = new FileRepository($db, $franchiseCode);
+        $this->_table = 'invoice';
+        $this->_alias = 'i';
+        $this->_own   = [
             'invoice_number',
             'status',
             'total_amount',
@@ -40,7 +40,7 @@ class InvoiceRepository extends BaseRepository
             'user_id',
             'billing_address_id',
         ];
-        $this->rel = ['user', 'files'];
+        $this->_rel = ['user', 'files'];
     }
 
     /**
@@ -94,7 +94,7 @@ class InvoiceRepository extends BaseRepository
         $offset = ($page - 1) * $limit;
 
         $where  = ['i.franchise_code = ?'];
-        $params = [$this->code];
+        $params = [$this->_code];
 
         if ($userId !== null) {
             $where[]  = 'i.user_id = ?';
@@ -117,8 +117,8 @@ class InvoiceRepository extends BaseRepository
 
         $whereStr = implode(' AND ', $where);
 
-        $sys        = $this->sys;
-        $baseSelect = $this->buildSelect($proj);
+        $sys        = $this->_sys;
+        $baseSelect = $this->_buildSelect($proj);
 
         // Auto-JOIN user kdyz filtr obsahuje user.* sloupce nebo projekce to vyzaduje.
         $decodedFilter  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
@@ -136,12 +136,12 @@ class InvoiceRepository extends BaseRepository
 
         $select = "{$baseSelect}{$relSel}";
 
-        $total = (int) $this->db->fetchOne(
+        $total = (int) $this->_db->fetchOne(
             "SELECT COUNT(*) AS cnt FROM invoice i {$joinSql} WHERE {$whereStr}",
             $params,
         )['cnt'];
 
-        $items = $this->db->fetchAll(
+        $items = $this->_db->fetchAll(
             "SELECT {$select} FROM invoice i {$joinSql}
              WHERE {$whereStr}
              ORDER BY {$orderBy}
@@ -152,7 +152,7 @@ class InvoiceRepository extends BaseRepository
         $filesMap = [];
         if ($proj->needsJoin('files')) {
             $ids = array_column($items, 'id');
-            $filesMap = $this->fileRepo->findByJunctionList('invoice_file', 'invoice_id', $ids);
+            $filesMap = $this->_fileRepo->findByJunctionList('invoice_file', 'invoice_id', $ids);
         }
 
         foreach ($items as &$item) {
@@ -172,7 +172,7 @@ class InvoiceRepository extends BaseRepository
         }
         unset($item);
 
-        return $this->resultList($items, $total, $page, $limit);
+        return $this->_resultList($items, $total, $page, $limit);
     }
 
     /**
@@ -215,8 +215,8 @@ class InvoiceRepository extends BaseRepository
     {
         $proj = new Projection($projection);
 
-        $sys        = $this->sys;
-        $baseSelect = $this->buildSelect($proj);
+        $sys        = $this->_sys;
+        $baseSelect = $this->_buildSelect($proj);
 
         $joinSql = '';
         $relSel  = '';
@@ -227,17 +227,17 @@ class InvoiceRepository extends BaseRepository
 
         $select = "{$baseSelect}{$relSel}";
 
-        $invoice = $this->db->fetchOne(
+        $invoice = $this->_db->fetchOne(
             "SELECT {$select} FROM invoice i {$joinSql}
              WHERE i.id = ? AND i.franchise_code = ? AND i.deleted = 0",
-            [$id, $this->code],
+            [$id, $this->_code],
         );
 
         if (!$invoice) {
             return null;
         }
 
-        $invoice['items'] = $this->db->fetchAll(
+        $invoice['items'] = $this->_db->fetchAll(
             'SELECT ii.*, p.name AS product_name, p.sku
              FROM invoice_item ii
              LEFT JOIN product p ON p.id = ii.product_id
@@ -246,7 +246,7 @@ class InvoiceRepository extends BaseRepository
         );
 
         if ($proj->needsJoin('files')) {
-            $files = $this->fileRepo->findByJunctionItem('invoice_file', 'invoice_id', $id);
+            $files = $this->_fileRepo->findByJunctionItem('invoice_file', 'invoice_id', $id);
             $invoice['file_ids'] = array_column($files, 'id');
             $invoice['files']    = $files;
         }
@@ -269,10 +269,10 @@ class InvoiceRepository extends BaseRepository
      */
     public function findByOrder(int $orderId): ?array
     {
-        $row = $this->db->fetchOne(
+        $row = $this->_db->fetchOne(
             'SELECT id FROM invoice
              WHERE franchise_code = ? AND order_id = ? AND deleted = 0',
-            [$this->code, $orderId],
+            [$this->_code, $orderId],
         );
 
         return $row ?: null;
@@ -294,8 +294,8 @@ class InvoiceRepository extends BaseRepository
      */
     public function create(array $data, ?array $projection = null): array
     {
-        $id = $this->db->insert('invoice', array_merge($data, [
-            'franchise_code' => $this->code,
+        $id = $this->_db->insert('invoice', array_merge($data, [
+            'franchise_code' => $this->_code,
         ]));
 
         return $this->findById($id, $projection) ?? ['id' => $id];
@@ -309,7 +309,7 @@ class InvoiceRepository extends BaseRepository
      */
     public function createItem(array $data): int
     {
-        return $this->db->insert('invoice_item', array_merge($data, []));
+        return $this->_db->insert('invoice_item', array_merge($data, []));
     }
 
     /**
@@ -321,10 +321,10 @@ class InvoiceRepository extends BaseRepository
      */
     public function syncFiles(int $invoiceId, array $fileIds): void
     {
-        $this->db->delete('invoice_file', 'invoice_id = ?', [$invoiceId]);
+        $this->_db->delete('invoice_file', 'invoice_id = ?', [$invoiceId]);
 
         foreach ($fileIds as $fileId) {
-            $this->db->insert('invoice_file', [
+            $this->_db->insert('invoice_file', [
                 'invoice_id' => $invoiceId,
                 'file_id'    => (int) $fileId,
             ]);
@@ -355,11 +355,11 @@ class InvoiceRepository extends BaseRepository
         if ($status === 'paid') {
             $set['paid_at'] = date('Y-m-d H:i:s');
         }
-        $this->db->update(
+        $this->_db->update(
             'invoice',
             $set,
             'id = ? AND franchise_code = ?',
-            [$id, $this->code],
+            [$id, $this->_code],
         );
 
         return $this->findById($id, $projection) ?? ['id' => $id];
@@ -373,11 +373,11 @@ class InvoiceRepository extends BaseRepository
     public function generateNumber(): string
     {
         $year = date('Y');
-        $last = $this->db->fetchOne(
+        $last = $this->_db->fetchOne(
             'SELECT invoice_number FROM invoice
              WHERE franchise_code = ? AND invoice_number LIKE ?
              ORDER BY id DESC LIMIT 1',
-            [$this->code, $year . '%'],
+            [$this->_code, $year . '%'],
         );
 
         $seq = 1;
@@ -396,6 +396,6 @@ class InvoiceRepository extends BaseRepository
      */
     public function getPdo(): \PDO
     {
-        return $this->db->getPdo();
+        return $this->_db->getPdo();
     }
 }

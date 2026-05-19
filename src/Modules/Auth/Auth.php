@@ -10,11 +10,11 @@ use App\Modules\Router\Response;
 
 class Auth
 {
-    private const TOKEN_BYTES    = 32;
+    private const _TOKEN_BYTES    = 32;
     private const TOKEN_LIFETIME = 86400; // vychozi doba platnosti: 24 hodin
 
-    private UserTokenRepository $userToken;
-    private ?array    $currentUser = null;
+    private UserTokenRepository $_userToken;
+    private ?array    $_currentUser = null;
 
     /**
      * Konstruktor tridy Auth.
@@ -23,7 +23,7 @@ class Auth
      */
     public function __construct(Database $db)
     {
-        $this->userToken = new UserTokenRepository($db);
+        $this->_userToken = new UserTokenRepository($db);
     }
 
     /**
@@ -39,11 +39,11 @@ class Auth
      */
     public function login(array $user): string
     {
-        $token     = bin2hex(random_bytes(self::TOKEN_BYTES));
+        $token     = bin2hex(random_bytes(self::_TOKEN_BYTES));
         $lifetime  = (int) ($_ENV['TOKEN_LIFETIME'] ?? self::TOKEN_LIFETIME);
         $expiresAt = date('Y-m-d H:i:s', time() + $lifetime);
 
-        $this->userToken->create($user['id'], $token, $expiresAt);
+        $this->_userToken->create($user['id'], $token, $expiresAt);
 
         return $token;
     }
@@ -55,11 +55,11 @@ class Auth
      */
     public function logout(): void
     {
-        $token = $this->extractToken();
+        $token = $this->_extractToken();
         if ($token !== null) {
-            $this->userToken->delete($token);
+            $this->_userToken->delete($token);
         }
-        $this->currentUser = null;
+        $this->_currentUser = null;
     }
 
     /**
@@ -69,22 +69,22 @@ class Auth
      */
     public function check(): bool
     {
-        if ($this->currentUser !== null) {
+        if ($this->_currentUser !== null) {
             return true;
         }
 
-        $token = $this->extractToken();
+        $token = $this->_extractToken();
         if ($token === null) {
             return false;
         }
 
-        $row = $this->userToken->findUserByToken($token, Request::resolveCode());
+        $row = $this->_userToken->findUserByToken($token, Request::resolveCode());
 
         if (!$row) {
             return false;
         }
 
-        $this->currentUser = [
+        $this->_currentUser = [
             'id'    => (int) $row['id'],
             'email' => $row['email'],
             'role'  => $row['role'],
@@ -106,7 +106,7 @@ class Auth
      */
     public function user(): ?array
     {
-        return $this->check() ? $this->currentUser : null;
+        return $this->check() ? $this->_currentUser : null;
     }
 
     /**
@@ -177,7 +177,7 @@ class Auth
         }
     }
 
-    private function extractToken(): ?string
+    private function _extractToken(): ?string
     {
         $header = $_SERVER['HTTP_AUTHORIZATION']
             ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION']

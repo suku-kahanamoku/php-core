@@ -22,9 +22,9 @@ class OrderRepository extends BaseRepository
     public function __construct(Database $db, string $franchiseCode)
     {
         parent::__construct($db, $franchiseCode);
-        $this->table = 'order';
-        $this->alias = 'o';
-        $this->own   = [
+        $this->_table = 'order';
+        $this->_alias = 'o';
+        $this->_own   = [
             'order_number',
             'status',
             'total_price',
@@ -37,7 +37,7 @@ class OrderRepository extends BaseRepository
             'user_id',
             'note',
         ];
-        $this->rel = ['user'];
+        $this->_rel = ['user'];
     }
 
     /**
@@ -88,7 +88,7 @@ class OrderRepository extends BaseRepository
         $offset = ($page - 1) * $limit;
 
         $where  = ['o.franchise_code = ?'];
-        $params = [$this->code];
+        $params = [$this->_code];
 
         if ($userId !== null) {
             $where[]  = 'o.user_id = ?';
@@ -111,8 +111,8 @@ class OrderRepository extends BaseRepository
 
         $whereStr = implode(' AND ', $where);
 
-        $sys        = $this->sys;
-        $baseSelect = $this->buildSelect($proj);
+        $sys        = $this->_sys;
+        $baseSelect = $this->_buildSelect($proj);
 
         // Auto-JOIN user kdyz filtr obsahuje user.* sloupce nebo projekce to vyzaduje.
         $decodedFilter  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
@@ -130,12 +130,12 @@ class OrderRepository extends BaseRepository
 
         $select = "{$baseSelect}{$relSel}";
 
-        $total = (int) $this->db->fetchOne(
+        $total = (int) $this->_db->fetchOne(
             "SELECT COUNT(*) AS cnt FROM `order` o {$joinSql} WHERE {$whereStr}",
             $params,
         )['cnt'];
 
-        $items = $this->db->fetchAll(
+        $items = $this->_db->fetchAll(
             "SELECT {$select} FROM `order` o {$joinSql}
              WHERE {$whereStr}
              ORDER BY {$orderBy}
@@ -155,7 +155,7 @@ class OrderRepository extends BaseRepository
         }
         unset($item);
 
-        return $this->resultList($items, $total, $page, $limit);
+        return $this->_resultList($items, $total, $page, $limit);
     }
 
     /**
@@ -186,8 +186,8 @@ class OrderRepository extends BaseRepository
     {
         $proj = new Projection($projection);
 
-        $sys        = $this->sys;
-        $baseSelect = $this->buildSelect($proj);
+        $sys        = $this->_sys;
+        $baseSelect = $this->_buildSelect($proj);
 
         $joinSql = '';
         $relSel  = '';
@@ -198,17 +198,17 @@ class OrderRepository extends BaseRepository
 
         $select = "{$baseSelect}{$relSel}";
 
-        $order = $this->db->fetchOne(
+        $order = $this->_db->fetchOne(
             "SELECT {$select} FROM `order` o {$joinSql}
              WHERE o.id = ? AND o.franchise_code = ? AND o.deleted = 0",
-            [$id, $this->code],
+            [$id, $this->_code],
         );
 
         if (!$order) {
             return null;
         }
 
-        $order['order_items'] = $this->db->fetchAll(
+        $order['order_items'] = $this->_db->fetchAll(
             'SELECT oi.*, p.name AS product_name, p.sku
              FROM order_item oi
              LEFT JOIN product p ON p.id = oi.product_id
@@ -242,8 +242,8 @@ class OrderRepository extends BaseRepository
      */
     public function create(array $data, ?array $projection = null): array
     {
-        $id = $this->db->insert('order', array_merge($data, [
-            'franchise_code' => $this->code,
+        $id = $this->_db->insert('order', array_merge($data, [
+            'franchise_code' => $this->_code,
         ]));
 
         return $this->findById($id, $projection) ?? ['id' => $id];
@@ -257,7 +257,7 @@ class OrderRepository extends BaseRepository
      */
     public function createItem(array $data): int
     {
-        return $this->db->insert('order_item', array_merge($data, []));
+        return $this->_db->insert('order_item', array_merge($data, []));
     }
 
     /**
@@ -280,9 +280,9 @@ class OrderRepository extends BaseRepository
         string $status,
         ?array $projection = null
     ): array {
-        $this->db->update('order', [
+        $this->_db->update('order', [
             'status'     => $status,
-        ], 'id = ? AND franchise_code = ?', [$id, $this->code]);
+        ], 'id = ? AND franchise_code = ?', [$id, $this->_code]);
 
         return $this->findById($id, $projection) ?? ['id' => $id];
     }
@@ -304,6 +304,6 @@ class OrderRepository extends BaseRepository
      */
     public function getPdo(): \PDO
     {
-        return $this->db->getPdo();
+        return $this->_db->getPdo();
     }
 }

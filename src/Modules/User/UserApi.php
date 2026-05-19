@@ -13,7 +13,7 @@ use App\Modules\Router\Router;
 
 class UserApi
 {
-    private UserService $service;
+    private UserService $_service;
 
     /**
      * Konstruktor tridy UserApi.
@@ -24,7 +24,7 @@ class UserApi
      */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->service = new UserService($db, $franchiseCode, $auth);
+        $this->_service = new UserService($db, $franchiseCode, $auth);
     }
 
     /**
@@ -35,7 +35,7 @@ class UserApi
      */
     public function list(Request $request): void
     {
-        $result  = $this->service->list(
+        $result  = $this->_service->list(
             max(1, (int) $request->get('page', 1)),
             min(100, max(1, (int) $request->get('limit', 20))),
             (string) $request->get('sort', ''),
@@ -54,7 +54,7 @@ class UserApi
      */
     public function get(Request $request, array $params): void
     {
-        $item    = $this->service->get((int) $params['id'], $request->projection());
+        $item    = $this->_service->get((int) $params['id'], $request->projection());
         Response::successItem($item, $request);
     }
 
@@ -81,7 +81,7 @@ class UserApi
             ->minLength('password', 8)
             ->validate();
 
-        $user = $this->service->create($input, $request->projection());
+        $user = $this->_service->create($input, $request->projection());
         Response::created($user, 'User created');
     }
 
@@ -94,7 +94,7 @@ class UserApi
      */
     public function update(Request $request, array $params): void
     {
-        $user = $this->service->update((int) $params['id'], [
+        $user = $this->_service->update((int) $params['id'], [
             'first_name' => $request->get('first_name'),
             'last_name'  => $request->get('last_name'),
             'phone'      => $request->get('phone'),
@@ -122,7 +122,7 @@ class UserApi
         ];
         VALIDATOR($input)->required(['first_name', 'last_name'])->validate();
 
-        $user = $this->service->replace(
+        $user = $this->_service->replace(
             (int) $params['id'],
             $input,
             $request->projection()
@@ -142,9 +142,9 @@ class UserApi
         VALIDATOR(['id' => $params['id'] ?? ''])->required('id')->validate();
         $force = filter_var($request->query['force'] ?? false, FILTER_VALIDATE_BOOLEAN);
         if ($force) {
-            $this->service->delete((int) $params['id']);
+            $this->_service->delete((int) $params['id']);
         } else {
-            $this->service->remove((int) $params['id']);
+            $this->_service->remove((int) $params['id']);
         }
         Response::success(null, 'User deleted');
     }

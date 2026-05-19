@@ -12,7 +12,7 @@ use App\Modules\Router\Router;
 
 class TextApi
 {
-    private TextService $service;
+    private TextService $_service;
 
     /**
      * Konstruktor tridy TextApi.
@@ -23,7 +23,7 @@ class TextApi
      */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->service = new TextService($db, $franchiseCode, $auth);
+        $this->_service = new TextService($db, $franchiseCode, $auth);
     }
 
     /**
@@ -34,7 +34,7 @@ class TextApi
      */
     public function list(Request $request): void
     {
-        $result = $this->service->list(
+        $result = $this->_service->list(
             max(1, (int) $request->get('page', 1)),
             min(100, max(1, (int) $request->get('limit', 20))),
             (string) $request->get('sort', ''),
@@ -53,7 +53,7 @@ class TextApi
      */
     public function get(Request $request, array $params): void
     {
-        $item    = $this->service->get((int) $params['id'], $request->projection());
+        $item    = $this->_service->get((int) $params['id'], $request->projection());
         Response::successItem($item, $request);
     }
 
@@ -66,7 +66,7 @@ class TextApi
      */
     public function getByKey(Request $request, array $params): void
     {
-        Response::success($this->service->getByKey(
+        Response::success($this->_service->getByKey(
             $params['key'],
             (string) $request->get('language', 'cs'),
         ));
@@ -86,7 +86,7 @@ class TextApi
             ->required(['syscode', 'title'])
             ->validate();
 
-        $text = $this->service->create(
+        $text = $this->_service->create(
             $syscode,
             $title,
             trim((string) $request->get('language', 'cs')),
@@ -108,7 +108,7 @@ class TextApi
      */
     public function update(Request $request, array $params): void
     {
-        $text = $this->service->update((int) $params['id'], [
+        $text = $this->_service->update((int) $params['id'], [
             'syscode'   => $request->get('syscode'),
             'title'     => $request->get('title'),
             'content'   => $request->get('content'),
@@ -133,7 +133,7 @@ class TextApi
             ->required(['syscode', 'title'])
             ->validate();
 
-        $text = $this->service->replace(
+        $text = $this->_service->replace(
             (int) $params['id'],
             $syscode,
             $title,
@@ -159,9 +159,9 @@ class TextApi
         VALIDATOR(['id' => $params['id'] ?? ''])->required('id')->validate();
         $force = filter_var($request->query['force'] ?? false, FILTER_VALIDATE_BOOLEAN);
         if ($force) {
-            $this->service->delete((int) $params['id']);
+            $this->_service->delete((int) $params['id']);
         } else {
-            $this->service->remove((int) $params['id']);
+            $this->_service->remove((int) $params['id']);
         }
         Response::success(null, 'Text deleted');
     }

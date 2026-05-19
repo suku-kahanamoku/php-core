@@ -22,9 +22,9 @@ class EnumerationRepository extends BaseRepository
     public function __construct(Database $db, string $franchiseCode)
     {
         parent::__construct($db, $franchiseCode);
-        $this->table = 'enumeration';
-        $this->alias = 'e';
-        $this->own   = ['type', 'syscode', 'label', 'value', 'position', 'published', 'data'];
+        $this->_table = 'enumeration';
+        $this->_alias = 'e';
+        $this->_own   = ['type', 'syscode', 'label', 'value', 'position', 'published', 'data'];
     }
 
     /**
@@ -68,7 +68,7 @@ class EnumerationRepository extends BaseRepository
         $offset = ($page - 1) * $limit;
 
         $where  = ['e.franchise_code = ?'];
-        $params = [$this->code];
+        $params = [$this->_code];
 
         // Extrahuj 'deleted' z filtru (vychozi 0 = jen aktivni; deleted:1 pro kos).
         $filterArr  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
@@ -85,15 +85,15 @@ class EnumerationRepository extends BaseRepository
         }
 
         $whereStr = implode(' AND ', $where);
-        $select   = $this->buildSelect($proj);
-        $sys      = $this->sys;
+        $select   = $this->_buildSelect($proj);
+        $sys      = $this->_sys;
 
-        $total = (int) $this->db->fetchOne(
+        $total = (int) $this->_db->fetchOne(
             "SELECT COUNT(*) AS cnt FROM enumeration e WHERE {$whereStr}",
             $params,
         )['cnt'];
 
-        $items = $this->db->fetchAll(
+        $items = $this->_db->fetchAll(
             "SELECT {$select} FROM enumeration e
              WHERE {$whereStr}
              ORDER BY {$orderBy}
@@ -109,7 +109,7 @@ class EnumerationRepository extends BaseRepository
         }
         unset($item);
 
-        return $this->resultList($items, $total, $page, $limit);
+        return $this->_resultList($items, $total, $page, $limit);
     }
 
     /**
@@ -135,10 +135,10 @@ class EnumerationRepository extends BaseRepository
      */
     public function getTypes(): array
     {
-        $rows = $this->db->fetchAll(
+        $rows = $this->_db->fetchAll(
             'SELECT DISTINCT type FROM enumeration
              WHERE franchise_code = ? AND deleted = 0 ORDER BY type ASC',
-            [$this->code],
+            [$this->_code],
         );
 
         return array_column($rows, 'type');
@@ -155,16 +155,16 @@ class EnumerationRepository extends BaseRepository
     public function codeExists(string $type, string $code, ?int $excludeId = null): bool
     {
         if ($excludeId !== null) {
-            $row = $this->db->fetchOne(
+            $row = $this->_db->fetchOne(
                 'SELECT id FROM enumeration
                  WHERE franchise_code = ? AND type = ? AND syscode = ? AND id != ? AND deleted = 0',
-                [$this->code, $type, $code, $excludeId],
+                [$this->_code, $type, $code, $excludeId],
             );
         } else {
-            $row = $this->db->fetchOne(
+            $row = $this->_db->fetchOne(
                 'SELECT id FROM enumeration
                  WHERE franchise_code = ? AND type = ? AND syscode = ? AND deleted = 0',
-                [$this->code, $type, $code],
+                [$this->_code, $type, $code],
             );
         }
 
@@ -194,8 +194,8 @@ class EnumerationRepository extends BaseRepository
             $data['data'] = json_encode($data['data'], JSON_UNESCAPED_UNICODE);
         }
 
-        $id = $this->db->insert('enumeration', array_merge($data, [
-            'franchise_code' => $this->code,
+        $id = $this->_db->insert('enumeration', array_merge($data, [
+            'franchise_code' => $this->_code,
         ]));
 
         return $this->findById($id, $projection) ?? ['id' => $id];
@@ -225,11 +225,11 @@ class EnumerationRepository extends BaseRepository
             $data['data'] = json_encode($data['data'], JSON_UNESCAPED_UNICODE);
         }
 
-        $this->db->update(
+        $this->_db->update(
             'enumeration',
             $data,
             'id = ? AND franchise_code = ?',
-            [$id, $this->code],
+            [$id, $this->_code],
         );
 
         return $this->findById($id, $projection) ?? ['id' => $id];

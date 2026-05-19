@@ -12,7 +12,7 @@ use App\Modules\Router\Router;
 
 class OrderApi
 {
-    private OrderService $service;
+    private OrderService $_service;
 
     /**
      * Konstruktor tridy OrderApi.
@@ -23,7 +23,7 @@ class OrderApi
      */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->service = new OrderService($db, $franchiseCode, $auth);
+        $this->_service = new OrderService($db, $franchiseCode, $auth);
     }
 
     /**
@@ -35,7 +35,7 @@ class OrderApi
      */
     public function list(Request $request): void
     {
-        $result  = $this->service->list(
+        $result  = $this->_service->list(
             max(1, (int) $request->get('page', 1)),
             min(100, max(1, (int) $request->get('limit', 20))),
             (string) $request->get('sort', ''),
@@ -55,7 +55,7 @@ class OrderApi
      */
     public function get(Request $request, array $params): void
     {
-        $item    = $this->service->get((int) $params['id'], $request->projection());
+        $item    = $this->_service->get((int) $params['id'], $request->projection());
         Response::successItem($item, $request);
     }
 
@@ -71,7 +71,7 @@ class OrderApi
             ->required('carts')
             ->validate();
 
-        $result = $this->service->create($request->body);
+        $result = $this->_service->create($request->body);
         Response::created($result, 'Order created');
     }
 
@@ -87,7 +87,7 @@ class OrderApi
         $status = trim((string) $request->get('status', ''));
         VALIDATOR(['status' => $status])->required('status')->validate();
 
-        $order = $this->service->updateStatus(
+        $order = $this->_service->updateStatus(
             (int) $params['id'],
             $status,
             $request->projection(),
@@ -107,9 +107,9 @@ class OrderApi
         VALIDATOR(['id' => $params['id'] ?? ''])->required('id')->validate();
         $force = filter_var($request->query['force'] ?? false, FILTER_VALIDATE_BOOLEAN);
         if ($force) {
-            $this->service->delete((int) $params['id']);
+            $this->_service->delete((int) $params['id']);
         } else {
-            $this->service->remove((int) $params['id']);
+            $this->_service->remove((int) $params['id']);
         }
         Response::success(null, 'Order deleted');
     }

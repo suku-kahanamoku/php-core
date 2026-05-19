@@ -12,8 +12,8 @@ use App\Modules\User\UserRepository;
 
 class RoleService extends BaseService
 {
-    private RoleRepository $role;
-    private UserRepository  $user;
+    private RoleRepository $_role;
+    private UserRepository  $_user;
 
     /**
      * Konstruktor tridy RoleService.
@@ -24,9 +24,9 @@ class RoleService extends BaseService
      */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->role = new RoleRepository($db, $franchiseCode);
-        $this->user = new UserRepository($db, $franchiseCode);
-        $this->auth = $auth;
+        $this->_role = new RoleRepository($db, $franchiseCode);
+        $this->_user = new UserRepository($db, $franchiseCode);
+        $this->_auth = $auth;
     }
 
     /**
@@ -52,7 +52,7 @@ class RoleService extends BaseService
         string $filter = '',
         ?array $projection = null
     ): array {
-        return $this->role->findAll($page, $limit, $sort, $filter, $projection);
+        return $this->_role->findAll($page, $limit, $sort, $filter, $projection);
     }
 
     /**
@@ -71,10 +71,10 @@ class RoleService extends BaseService
      */
     public function get(int $id, ?array $projection = null): array
     {
-        $role = $this->role->findById($id);
-        $this->requireEntity($role, 'Role not found');
+        $role = $this->_role->findById($id);
+        $this->_requireEntity($role, 'Role not found');
 
-        $role['user_count'] = $this->user->countByRoleId($id);
+        $role['user_count'] = $this->_user->countByRoleId($id);
         return $role;
     }
 
@@ -99,13 +99,13 @@ class RoleService extends BaseService
         int $sortOrder,
         ?array $projection = null,
     ): array {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        if ($this->role->nameExists($name)) {
+        if ($this->_role->nameExists($name)) {
             Response::error('Role with this name already exists', 409);
         }
 
-        return $this->role->create([
+        return $this->_role->create([
             'name'     => $name,
             'label'    => $label,
             'position' => $sortOrder,
@@ -128,19 +128,19 @@ class RoleService extends BaseService
      */
     public function update(int $id, array $fields, ?array $projection = null): array
     {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        $existing = $this->role->findById($id);
-        $this->requireEntity($existing, 'Role not found');
+        $existing = $this->_role->findById($id);
+        $this->_requireEntity($existing, 'Role not found');
 
         $set = [];
 
         if (array_key_exists('name', $fields)) {
             $newName = trim(strtolower((string) $fields['name']));
-            if ($this->role->nameExists($newName, $id)) {
+            if ($this->_role->nameExists($newName, $id)) {
                 Response::error('Role with this name already exists', 409);
             }
-            if ($this->role->nameExists($newName, $id)) {
+            if ($this->_role->nameExists($newName, $id)) {
                 Response::error('Role with this name already exists', 409);
             }
             $set['name'] = $newName;
@@ -154,10 +154,10 @@ class RoleService extends BaseService
         }
 
         if (!empty($set)) {
-            $this->role->update($id, $set);
+            $this->_role->update($id, $set);
         }
 
-        return $this->role->findById($id, $projection) ?? ['id' => $id];
+        return $this->_role->findById($id, $projection) ?? ['id' => $id];
     }
 
     /**
@@ -183,21 +183,21 @@ class RoleService extends BaseService
         int $sortOrder,
         ?array $projection = null,
     ): array {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        $this->requireEntity($this->role->findById($id), 'Role not found');
+        $this->_requireEntity($this->_role->findById($id), 'Role not found');
 
-        if ($this->role->nameExists($name, $id)) {
+        if ($this->_role->nameExists($name, $id)) {
             Response::error('Role with this name already exists', 409);
         }
 
-        $this->role->update($id, [
+        $this->_role->update($id, [
             'name'     => $name,
             'label'    => $label,
             'position' => $sortOrder,
         ]);
 
-        return $this->role->findById($id, $projection) ?? ['id' => $id];
+        return $this->_role->findById($id, $projection) ?? ['id' => $id];
     }
 
     /**
@@ -209,10 +209,10 @@ class RoleService extends BaseService
      */
     public function delete(int $id): int
     {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        $role = $this->role->findById($id);
-        $this->requireEntity($role, 'Role not found');
+        $role = $this->_role->findById($id);
+        $this->_requireEntity($role, 'Role not found');
 
         $builtInRoles = ['admin', 'user'];
 
@@ -220,7 +220,7 @@ class RoleService extends BaseService
             Response::error("Built-in role '{$role['name']}' cannot be deleted", 409);
         }
 
-        $userCount = $this->user->countByRoleId($id);
+        $userCount = $this->_user->countByRoleId($id);
         if ($userCount > 0) {
             Response::error(
                 "Cannot delete role: {$userCount} user(s) are assigned to it",
@@ -228,7 +228,7 @@ class RoleService extends BaseService
             );
         }
 
-        return $this->role->hardDelete($id);
+        return $this->_role->hardDelete($id);
     }
 
     /**
@@ -240,17 +240,17 @@ class RoleService extends BaseService
      */
     public function remove(int $id): int
     {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        $role = $this->role->findById($id);
-        $this->requireEntity($role, 'Role not found');
+        $role = $this->_role->findById($id);
+        $this->_requireEntity($role, 'Role not found');
 
         $builtInRoles = ['admin', 'user'];
         if (in_array($role['name'], $builtInRoles, true)) {
             Response::error("Built-in role '{$role['name']}' cannot be deleted", 409);
         }
 
-        $userCount = $this->user->countByRoleId($id);
+        $userCount = $this->_user->countByRoleId($id);
         if ($userCount > 0) {
             Response::error(
                 "Cannot delete role: {$userCount} user(s) are assigned to it",
@@ -258,6 +258,6 @@ class RoleService extends BaseService
             );
         }
 
-        return $this->role->softDelete($id);
+        return $this->_role->softDelete($id);
     }
 }

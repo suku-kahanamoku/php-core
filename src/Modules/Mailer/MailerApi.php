@@ -10,11 +10,11 @@ use App\Modules\Router\Router;
 
 class MailerApi
 {
-    private MailerService $service;
+    private MailerService $_service;
 
     public function __construct()
     {
-        $this->service = new MailerService();
+        $this->_service = new MailerService();
     }
 
     public function registerRoutes(Router $router): void
@@ -45,7 +45,7 @@ class MailerApi
             ->email('fromEmail')
             ->validate();
 
-        $sent = $this->service->sendMail(
+        $sent = $this->_service->sendMail(
             to: $data['to'],
             subject: $data['subject'],
             template: $data['template'],
@@ -74,7 +74,7 @@ class MailerApi
             );
         }
 
-        $sent = $this->service->sendTestMail($email);
+        $sent = $this->_service->sendTestMail($email);
 
         if (!$sent) {
             Response::error('Failed to send email.', 500);

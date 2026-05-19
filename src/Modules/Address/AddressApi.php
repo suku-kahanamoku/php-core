@@ -12,7 +12,7 @@ use App\Modules\Router\Router;
 
 class AddressApi
 {
-    private AddressService $service;
+    private AddressService $_service;
 
     /**
      * Konstruktor AddressApi.
@@ -23,7 +23,7 @@ class AddressApi
      */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->service = new AddressService($db, $franchiseCode, $auth);
+        $this->_service = new AddressService($db, $franchiseCode, $auth);
     }
 
     /**
@@ -35,7 +35,7 @@ class AddressApi
      */
     public function list(Request $request, array $params): void
     {
-        $result = $this->service->list(
+        $result = $this->_service->list(
             max(1, (int) $request->get('page', 1)),
             min(100, max(1, (int) $request->get('limit', 20))),
             (string) $request->get('sort', ''),
@@ -54,7 +54,7 @@ class AddressApi
      */
     public function get(Request $request, array $params): void
     {
-        $item    = $this->service->get((int) $params['id'], $request->projection());
+        $item    = $this->_service->get((int) $params['id'], $request->projection());
         Response::successItem($item, $request);
     }
 
@@ -72,7 +72,7 @@ class AddressApi
             'zip'    => $request->get('zip', ''),
         ])->required(['street', 'city', 'zip'])->validate();
 
-        $address = $this->service->create(
+        $address = $this->_service->create(
             [
                 'type'       => $request->get('type', 'billing'),
                 'company'    => $request->get('company', ''),
@@ -98,7 +98,7 @@ class AddressApi
      */
     public function update(Request $request, array $params): void
     {
-        $address = $this->service->update((int) $params['id'], [
+        $address = $this->_service->update((int) $params['id'], [
             'type'       => $request->get('type'),
             'company'    => $request->get('company'),
             'name'       => $request->get('name'),
@@ -127,7 +127,7 @@ class AddressApi
             'country' => $request->get('country', ''),
         ])->required(['street', 'city', 'zip', 'country'])->validate();
 
-        $address = $this->service->replace((int) $params['id'], [
+        $address = $this->_service->replace((int) $params['id'], [
             'type'       => $request->get('type', 'billing'),
             'company'    => $request->get('company', ''),
             'name'       => $request->get('name'),
@@ -152,9 +152,9 @@ class AddressApi
         VALIDATOR(['id' => $params['id'] ?? ''])->required('id')->validate();
         $force = filter_var($request->query['force'] ?? false, FILTER_VALIDATE_BOOLEAN);
         if ($force) {
-            $this->service->delete((int) $params['id']);
+            $this->_service->delete((int) $params['id']);
         } else {
-            $this->service->remove((int) $params['id']);
+            $this->_service->remove((int) $params['id']);
         }
         Response::success(null, 'Address deleted');
     }

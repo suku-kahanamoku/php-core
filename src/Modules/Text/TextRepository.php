@@ -22,9 +22,9 @@ class TextRepository extends BaseRepository
     public function __construct(Database $db, string $franchiseCode)
     {
         parent::__construct($db, $franchiseCode);
-        $this->table = 'text';
-        $this->alias = 'tx';
-        $this->own   = [
+        $this->_table = 'text';
+        $this->_alias = 'tx';
+        $this->_own   = [
             'syscode',
             'title',
             'content',
@@ -72,7 +72,7 @@ class TextRepository extends BaseRepository
         $offset = ($page - 1) * $limit;
 
         $where  = ['tx.franchise_code = ?'];
-        $params = [$this->code];
+        $params = [$this->_code];
 
         // Extrahuj 'deleted' z filtru (vychozi 0 = pouze aktivni).
         $filterArr  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
@@ -89,15 +89,15 @@ class TextRepository extends BaseRepository
         }
 
         $whereStr = implode(' AND ', $where);
-        $select   = $this->buildSelect($proj);
-        $sys      = $this->sys;
+        $select   = $this->_buildSelect($proj);
+        $sys      = $this->_sys;
 
-        $total = (int) $this->db->fetchOne(
+        $total = (int) $this->_db->fetchOne(
             "SELECT COUNT(*) AS cnt FROM text tx WHERE {$whereStr}",
             $params,
         )['cnt'];
 
-        $items = $this->db->fetchAll(
+        $items = $this->_db->fetchAll(
             "SELECT {$select} FROM text tx WHERE {$whereStr}
              ORDER BY {$orderBy}
              LIMIT {$limit} OFFSET {$offset}",
@@ -109,7 +109,7 @@ class TextRepository extends BaseRepository
         }
         unset($item);
 
-        return $this->resultList($items, $total, $page, $limit);
+        return $this->_resultList($items, $total, $page, $limit);
     }
 
     /**
@@ -130,9 +130,9 @@ class TextRepository extends BaseRepository
      */
     public function findByKey(string $key, string $language): ?array
     {
-        $row = $this->db->fetchOne(
+        $row = $this->_db->fetchOne(
             'SELECT * FROM text WHERE franchise_code = ? AND syscode = ? AND language = ? AND deleted = 0',
-            [$this->code, $key, $language],
+            [$this->_code, $key, $language],
         );
 
         return $row ?: null;
@@ -152,16 +152,16 @@ class TextRepository extends BaseRepository
         ?int $excludeId = null
     ): bool {
         if ($excludeId !== null) {
-            $row = $this->db->fetchOne(
+            $row = $this->_db->fetchOne(
                 'SELECT id FROM text
                  WHERE franchise_code = ? AND syscode = ? AND language = ? AND id != ? AND deleted = 0',
-                [$this->code, $key, $language, $excludeId],
+                [$this->_code, $key, $language, $excludeId],
             );
         } else {
-            $row = $this->db->fetchOne(
+            $row = $this->_db->fetchOne(
                 'SELECT id FROM text
                  WHERE franchise_code = ? AND syscode = ? AND language = ? AND deleted = 0',
-                [$this->code, $key, $language],
+                [$this->_code, $key, $language],
             );
         }
 
@@ -186,8 +186,8 @@ class TextRepository extends BaseRepository
      */
     public function create(array $data, ?array $projection = null): array
     {
-        $id = $this->db->insert('text', array_merge($data, [
-            'franchise_code' => $this->code,
+        $id = $this->_db->insert('text', array_merge($data, [
+            'franchise_code' => $this->_code,
         ]));
 
         return $this->findById($id, $projection) ?? ['id' => $id];
@@ -212,11 +212,11 @@ class TextRepository extends BaseRepository
      */
     public function update(int $id, array $data, ?array $projection = null): array
     {
-        $this->db->update(
+        $this->_db->update(
             'text',
             $data,
             'id = ? AND franchise_code = ?',
-            [$id, $this->code],
+            [$id, $this->_code],
         );
 
         return $this->findById($id, $projection) ?? ['id' => $id];

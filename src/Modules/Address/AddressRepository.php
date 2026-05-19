@@ -22,10 +22,10 @@ class AddressRepository extends BaseRepository
     public function __construct(Database $db, string $franchiseCode)
     {
         parent::__construct($db, $franchiseCode);
-        $this->table = 'address';
-        $this->alias = 'a';
-        $this->rel   = ['user'];
-        $this->own   = [
+        $this->_table = 'address';
+        $this->_alias = 'a';
+        $this->_rel   = ['user'];
+        $this->_own   = [
             'user_id',
             'type',
             'company',
@@ -62,7 +62,7 @@ class AddressRepository extends BaseRepository
         $offset = ($page - 1) * $limit;
 
         $where  = ['a.franchise_code = ?'];
-        $params = [$this->code];
+        $params = [$this->_code];
 
         // Extrahuj 'deleted' z filtru (vychozi 0 = pouze aktivni).
         $filterArr  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
@@ -79,8 +79,8 @@ class AddressRepository extends BaseRepository
         }
 
         $whereStr = implode(' AND ', $where);
-        $sys      = $this->sys;
-        $baseSelect = $this->buildSelect($proj);
+        $sys      = $this->_sys;
+        $baseSelect = $this->_buildSelect($proj);
 
         $joinSql = '';
         $relSel  = '';
@@ -90,12 +90,12 @@ class AddressRepository extends BaseRepository
         }
         $select = "{$baseSelect}{$relSel}";
 
-        $total = (int) $this->db->fetchOne(
+        $total = (int) $this->_db->fetchOne(
             "SELECT COUNT(*) AS cnt FROM address a {$joinSql} WHERE {$whereStr}",
             $params,
         )['cnt'];
 
-        $items = $this->db->fetchAll(
+        $items = $this->_db->fetchAll(
             "SELECT {$select} FROM address a {$joinSql} WHERE {$whereStr}
              ORDER BY {$orderBy}
              LIMIT {$limit} OFFSET {$offset}",
@@ -110,7 +110,7 @@ class AddressRepository extends BaseRepository
         }
         unset($item);
 
-        return $this->resultList($items, $total, $page, $limit);
+        return $this->_resultList($items, $total, $page, $limit);
     }
 
     /**
@@ -123,8 +123,8 @@ class AddressRepository extends BaseRepository
     public function findById(int $id, ?array $projection = null): ?array
     {
         $proj       = new Projection($projection);
-        $sys        = $this->sys;
-        $baseSelect = $this->buildSelect($proj);
+        $sys        = $this->_sys;
+        $baseSelect = $this->_buildSelect($proj);
 
         $joinSql = '';
         $relSel  = '';
@@ -134,9 +134,9 @@ class AddressRepository extends BaseRepository
         }
         $select = "{$baseSelect}{$relSel}";
 
-        $row = $this->db->fetchOne(
+        $row = $this->_db->fetchOne(
             "SELECT {$select} FROM address a {$joinSql} WHERE a.id = ? AND a.franchise_code = ? AND a.deleted = 0",
-            [$id, $this->code],
+            [$id, $this->_code],
         );
 
         if (!$row) {
@@ -171,8 +171,8 @@ class AddressRepository extends BaseRepository
      */
     public function create(array $data, ?array $projection = null): array
     {
-        $id = $this->db->insert('address', array_merge($data, [
-            'franchise_code' => $this->code,
+        $id = $this->_db->insert('address', array_merge($data, [
+            'franchise_code' => $this->_code,
         ]));
 
         return $this->findById($id, $projection) ?? ['id' => $id];
@@ -201,11 +201,11 @@ class AddressRepository extends BaseRepository
      */
     public function update(int $id, array $data, ?array $projection = null): array
     {
-        $this->db->update(
+        $this->_db->update(
             'address',
             $data,
             'id = ? AND franchise_code = ?',
-            [$id, $this->code],
+            [$id, $this->_code],
         );
 
         return $this->findById($id, $projection) ?? ['id' => $id];
@@ -220,11 +220,11 @@ class AddressRepository extends BaseRepository
      */
     public function clearDefault(int $userId, string $type): int
     {
-        return $this->db->update(
+        return $this->_db->update(
             'address',
             ['is_default' => 0],
             'franchise_code = ? AND user_id = ? AND type = ?',
-            [$this->code, $userId, $type],
+            [$this->_code, $userId, $type],
         );
     }
 }

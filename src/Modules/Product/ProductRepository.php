@@ -15,8 +15,8 @@ use App\Utils\Projection;
  */
 class ProductRepository extends BaseRepository
 {
-    private FileRepository $fileRepo;
-    private CategoryRepository $categoryRepo;
+    private FileRepository $_fileRepo;
+    private CategoryRepository $_categoryRepo;
 
     /**
      * Konstruktor tridy ProductRepository.
@@ -27,11 +27,11 @@ class ProductRepository extends BaseRepository
     public function __construct(Database $db, string $franchiseCode)
     {
         parent::__construct($db, $franchiseCode);
-        $this->fileRepo     = new FileRepository($db, $franchiseCode);
-        $this->categoryRepo = new CategoryRepository($db, $franchiseCode);
-        $this->table = 'product';
-        $this->alias = 'p';
-        $this->own   = [
+        $this->_fileRepo     = new FileRepository($db, $franchiseCode);
+        $this->_categoryRepo = new CategoryRepository($db, $franchiseCode);
+        $this->_table = 'product';
+        $this->_alias = 'p';
+        $this->_own   = [
             'sku',
             'name',
             'description',
@@ -43,7 +43,7 @@ class ProductRepository extends BaseRepository
             'variant',
             'data',
         ];
-        $this->rel = ['categories', 'files'];
+        $this->_rel = ['categories', 'files'];
     }
 
     /**
@@ -92,7 +92,7 @@ class ProductRepository extends BaseRepository
         $offset = ($page - 1) * $limit;
 
         $where  = ['p.franchise_code = ?'];
-        $params = [$this->code];
+        $params = [$this->_code];
 
         // Extrahuj 'deleted' z filtru (vychozi 0 = pouze aktivni).
         $filterArr  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
@@ -142,7 +142,7 @@ class ProductRepository extends BaseRepository
         // Pri joinu category omezit na stejnou franchizu, aby se predchazelo cross-tenant uniku.
         if ($needsCatFilter) {
             $where[] = '(category.franchise_code = ? OR category.id IS NULL)';
-            $params[] = $this->code;
+            $params[] = $this->_code;
         }
 
         $f = SQL_FILTER($filter, 'p');
@@ -165,21 +165,21 @@ class ProductRepository extends BaseRepository
         }
 
         // Params pro hlavni SELECT: vat franchise_code na zacatku (FROM clause), pak WHERE + HAVING params.
-        $queryParams = array_merge([$this->code], $params, $havingParams);
+        $queryParams = array_merge([$this->_code], $params, $havingParams);
 
-        $sys        = $this->sys;
-        $baseSelect = $this->buildSelect($proj);
+        $sys        = $this->_sys;
+        $baseSelect = $this->_buildSelect($proj);
         $vatSel     = ', ANY_VALUE(vat.rate) AS vat_rate'
             . ', ANY_VALUE(ROUND(p.price * (1 + vat.rate / 100), 2)) AS price_with_vat';
 
         $select = "{$baseSelect}{$vatSel}";
 
-        $total = (int) $this->db->fetchOne(
+        $total = (int) $this->_db->fetchOne(
             "SELECT COUNT(DISTINCT p.id) AS cnt FROM product p {$catJoin} WHERE {$whereStr}",
             $params,
         )['cnt'];
 
-        $items = $this->db->fetchAll(
+        $items = $this->_db->fetchAll(
             "SELECT {$select} FROM product p {$catJoin} {$vatJoin}
              WHERE {$whereStr}
              GROUP BY p.id
@@ -193,12 +193,12 @@ class ProductRepository extends BaseRepository
 
         $categoriesMap = [];
         if ($proj->needsJoin('categories')) {
-            $categoriesMap = $this->categoryRepo->findByJunctionList('product_category', 'product_id', $ids);
+            $categoriesMap = $this->_categoryRepo->findByJunctionList('product_category', 'product_id', $ids);
         }
 
         $filesMap = [];
         if ($proj->needsJoin('files')) {
-            $filesMap = $this->fileRepo->findByJunctionList('product_file', 'product_id', $ids);
+            $filesMap = $this->_fileRepo->findByJunctionList('product_file', 'product_id', $ids);
         }
 
         $vatSys = array_merge($sys, ['vat_rate', 'price_with_vat']);
@@ -223,7 +223,7 @@ class ProductRepository extends BaseRepository
         }
         unset($item);
 
-        return $this->resultList($items, $total, $page, $limit);
+        return $this->_resultList($items, $total, $page, $limit);
     }
 
     /**
@@ -252,8 +252,8 @@ class ProductRepository extends BaseRepository
     public function findById(int $id, ?array $projection = null): ?array
     {
         $proj   = new Projection($projection);
-        $sys    = $this->sys;
-        $select = $this->buildSelect($proj);
+        $sys    = $this->_sys;
+        $select = $this->_buildSelect($proj);
 
         $vatJoin = "JOIN (
             SELECT COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(data, '\$.rate')) AS DECIMAL(5,2)), 21) AS rate
@@ -263,13 +263,13 @@ class ProductRepository extends BaseRepository
             LIMIT 1
         ) vat ON TRUE";
 
-        $row = $this->db->fetchOne(
+        $row = $this->_db->fetchOne(
             "SELECT {$select},
                     vat.rate AS vat_rate,
                     ROUND(p.price * (1 + vat.rate / 100), 2) AS price_with_vat
              FROM product p {$vatJoin}
              WHERE p.id = ? AND p.franchise_code = ? AND p.deleted = 0",
-            [$this->code, $id, $this->code],
+            [$this->_code, $id, $this->_code],
         );
 
         if (!$row) {
@@ -281,13 +281,13 @@ class ProductRepository extends BaseRepository
         }
 
         if ($proj->needsJoin('categories')) {
-            $categories = $this->categoryRepo->findByJunctionItem('product_category', 'product_id', $id);
+            $categories = $this->_categoryRepo->findByJunctionItem('product_category', 'product_id', $id);
             $row['category_ids'] = array_column($categories, 'id');
             $row['categories']   = $categories;
         }
 
         if ($proj->needsJoin('files')) {
-            $files = $this->fileRepo->findByJunctionItem('product_file', 'product_id', $id);
+            $files = $this->_fileRepo->findByJunctionItem('product_file', 'product_id', $id);
             $row['file_ids'] = array_column($files, 'id');
             $row['files']    = $files;
         }
@@ -312,10 +312,10 @@ class ProductRepository extends BaseRepository
      */
     public function syncCategories(int $productId, array $categoryIds): void
     {
-        $this->db->delete('product_category', 'product_id = ?', [$productId]);
+        $this->_db->delete('product_category', 'product_id = ?', [$productId]);
 
         foreach ($categoryIds as $catId) {
-            $this->db->insert('product_category', [
+            $this->_db->insert('product_category', [
                 'product_id'  => $productId,
                 'category_id' => (int) $catId,
             ]);
@@ -331,10 +331,10 @@ class ProductRepository extends BaseRepository
      */
     public function syncFiles(int $productId, array $fileIds): void
     {
-        $this->db->delete('product_file', 'product_id = ?', [$productId]);
+        $this->_db->delete('product_file', 'product_id = ?', [$productId]);
 
         foreach ($fileIds as $fileId) {
-            $this->db->insert('product_file', [
+            $this->_db->insert('product_file', [
                 'product_id' => $productId,
                 'file_id'    => (int) $fileId,
             ]);
@@ -362,8 +362,8 @@ class ProductRepository extends BaseRepository
             $data['data'] = json_encode($data['data'], JSON_UNESCAPED_UNICODE);
         }
 
-        $id = $this->db->insert('product', array_merge($data, [
-            'franchise_code' => $this->code,
+        $id = $this->_db->insert('product', array_merge($data, [
+            'franchise_code' => $this->_code,
         ]));
 
         return $this->findById($id, $projection) ?? ['id' => $id];
@@ -391,11 +391,11 @@ class ProductRepository extends BaseRepository
             $data['data'] = json_encode($data['data'], JSON_UNESCAPED_UNICODE);
         }
 
-        $this->db->update(
+        $this->_db->update(
             'product',
             $data,
             'id = ? AND franchise_code = ?',
-            [$id, $this->code],
+            [$id, $this->_code],
         );
 
         return $this->findById($id, $projection) ?? ['id' => $id];
@@ -409,11 +409,11 @@ class ProductRepository extends BaseRepository
      */
     public function existsForCategory(int $categoryId): bool
     {
-        $row = $this->db->fetchOne(
+        $row = $this->_db->fetchOne(
             'SELECT pc.product_id FROM product_category pc
              INNER JOIN product p ON p.id = pc.product_id
              WHERE p.franchise_code = ? AND pc.category_id = ? AND p.deleted = 0 LIMIT 1',
-            [$this->code, $categoryId],
+            [$this->_code, $categoryId],
         );
 
         return (bool) $row;
@@ -427,11 +427,11 @@ class ProductRepository extends BaseRepository
      */
     public function findByCategoryId(int $categoryId): array
     {
-        return $this->db->fetchAll(
+        return $this->_db->fetchAll(
             'SELECT p.id, p.sku, p.name, p.price FROM product p
              INNER JOIN product_category pc ON pc.product_id = p.id
              WHERE p.franchise_code = ? AND pc.category_id = ? AND p.deleted = 0',
-            [$this->code, $categoryId],
+            [$this->_code, $categoryId],
         );
     }
 
@@ -445,10 +445,10 @@ class ProductRepository extends BaseRepository
      */
     public function adjustStock(int $id, int $delta): int
     {
-        $product = $this->db->fetchOne(
+        $product = $this->_db->fetchOne(
             'SELECT stock_quantity FROM product
              WHERE id = ? AND franchise_code = ? AND deleted = 0',
-            [$id, $this->code],
+            [$id, $this->_code],
         );
 
         if (!$product) {
@@ -456,11 +456,11 @@ class ProductRepository extends BaseRepository
         }
 
         $newQty = $product['stock_quantity'] + $delta;
-        $this->db->update(
+        $this->_db->update(
             'product',
             ['stock_quantity' => $newQty],
             'id = ? AND franchise_code = ?',
-            [$id, $this->code],
+            [$id, $this->_code],
         );
 
         return $newQty;

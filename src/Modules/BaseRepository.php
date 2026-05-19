@@ -16,24 +16,24 @@ use App\Utils\Projection;
  *   - resultList() — standardni pole strankovaci odpovedi
  *
  * Kazda podtrida musi v konstruktoru nastavit:
- *   $this->table  — nazev tabulky v DB
- *   $this->alias  — alias tabulky pouzivany v SQL (napr. 'u', 'p', '')
- *   $this->own    — vlastni sloupce (bez SYS)
- *   $this->rel    — vazebne klice pro projection (napr. ['role', 'user'])
+ *   $this->_table  — nazev tabulky v DB
+ *   $this->_alias  — alias tabulky pouzivany v SQL (napr. 'u', 'p', '')
+ *   $this->_own    — vlastni sloupce (bez SYS)
+ *   $this->_rel    — vazebne klice pro projection (napr. ['role', 'user'])
  *
  * Volitelne prepsat:
- *   $this->sys    — systemove sloupce (default: id, created_at, updated_at)
+ *   $this->_sys    — systemove sloupce (default: id, created_at, updated_at)
  */
 abstract class BaseRepository
 {
-    protected Database $db;
-    protected string   $code;
+    protected Database $_db;
+    protected string   $_code;
 
-    protected string $table = '';
-    protected string $alias = '';
-    protected array  $sys   = ['id', 'created_at', 'updated_at', 'deleted'];
-    protected array  $own   = [];
-    protected array  $rel   = [];
+    protected string $_table = '';
+    protected string $_alias = '';
+    protected array  $_sys   = ['id', 'created_at', 'updated_at', 'deleted'];
+    protected array  $_own   = [];
+    protected array  $_rel   = [];
 
     /**
      * @param Database $db
@@ -41,8 +41,8 @@ abstract class BaseRepository
      */
     public function __construct(Database $db, string $franchiseCode)
     {
-        $this->db   = $db;
-        $this->code = $franchiseCode;
+        $this->_db   = $db;
+        $this->_code = $franchiseCode;
     }
 
     /**
@@ -51,11 +51,11 @@ abstract class BaseRepository
      * @param  Projection $proj
      * @return string
      */
-    protected function buildSelect(Projection $proj): string
+    protected function _buildSelect(Projection $proj): string
     {
-        $a       = $this->alias !== '' ? $this->alias . '.' : '';
-        $ownCols = $proj->getOwnCols($this->own, $this->rel);
-        $sysSel  = $a . implode(", {$a}", $this->sys);
+        $a       = $this->_alias !== '' ? $this->_alias . '.' : '';
+        $ownCols = $proj->getOwnCols($this->_own, $this->_rel);
+        $sysSel  = $a . implode(", {$a}", $this->_sys);
         $ownSel  = $ownCols ? ', ' . $a . implode(", {$a}", $ownCols) : '';
         return $sysSel . $ownSel;
     }
@@ -71,16 +71,16 @@ abstract class BaseRepository
     public function findById(int $id, ?array $projection = null): ?array
     {
         $proj   = new Projection($projection);
-        $select = $this->buildSelect($proj);
-        $a      = $this->alias !== '' ? $this->alias . '.' : '';
-        $from   = $this->alias !== '' ? "{$this->table} {$this->alias}" : $this->table;
+        $select = $this->_buildSelect($proj);
+        $a      = $this->_alias !== '' ? $this->_alias . '.' : '';
+        $from   = $this->_alias !== '' ? "{$this->_table} {$this->_alias}" : $this->_table;
 
-        $row = $this->db->fetchOne(
+        $row = $this->_db->fetchOne(
             "SELECT {$select} FROM {$from} WHERE {$a}id = ? AND {$a}franchise_code = ? AND {$a}deleted = 0",
-            [$id, $this->code],
+            [$id, $this->_code],
         );
 
-        return $row ? $proj->apply($row, $this->sys) : null;
+        return $row ? $proj->apply($row, $this->_sys) : null;
     }
 
     /**
@@ -97,7 +97,7 @@ abstract class BaseRepository
      */
     public function getCode(): string
     {
-        return $this->code;
+        return $this->_code;
     }
 
     /**
@@ -108,11 +108,11 @@ abstract class BaseRepository
      */
     public function softDelete(int $id): int
     {
-        return $this->db->update(
-            $this->table,
+        return $this->_db->update(
+            $this->_table,
             ['deleted' => 1],
             'id = ? AND franchise_code = ?',
-            [$id, $this->code]
+            [$id, $this->_code]
         );
     }
 
@@ -124,10 +124,10 @@ abstract class BaseRepository
      */
     public function hardDelete(int $id): int
     {
-        return $this->db->delete(
-            $this->table,
+        return $this->_db->delete(
+            $this->_table,
             'id = ? AND franchise_code = ?',
-            [$id, $this->code]
+            [$id, $this->_code]
         );
     }
 
@@ -136,7 +136,7 @@ abstract class BaseRepository
      *
      * @param  list<array<string, mixed>> $items
      */
-    protected function resultList(
+    protected function _resultList(
         array $items,
         int $total,
         int $page,

@@ -8,7 +8,7 @@ use App\Modules\Database\Database;
 
 class UserTokenRepository
 {
-    private Database $db;
+    private Database $_db;
 
     /**
      * Konstruktor tridy UserTokenRepository.
@@ -17,7 +17,7 @@ class UserTokenRepository
      */
     public function __construct(Database $db)
     {
-        $this->db = $db;
+        $this->_db = $db;
     }
 
     /**
@@ -35,7 +35,7 @@ class UserTokenRepository
      */
     public function findUserByToken(string $token, string $franchiseCode): ?array
     {
-        $row = $this->db->fetchOne(
+        $row = $this->_db->fetchOne(
             'SELECT u.id, u.email, r.name AS role, u.first_name, u.last_name
              FROM user_token t
              JOIN `user` u ON u.id = t.user_id AND u.deleted = 0
@@ -59,7 +59,7 @@ class UserTokenRepository
      */
     public function create(int $userId, string $token, string $expiresAt): ?int
     {
-        return $this->db->insert('user_token', [
+        return $this->_db->insert('user_token', [
             'user_id'    => $userId,
             'token'      => $token,
             'expires_at' => $expiresAt,
@@ -74,6 +74,6 @@ class UserTokenRepository
      */
     public function delete(string $token): int
     {
-        return $this->db->delete('user_token', 'token = ?', [$token]);
+        return $this->_db->delete('user_token', 'token = ?', [$token]);
     }
 }

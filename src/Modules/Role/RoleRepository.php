@@ -23,9 +23,9 @@ class RoleRepository extends BaseRepository
     public function __construct(Database $db, string $franchiseCode)
     {
         parent::__construct($db, $franchiseCode);
-        $this->table = 'role';
-        $this->alias = 'r';
-        $this->own   = ['name', 'label', 'position'];
+        $this->_table = 'role';
+        $this->_alias = 'r';
+        $this->_own   = ['name', 'label', 'position'];
     }
 
     /**
@@ -65,7 +65,7 @@ class RoleRepository extends BaseRepository
         $offset = ($page - 1) * $limit;
 
         $where  = ['r.franchise_code = ?'];
-        $params = [$this->code];
+        $params = [$this->_code];
 
         // Extrahuj 'deleted' z filtru (vychozi 0 = pouze aktivni).
         $filterArr  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
@@ -82,15 +82,15 @@ class RoleRepository extends BaseRepository
         }
 
         $whereStr = implode(' AND ', $where);
-        $select   = $this->buildSelect($proj);
-        $sys      = $this->sys;
+        $select   = $this->_buildSelect($proj);
+        $sys      = $this->_sys;
 
-        $total = (int) $this->db->fetchOne(
+        $total = (int) $this->_db->fetchOne(
             "SELECT COUNT(*) AS cnt FROM role r WHERE {$whereStr}",
             $params,
         )['cnt'];
 
-        $items = $this->db->fetchAll(
+        $items = $this->_db->fetchAll(
             "SELECT {$select} FROM role r WHERE {$whereStr} ORDER BY {$orderBy}
              LIMIT {$limit} OFFSET {$offset}",
             $params,
@@ -101,7 +101,7 @@ class RoleRepository extends BaseRepository
         }
         unset($item);
 
-        return $this->resultList($items, $total, $page, $limit);
+        return $this->_resultList($items, $total, $page, $limit);
     }
 
     /**
@@ -120,8 +120,8 @@ class RoleRepository extends BaseRepository
      */
     public function create(array $data, ?array $projection = null): array
     {
-        $id = $this->db->insert('role', array_merge($data, [
-            'franchise_code' => $this->code,
+        $id = $this->_db->insert('role', array_merge($data, [
+            'franchise_code' => $this->_code,
         ]));
 
         return $this->findById($id, $projection);
@@ -144,11 +144,11 @@ class RoleRepository extends BaseRepository
      */
     public function update(int $id, array $data, ?array $projection = null): array
     {
-        $this->db->update(
+        $this->_db->update(
             'role',
             $data,
             'id = ? AND franchise_code = ?',
-            [$id, $this->code],
+            [$id, $this->_code],
         );
 
         return $this->findById($id, $projection);
@@ -164,14 +164,14 @@ class RoleRepository extends BaseRepository
     public function nameExists(string $name, ?int $excludeId = null): bool
     {
         if ($excludeId !== null) {
-            $row = $this->db->fetchOne(
+            $row = $this->_db->fetchOne(
                 'SELECT id FROM role WHERE franchise_code = ? AND name = ? AND id != ? AND deleted = 0',
-                [$this->code, $name, $excludeId],
+                [$this->_code, $name, $excludeId],
             );
         } else {
-            $row = $this->db->fetchOne(
+            $row = $this->_db->fetchOne(
                 'SELECT id FROM role WHERE franchise_code = ? AND name = ? AND deleted = 0',
-                [$this->code, $name],
+                [$this->_code, $name],
             );
         }
 
@@ -186,9 +186,9 @@ class RoleRepository extends BaseRepository
      */
     public function findIdByName(string $name): ?int
     {
-        $row = $this->db->fetchOne(
+        $row = $this->_db->fetchOne(
             'SELECT id FROM `role` WHERE franchise_code = ? AND name = ? AND deleted = 0',
-            [$this->code, $name],
+            [$this->_code, $name],
         );
 
         return $row ? (int) $row['id'] : null;

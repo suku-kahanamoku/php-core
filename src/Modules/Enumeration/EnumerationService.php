@@ -11,7 +11,7 @@ use App\Modules\Router\Response;
 
 class EnumerationService extends BaseService
 {
-    private EnumerationRepository $enum;
+    private EnumerationRepository $_enum;
 
     /**
      * Konstruktor tridy EnumerationService.
@@ -22,8 +22,8 @@ class EnumerationService extends BaseService
      */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->enum = new EnumerationRepository($db, $franchiseCode);
-        $this->auth = $auth;
+        $this->_enum = new EnumerationRepository($db, $franchiseCode);
+        $this->_auth = $auth;
     }
 
     /**
@@ -49,7 +49,7 @@ class EnumerationService extends BaseService
         string $filter = '',
         ?array $projection = null,
     ): array {
-        return $this->enum->findAll(
+        return $this->_enum->findAll(
             $page,
             $limit,
             $sort,
@@ -65,7 +65,7 @@ class EnumerationService extends BaseService
      */
     public function types(): array
     {
-        return $this->enum->getTypes();
+        return $this->_enum->getTypes();
     }
 
     /**
@@ -77,8 +77,8 @@ class EnumerationService extends BaseService
      */
     public function get(int $id, ?array $projection = null): array
     {
-        $item = $this->enum->findById($id, $projection);
-        $this->requireEntity($item, 'Enumeration not found');
+        $item = $this->_enum->findById($id, $projection);
+        $this->_requireEntity($item, 'Enumeration not found');
         return $item;
     }
 
@@ -100,13 +100,13 @@ class EnumerationService extends BaseService
         array $input,
         ?array $projection = null
     ): array {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        if ($this->enum->codeExists($type, $code)) {
+        if ($this->_enum->codeExists($type, $code)) {
             Response::error("Syscode '$code' already exists for type '$type'", 409);
         }
 
-        return $this->enum->create([
+        return $this->_enum->create([
             'type'      => $type,
             'syscode'   => $code,
             'label'     => $label,
@@ -127,9 +127,9 @@ class EnumerationService extends BaseService
      */
     public function update(int $id, array $input, ?array $projection = null): array
     {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        $this->requireEntity($this->enum->findById($id), 'Enumeration not found');
+        $this->_requireEntity($this->_enum->findById($id), 'Enumeration not found');
 
         $set        = [];
         $textFields = ['type', 'syscode', 'label', 'value'];
@@ -150,10 +150,10 @@ class EnumerationService extends BaseService
         }
 
         if (!empty($set)) {
-            $this->enum->update($id, $set);
+            $this->_enum->update($id, $set);
         }
 
-        return $this->enum->findById($id, $projection) ?? ['id' => $id];
+        return $this->_enum->findById($id, $projection) ?? ['id' => $id];
     }
 
     /**
@@ -176,11 +176,11 @@ class EnumerationService extends BaseService
         array $input,
         ?array $projection = null,
     ): array {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        $this->requireEntity($this->enum->findById($id), 'Enumeration not found');
+        $this->_requireEntity($this->_enum->findById($id), 'Enumeration not found');
 
-        $this->enum->update($id, [
+        $this->_enum->update($id, [
             'type'      => $type,
             'syscode'   => $code,
             'label'     => $label,
@@ -190,7 +190,7 @@ class EnumerationService extends BaseService
             'data'      => $input['data'] ?? null,
         ]);
 
-        return $this->enum->findById($id, $projection) ?? ['id' => $id];
+        return $this->_enum->findById($id, $projection) ?? ['id' => $id];
     }
 
     /**
@@ -201,11 +201,11 @@ class EnumerationService extends BaseService
      */
     public function delete(int $id): int
     {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        $this->requireEntity($this->enum->findById($id), 'Enumeration not found');
+        $this->_requireEntity($this->_enum->findById($id), 'Enumeration not found');
 
-        return $this->enum->hardDelete($id);
+        return $this->_enum->hardDelete($id);
     }
 
     /**
@@ -217,10 +217,10 @@ class EnumerationService extends BaseService
      */
     public function remove(int $id): int
     {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        $this->requireEntity($this->enum->findById($id), 'Enumeration not found');
+        $this->_requireEntity($this->_enum->findById($id), 'Enumeration not found');
 
-        return $this->enum->softDelete($id);
+        return $this->_enum->softDelete($id);
     }
 }

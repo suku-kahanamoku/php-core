@@ -11,7 +11,7 @@ use App\Modules\Router\Router;
 
 class AuthApi
 {
-    private AuthService $service;
+    private AuthService $_service;
 
     /**
      * Konstruktor tridy AuthApi.
@@ -22,7 +22,7 @@ class AuthApi
      */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->service = new AuthService($db, $franchiseCode, $auth);
+        $this->_service = new AuthService($db, $franchiseCode, $auth);
     }
 
     /**
@@ -40,7 +40,7 @@ class AuthApi
             ->required(['email', 'password'])
             ->validate();
 
-        $result = $this->service->login($email, $password);
+        $result = $this->_service->login($email, $password);
         Response::success($result, 'Login successful');
     }
 
@@ -52,7 +52,7 @@ class AuthApi
      */
     public function logout(Request $request): void
     {
-        $this->service->logout();
+        $this->_service->logout();
         Response::success(null, 'Logged out');
     }
 
@@ -64,7 +64,7 @@ class AuthApi
      */
     public function me(Request $request): void
     {
-        Response::success($this->service->me());
+        Response::success($this->_service->me());
     }
 
     /**
@@ -75,7 +75,7 @@ class AuthApi
      */
     public function register(Request $request): void
     {
-        $id = $this->service->register(
+        $id = $this->_service->register(
             trim((string) $request->get('first_name', '')),
             trim((string) $request->get('last_name', '')),
             trim((string) $request->get('email', '')),
@@ -94,7 +94,7 @@ class AuthApi
      */
     public function changePassword(Request $request): void
     {
-        $this->service->changePassword(
+        $this->_service->changePassword(
             (string) $request->get('current_password', ''),
             (string) $request->get('new_password', ''),
         );
@@ -114,7 +114,7 @@ class AuthApi
 
         VALIDATOR(['email' => $email])->required('email')->email('email')->validate();
 
-        $result = $this->service->resetPassword($email);
+        $result = $this->_service->resetPassword($email);
         Response::success($result, 'Password reset successful');
     }
 
@@ -132,7 +132,7 @@ class AuthApi
 
         VALIDATOR(['email' => $email])->required('email')->email('email')->validate();
 
-        $result = $this->service->oauthLogin($email, $firstName, $lastName);
+        $result = $this->_service->oauthLogin($email, $firstName, $lastName);
         Response::success($result, 'OAuth login successful');
     }
 

@@ -12,8 +12,8 @@ use App\Modules\Router\Response;
 
 class InvoiceService extends BaseService
 {
-    private InvoiceRepository $invoice;
-    private OrderRepository   $order;
+    private InvoiceRepository $_invoice;
+    private OrderRepository   $_order;
 
     /**
      * Konstruktor tridy InvoiceService.
@@ -24,9 +24,9 @@ class InvoiceService extends BaseService
      */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->invoice = new InvoiceRepository($db, $franchiseCode);
-        $this->order   = new OrderRepository($db, $franchiseCode);
-        $this->auth    = $auth;
+        $this->_invoice = new InvoiceRepository($db, $franchiseCode);
+        $this->_order   = new OrderRepository($db, $franchiseCode);
+        $this->_auth    = $auth;
     }
 
     /**
@@ -53,11 +53,11 @@ class InvoiceService extends BaseService
         string $filter = '',
         ?array $projection = null,
     ): array {
-        $this->auth->require();
+        $this->_auth->require();
 
-        $userId = $this->auth->hasRole('admin') ? null : $this->auth->id();
+        $userId = $this->_auth->hasRole('admin') ? null : $this->_auth->id();
 
-        return $this->invoice->findAll(
+        return $this->_invoice->findAll(
             $page,
             $limit,
             $userId,
@@ -77,11 +77,11 @@ class InvoiceService extends BaseService
      */
     public function get(int $id, ?array $projection = null): array
     {
-        $this->auth->require();
+        $this->_auth->require();
 
-        $invoice = $this->invoice->findById($id, $projection);
-        $this->requireEntity($invoice, 'Invoice not found');
-        if (!$this->auth->hasRole('admin') && (int) $invoice['user_id'] !== $this->auth->id()) {
+        $invoice = $this->_invoice->findById($id, $projection);
+        $this->_requireEntity($invoice, 'Invoice not found');
+        if (!$this->_auth->hasRole('admin') && (int) $invoice['user_id'] !== $this->_auth->id()) {
             Response::forbidden();
         }
 
@@ -103,24 +103,24 @@ class InvoiceService extends BaseService
         array $input,
         ?array $projection = null
     ): array {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        $order = $this->order->findById($orderId);
-        $this->requireEntity($order, 'Order not found');
+        $order = $this->_order->findById($orderId);
+        $this->_requireEntity($order, 'Order not found');
 
-        if ($this->invoice->findByOrder($orderId)) {
+        if ($this->_invoice->findByOrder($orderId)) {
             Response::error('Invoice already exists for this order', 409);
         }
 
         $orderItems = $order['order_items'] ?? [];
         $dueAt      = $input['due_at'] ?? date('Y-m-d', strtotime('+14 days'));
 
-        $pdo = $this->invoice->getPdo();
+        $pdo = $this->_invoice->getPdo();
         $pdo->beginTransaction();
 
         try {
-            $invoiceRow = $this->invoice->create([
-                'invoice_number'     => $this->invoice->generateNumber(),
+            $invoiceRow = $this->_invoice->create([
+                'invoice_number'     => $this->_invoice->generateNumber(),
                 'order_id'           => $orderId,
                 'user_id'            => $order['user_id'],
                 'status'             => 'issued',
@@ -133,7 +133,7 @@ class InvoiceService extends BaseService
             $invoiceId = (int) $invoiceRow['id'];
 
             foreach ($orderItems as $item) {
-                $this->invoice->createItem([
+                $this->_invoice->createItem([
                     'invoice_id'  => $invoiceId,
                     'product_id'  => $item['product_id'],
                     'description' => $item['product_name'] ?? '',
@@ -153,10 +153,10 @@ class InvoiceService extends BaseService
 
         $fileIds = array_map('intval', (array) ($input['file_ids'] ?? []));
         if ($fileIds) {
-            $this->invoice->syncFiles($invoiceId, $fileIds);
+            $this->_invoice->syncFiles($invoiceId, $fileIds);
         }
 
-        return $this->invoice->findById($invoiceId, $projection) ?? ['id' => $invoiceId];
+        return $this->_invoice->findById($invoiceId, $projection) ?? ['id' => $invoiceId];
     }
 
     /**
@@ -169,12 +169,12 @@ class InvoiceService extends BaseService
      */
     public function syncFiles(int $id, array $fileIds, ?array $projection = null): array
     {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        $this->requireEntity($this->invoice->findById($id), 'Invoice not found');
-        $this->invoice->syncFiles($id, $fileIds);
+        $this->_requireEntity($this->_invoice->findById($id), 'Invoice not found');
+        $this->_invoice->syncFiles($id, $fileIds);
 
-        return $this->invoice->findById($id, $projection) ?? ['id' => $id];
+        return $this->_invoice->findById($id, $projection) ?? ['id' => $id];
     }
 
     /**
@@ -191,14 +191,14 @@ class InvoiceService extends BaseService
         string $status,
         ?array $projection = null
     ): array {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        $invoice = $this->invoice->findById($id);
-        $this->requireEntity($invoice, 'Invoice not found');
+        $invoice = $this->_invoice->findById($id);
+        $this->_requireEntity($invoice, 'Invoice not found');
 
-        $this->invoice->updateStatus($id, $status);
+        $this->_invoice->updateStatus($id, $status);
 
-        return $this->invoice->findById($id, $projection) ?? ['id' => $id];
+        return $this->_invoice->findById($id, $projection) ?? ['id' => $id];
     }
 
     /**
@@ -209,12 +209,12 @@ class InvoiceService extends BaseService
      */
     public function delete(int $id): int
     {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        $invoice = $this->invoice->findById($id);
-        $this->requireEntity($invoice, 'Invoice not found');
+        $invoice = $this->_invoice->findById($id);
+        $this->_requireEntity($invoice, 'Invoice not found');
 
-        return $this->invoice->hardDelete($id);
+        return $this->_invoice->hardDelete($id);
     }
 
     /**
@@ -226,11 +226,11 @@ class InvoiceService extends BaseService
      */
     public function remove(int $id): int
     {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        $invoice = $this->invoice->findById($id);
-        $this->requireEntity($invoice, 'Invoice not found');
+        $invoice = $this->_invoice->findById($id);
+        $this->_requireEntity($invoice, 'Invoice not found');
 
-        return $this->invoice->softDelete($id);
+        return $this->_invoice->softDelete($id);
     }
 }

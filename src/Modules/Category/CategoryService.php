@@ -12,8 +12,8 @@ use App\Modules\Router\Response;
 
 class CategoryService extends BaseService
 {
-    private CategoryRepository $category;
-    private ProductRepository  $product;
+    private CategoryRepository $_category;
+    private ProductRepository  $_product;
 
     /**
      * Konstruktor tridy CategoryService.
@@ -24,9 +24,9 @@ class CategoryService extends BaseService
      */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->category = new CategoryRepository($db, $franchiseCode);
-        $this->product  = new ProductRepository($db, $franchiseCode);
-        $this->auth     = $auth;
+        $this->_category = new CategoryRepository($db, $franchiseCode);
+        $this->_product  = new ProductRepository($db, $franchiseCode);
+        $this->_auth     = $auth;
     }
 
     /**
@@ -52,7 +52,7 @@ class CategoryService extends BaseService
         string $filter = '',
         ?array $projection = null
     ): array {
-        return $this->category->findAll($page, $limit, $sort, $filter, $projection);
+        return $this->_category->findAll($page, $limit, $sort, $filter, $projection);
     }
 
     /**
@@ -69,10 +69,10 @@ class CategoryService extends BaseService
      */
     public function get(int $id, ?array $projection = null): array
     {
-        $category = $this->category->findById($id, $projection);
-        $this->requireEntity($category, 'Category not found');
+        $category = $this->_category->findById($id, $projection);
+        $this->_requireEntity($category, 'Category not found');
 
-        $category['products'] = $this->product->findByCategoryId($id);
+        $category['products'] = $this->_product->findByCategoryId($id);
         return $category;
     }
 
@@ -87,9 +87,9 @@ class CategoryService extends BaseService
      */
     public function create(string $name, array $input, ?array $projection = null): array
     {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        return $this->category->create([
+        return $this->_category->create([
             'syscode'     => $input['syscode'] ?? null,
             'name'        => $name,
             'description' => $input['description'] ?? null,
@@ -110,9 +110,9 @@ class CategoryService extends BaseService
      */
     public function update(int $id, array $input, ?array $projection = null): array
     {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        $this->requireEntity($this->category->findById($id), 'Category not found');
+        $this->_requireEntity($this->_category->findById($id), 'Category not found');
 
         $set = [];
         if (isset($input['name'])) {
@@ -130,10 +130,10 @@ class CategoryService extends BaseService
         }
 
         if (!empty($set)) {
-            $this->category->update($id, $set);
+            $this->_category->update($id, $set);
         }
 
-        return $this->category->findById($id, $projection) ?? ['id' => $id];
+        return $this->_category->findById($id, $projection) ?? ['id' => $id];
     }
 
     /**
@@ -151,14 +151,14 @@ class CategoryService extends BaseService
         array $input,
         ?array $projection = null
     ): array {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        $this->requireEntity($this->category->findById($id), 'Category not found');
+        $this->_requireEntity($this->_category->findById($id), 'Category not found');
 
         $parentId = ($input['parent_id'] ?? null);
         $parentId = ($parentId !== null && $parentId !== '') ? (int) $parentId : null;
 
-        $this->category->update($id, [
+        $this->_category->update($id, [
             'syscode'     => $input['syscode'] ?? null,
             'name'        => $name,
             'description' => (string) ($input['description'] ?? ''),
@@ -166,7 +166,7 @@ class CategoryService extends BaseService
             'position'    => (int) ($input['position'] ?? 0),
         ]);
 
-        return $this->category->findById($id, $projection) ?? ['id' => $id];
+        return $this->_category->findById($id, $projection) ?? ['id' => $id];
     }
 
     /**
@@ -178,15 +178,15 @@ class CategoryService extends BaseService
      */
     public function delete(int $id): int
     {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        $this->requireEntity($this->category->findById($id), 'Category not found');
+        $this->_requireEntity($this->_category->findById($id), 'Category not found');
 
-        if ($this->product->existsForCategory($id)) {
+        if ($this->_product->existsForCategory($id)) {
             Response::error('Category is in use by products', 409);
         }
 
-        return $this->category->hardDelete($id);
+        return $this->_category->hardDelete($id);
     }
 
     /**
@@ -198,15 +198,15 @@ class CategoryService extends BaseService
      */
     public function remove(int $id): int
     {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        $this->requireEntity($this->category->findById($id), 'Category not found');
+        $this->_requireEntity($this->_category->findById($id), 'Category not found');
 
-        if ($this->product->existsForCategory($id)) {
+        if ($this->_product->existsForCategory($id)) {
             Response::error('Category is in use by products', 409);
         }
 
-        return $this->category->softDelete($id);
+        return $this->_category->softDelete($id);
     }
 
     private function buildTree(array $items, ?int $parentId = null): array

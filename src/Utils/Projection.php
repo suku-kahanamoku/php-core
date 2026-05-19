@@ -40,14 +40,14 @@ namespace App\Utils;
 class Projection
 {
     /** Vlastni sloupce tabulky explicitne pozadovane (bez tecky). */
-    private array $ownCols = [];
+    private array $_ownCols = [];
 
     /**
      * Zaznamy s teckovym zapisem rozdelene dle prefixu.
      * Pro relace: ['user' => ['first_name', 'email']]
      * Pro JSON sloupce: ['data' => ['quality', 'volume']]
      */
-    private array $dotRels = [];
+    private array $_dotRels = [];
 
     /**
      * @param array<string>|null $fields  null = vsechny (bez omezeni); [] = jen systemove; [...] = specificke.
@@ -61,9 +61,9 @@ class Projection
             }
             if (str_contains($f, '.')) {
                 [$rel, $col]           = explode('.', $f, 2);
-                $this->dotRels[$rel][] = $col;
+                $this->_dotRels[$rel][] = $col;
             } else {
-                $this->ownCols[] = $f;
+                $this->_ownCols[] = $f;
             }
         }
     }
@@ -111,7 +111,7 @@ class Projection
 
         $cols = [];
 
-        foreach ($this->ownCols as $col) {
+        foreach ($this->_ownCols as $col) {
             if (in_array($col, $relNames, true)) {
                 // Jmeno relace → zahr jeho FK (napr. 'user' → 'user_id')
                 $fk = "{$col}_id";
@@ -124,7 +124,7 @@ class Projection
         }
 
         // Pro zaznamy s teckovym zapisem: zahr FK pro relace NEBO samotny sloupec pro JSON.
-        foreach (array_keys($this->dotRels) as $rel) {
+        foreach (array_keys($this->_dotRels) as $rel) {
             if (in_array($rel, $relNames, true)) {
                 // Znama relace: zahr jeho FK
                 $fk = "{$rel}_id";
@@ -159,7 +159,7 @@ class Projection
             return false;
         }
 
-        if (!in_array($name, $this->ownCols, true) && !isset($this->dotRels[$name])) {
+        if (!in_array($name, $this->_ownCols, true) && !isset($this->_dotRels[$name])) {
             return false;
         }
 
@@ -167,7 +167,7 @@ class Projection
         // jde o JSON sloupec — JOIN neni potreba.
         if (
             $relNames !== [] &&
-            isset($this->dotRels[$name]) &&
+            isset($this->_dotRels[$name]) &&
             !in_array($name, $relNames, true)
         ) {
             return false;
@@ -190,7 +190,7 @@ class Projection
         if ($this->isAll()) {
             return null;
         }
-        return $this->dotRels[$col] ?? null;
+        return $this->_dotRels[$col] ?? null;
     }
 
     /**
@@ -208,12 +208,12 @@ class Projection
         }
 
         // Jednoduche jmeno relace ('user') → vsechny sloupce
-        if ($this->isAll() || in_array($name, $this->ownCols, true)) {
+        if ($this->isAll() || in_array($name, $this->_ownCols, true)) {
             return [];
         }
 
         // Jen teckovy zapis
-        return $this->dotRels[$name] ?? [];
+        return $this->_dotRels[$name] ?? [];
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -244,7 +244,7 @@ class Projection
     {
         if ($this->isAll()) {
             // Bez filtrovani – jen aplikuj vnoreni pro relace noveho formatu.
-            return $this->nestRelations($row, $relMap);
+            return $this->_nestRelations($row, $relMap);
         }
 
         // Shromazdi radkove klice patrici relacim (FK je vyloucen z allRelKeys, aby mohl
@@ -267,7 +267,7 @@ class Projection
         $keep = $sys;
 
         if (!$this->isEmpty()) {
-            foreach ($this->ownCols as $col) {
+            foreach ($this->_ownCols as $col) {
                 if (isset($relMap[$col])) {
                     $def = $relMap[$col];
                     if (is_array($def) && isset($def['nest'])) {
@@ -285,7 +285,7 @@ class Projection
                 }
             }
 
-            foreach ($this->dotRels as $rel => $reqCols) {
+            foreach ($this->_dotRels as $rel => $reqCols) {
                 if (!isset($relMap[$rel])) {
                     // JSON sloupec pristupovany pres teckovy zapis — zahr ho, aby apply() mohl filtrovat podklice.
                     $keep[] = $rel;
@@ -338,7 +338,7 @@ class Projection
         $filtered = array_intersect_key($row, array_flip(array_unique($keep)));
 
         // Filtruj podklice JSON sloupcu pristupovanych pres teckovy zapis.
-        foreach ($this->dotRels as $rel => $reqCols) {
+        foreach ($this->_dotRels as $rel => $reqCols) {
             if (
                 !isset($relMap[$rel]) &&
                 isset($filtered[$rel]) &&
@@ -352,14 +352,14 @@ class Projection
             }
         }
 
-        return $this->nestRelations($filtered, $relMap);
+        return $this->_nestRelations($filtered, $relMap);
     }
 
     /**
      * Presune sloupce relaci noveho formatu z planeho radku do vnoreneho podobjektu.
      * Relace stareho formatu (plany seznam) zustavaji beze zmeny.
      */
-    private function nestRelations(array $row, array $relMap): array
+    private function _nestRelations(array $row, array $relMap): array
     {
         foreach ($relMap as $rel => $def) {
             if (!is_array($def) || !isset($def['nest'])) {

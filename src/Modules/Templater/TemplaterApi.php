@@ -10,11 +10,11 @@ use App\Modules\Router\Router;
 
 class TemplaterApi
 {
-    private TemplaterService $service;
+    private TemplaterService $_service;
 
     public function __construct()
     {
-        $this->service = new TemplaterService();
+        $this->_service = new TemplaterService();
     }
 
     public function registerRoutes(Router $router): void
@@ -37,6 +37,6 @@ class TemplaterApi
 
         unset($data['template']);
 
-        Response::html($this->service->render($template, $data));
+        Response::html($this->_service->render($template, $data));
     }
 }

@@ -7,15 +7,15 @@ namespace App\Modules\Router;
 class Router
 {
     /** @var array<string, array<string, callable>> */
-    private array $routes = [];
+    private array $_routes = [];
 
     /**
      * @var array<array{methods: string[], pattern: string, handler: callable, middleware: callable[]}>
      */
-    private array $compiledRoutes = [];
+    private array $_compiledRoutes = [];
 
-    private array $globalMiddleware = [];
-    private array $routeMiddleware  = [];
+    private array $_globalMiddleware = [];
+    private array $_routeMiddleware  = [];
 
     // ─── Registration ──────────────────────────────────────────────────────────
 
@@ -28,7 +28,7 @@ class Router
      */
     public function get(string $path, callable $handler): self
     {
-        return $this->addRoute('GET', $path, $handler);
+        return $this->_addRoute('GET', $path, $handler);
     }
 
     /**
@@ -40,7 +40,7 @@ class Router
      */
     public function post(string $path, callable $handler): self
     {
-        return $this->addRoute('POST', $path, $handler);
+        return $this->_addRoute('POST', $path, $handler);
     }
 
     /**
@@ -52,7 +52,7 @@ class Router
      */
     public function put(string $path, callable $handler): self
     {
-        return $this->addRoute('PUT', $path, $handler);
+        return $this->_addRoute('PUT', $path, $handler);
     }
 
     /**
@@ -64,7 +64,7 @@ class Router
      */
     public function patch(string $path, callable $handler): self
     {
-        return $this->addRoute('PATCH', $path, $handler);
+        return $this->_addRoute('PATCH', $path, $handler);
     }
 
     /**
@@ -76,7 +76,7 @@ class Router
      */
     public function delete(string $path, callable $handler): self
     {
-        return $this->addRoute('DELETE', $path, $handler);
+        return $this->_addRoute('DELETE', $path, $handler);
     }
 
     /**
@@ -88,9 +88,9 @@ class Router
     public function middleware(callable $middleware): self
     {
         // Prida se k posledni zaregistrovane route
-        $lastKey = array_key_last($this->compiledRoutes);
+        $lastKey = array_key_last($this->_compiledRoutes);
         if ($lastKey !== null) {
-            $this->compiledRoutes[$lastKey]['middleware'][] = $middleware;
+            $this->_compiledRoutes[$lastKey]['middleware'][] = $middleware;
         }
         return $this;
     }
@@ -103,17 +103,17 @@ class Router
      */
     public function addGlobalMiddleware(callable $middleware): self
     {
-        $this->globalMiddleware[] = $middleware;
+        $this->_globalMiddleware[] = $middleware;
         return $this;
     }
 
-    private function addRoute(string $method, string $path, callable $handler): self
+    private function _addRoute(string $method, string $path, callable $handler): self
     {
         // Preved :param na pojmenovane regex skupiny
         $pattern = preg_replace('/\/:([a-zA-Z_][a-zA-Z0-9_]*)/', '/(?P<$1>[^/]+)', $path);
         $pattern = '#^' . $pattern . '$#';
 
-        $this->compiledRoutes[] = [
+        $this->_compiledRoutes[] = [
             'method'     => $method,
             'path'       => $path,
             'pattern'    => $pattern,
@@ -122,7 +122,7 @@ class Router
         ];
 
         // Uloz pro prehled dostupnych rout
-        $this->routes[$method][$path] = $handler;
+        $this->_routes[$method][$path] = $handler;
 
         return $this;
     }
@@ -147,7 +147,7 @@ class Router
             exit;
         }
 
-        foreach ($this->compiledRoutes as $route) {
+        foreach ($this->_compiledRoutes as $route) {
             if ($route['method'] !== $method) {
                 continue;
             }
@@ -160,7 +160,7 @@ class Router
             $params = array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY);
 
             // Spust globalni a pak routovaci middleware
-            $allMiddleware = array_merge($this->globalMiddleware, $route['middleware']);
+            $allMiddleware = array_merge($this->_globalMiddleware, $route['middleware']);
             foreach ($allMiddleware as $mw) {
                 $mw($request);
             }
@@ -170,7 +170,7 @@ class Router
         }
 
         // Zkontroluj, zda cesta existuje s jinou metodou → 405
-        foreach ($this->compiledRoutes as $route) {
+        foreach ($this->_compiledRoutes as $route) {
             if (preg_match($route['pattern'], $uri)) {
                 Response::error('Method Not Allowed', 405);
             }

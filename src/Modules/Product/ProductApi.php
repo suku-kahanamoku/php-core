@@ -12,7 +12,7 @@ use App\Modules\Router\Router;
 
 class ProductApi
 {
-    private ProductService $service;
+    private ProductService $_service;
 
     /**
      * Konstruktor tridy ProductApi.
@@ -23,7 +23,7 @@ class ProductApi
      */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->service = new ProductService($db, $franchiseCode, $auth);
+        $this->_service = new ProductService($db, $franchiseCode, $auth);
     }
 
     /**
@@ -34,7 +34,7 @@ class ProductApi
      */
     public function list(Request $request): void
     {
-        $result  = $this->service->list(
+        $result  = $this->_service->list(
             max(1, (int) $request->get('page', 1)),
             min(100, max(1, (int) $request->get('limit', 20))),
             (string) $request->get('sort', ''),
@@ -53,7 +53,7 @@ class ProductApi
      */
     public function get(Request $request, array $params): void
     {
-        $item    = $this->service->get((int) $params['id'], $request->projection());
+        $item    = $this->_service->get((int) $params['id'], $request->projection());
         Response::successItem($item, $request);
     }
 
@@ -72,7 +72,7 @@ class ProductApi
             ->numeric('price', 0)
             ->validate();
 
-        $product = $this->service->create([
+        $product = $this->_service->create([
             'name'           => $request->get('name'),
             'sku'            => $request->get('sku'),
             'description'    => $request->get('description'),
@@ -115,7 +115,7 @@ class ProductApi
         if (array_key_exists('data', $request->body)) {
             $input['data'] = $request->get('data');
         }
-        $product = $this->service->update((int) $params['id'], $input, $request->projection());
+        $product = $this->_service->update((int) $params['id'], $input, $request->projection());
         Response::success($product, 'Product updated');
     }
 
@@ -138,7 +138,7 @@ class ProductApi
             ->numeric('price', 0)
             ->validate();
 
-        $product = $this->service->replace((int) $params['id'], [
+        $product = $this->_service->replace((int) $params['id'], [
             'name'           => $request->get('name'),
             'sku'            => $request->get('sku'),
             'price'          => $request->get('price'),
@@ -167,9 +167,9 @@ class ProductApi
         VALIDATOR(['id' => $params['id'] ?? ''])->required('id')->validate();
         $force = filter_var($request->query['force'] ?? false, FILTER_VALIDATE_BOOLEAN);
         if ($force) {
-            $this->service->delete((int) $params['id']);
+            $this->_service->delete((int) $params['id']);
         } else {
-            $this->service->remove((int) $params['id']);
+            $this->_service->remove((int) $params['id']);
         }
         Response::success(null, 'Product deleted');
     }
@@ -183,7 +183,7 @@ class ProductApi
      */
     public function adjustStock(Request $request, array $params): void
     {
-        $newQty = $this->service->adjustStock(
+        $newQty = $this->_service->adjustStock(
             (int) $params['id'],
             (int) $request->get('quantity', 0),
         );

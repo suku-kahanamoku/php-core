@@ -17,11 +17,11 @@ class Request
     public function __construct()
     {
         $this->method        = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
-        $this->uri           = $this->parsePath();
+        $this->uri           = $this->_parsePath();
         $this->franchiseCode = self::resolveCode();
         $this->query         = $_GET;
-        $this->body          = $this->parseBody();
-        $this->headers       = $this->parseHeaders();
+        $this->body          = $this->_parseBody();
+        $this->headers       = $this->_parseHeaders();
         $this->files         = $_FILES;
     }
 
@@ -42,7 +42,9 @@ class Request
 
         // Podporuje format "host:alias,host2:alias2" i puvodni "host,host2"
         $map = [];
-        foreach (array_map('trim', explode(',', $_ENV['FRANCHISE_CODES'] ?? 'default')) as $entry) {
+        // Rozparsuj env FRANCHISE_CODES do mapy host:alias (test.cz:default,example.com:example,...)
+        $entries = array_map('trim', explode(',', $_ENV['FRANCHISE_CODES'] ?? 'default'));
+        foreach ($entries as $entry) {
             if (str_contains($entry, ':')) {
                 [$host, $alias] = explode(':', $entry, 2);
                 $map[trim($host)] = trim($alias);
@@ -67,7 +69,12 @@ class Request
         return $map[$code];
     }
 
-    private function parsePath(): string
+    /**
+     * Rozparsuje cestu z URL a odstraní základní adresář skriptu.
+     * 
+     * @return string
+     */
+    private function _parsePath(): string
     {
         $uri  = $_SERVER['REQUEST_URI'] ?? '/';
         $path = parse_url($uri, PHP_URL_PATH) ?: '/';
@@ -81,7 +88,7 @@ class Request
         return rtrim($path, '/') ?: '/';
     }
 
-    private function parseBody(): array
+    private function _parseBody(): array
     {
         $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
 
@@ -94,7 +101,7 @@ class Request
         return $_POST;
     }
 
-    private function parseHeaders(): array
+    private function _parseHeaders(): array
     {
         $headers = [];
         foreach ($_SERVER as $key => $value) {

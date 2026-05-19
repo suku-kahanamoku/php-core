@@ -11,7 +11,7 @@ use App\Modules\Router\Response;
 
 class ProductService extends BaseService
 {
-    private ProductRepository $product;
+    private ProductRepository $_product;
 
     /**
      * Konstruktor tridy ProductService.
@@ -22,8 +22,8 @@ class ProductService extends BaseService
      */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->product = new ProductRepository($db, $franchiseCode);
-        $this->auth    = $auth;
+        $this->_product = new ProductRepository($db, $franchiseCode);
+        $this->_auth    = $auth;
     }
 
     /**
@@ -49,7 +49,7 @@ class ProductService extends BaseService
         string $filter = '',
         ?array $projection = null,
     ): array {
-        return $this->product->findAll(
+        return $this->_product->findAll(
             $page,
             $limit,
             $sort,
@@ -68,8 +68,8 @@ class ProductService extends BaseService
      */
     public function get(int $id, ?array $projection = null): array
     {
-        $product = $this->product->findById($id, $projection);
-        $this->requireEntity($product, 'Product not found');
+        $product = $this->_product->findById($id, $projection);
+        $this->_requireEntity($product, 'Product not found');
 
         return $product;
     }
@@ -83,18 +83,18 @@ class ProductService extends BaseService
      */
     public function create(array $input, ?array $projection = null): array
     {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
         $name  = trim((string) ($input['name'] ?? ''));
         $price = $input['price'] ?? null;
         $sku   = !empty($input['sku'])
             ? trim((string) $input['sku'])
-            : $this->product->generateSku();
+            : $this->_product->generateSku();
 
         $categoryIds = array_map('intval', (array) ($input['category_ids'] ?? []));
         $fileIds     = array_map('intval', (array) ($input['file_ids'] ?? []));
 
-        $created = $this->product->create([
+        $created = $this->_product->create([
             'sku'            => $sku,
             'name'           => $name,
             'description'    => (string) ($input['description'] ?? ''),
@@ -114,13 +114,13 @@ class ProductService extends BaseService
 
         $id = $created['id'];
         if ($categoryIds) {
-            $this->product->syncCategories($id, $categoryIds);
+            $this->_product->syncCategories($id, $categoryIds);
         }
         if ($fileIds) {
-            $this->product->syncFiles($id, $fileIds);
+            $this->_product->syncFiles($id, $fileIds);
         }
 
-        return $this->product->findById($id, $projection) ?? $created;
+        return $this->_product->findById($id, $projection) ?? $created;
     }
 
     /**
@@ -134,9 +134,9 @@ class ProductService extends BaseService
      */
     public function update(int $id, array $input, ?array $projection = null): array
     {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        $this->requireEntity($this->product->findById($id), 'Product not found');
+        $this->_requireEntity($this->_product->findById($id), 'Product not found');
 
         $set         = [];
         $textFields  = ['sku', 'name', 'description', 'kind', 'color', 'variant'];
@@ -160,14 +160,14 @@ class ProductService extends BaseService
         }
 
         if (!empty($set)) {
-            $this->product->update($id, $set);
+            $this->_product->update($id, $set);
         }
 
         if (
             array_key_exists('category_ids', $input) &&
             is_array($input['category_ids'])
         ) {
-            $this->product->syncCategories(
+            $this->_product->syncCategories(
                 $id,
                 array_map('intval', $input['category_ids'])
             );
@@ -177,7 +177,7 @@ class ProductService extends BaseService
             array_key_exists('file_ids', $input) &&
             is_array($input['file_ids'])
         ) {
-            $this->product->syncFiles(
+            $this->_product->syncFiles(
                 $id,
                 array_map('intval', $input['file_ids'])
             );
@@ -185,15 +185,15 @@ class ProductService extends BaseService
 
         if (array_key_exists('data', $input)) {
             if (is_array($input['data']) && !empty($input['data'])) {
-                $existing = $this->product->findById($id);
+                $existing = $this->_product->findById($id);
                 $current  = array_merge($existing['data'] ?? [], $input['data']);
-                $this->product->update($id, ['data' => $current]);
+                $this->_product->update($id, ['data' => $current]);
             } elseif ($input['data'] === null) {
-                $this->product->update($id, ['data' => null]);
+                $this->_product->update($id, ['data' => null]);
             }
         }
 
-        return $this->product->findById($id, $projection) ?? ['id' => $id];
+        return $this->_product->findById($id, $projection) ?? ['id' => $id];
     }
 
     /**
@@ -207,20 +207,20 @@ class ProductService extends BaseService
      */
     public function replace(int $id, array $input, ?array $projection = null): array
     {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        $this->requireEntity($this->product->findById($id), 'Product not found');
+        $this->_requireEntity($this->_product->findById($id), 'Product not found');
 
         $name  = trim((string) ($input['name'] ?? ''));
         $sku   = !empty($input['sku'])
             ? trim((string) $input['sku'])
-            : $this->product->generateSku();
+            : $this->_product->generateSku();
         $price = $input['price'] ?? null;
 
         $categoryIds = array_map('intval', (array) ($input['category_ids'] ?? []));
         $fileIds     = array_map('intval', (array) ($input['file_ids'] ?? []));
 
-        $this->product->update($id, [
+        $this->_product->update($id, [
             'name'           => $name,
             'sku'            => $sku,
             'price'          => (float) $price,
@@ -239,10 +239,10 @@ class ProductService extends BaseService
                 ? $input['data'] : null,
         ]);
 
-        $this->product->syncCategories($id, $categoryIds);
-        $this->product->syncFiles($id, $fileIds);
+        $this->_product->syncCategories($id, $categoryIds);
+        $this->_product->syncFiles($id, $fileIds);
 
-        return $this->product->findById($id, $projection) ?? ['id' => $id];
+        return $this->_product->findById($id, $projection) ?? ['id' => $id];
     }
 
     /**
@@ -253,11 +253,11 @@ class ProductService extends BaseService
      */
     public function delete(int $id): int
     {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        $this->requireEntity($this->product->findById($id), 'Product not found');
+        $this->_requireEntity($this->_product->findById($id), 'Product not found');
 
-        return $this->product->hardDelete($id);
+        return $this->_product->hardDelete($id);
     }
 
     /**
@@ -269,11 +269,11 @@ class ProductService extends BaseService
      */
     public function remove(int $id): int
     {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        $this->requireEntity($this->product->findById($id), 'Product not found');
+        $this->_requireEntity($this->_product->findById($id), 'Product not found');
 
-        return $this->product->softDelete($id);
+        return $this->_product->softDelete($id);
     }
 
     /**
@@ -286,9 +286,9 @@ class ProductService extends BaseService
      */
     public function adjustStock(int $id, int $delta): int
     {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        $newQty = $this->product->adjustStock($id, $delta);
+        $newQty = $this->_product->adjustStock($id, $delta);
 
         if ($newQty === -1) {
             Response::notFound('Product not found');

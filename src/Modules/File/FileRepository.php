@@ -16,9 +16,9 @@ class FileRepository extends BaseRepository
     public function __construct(Database $db, string $franchiseCode)
     {
         parent::__construct($db, $franchiseCode);
-        $this->table = 'file';
-        $this->alias = 'f';
-        $this->own   = [
+        $this->_table = 'file';
+        $this->_alias = 'f';
+        $this->_own   = [
             'type',
             'mime_type',
             'path',
@@ -29,7 +29,7 @@ class FileRepository extends BaseRepository
             'entity_id',
             'expires_at',
         ];
-        $this->rel = [];
+        $this->_rel = [];
     }
 
     /**
@@ -50,7 +50,7 @@ class FileRepository extends BaseRepository
         ?array $projection = null,
     ): array {
         $proj   = new Projection($projection);
-        $select = $this->buildSelect($proj);
+        $select = $this->_buildSelect($proj);
 
         // Extrahuj 'deleted' z filtru (vychozi 0 = pouze aktivni).
         $filterArr  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
@@ -59,7 +59,7 @@ class FileRepository extends BaseRepository
         $search = $filterArr['search'] ?? ($filter !== '' && !str_starts_with($filter, '{') ? $filter : '');
 
         $where  = 'f.franchise_code = ? AND f.deleted = ?';
-        $params = [$this->code, $deletedVal];
+        $params = [$this->_code, $deletedVal];
 
         if ($search !== '') {
             $where   .= ' AND (f.name LIKE ? OR f.type LIKE ?)';
@@ -77,17 +77,17 @@ class FileRepository extends BaseRepository
         };
 
         $offset = ($page - 1) * $limit;
-        $total  = (int) $this->db->fetchOne(
+        $total  = (int) $this->_db->fetchOne(
             "SELECT COUNT(*) AS cnt FROM file f WHERE {$where}",
             $params,
         )['cnt'];
 
-        $items = $this->db->fetchAll(
+        $items = $this->_db->fetchAll(
             "SELECT {$select} FROM file f WHERE {$where} ORDER BY {$orderBy} LIMIT ? OFFSET ?",
             [...$params, $limit, $offset],
         );
 
-        return $this->resultList($items, $total, $page, $limit);
+        return $this->_resultList($items, $total, $page, $limit);
     }
 
     /**
@@ -98,8 +98,8 @@ class FileRepository extends BaseRepository
      */
     public function insert(array $data): int
     {
-        $data['franchise_code'] = $this->code;
-        return $this->db->insert('file', $data);
+        $data['franchise_code'] = $this->_code;
+        return $this->_db->insert('file', $data);
     }
 
     /**
@@ -112,11 +112,11 @@ class FileRepository extends BaseRepository
      */
     public function update(int $id, array $data, ?array $projection = null): array
     {
-        $this->db->update(
+        $this->_db->update(
             'file',
             $data,
             'id = ? AND franchise_code = ?',
-            [$id, $this->code]
+            [$id, $this->_code]
         );
         return $this->findById($id, $projection);
     }
@@ -132,7 +132,7 @@ class FileRepository extends BaseRepository
      */
     public function findByJunctionItem(string $junctionTable, string $entityFkColumn, int $entityId): array
     {
-        $rows = $this->db->fetchAll(
+        $rows = $this->_db->fetchAll(
             "SELECT j.file_id, f.path, f.name, f.mime_type
              FROM {$junctionTable} j
              INNER JOIN file f ON f.id = j.file_id AND f.deleted = 0
@@ -164,7 +164,7 @@ class FileRepository extends BaseRepository
         }
 
         $placeholders = implode(',', array_fill(0, count($entityIds), '?'));
-        $rows = $this->db->fetchAll(
+        $rows = $this->_db->fetchAll(
             "SELECT j.{$entityFkColumn} AS entity_id, j.file_id, f.path, f.name, f.mime_type
              FROM {$junctionTable} j
              INNER JOIN file f ON f.id = j.file_id AND f.deleted = 0

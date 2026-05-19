@@ -12,7 +12,7 @@ use App\Modules\Router\Router;
 
 class InvoiceApi
 {
-    private InvoiceService $service;
+    private InvoiceService $_service;
 
     /**
      * Konstruktor tridy InvoiceApi.
@@ -23,7 +23,7 @@ class InvoiceApi
      */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->service = new InvoiceService($db, $franchiseCode, $auth);
+        $this->_service = new InvoiceService($db, $franchiseCode, $auth);
     }
 
     /**
@@ -35,7 +35,7 @@ class InvoiceApi
      */
     public function list(Request $request): void
     {
-        $result  = $this->service->list(
+        $result  = $this->_service->list(
             max(1, (int) $request->get('page', 1)),
             min(100, max(1, (int) $request->get('limit', 20))),
             (string) $request->get('sort', ''),
@@ -55,7 +55,7 @@ class InvoiceApi
      */
     public function get(Request $request, array $params): void
     {
-        $item    = $this->service->get((int) $params['id'], $request->projection());
+        $item    = $this->_service->get((int) $params['id'], $request->projection());
         Response::successItem($item, $request);
     }
 
@@ -70,7 +70,7 @@ class InvoiceApi
         $orderId = (int) $request->get('order_id', 0);
         VALIDATOR(['order_id' => $orderId])->numeric('order_id', 1)->validate();
 
-        $invoice = $this->service->create(
+        $invoice = $this->_service->create(
             $orderId,
             [
                 'due_at'   => $request->get('due_at'),
@@ -94,7 +94,7 @@ class InvoiceApi
         $status = trim((string) $request->get('status', ''));
         VALIDATOR(['status' => $status])->required('status')->validate();
 
-        $invoice = $this->service->updateStatus(
+        $invoice = $this->_service->updateStatus(
             (int) $params['id'],
             $status,
             $request->projection(),
@@ -114,9 +114,9 @@ class InvoiceApi
         VALIDATOR(['id' => $params['id'] ?? ''])->required('id')->validate();
         $force = filter_var($request->query['force'] ?? false, FILTER_VALIDATE_BOOLEAN);
         if ($force) {
-            $this->service->delete((int) $params['id']);
+            $this->_service->delete((int) $params['id']);
         } else {
-            $this->service->remove((int) $params['id']);
+            $this->_service->remove((int) $params['id']);
         }
         Response::success(null, 'Invoice deleted');
     }
@@ -135,7 +135,7 @@ class InvoiceApi
             ->numeric('id', 1)
             ->validate();
 
-        $invoice = $this->service->syncFiles(
+        $invoice = $this->_service->syncFiles(
             (int) $params['id'],
             array_map('intval', (array) ($request->get('file_ids') ?? [])),
             $request->projection(),

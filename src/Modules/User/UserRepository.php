@@ -22,10 +22,10 @@ class UserRepository extends BaseRepository
     public function __construct(Database $db, string $franchiseCode)
     {
         parent::__construct($db, $franchiseCode);
-        $this->table = 'user';
-        $this->alias = 'u';
-        $this->sys   = ['id', 'created_at', 'updated_at', 'last_login_at', 'deleted'];
-        $this->own   = [
+        $this->_table = 'user';
+        $this->_alias = 'u';
+        $this->_sys   = ['id', 'created_at', 'updated_at', 'last_login_at', 'deleted'];
+        $this->_own   = [
             'first_name',
             'last_name',
             'email',
@@ -33,7 +33,7 @@ class UserRepository extends BaseRepository
             'role_id',
             'status',
         ];
-        $this->rel = ['role'];
+        $this->_rel = ['role'];
     }
 
     /**
@@ -77,7 +77,7 @@ class UserRepository extends BaseRepository
         $offset = ($page - 1) * $limit;
 
         $where  = ['u.franchise_code = ?'];
-        $params = [$this->code];
+        $params = [$this->_code];
 
         // Extrahuj 'deleted' z filtru (vychozi 0 = pouze aktivni).
         $filterArr  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
@@ -95,8 +95,8 @@ class UserRepository extends BaseRepository
 
         $whereStr = implode(' AND ', $where);
 
-        $sys         = $this->sys;
-        $baseSelect  = $this->buildSelect($proj);
+        $sys         = $this->_sys;
+        $baseSelect  = $this->_buildSelect($proj);
 
         // JOIN role kdyz projekce vyzaduje nebo filtr odkazuje na sloupce role.*.
         $decodedFilter  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
@@ -110,12 +110,12 @@ class UserRepository extends BaseRepository
 
         $select = "{$baseSelect}{$relSel}";
 
-        $total = (int) $this->db->fetchOne(
+        $total = (int) $this->_db->fetchOne(
             "SELECT COUNT(*) AS cnt FROM user u {$joinSql} WHERE {$whereStr}",
             $params,
         )['cnt'];
 
-        $items = $this->db->fetchAll(
+        $items = $this->_db->fetchAll(
             "SELECT {$select} FROM user u {$joinSql}
              WHERE {$whereStr}
              ORDER BY {$orderBy}
@@ -135,7 +135,7 @@ class UserRepository extends BaseRepository
         }
         unset($item);
 
-        return $this->resultList($items, $total, $page, $limit);
+        return $this->_resultList($items, $total, $page, $limit);
     }
 
     /**
@@ -160,8 +160,8 @@ class UserRepository extends BaseRepository
     {
         $proj = new Projection($projection);
 
-        $sys        = $this->sys;
-        $baseSelect = $this->buildSelect($proj);
+        $sys        = $this->_sys;
+        $baseSelect = $this->_buildSelect($proj);
 
         $joinSql = '';
         $relSel  = '';
@@ -172,10 +172,10 @@ class UserRepository extends BaseRepository
 
         $select = "{$baseSelect}{$relSel}";
 
-        $user = $this->db->fetchOne(
+        $user = $this->_db->fetchOne(
             "SELECT {$select} FROM user u {$joinSql}
              WHERE u.id = ? AND u.franchise_code = ? AND u.deleted = 0",
-            [$id, $this->code],
+            [$id, $this->_code],
         );
 
         if (!$user) {
@@ -202,14 +202,14 @@ class UserRepository extends BaseRepository
     public function emailExists(string $email, ?int $excludeId = null): bool
     {
         if ($excludeId !== null) {
-            $row = $this->db->fetchOne(
+            $row = $this->_db->fetchOne(
                 'SELECT id FROM user WHERE franchise_code = ? AND email = ? AND id != ? AND deleted = 0',
-                [$this->code, $email, $excludeId],
+                [$this->_code, $email, $excludeId],
             );
         } else {
-            $row = $this->db->fetchOne(
+            $row = $this->_db->fetchOne(
                 'SELECT id FROM user WHERE franchise_code = ? AND email = ? AND deleted = 0',
-                [$this->code, $email],
+                [$this->_code, $email],
             );
         }
 
@@ -224,10 +224,10 @@ class UserRepository extends BaseRepository
      */
     public function countByRoleId(int $roleId): int
     {
-        return (int) $this->db->fetchOne(
+        return (int) $this->_db->fetchOne(
             'SELECT COUNT(*) AS cnt FROM user
              WHERE role_id = ? AND franchise_code = ? AND deleted = 0',
-            [$roleId, $this->code],
+            [$roleId, $this->_code],
         )['cnt'];
     }
 
@@ -245,10 +245,10 @@ class UserRepository extends BaseRepository
      */
     public function findByEmail(string $email): ?array
     {
-        return $this->db->fetchOne(
+        return $this->_db->fetchOne(
             'SELECT id, first_name, last_name, email, phone
              FROM user WHERE franchise_code = ? AND email = ? AND deleted = 0',
-            [$this->code, $email],
+            [$this->_code, $email],
         ) ?: null;
     }
 
@@ -272,8 +272,8 @@ class UserRepository extends BaseRepository
      */
     public function create(array $data, ?array $projection = null): array
     {
-        $id = $this->db->insert('user', array_merge($data, [
-            'franchise_code' => $this->code,
+        $id = $this->_db->insert('user', array_merge($data, [
+            'franchise_code' => $this->_code,
         ]));
 
         return $this->findById($id, $projection) ?? ['id' => $id];
@@ -300,11 +300,11 @@ class UserRepository extends BaseRepository
      */
     public function update(int $id, array $data, ?array $projection = null): array
     {
-        $this->db->update(
+        $this->_db->update(
             'user',
             $data,
             'id = ? AND franchise_code = ?',
-            [$id, $this->code],
+            [$id, $this->_code],
         );
 
         return $this->findById($id, $projection) ?? ['id' => $id];
@@ -326,14 +326,14 @@ class UserRepository extends BaseRepository
      */
     public function findForLogin(string $email): ?array
     {
-        return $this->db->fetchOne(
+        return $this->_db->fetchOne(
             'SELECT u.id, u.email, u.password,
                     r.name AS role, u.first_name, u.last_name, u.status
              FROM `user` u
              JOIN `role` r ON r.id = u.role_id AND r.deleted = 0
              WHERE u.email = ? AND u.franchise_code = ?
              LIMIT 1',
-            [$email, $this->code],
+            [$email, $this->_code],
         ) ?: null;
     }
 
@@ -345,7 +345,7 @@ class UserRepository extends BaseRepository
      */
     public function touchLastLogin(int $id): void
     {
-        $this->db->update(
+        $this->_db->update(
             'user',
             ['last_login_at' => date('Y-m-d H:i:s')],
             'id = ?',
@@ -361,9 +361,9 @@ class UserRepository extends BaseRepository
      */
     public function findPasswordHash(int $id): ?string
     {
-        $row = $this->db->fetchOne(
+        $row = $this->_db->fetchOne(
             'SELECT password FROM `user` WHERE id = ? AND franchise_code = ?',
-            [$id, $this->code],
+            [$id, $this->_code],
         );
 
         return $row['password'] ?? null;

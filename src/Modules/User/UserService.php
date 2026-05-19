@@ -12,8 +12,8 @@ use App\Modules\Router\Response;
 
 class UserService extends BaseService
 {
-    private UserRepository $user;
-    private RoleRepository $role;
+    private UserRepository $_user;
+    private RoleRepository $_role;
 
     /**
      * Konstruktor tridy UserService.
@@ -24,9 +24,9 @@ class UserService extends BaseService
      */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->user = new UserRepository($db, $franchiseCode);
-        $this->role = new RoleRepository($db, $franchiseCode);
-        $this->auth = $auth;
+        $this->_user = new UserRepository($db, $franchiseCode);
+        $this->_role = new RoleRepository($db, $franchiseCode);
+        $this->_auth = $auth;
     }
 
     /**
@@ -52,8 +52,8 @@ class UserService extends BaseService
         string $filter = '',
         ?array $projection = null,
     ): array {
-        $this->auth->requireRole('admin');
-        return $this->user->findAll(
+        $this->_auth->requireRole('admin');
+        return $this->_user->findAll(
             $page,
             $limit,
             $sort,
@@ -73,14 +73,14 @@ class UserService extends BaseService
      */
     public function get(int $id, ?array $projection = null): array
     {
-        $this->auth->require();
+        $this->_auth->require();
 
-        if (!$this->auth->hasRole('admin') && $this->auth->id() !== $id) {
+        if (!$this->_auth->hasRole('admin') && $this->_auth->id() !== $id) {
             Response::forbidden();
         }
 
-        $user = $this->user->findById($id, $projection);
-        $this->requireEntity($user, 'User not found');
+        $user = $this->_user->findById($id, $projection);
+        $this->_requireEntity($user, 'User not found');
 
         return $user;
     }
@@ -96,23 +96,23 @@ class UserService extends BaseService
      */
     public function create(array $input, ?array $projection = null): array
     {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        if ($this->user->emailExists($input['email'])) {
+        if ($this->_user->emailExists($input['email'])) {
             Response::error('Email already registered', 409);
         }
 
         $roleId = $input['role_id'] ?? null;
         if ($roleId !== null) {
-            VALIDATOR(['role_id' => $this->role->findById((int) $roleId) ? 'ok' : ''])
+            VALIDATOR(['role_id' => $this->_role->findById((int) $roleId) ? 'ok' : ''])
                 ->required('role_id')
                 ->validate();
             $roleId = (int) $roleId;
         } else {
-            $roleId = $this->role->findIdByName('user');
+            $roleId = $this->_role->findIdByName('user');
         }
 
-        return $this->user->create([
+        return $this->_user->create([
             'first_name' => $input['first_name'],
             'last_name'  => $input['last_name'],
             'email'      => $input['email'],
@@ -138,14 +138,14 @@ class UserService extends BaseService
      */
     public function update(int $id, array $input, ?array $projection = null): array
     {
-        $this->auth->require();
+        $this->_auth->require();
 
-        if (!$this->auth->hasRole('admin') && $this->auth->id() !== $id) {
+        if (!$this->_auth->hasRole('admin') && $this->_auth->id() !== $id) {
             Response::forbidden();
         }
 
-        $user = $this->user->findById($id);
-        $this->requireEntity($user, 'User not found');
+        $user = $this->_user->findById($id);
+        $this->_requireEntity($user, 'User not found');
 
         $set        = [];
         $textFields = ['first_name', 'last_name', 'phone'];
@@ -156,11 +156,11 @@ class UserService extends BaseService
             }
         }
 
-        if ($this->auth->hasRole('admin')) {
+        if ($this->_auth->hasRole('admin')) {
             if (array_key_exists('role_id', $input) && $input['role_id'] !== null) {
                 VALIDATOR(
                     [
-                        'role_id' => $this->role->findById((int) $input['role_id'])
+                        'role_id' => $this->_role->findById((int) $input['role_id'])
                             ? 'ok' : ''
                     ]
                 )
@@ -171,8 +171,8 @@ class UserService extends BaseService
         }
 
         return !empty($set)
-            ? $this->user->update($id, $set, $projection)
-            : ($this->user->findById($id, $projection) ?? ['id' => $id]);
+            ? $this->_user->update($id, $set, $projection)
+            : ($this->_user->findById($id, $projection) ?? ['id' => $id]);
     }
 
     /**
@@ -186,14 +186,14 @@ class UserService extends BaseService
      */
     public function replace(int $id, array $input, ?array $projection = null): array
     {
-        $this->auth->require();
+        $this->_auth->require();
 
-        if (!$this->auth->hasRole('admin') && $this->auth->id() !== $id) {
+        if (!$this->_auth->hasRole('admin') && $this->_auth->id() !== $id) {
             Response::forbidden();
         }
 
-        $user = $this->user->findById($id);
-        $this->requireEntity($user, 'User not found');
+        $user = $this->_user->findById($id);
+        $this->_requireEntity($user, 'User not found');
 
         $set = [
             'first_name' => $input['first_name'],
@@ -201,11 +201,11 @@ class UserService extends BaseService
             'phone'      => $input['phone'] ?? null,
         ];
 
-        if ($this->auth->hasRole('admin')) {
+        if ($this->_auth->hasRole('admin')) {
             if (array_key_exists('role_id', $input) && $input['role_id'] !== null) {
                 VALIDATOR(
                     [
-                        'role_id' => $this->role->findById((int) $input['role_id'])
+                        'role_id' => $this->_role->findById((int) $input['role_id'])
                             ? 'ok' : ''
                     ]
                 )
@@ -215,7 +215,7 @@ class UserService extends BaseService
             }
         }
 
-        return $this->user->update($id, $set, $projection);
+        return $this->_user->update($id, $set, $projection);
     }
 
     /**
@@ -226,12 +226,12 @@ class UserService extends BaseService
      */
     public function delete(int $id): int
     {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        $user = $this->user->findById($id);
-        $this->requireEntity($user, 'User not found');
+        $user = $this->_user->findById($id);
+        $this->_requireEntity($user, 'User not found');
 
-        return $this->user->hardDelete($id);
+        return $this->_user->hardDelete($id);
     }
 
     /**
@@ -243,11 +243,11 @@ class UserService extends BaseService
      */
     public function remove(int $id): int
     {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        $user = $this->user->findById($id);
-        $this->requireEntity($user, 'User not found');
+        $user = $this->_user->findById($id);
+        $this->_requireEntity($user, 'User not found');
 
-        return $this->user->softDelete($id);
+        return $this->_user->softDelete($id);
     }
 }

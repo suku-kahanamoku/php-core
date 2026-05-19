@@ -12,10 +12,10 @@ use App\Modules\User\UserRepository;
 
 class AuthService
 {
-    private UserRepository      $users;
-    private UserTokenRepository $tokens;
-    private RoleRepository      $roles;
-    private Auth                $auth;
+    private UserRepository      $_users;
+    private UserTokenRepository $_tokens;
+    private RoleRepository      $_roles;
+    private Auth                $_auth;
 
     /**
      * Konstruktor tridy AuthService.
@@ -26,10 +26,10 @@ class AuthService
      */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->users  = new UserRepository($db, $franchiseCode);
-        $this->tokens = new UserTokenRepository($db);
-        $this->roles  = new RoleRepository($db, $franchiseCode);
-        $this->auth   = $auth;
+        $this->_users  = new UserRepository($db, $franchiseCode);
+        $this->_tokens = new UserTokenRepository($db);
+        $this->_roles  = new RoleRepository($db, $franchiseCode);
+        $this->_auth   = $auth;
     }
 
     /**
@@ -51,7 +51,7 @@ class AuthService
     {
         VALIDATOR(['email' => $email])->email('email')->validate();
 
-        $user = $this->users->findForLogin($email);
+        $user = $this->_users->findForLogin($email);
 
         if (!$user || !password_verify($password, $user['password'])) {
             Response::error('Invalid credentials', 401);
@@ -64,8 +64,8 @@ class AuthService
         $token     = bin2hex(random_bytes(32));
         $expiresAt = date('Y-m-d H:i:s', strtotime('+24 hours'));
 
-        $this->tokens->create($user['id'], $token, $expiresAt);
-        $this->users->touchLastLogin($user['id']);
+        $this->_tokens->create($user['id'], $token, $expiresAt);
+        $this->_users->touchLastLogin($user['id']);
 
         return [
             'token'      => $token,
@@ -85,8 +85,8 @@ class AuthService
      */
     public function logout(): void
     {
-        $this->auth->require();
-        $this->auth->logout();
+        $this->_auth->require();
+        $this->_auth->logout();
     }
 
     /**
@@ -101,8 +101,8 @@ class AuthService
      */
     public function me(): array
     {
-        $this->auth->require();
-        return $this->auth->user();
+        $this->_auth->require();
+        return $this->_auth->user();
     }
 
     /**
@@ -131,16 +131,16 @@ class AuthService
             ->minLength('password', 8)
             ->validate();
 
-        if ($this->users->emailExists($email)) {
+        if ($this->_users->emailExists($email)) {
             Response::error('Email already registered', 409);
         }
 
-        $roleId = $this->roles->findIdByName('user');
+        $roleId = $this->_roles->findIdByName('user');
         if (!$roleId) {
             Response::error('Default role not configured', 500);
         }
 
-        return $this->users->create([
+        return $this->_users->create([
             'first_name' => $firstName,
             'last_name'  => $lastName,
             'email'      => $email,
@@ -159,7 +159,7 @@ class AuthService
      */
     public function changePassword(string $currentPassword, string $newPassword): void
     {
-        $this->auth->require();
+        $this->_auth->require();
 
         VALIDATOR([
             'current_password' => $currentPassword,
@@ -169,14 +169,14 @@ class AuthService
             ->minLength('new_password', 8)
             ->validate();
 
-        $userId = $this->auth->id();
-        $hash   = $this->users->findPasswordHash($userId);
+        $userId = $this->_auth->id();
+        $hash   = $this->_users->findPasswordHash($userId);
 
         if (!$hash || !password_verify($currentPassword, $hash)) {
             Response::error('Current password is incorrect', 401);
         }
 
-        $this->users->update($userId, [
+        $this->_users->update($userId, [
             'password' => password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 12]),
         ]);
     }
@@ -192,7 +192,7 @@ class AuthService
     {
         VALIDATOR(['email' => $email])->email('email')->validate();
 
-        $user = $this->users->findByEmail($email);
+        $user = $this->_users->findByEmail($email);
         if (!$user) {
             // Neodhalujeme zda email existuje – vzdy vratime uspech
             return ['email' => $email, 'password' => ''];
@@ -200,7 +200,7 @@ class AuthService
 
         $newPassword = bin2hex(random_bytes(8)); // 16 znaku hex
 
-        $this->users->update($user['id'], [
+        $this->_users->update($user['id'], [
             'password' => password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 12]),
         ]);
 
@@ -231,15 +231,15 @@ class AuthService
     ): array {
         VALIDATOR(['email' => $email])->email('email')->validate();
 
-        $user = $this->users->findForLogin($email);
+        $user = $this->_users->findForLogin($email);
 
         if (!$user) {
-            $roleId = $this->roles->findIdByName('user');
+            $roleId = $this->_roles->findIdByName('user');
             if (!$roleId) {
                 Response::error('Default role not configured', 500);
             }
 
-            $this->users->create([
+            $this->_users->create([
                 'first_name' => $firstName,
                 'last_name'  => $lastName,
                 'email'      => $email,
@@ -252,7 +252,7 @@ class AuthService
                 'status'     => 'active',
             ]);
 
-            $user = $this->users->findForLogin($email);
+            $user = $this->_users->findForLogin($email);
             if (!$user) {
                 Response::error('Failed to create user', 500);
             }
@@ -265,8 +265,8 @@ class AuthService
         $token     = bin2hex(random_bytes(32));
         $expiresAt = date('Y-m-d H:i:s', strtotime('+24 hours'));
 
-        $this->tokens->create($user['id'], $token, $expiresAt);
-        $this->users->touchLastLogin($user['id']);
+        $this->_tokens->create($user['id'], $token, $expiresAt);
+        $this->_users->touchLastLogin($user['id']);
 
         return [
             'token'      => $token,

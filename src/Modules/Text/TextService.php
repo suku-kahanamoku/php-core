@@ -11,7 +11,7 @@ use App\Modules\Router\Response;
 
 class TextService extends BaseService
 {
-    private TextRepository $text;
+    private TextRepository $_text;
 
     /**
      * Konstruktor tridy TextService.
@@ -22,8 +22,8 @@ class TextService extends BaseService
      */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->text = new TextRepository($db, $franchiseCode);
-        $this->auth = $auth;
+        $this->_text = new TextRepository($db, $franchiseCode);
+        $this->_auth = $auth;
     }
 
     /**
@@ -49,7 +49,7 @@ class TextService extends BaseService
         string $filter = '',
         ?array $projection = null,
     ): array {
-        return $this->text->findAll(
+        return $this->_text->findAll(
             $page,
             $limit,
             $sort,
@@ -67,7 +67,7 @@ class TextService extends BaseService
      */
     public function get(int $id, ?array $projection = null): array
     {
-        $text = $this->text->findById($id, $projection);
+        $text = $this->_text->findById($id, $projection);
         if (!$text) {
             Response::notFound('Text not found');
         }
@@ -83,7 +83,7 @@ class TextService extends BaseService
      */
     public function getByKey(string $key, string $language): array
     {
-        $text = $this->text->findByKey($key, $language);
+        $text = $this->_text->findByKey($key, $language);
         if (!$text) {
             Response::notFound("Text with key '$key' not found");
         }
@@ -108,16 +108,16 @@ class TextService extends BaseService
         array $input,
         ?array $projection = null,
     ): array {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        if ($this->text->keyExists($key, $language)) {
+        if ($this->_text->keyExists($key, $language)) {
             Response::error(
                 "Syscode '$key' already exists for language '$language'",
                 409
             );
         }
 
-        return $this->text->create([
+        return $this->_text->create([
             'syscode'    => $key,
             'title'      => $title,
             'content'    => $input['content'] ?? '',
@@ -136,9 +136,9 @@ class TextService extends BaseService
      */
     public function update(int $id, array $input, ?array $projection = null): array
     {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        if (!$this->text->findById($id)) {
+        if (!$this->_text->findById($id)) {
             Response::notFound('Text not found');
         }
 
@@ -155,10 +155,10 @@ class TextService extends BaseService
         }
 
         if (!empty($set)) {
-            $this->text->update($id, $set);
+            $this->_text->update($id, $set);
         }
 
-        return $this->text->findById($id, $projection) ?? ['id' => $id];
+        return $this->_text->findById($id, $projection) ?? ['id' => $id];
     }
 
     /**
@@ -178,13 +178,13 @@ class TextService extends BaseService
         array $input,
         ?array $projection = null
     ): array {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        if (!$this->text->findById($id)) {
+        if (!$this->_text->findById($id)) {
             Response::notFound('Text not found');
         }
 
-        $this->text->update($id, [
+        $this->_text->update($id, [
             'syscode'   => $key,
             'title'     => $title,
             'content'   => (string) ($input['content'] ?? ''),
@@ -192,7 +192,7 @@ class TextService extends BaseService
             'published' => (int)    ($input['published'] ?? 1),
         ]);
 
-        return $this->text->findById($id, $projection) ?? ['id' => $id];
+        return $this->_text->findById($id, $projection) ?? ['id' => $id];
     }
 
     /**
@@ -203,13 +203,13 @@ class TextService extends BaseService
      */
     public function delete(int $id): int
     {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        if (!$this->text->findById($id)) {
+        if (!$this->_text->findById($id)) {
             Response::notFound('Text not found');
         }
 
-        return $this->text->hardDelete($id);
+        return $this->_text->hardDelete($id);
     }
 
     /**
@@ -221,10 +221,10 @@ class TextService extends BaseService
      */
     public function remove(int $id): int
     {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        $this->requireEntity($this->text->findById($id), 'Text not found');
+        $this->_requireEntity($this->_text->findById($id), 'Text not found');
 
-        return $this->text->softDelete($id);
+        return $this->_text->softDelete($id);
     }
 }

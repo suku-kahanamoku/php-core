@@ -24,13 +24,13 @@ use App\Modules\Router\Router;
  */
 class FileApi
 {
-    private FileService $service;
-    private Auth $auth;
+    private FileService $_service;
+    private Auth $_auth;
 
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->service = new FileService($db, $franchiseCode, $auth);
-        $this->auth    = $auth;
+        $this->_service = new FileService($db, $franchiseCode, $auth);
+        $this->_auth    = $auth;
     }
 
     public function registerRoutes(Router $router): void
@@ -49,7 +49,7 @@ class FileApi
 
     public function list(Request $request): void
     {
-        $result = $this->service->list(
+        $result = $this->_service->list(
             max(1, (int) $request->get('page', 1)),
             min(100, max(1, (int) $request->get('limit', 20))),
             (string) $request->get('sort', ''),
@@ -67,7 +67,7 @@ class FileApi
             ->required('id')
             ->numeric('id')
             ->validate();
-        $item = $this->service->get((int) $params['id'], $request->projection());
+        $item = $this->_service->get((int) $params['id'], $request->projection());
         Response::successItem($item, $request);
     }
 
@@ -79,7 +79,7 @@ class FileApi
             ->required('id')
             ->numeric('id')
             ->validate();
-        $resolved = $this->service->resolve((int) $params['id']);
+        $resolved = $this->_service->resolve((int) $params['id']);
         Response::stream(
             $resolved['path'],
             $resolved['name'],
@@ -96,7 +96,7 @@ class FileApi
             ->required('id')
             ->numeric('id')
             ->validate();
-        $resolved = $this->service->resolve((int) $params['id']);
+        $resolved = $this->_service->resolve((int) $params['id']);
         Response::stream(
             $resolved['path'],
             $resolved['name'],
@@ -111,7 +111,7 @@ class FileApi
     {
         VALIDATOR($_FILES)->required('file')->validate();
 
-        $result = $this->service->upload($_FILES['file']);
+        $result = $this->_service->upload($_FILES['file']);
         Response::created($result);
     }
 
@@ -129,7 +129,7 @@ class FileApi
             ->required('name')
             ->validate();
 
-        $result = $this->service->commit(
+        $result = $this->_service->commit(
             (string) $body['path'],
             (string) $body['name'],
             (string) ($body['visibility'] ?? 'private'),
@@ -149,9 +149,9 @@ class FileApi
             ->validate();
         $force = filter_var($request->query['force'] ?? false, FILTER_VALIDATE_BOOLEAN);
         if ($force) {
-            $this->service->delete((int) $params['id']);
+            $this->_service->delete((int) $params['id']);
         } else {
-            $this->service->remove((int) $params['id']);
+            $this->_service->remove((int) $params['id']);
         }
         Response::success(null, 'File deleted');
     }

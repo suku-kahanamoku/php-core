@@ -8,21 +8,21 @@ use App\Modules\Router\Request;
 
 class CorsMiddleware
 {
-    private array $allowedOrigins;
+    private array $_allowedOrigins;
 
     public function __construct()
     {
         $origins              = $_ENV['ALLOWED_ORIGINS'] ?? '*';
-        $this->allowedOrigins = $origins === '*' ? ['*'] : explode(',', $origins);
+        $this->_allowedOrigins = $origins === '*' ? ['*'] : explode(',', $origins);
     }
 
     public function __invoke(?Request $request = null): void
     {
         $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 
-        if ($this->allowedOrigins === ['*']) {
+        if ($this->_allowedOrigins === ['*']) {
             header('Access-Control-Allow-Origin: *');
-        } elseif (in_array($origin, $this->allowedOrigins, true)) {
+        } elseif (in_array($origin, $this->_allowedOrigins, true)) {
             header("Access-Control-Allow-Origin: {$origin}");
             header('Vary: Origin');
         }

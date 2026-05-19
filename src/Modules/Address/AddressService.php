@@ -11,7 +11,7 @@ use App\Modules\Router\Response;
 
 class AddressService extends BaseService
 {
-    private AddressRepository $address;
+    private AddressRepository $_address;
 
     /**
      * Inicializuje AddressService.
@@ -22,8 +22,8 @@ class AddressService extends BaseService
      */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->address = new AddressRepository($db, $franchiseCode);
-        $this->auth    = $auth;
+        $this->_address = new AddressRepository($db, $franchiseCode);
+        $this->_auth    = $auth;
     }
 
     /**
@@ -43,9 +43,9 @@ class AddressService extends BaseService
         string $filter = '',
         ?array $projection = null,
     ): array {
-        $this->auth->requireRole('admin');
+        $this->_auth->requireRole('admin');
 
-        return $this->address->findAll($page, $limit, $sort, $filter, $projection);
+        return $this->_address->findAll($page, $limit, $sort, $filter, $projection);
     }
 
     /**
@@ -59,10 +59,10 @@ class AddressService extends BaseService
      */
     public function get(int $id, ?array $projection = null): array
     {
-        $this->auth->require();
+        $this->_auth->require();
 
-        $address = $this->address->findById($id, $projection);
-        $this->requireEntity($address, 'Address not found');
+        $address = $this->_address->findById($id, $projection);
+        $this->_requireEntity($address, 'Address not found');
 
         return $address;
     }
@@ -80,18 +80,18 @@ class AddressService extends BaseService
         array $input,
         ?array $projection = null
     ): array {
-        $this->auth->require();
+        $this->_auth->require();
 
-        $userId = $this->auth->id();
+        $userId = $this->_auth->id();
 
         $isDefault = (int) ($input['is_default'] ?? 0);
 
         // Pri nastaveni jako vychozi vycisti ostatni vychozi adresy stejneho typu
         if ($isDefault) {
-            $this->address->clearDefault($userId, $input['type'] ?? 'billing');
+            $this->_address->clearDefault($userId, $input['type'] ?? 'billing');
         }
 
-        return $this->address->create([
+        return $this->_address->create([
             'user_id'    => $userId,
             'type'       => $input['type']    ?? 'billing',
             'company'    => $input['company'] ?? '',
@@ -115,10 +115,10 @@ class AddressService extends BaseService
      */
     public function update(int $id, array $input, ?array $projection = null): array
     {
-        $this->auth->require();
+        $this->_auth->require();
 
-        $address = $this->address->findById($id);
-        $this->requireEntity($address, 'Address not found');
+        $address = $this->_address->findById($id);
+        $this->_requireEntity($address, 'Address not found');
 
         $set        = [];
         $textFields = [
@@ -140,16 +140,16 @@ class AddressService extends BaseService
             $isDefault = (int) $input['is_default'];
             if ($isDefault) {
                 $type = $set['type'] ?? $address['type'];
-                $this->address->clearDefault((int) $address['user_id'], $type);
+                $this->_address->clearDefault((int) $address['user_id'], $type);
             }
             $set['is_default'] = $isDefault;
         }
 
         if (!empty($set)) {
-            $this->address->update($id, $set);
+            $this->_address->update($id, $set);
         }
 
-        return $this->address->findById($id, $projection) ?? ['id' => $id];
+        return $this->_address->findById($id, $projection) ?? ['id' => $id];
     }
 
     /**
@@ -163,18 +163,18 @@ class AddressService extends BaseService
      */
     public function replace(int $id, array $input, ?array $projection = null): array
     {
-        $this->auth->require();
+        $this->_auth->require();
 
-        $address = $this->address->findById($id);
-        $this->requireEntity($address, 'Address not found');
+        $address = $this->_address->findById($id);
+        $this->_requireEntity($address, 'Address not found');
 
         $isDefault = (int) ($input['is_default'] ?? 0);
         if ($isDefault) {
             $type = $input['type'] ?? 'billing';
-            $this->address->clearDefault((int) $address['user_id'], $type);
+            $this->_address->clearDefault((int) $address['user_id'], $type);
         }
 
-        $this->address->update($id, [
+        $this->_address->update($id, [
             'type'       => $input['type']    ?? 'billing',
             'company'    => $input['company'] ?? '',
             'name'       => $input['name']    ?? null,
@@ -185,7 +185,7 @@ class AddressService extends BaseService
             'is_default' => $isDefault,
         ]);
 
-        return $this->address->findById($id, $projection) ?? ['id' => $id];
+        return $this->_address->findById($id, $projection) ?? ['id' => $id];
     }
 
     /**
@@ -197,12 +197,12 @@ class AddressService extends BaseService
      */
     public function delete(int $id): int
     {
-        $this->auth->require();
+        $this->_auth->require();
 
-        $address = $this->address->findById($id);
-        $this->requireEntity($address, 'Address not found');
+        $address = $this->_address->findById($id);
+        $this->_requireEntity($address, 'Address not found');
 
-        return $this->address->hardDelete($id);
+        return $this->_address->hardDelete($id);
     }
 
     /**
@@ -214,11 +214,11 @@ class AddressService extends BaseService
      */
     public function remove(int $id): int
     {
-        $this->auth->require();
+        $this->_auth->require();
 
-        $address = $this->address->findById($id);
-        $this->requireEntity($address, 'Address not found');
+        $address = $this->_address->findById($id);
+        $this->_requireEntity($address, 'Address not found');
 
-        return $this->address->softDelete($id);
+        return $this->_address->softDelete($id);
     }
 }

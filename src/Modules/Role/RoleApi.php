@@ -12,7 +12,7 @@ use App\Modules\Router\Router;
 
 class RoleApi
 {
-    private RoleService $service;
+    private RoleService $_service;
 
     /**
      * Konstruktor tridy RoleApi.
@@ -23,7 +23,7 @@ class RoleApi
      */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->service = new RoleService($db, $franchiseCode, $auth);
+        $this->_service = new RoleService($db, $franchiseCode, $auth);
     }
 
     /**
@@ -34,7 +34,7 @@ class RoleApi
      */
     public function list(Request $request): void
     {
-        $result  = $this->service->list(
+        $result  = $this->_service->list(
             max(1, (int) $request->get('page', 1)),
             min(100, max(1, (int) $request->get('limit', 20))),
             (string) $request->get('sort', ''),
@@ -53,7 +53,7 @@ class RoleApi
      */
     public function get(Request $request, array $params): void
     {
-        $item    = $this->service->get((int) $params['id'], $request->projection());
+        $item    = $this->_service->get((int) $params['id'], $request->projection());
         Response::successItem($item, $request);
     }
 
@@ -76,7 +76,7 @@ class RoleApi
             )
             ->validate();
 
-        $role = $this->service->create(
+        $role = $this->_service->create(
             $name,
             $label,
             (int) $request->get('position', 0),
@@ -114,7 +114,7 @@ class RoleApi
             $fields['name'] = $newName;
         }
 
-        $role = $this->service->update(
+        $role = $this->_service->update(
             (int) $params['id'],
             $fields,
             $request->projection()
@@ -142,7 +142,7 @@ class RoleApi
             )
             ->validate();
 
-        $role = $this->service->replace(
+        $role = $this->_service->replace(
             (int) $params['id'],
             $name,
             $label,
@@ -164,9 +164,9 @@ class RoleApi
         VALIDATOR(['id' => $params['id'] ?? ''])->required('id')->validate();
         $force = filter_var($request->query['force'] ?? false, FILTER_VALIDATE_BOOLEAN);
         if ($force) {
-            $this->service->delete((int) $params['id']);
+            $this->_service->delete((int) $params['id']);
         } else {
-            $this->service->remove((int) $params['id']);
+            $this->_service->remove((int) $params['id']);
         }
         Response::success(null, 'Role deleted');
     }

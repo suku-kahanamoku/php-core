@@ -211,7 +211,7 @@ class Response
         }
 
         foreach ($items as &$item) {
-            $flat = self::flattenForFactory($item);
+            $flat = self::_flattenForFactory($item);
             $gen  = [];
 
             foreach ($factory as $key => $template) {
@@ -244,13 +244,13 @@ class Response
      * @param  string               $prefix
      * @return array<string, string>
      */
-    private static function flattenForFactory(array $row, string $prefix = ''): array
+    private static function _flattenForFactory(array $row, string $prefix = ''): array
     {
         $result = [];
         foreach ($row as $key => $value) {
             $fullKey = $prefix !== '' ? "{$prefix}.{$key}" : $key;
             if (is_array($value)) {
-                $result += self::flattenForFactory($value, $fullKey);
+                $result += self::_flattenForFactory($value, $fullKey);
             } else {
                 $result[$fullKey] = (string) ($value ?? '');
                 // Registruj tez zkraceny klic bez prefixu pro pohodli

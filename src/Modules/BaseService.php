@@ -15,7 +15,7 @@ use App\Modules\Router\Response;
  */
 abstract class BaseService
 {
-    protected Auth $auth;
+    protected Auth $_auth;
 
     /**
      * Overi, ze entita existuje. Pokud je null, vola Response::notFound() (404).
@@ -24,7 +24,7 @@ abstract class BaseService
      * @param  string                    $message  Zprava pro 404 odpoved
      * @return void
      */
-    protected function requireEntity(?array $entity, string $message): void
+    protected function _requireEntity(?array $entity, string $message): void
     {
         if ($entity === null) {
             Response::notFound($message);

@@ -22,9 +22,9 @@ class CategoryRepository extends BaseRepository
     public function __construct(Database $db, string $franchiseCode)
     {
         parent::__construct($db, $franchiseCode);
-        $this->table = 'category';
-        $this->alias = 'c';
-        $this->own   = ['syscode', 'name', 'description', 'position', 'parent_id'];
+        $this->_table = 'category';
+        $this->_alias = 'c';
+        $this->_own   = ['syscode', 'name', 'description', 'position', 'parent_id'];
     }
 
     /**
@@ -66,7 +66,7 @@ class CategoryRepository extends BaseRepository
         $offset = ($page - 1) * $limit;
 
         $where  = ['c.franchise_code = ?'];
-        $params = [$this->code];
+        $params = [$this->_code];
 
         // Extrahuj 'deleted' z filtru (vychozi 0 = pouze aktivni).
         $filterArr  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
@@ -83,15 +83,15 @@ class CategoryRepository extends BaseRepository
         }
 
         $whereStr = implode(' AND ', $where);
-        $select   = $this->buildSelect($proj);
-        $sys      = $this->sys;
+        $select   = $this->_buildSelect($proj);
+        $sys      = $this->_sys;
 
-        $total = (int) $this->db->fetchOne(
+        $total = (int) $this->_db->fetchOne(
             "SELECT COUNT(*) AS cnt FROM category c WHERE {$whereStr}",
             $params,
         )['cnt'];
 
-        $items = $this->db->fetchAll(
+        $items = $this->_db->fetchAll(
             "SELECT {$select} FROM category c WHERE {$whereStr}
              ORDER BY {$orderBy}
              LIMIT {$limit} OFFSET {$offset}",
@@ -103,7 +103,7 @@ class CategoryRepository extends BaseRepository
         }
         unset($item);
 
-        return $this->resultList($items, $total, $page, $limit);
+        return $this->_resultList($items, $total, $page, $limit);
     }
 
     /**
@@ -123,9 +123,9 @@ class CategoryRepository extends BaseRepository
      */
     public function findBySyscode(string $syscode): ?array
     {
-        $row = $this->db->fetchOne(
+        $row = $this->_db->fetchOne(
             'SELECT * FROM category WHERE syscode = ? AND franchise_code = ? AND deleted = 0',
-            [$syscode, $this->code],
+            [$syscode, $this->_code],
         );
 
         return $row ?: null;
@@ -149,8 +149,8 @@ class CategoryRepository extends BaseRepository
      */
     public function create(array $data, ?array $projection = null): array
     {
-        $id = $this->db->insert('category', array_merge($data, [
-            'franchise_code' => $this->code,
+        $id = $this->_db->insert('category', array_merge($data, [
+            'franchise_code' => $this->_code,
         ]));
 
         return $this->findById($id, $projection);
@@ -175,11 +175,11 @@ class CategoryRepository extends BaseRepository
      */
     public function update(int $id, array $data, ?array $projection = null): array
     {
-        $this->db->update(
+        $this->_db->update(
             'category',
             $data,
             'id = ? AND franchise_code = ?',
-            [$id, $this->code],
+            [$id, $this->_code],
         );
 
         return $this->findById($id, $projection);
@@ -195,7 +195,7 @@ class CategoryRepository extends BaseRepository
      */
     public function findIdsByJunction(string $junctionTable, string $entityFkColumn, int $entityId): array
     {
-        $rows = $this->db->fetchAll(
+        $rows = $this->_db->fetchAll(
             "SELECT j.category_id
              FROM {$junctionTable} j
              LEFT JOIN category c ON c.id = j.category_id AND c.deleted = 0
@@ -217,7 +217,7 @@ class CategoryRepository extends BaseRepository
      */
     public function findByJunctionItem(string $junctionTable, string $entityFkColumn, int $entityId): array
     {
-        $rows = $this->db->fetchAll(
+        $rows = $this->_db->fetchAll(
             "SELECT c.id, c.syscode, c.name, c.description, c.position, c.parent_id
              FROM {$junctionTable} j
              INNER JOIN category c ON c.id = j.category_id AND c.deleted = 0
@@ -252,7 +252,7 @@ class CategoryRepository extends BaseRepository
         }
 
         $placeholders = implode(',', array_fill(0, count($entityIds), '?'));
-        $rows = $this->db->fetchAll(
+        $rows = $this->_db->fetchAll(
             "SELECT j.{$entityFkColumn} AS entity_id, c.id, c.syscode, c.name, c.description, c.position, c.parent_id
              FROM {$junctionTable} j
              INNER JOIN category c ON c.id = j.category_id AND c.deleted = 0
