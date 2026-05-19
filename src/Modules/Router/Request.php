@@ -40,22 +40,31 @@ class Request
             ? 'default'
             : $host;
 
-        $allowed = array_map('trim', explode(',', $_ENV['FRANCHISE_CODES'] ?? 'default'));
+        // Podporuje format "host:alias,host2:alias2" i puvodni "host,host2"
+        $map = [];
+        foreach (array_map('trim', explode(',', $_ENV['FRANCHISE_CODES'] ?? 'default')) as $entry) {
+            if (str_contains($entry, ':')) {
+                [$host, $alias] = explode(':', $entry, 2);
+                $map[trim($host)] = trim($alias);
+            } else {
+                $map[$entry] = $entry;
+            }
+        }
 
-        if (!in_array($code, $allowed, true)) {
+        if (!isset($map[$code])) {
             http_response_code(403);
             header('Content-Type: application/json');
             echo json_encode(
                 [
                     'success' => false,
                     'message' => "Franchise \"$code\" not recognised.",
-                    'errors' => null
+                    'errors'  => null,
                 ]
             );
             exit;
         }
 
-        return $code;
+        return $map[$code];
     }
 
     private function parsePath(): string
