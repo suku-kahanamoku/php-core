@@ -48,7 +48,7 @@ class Request
             echo json_encode(
                 [
                     'success' => false,
-                    'message' => 'Franchise not recognised.',
+                    'message' => "Franchise \"$code\" not recognised.",
                     'errors' => null
                 ]
             );
