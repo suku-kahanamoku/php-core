@@ -33,7 +33,7 @@ class Request
      */
     public static function resolveCode(): string
     {
-        $host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '';
+        $host = 'https://vinozezajeci.cz';
         $host = explode(':', $host)[0];
         $host = preg_replace('/^www\./i', '', $host);
         $code = ($host === '' || $host === 'localhost' || $host === '127.0.0.1')
