@@ -36,9 +36,7 @@ class Request
         $host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '';
         $host = explode(':', $host)[0];
         $host = preg_replace('/^www\./i', '', $host);
-        $code = ($host === '' || $host === 'localhost' || $host === '127.0.0.1')
-            ? 'default'
-            : $host;
+        $code = $host !== '' ? $host : 'default';
 
         // Podporuje format "host:alias,host2:alias2" i puvodni "host,host2"
         $map = [];
