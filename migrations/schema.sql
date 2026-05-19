@@ -26,7 +26,7 @@ DROP TABLE IF EXISTS `role`;
 -- ── enumeration (ciselnik) ────────────────────────────────
 CREATE TABLE `enumeration` (
     `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `franchise_code` VARCHAR(64)  NOT NULL DEFAULT 'default' COMMENT 'multi-tenant project key',
+    `franchise_code` VARCHAR(64)  NOT NULL COMMENT 'multi-tenant project key',
     `type`         VARCHAR(64)  NOT NULL COMMENT 'e.g. order_status, invoice_status, payment_method',
     `syscode`       VARCHAR(64)  NOT NULL,
     `label`        VARCHAR(255) NOT NULL,
@@ -47,7 +47,7 @@ CREATE TABLE `enumeration` (
 -- ── role ──────────────────────────────────────────────────
 CREATE TABLE `role` (
     `id`             INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `franchise_code` VARCHAR(64)  NOT NULL DEFAULT 'default',
+    `franchise_code` VARCHAR(64)  NOT NULL,
     `name`           VARCHAR(64)  NOT NULL COMMENT 'e.g. admin, user, manager',
     `label`          VARCHAR(255) NOT NULL,
     `position`     SMALLINT     NOT NULL DEFAULT 0,
@@ -63,7 +63,7 @@ CREATE TABLE `role` (
 -- ── user ─────────────────────────────────────────────────
 CREATE TABLE `user` (
     `id`            INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `franchise_code`  VARCHAR(64)  NOT NULL DEFAULT 'default',
+    `franchise_code`  VARCHAR(64)  NOT NULL,
     `first_name`    VARCHAR(100) NOT NULL,
     `last_name`     VARCHAR(100) NOT NULL,
     `email`         VARCHAR(255) NOT NULL,
@@ -86,7 +86,7 @@ CREATE TABLE `user` (
 -- ── address ───────────────────────────────────────────────
 CREATE TABLE `address` (
     `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `franchise_code` VARCHAR(64)  NOT NULL DEFAULT 'default',
+    `franchise_code` VARCHAR(64)  NOT NULL,
     `user_id`      INT UNSIGNED NOT NULL,
     `type`         ENUM('billing','shipping') NOT NULL DEFAULT 'billing',
     `company`      VARCHAR(255)          DEFAULT NULL,
@@ -124,7 +124,7 @@ CREATE TABLE `user_token` (
 -- ── category ─────────────────────────────────────────────
 CREATE TABLE `category` (
     `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `franchise_code` VARCHAR(64)  NOT NULL DEFAULT 'default',
+    `franchise_code` VARCHAR(64)  NOT NULL,
     `parent_id`    INT UNSIGNED          DEFAULT NULL,
     `syscode`      VARCHAR(64)           DEFAULT NULL COMMENT 'machine-readable identifier, e.g. top, new, favourite',
     `name`         VARCHAR(255) NOT NULL,
@@ -145,7 +145,7 @@ CREATE TABLE `category` (
 -- ── product ───────────────────────────────────────────────
 CREATE TABLE `product` (
     `id`             INT UNSIGNED   NOT NULL AUTO_INCREMENT,
-    `franchise_code`   VARCHAR(64)    NOT NULL DEFAULT 'default',
+    `franchise_code`   VARCHAR(64)    NOT NULL,
     `sku`            VARCHAR(64)    NOT NULL,
     `name`           VARCHAR(255)   NOT NULL,
     `description`    TEXT                    DEFAULT NULL,
@@ -193,7 +193,7 @@ CREATE TABLE `product_file` (
 -- ── text (CMS content blocks) ─────────────────────────────
 CREATE TABLE `text` (
     `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `franchise_code` VARCHAR(64)  NOT NULL DEFAULT 'default',
+    `franchise_code` VARCHAR(64)  NOT NULL,
     `syscode`      VARCHAR(128) NOT NULL,
     `title`        VARCHAR(255) NOT NULL,
     `content`      LONGTEXT              DEFAULT NULL,
@@ -212,7 +212,7 @@ CREATE TABLE `text` (
 -- ── order ─────────────────────────────────────────────────
 CREATE TABLE `order` (
     `id`                  INT UNSIGNED   NOT NULL AUTO_INCREMENT,
-    `franchise_code`        VARCHAR(64)    NOT NULL DEFAULT 'default',
+    `franchise_code`        VARCHAR(64)    NOT NULL,
     `order_number`        VARCHAR(64)    NOT NULL,
     `user_id`             INT UNSIGNED            DEFAULT NULL,
     `status`              ENUM('pending','confirmed','processing','shipped','delivered','cancelled','refunded') NOT NULL DEFAULT 'pending',
@@ -259,7 +259,7 @@ CREATE TABLE `order_item` (
 -- ── invoice ───────────────────────────────────────────────
 CREATE TABLE `invoice` (
     `id`                 INT UNSIGNED   NOT NULL AUTO_INCREMENT,
-    `franchise_code`       VARCHAR(64)    NOT NULL DEFAULT 'default',
+    `franchise_code`       VARCHAR(64)    NOT NULL,
     `invoice_number`     VARCHAR(64)    NOT NULL,
     `order_id`           INT UNSIGNED            DEFAULT NULL,
     `user_id`            INT UNSIGNED            DEFAULT NULL,
@@ -318,7 +318,7 @@ CREATE TABLE `invoice_file` (
 -- ── file ─────────────────────────────────────────────────
 CREATE TABLE `file` (
     `id`             INT UNSIGNED   NOT NULL AUTO_INCREMENT,
-    `franchise_code` VARCHAR(64)    NOT NULL DEFAULT 'default',
+    `franchise_code` VARCHAR(64)    NOT NULL,
     `type`           VARCHAR(32)    NOT NULL COMMENT 'pripona: pdf, jpg, csv...',
     `mime_type`      VARCHAR(100)   NOT NULL COMMENT 'application/pdf, image/jpeg...',
     `path`           VARCHAR(512)   NOT NULL COMMENT 'relativni cesta v /files/ po commitu',
