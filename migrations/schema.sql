@@ -417,10 +417,11 @@ INSERT INTO `enumeration` (`franchise_code`, `type`, `syscode`, `label`, `value`
   ('zajeci', 'invoice_status', 'cancelled', 'Cancelled', 'cancelled', 50);
 
 -- ── Seed: admin user (password: password) ────────────────
+SET @admin_role_id = (SELECT id FROM `role` WHERE franchise_code = 'zajeci' AND name = 'admin' LIMIT 1);
 INSERT INTO `user` (`franchise_code`, `first_name`, `last_name`, `email`, `password`, `role_id`) VALUES
   ('zajeci', 'Admin', 'User', 'admin@example.com',
    '$2y$12$J0P0lGKwBFIPbV03dvO5aee5yKDwPxgYxUNgR4zVHlY5x8XVvaTCO',
-   (SELECT id FROM role WHERE franchise_code = 'default' AND name = 'admin'));
+   @admin_role_id);
 
 -- ── Seed: category "top" ──────────────────────────────────
 INSERT INTO `category` (`franchise_code`, `parent_id`, `syscode`, `name`, `description`, `position`) VALUES
@@ -435,9 +436,9 @@ INSERT INTO `product` (`franchise_code`, `sku`, `name`, `description`, `price`, 
 
 -- ── Seed: link products 1, 2, 3 to category "top" ──────────
 INSERT INTO `product_category` (`product_id`, `category_id`) VALUES
-  ((SELECT id FROM product WHERE franchise_code = 'default' AND sku = 'ZAJ-WHI-001'), (SELECT id FROM category WHERE franchise_code = 'default' AND syscode = 'top')),
-  ((SELECT id FROM product WHERE franchise_code = 'default' AND sku = 'ZAJ-RED-001'), (SELECT id FROM category WHERE franchise_code = 'default' AND syscode = 'top')),
-  ((SELECT id FROM product WHERE franchise_code = 'default' AND sku = 'ZAJ-ROE-001'), (SELECT id FROM category WHERE franchise_code = 'default' AND syscode = 'top'));
+  ((SELECT id FROM product WHERE franchise_code = 'zajeci' AND sku = 'ZAJ-WHI-001'), (SELECT id FROM category WHERE franchise_code = 'zajeci' AND syscode = 'top')),
+  ((SELECT id FROM product WHERE franchise_code = 'zajeci' AND sku = 'ZAJ-RED-001'), (SELECT id FROM category WHERE franchise_code = 'zajeci' AND syscode = 'top')),
+  ((SELECT id FROM product WHERE franchise_code = 'zajeci' AND sku = 'ZAJ-ROE-001'), (SELECT id FROM category WHERE franchise_code = 'zajeci' AND syscode = 'top'));
 
 -- ── Seed: 3 tasting packages (as enumerations) ───────────
 INSERT INTO `enumeration` (`franchise_code`, `type`, `syscode`, `label`, `value`, `position`, `published`, `data`) VALUES
