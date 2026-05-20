@@ -86,30 +86,6 @@ class FileService extends BaseService
     }
 
     /**
-     * Nacte soubor dle ID pro stazeni/nahled (kontroluje existenci fyzickeho souboru).
-     *
-     * @param  int $id
-     * @return array{path: string, name: string, mime_type: string, file: array<string, mixed>}
-     */
-    public function getFile(int $id): array
-    {
-        $file     = $this->_files->findById($id);
-        $this->_requireEntity($file, 'File not found');
-
-        $absPath = $this->_root() . '/' . ltrim($file['path'], '/');
-        if (!file_exists($absPath)) {
-            Response::notFound('File not found on disk');
-        }
-
-        return [
-            'path'      => $absPath,
-            'name'      => $file['name'],
-            'mime_type' => $file['mime_type'],
-            'file'      => $file,
-        ];
-    }
-
-    /**
      * Nahraje soubor do /temp/{code}/{uuid}.{ext} a vrati relativni cestu.
      * Zadne ukladani do DB — to probehne az pri commit().
      *

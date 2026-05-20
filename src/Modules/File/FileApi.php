@@ -16,8 +16,6 @@ use App\Modules\Router\Router;
  * Routy:
  *   GET    /files              → list()      admin
  *   GET    /files/:id          → get()       prihlaseny
- *   GET    /files/:id/download → download()  prihlaseny – Content-Disposition: attachment
- *   GET    /files/:id/preview  → preview()   prihlaseny – Content-Disposition: inline
  *   POST   /files/upload       → upload()    prihlaseny
  *   POST   /files/commit       → commit()    prihlaseny
  *   DELETE /files/:id          → delete()    admin
@@ -25,24 +23,20 @@ use App\Modules\Router\Router;
 class FileApi
 {
     private FileService $_service;
-    private Auth $_auth;
 
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->_service = new FileService($db, $franchiseCode, $auth);
-        $this->_auth    = $auth;
     }
 
     public function registerRoutes(Router $router): void
     {
-        $router->get('/',                 [$this, 'list']);
-        $router->get('/upload',           [$this, 'methodNotAllowed']); // ochrana pred GET /upload
-        $router->get('/:id/download',     [$this, 'download']);
-        $router->get('/:id/preview',      [$this, 'preview']);
-        $router->get('/:id',              [$this, 'get']);
-        $router->post('/upload',          [$this, 'upload']);
-        $router->post('/commit',          [$this, 'commit']);
-        $router->delete('/:id',           [$this, 'delete']);
+        $router->get('/',        [$this, 'list']);
+        $router->get('/upload',  [$this, 'methodNotAllowed']); // ochrana pred GET /upload
+        $router->get('/:id',     [$this, 'get']);
+        $router->post('/upload', [$this, 'upload']);
+        $router->post('/commit', [$this, 'commit']);
+        $router->delete('/:id',  [$this, 'delete']);
     }
 
     // ── GET /files ────────────────────────────────────────────────────────
@@ -69,40 +63,6 @@ class FileApi
             ->validate();
         $item = $this->_service->get((int) $params['id'], $request->projection());
         Response::successItem($item, $request);
-    }
-
-    // ── GET /files/:id/download ───────────────────────────────────────────
-
-    public function download(Request $request, array $params): void
-    {
-        VALIDATOR(['id' => $params['id'] ?? ''])
-            ->required('id')
-            ->numeric('id')
-            ->validate();
-        $file = $this->_service->getFile((int) $params['id']);
-        Response::stream(
-            $file['path'],
-            $file['name'],
-            $file['mime_type'],
-            'attachment'
-        );
-    }
-
-    // ── GET /files/:id/preview ────────────────────────────────────────────
-
-    public function preview(Request $request, array $params): void
-    {
-        VALIDATOR(['id' => $params['id'] ?? ''])
-            ->required('id')
-            ->numeric('id')
-            ->validate();
-        $file = $this->_service->getFile((int) $params['id']);
-        Response::stream(
-            $file['path'],
-            $file['name'],
-            $file['mime_type'],
-            'inline'
-        );
     }
 
     // ── POST /files/upload ────────────────────────────────────────────────

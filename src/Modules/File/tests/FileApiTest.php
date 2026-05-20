@@ -139,12 +139,6 @@ if ($tempPath !== null) {
         assert_test('GET committed file → 200', $r['status'] === 200, dump_on_fail($r));
         assert_test('name matches committed name', ($r['data']['data']['name'] ?? '') === 'test_committed_document.txt', dump_on_fail($r));
 
-        // ── GET /files/:id/download ────────────────────────────────────────────
-
-        section('Files – GET /files/:id/download');
-        $r = request('GET', "{$base}/files/{$committedId}/download");
-        assert_test('Download committed file → 200', $r['status'] === 200, dump_on_fail($r));
-
         // ── DELETE /files/:id ──────────────────────────────────────────────────
 
         section('Files – DELETE /files/:id');
