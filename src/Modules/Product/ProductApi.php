@@ -65,28 +65,45 @@ class ProductApi
      */
     public function create(Request $request): void
     {
-        VALIDATOR(
-            ['name' => $request->get('name', ''), 'price' => $request->get('price')]
-        )
-            ->required('name')
-            ->numeric('price', 0)
-            ->validate();
+        try {
+            error_log('[ProductApi::create] body: ' . json_encode($request->body, JSON_UNESCAPED_UNICODE));
 
-        $product = $this->_service->create([
-            'name'           => $request->get('name'),
-            'sku'            => $request->get('sku'),
-            'description'    => $request->get('description'),
-            'price'          => $request->get('price'),
-            'stock_quantity' => $request->get('stock_quantity'),
-            'published'      => $request->get('published'),
-            'kind'           => $request->get('kind'),
-            'color'          => $request->get('color'),
-            'variant'        => $request->get('variant'),
-            'data'           => $request->get('data'),
-            'category_ids'   => $request->get('category_ids'),
-          
-        ], $request->projection());
-        Response::created($product, 'Product created');
+            VALIDATOR(
+                ['name' => $request->get('name', ''), 'price' => $request->get('price')]
+            )
+                ->required('name')
+                ->numeric('price', 0)
+                ->validate();
+
+            error_log('[ProductApi::create] validation passed');
+
+            $input = [
+                'name'           => $request->get('name'),
+                'sku'            => $request->get('sku'),
+                'description'    => $request->get('description'),
+                'price'          => $request->get('price'),
+                'stock_quantity' => $request->get('stock_quantity'),
+                'published'      => $request->get('published'),
+                'kind'           => $request->get('kind'),
+                'color'          => $request->get('color'),
+                'variant'        => $request->get('variant'),
+                'data'           => $request->get('data'),
+                'category_ids'   => $request->get('category_ids'),
+                'file_ids'       => $request->get('file_ids'),
+            ];
+
+            error_log('[ProductApi::create] input: ' . json_encode($input, JSON_UNESCAPED_UNICODE));
+
+            $product = $this->_service->create($input, $request->projection());
+
+            error_log('[ProductApi::create] created id=' . ($product['id'] ?? 'n/a'));
+
+            Response::created($product, 'Product created');
+        } catch (\Throwable $e) {
+            error_log('[ProductApi::create] ERROR ' . get_class($e) . ': ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+            error_log('[ProductApi::create] trace: ' . $e->getTraceAsString());
+            throw $e;
+        }
     }
 
     /**
