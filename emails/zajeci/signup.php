@@ -35,6 +35,8 @@
             <p style="font-size:14px;color:#555555;margin:0 0 24px;">
                 Pokud máte jakékoli dotazy ohledně používání našich služeb nebo potřebujete pomoc, neváhejte nás kontaktovat. Jsme tu pro Vás.
             </p>
+
+            <p style="font-size:14px;color:#333333;margin:0;">S pozdravem</p>
         </div>
 
         <?= $tpl->render('footer', [
