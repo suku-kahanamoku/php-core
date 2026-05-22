@@ -5,6 +5,8 @@
 /** @var string $fromEmail */
 /** @var string $fromName */
 /** @var string $fromPhone */
+/** @var string $email */
+/** @var string $password */
 ?>
 
 <!DOCTYPE html>
@@ -35,6 +37,21 @@
             <p style="font-size:14px;color:#555555;margin:0 0 24px;">
                 Pokud máte jakékoli dotazy ohledně používání našich služeb nebo potřebujete pomoc, neváhejte nás kontaktovat. Jsme tu pro Vás.
             </p>
+
+            <table style="width:100%;font-size:14px;color:#555555;margin:0 0 16px;border-collapse:collapse;">
+                <?php if (!empty($email)): ?>
+                    <tr>
+                        <td style="padding:6px 0;font-weight:bold;width:120px;">E-mail:</td>
+                        <td style="padding:6px 0;"><?= htmlspecialchars((string) $email) ?></td>
+                    </tr>
+                <?php endif; ?>
+                <?php if (!empty($password)): ?>
+                    <tr>
+                        <td style="padding:6px 0;font-weight:bold;">Heslo:</td>
+                        <td style="padding:6px 0;font-family:monospace;font-size:15px;letter-spacing:1px;"><?= htmlspecialchars((string) $password) ?></td>
+                    </tr>
+                <?php endif; ?>
+            </table>
 
             <p style="font-size:14px;color:#333333;margin:0;">S pozdravem</p>
         </div>
