@@ -52,14 +52,10 @@
             <p style="font-size:14px;color:#555555;margin:0 0 24px;">
                 Pokud máte nějaké další dotazy, neváhejte nás kontaktovat.
             </p>
-
-            <p style="font-size:14px;color:#333333;margin:0;">
-                S pozdravem,<br>
-                <strong><?= htmlspecialchars($fromName ?? '') ?></strong>
-            </p>
         </div>
 
         <?= $tpl->render('footer', [
+            'footerName'  => $fromName ?? '',
             'footerEmail' => $fromEmail ?? '',
             'footerPhone' => $fromPhone ?? '',
             'logoPath'    => $logoPath ?? '',
