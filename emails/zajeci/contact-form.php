@@ -33,7 +33,7 @@
 
             <?php if (!empty($msg)): ?>
                 <div style="background:#f8f9fa;border-left:4px solid #5b8dd9;padding:12px 16px;margin:0 0 16px;font-size:14px;color:#555555;">
-                    <?= htmlspecialchars((string) $msg) ?>
+                    <?= nl2br(htmlspecialchars((string) $msg)) ?>
                 </div>
             <?php endif; ?>
 
