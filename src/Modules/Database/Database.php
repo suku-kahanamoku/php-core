@@ -71,17 +71,17 @@ class Database
      */
     public function query(string $sql, array $params = []): \PDOStatement
     {
-        return $this->_query($sql, $params);
-    }
-
-    /**
-     * Pripravi a vykona SQL dotaz (interni).
-     */
-    private function _query(string $sql, array $params = []): \PDOStatement
-    {
-        $stmt = $this->_pdo->prepare($sql);
-        $stmt->execute($params);
-        return $stmt;
+        try {
+            $stmt = $this->_pdo->prepare($sql);
+            $stmt->execute($params);
+            return $stmt;
+        } catch (PDOException $e) {
+            throw new \RuntimeException(
+                'Database query failed: ' . $e->getMessage(),
+                (int) $e->getCode(),
+                $e,
+            );
+        }
     }
 
     /**
@@ -93,7 +93,7 @@ class Database
      */
     public function fetchAll(string $sql, array $params = []): array
     {
-        return $this->_query($sql, $params)->fetchAll();
+        return $this->query($sql, $params)->fetchAll();
     }
 
     /**
@@ -105,7 +105,7 @@ class Database
      */
     public function fetchOne(string $sql, array $params = []): array|false
     {
-        return $this->_query($sql, $params)->fetch();
+        return $this->query($sql, $params)->fetch();
     }
 
     /**
@@ -120,7 +120,7 @@ class Database
         $columns      = implode(', ', array_map(fn($c) => "`{$c}`", array_keys($data)));
         $placeholders = implode(', ', array_fill(0, count($data), '?'));
         $sql          = "INSERT INTO `{$table}` ({$columns}) VALUES ({$placeholders})";
-        $this->_query($sql, array_values($data));
+        $this->query($sql, array_values($data));
         return (int) $this->_pdo->lastInsertId();
     }
 
@@ -141,7 +141,7 @@ class Database
     ): int {
         $set  = implode(', ', array_map(fn($col) => "`{$col}` = ?", array_keys($data)));
         $sql  = "UPDATE `{$table}` SET {$set} WHERE {$where}";
-        $stmt = $this->_query($sql, [...array_values($data), ...$whereParams]);
+        $stmt = $this->query($sql, [...array_values($data), ...$whereParams]);
         return $stmt->rowCount();
     }
 
@@ -156,7 +156,7 @@ class Database
     public function delete(string $table, string $where, array $whereParams = []): int
     {
         $sql  = "DELETE FROM `{$table}` WHERE {$where}";
-        $stmt = $this->_query($sql, $whereParams);
+        $stmt = $this->query($sql, $whereParams);
         return $stmt->rowCount();
     }
 
