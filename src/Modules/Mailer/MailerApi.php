@@ -11,10 +11,12 @@ use App\Modules\Router\Router;
 class MailerApi
 {
     private MailerService $_service;
+    private string $_code;
 
     public function __construct(string $franchiseCode = '')
     {
-        $this->_service = new MailerService($franchiseCode);
+        $this->_code    = $franchiseCode;
+        $this->_service       = new MailerService($franchiseCode);
     }
 
     public function registerRoutes(Router $router): void
@@ -88,7 +90,7 @@ class MailerApi
 
     private function listTemplates(Request $request): void
     {
-        $dir       = dirname(__DIR__, 3) . '/emails';
+        $dir       = dirname(__DIR__, 3) . '/emails/' . $this->_code;
         $templates = [];
 
         if (is_dir($dir)) {
