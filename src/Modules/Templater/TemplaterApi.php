@@ -19,7 +19,7 @@ class TemplaterApi
 
     public function registerRoutes(Router $router): void
     {
-        // GET /templater?template=mail/test — nahled sablony v prohlizeci
+        // GET /templater?template=test — nahled sablony v prohlizeci
         $router->get('/', fn(Request $req) => $this->preview($req));
     }
 

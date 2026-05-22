@@ -51,7 +51,7 @@ class MailerService
      *
      * @param  string|string[]      $to           Prijemce nebo seznam prijemcu
      * @param  string               $subject      Predmet emailu
-     * @param  string               $template     Nazev sablony (napr. 'mail/test')
+     * @param  string               $template     Nazev sablony (napr. 'test')
      * @param  array<string, mixed> $templateData Promenne pro sablonu
      * @param  string[]             $attachments  Absolutni cesty k priloham
      * @param  string|string[]|null $bcc          Skryta kopie (nikdo ji nevidi)
@@ -156,7 +156,7 @@ class MailerService
         return $this->sendMail(
             to: $to,
             subject: 'Test email',
-            template: 'mail/test',
+            template: 'test',
             templateData: [
                 'email'    => $to,
                 'logoPath' => 'logo',

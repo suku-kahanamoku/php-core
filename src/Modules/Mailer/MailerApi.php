@@ -94,7 +94,7 @@ class MailerApi
         if (is_dir($dir)) {
             foreach (glob($dir . '/*.php') ?: [] as $file) {
                 $name        = basename($file, '.php');
-                $templates[] = ['template' => 'mail/' . $name];
+                $templates[] = ['template' => $name];
             }
         }
 

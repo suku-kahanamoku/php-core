@@ -18,15 +18,13 @@ class TemplaterService
     /**
      * Renderuje PHP sablonovaci soubor a vraci HTML string.
      *
-     * @param  string               $template  Cesta k sablone bez pripony, napr. 'mail/test'
+     * @param  string               $template  Cesta k sablone bez pripony, napr. 'test'
      * @param  array<string, mixed> $data      Promenne dostupne v sablone
      * @return string
      */
     public function render(string $template, array $data = []): string
     {
-        // mail/ prefix je alias pro root emails/ adresar
-        $name = str_starts_with($template, 'mail/') ? substr($template, 5) : $template;
-        $file = $this->_emailsDir . $name . '.php';
+        $file = $this->_emailsDir . $template . '.php';
 
         if (!file_exists($file)) {
             throw new RuntimeException("Sablona '{$template}' nebyla nalezena.");

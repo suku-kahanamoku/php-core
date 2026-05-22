@@ -41,6 +41,6 @@ assert_test('path traversal blocked → 500', $r['status'] === 500, dump_on_fail
 // ── Templater – valid template ────────────────────────────────────────────────
 
 section('Templater – render valid template');
-$r = request('GET', "{$base}/templater?template=mail/test", [], false);
-assert_test('GET /templater?template=mail/test → 200', $r['status'] === 200, dump_on_fail($r));
+$r = request('GET', "{$base}/templater?template=test", [], false);
+assert_test('GET /templater?template=test → 200', $r['status'] === 200, dump_on_fail($r));
 assert_test('response is HTML', str_contains($r['raw'] ?? '', '<'), dump_on_fail($r));

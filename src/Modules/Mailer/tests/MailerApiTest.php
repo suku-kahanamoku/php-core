@@ -30,11 +30,11 @@ assert_test('GET /mailer without params → 422', $r['status'] === 422, dump_on_
 assert_test('errors object present', isset($r['data']['errors']), dump_on_fail($r));
 
 section('Mailer – validation: invalid email');
-$r = request('GET', "{$base}/mailer?to=not-an-email&subject=Test&template=mail/test&fromEmail=also-invalid&fromName=Test&fromPhone=123", [], false);
+$r = request('GET', "{$base}/mailer?to=not-an-email&subject=Test&template=test&fromEmail=also-invalid&fromName=Test&fromPhone=123", [], false);
 assert_test('invalid to email → 422', $r['status'] === 422, dump_on_fail($r));
 
 section('Mailer – validation: valid params but SMTP likely unavailable');
-$r = request('GET', "{$base}/mailer?to=test@example.com&subject=Test&template=mail/test&fromEmail=sender@example.com&fromName=Test&fromPhone=123456789", [], false);
+$r = request('GET', "{$base}/mailer?to=test@example.com&subject=Test&template=test&fromEmail=sender@example.com&fromName=Test&fromPhone=123456789", [], false);
 // Buď 200 (SMTP dostupné) nebo 500 (SMTP nedostupné) — obojí je validní chování
 assert_test('GET /mailer with valid params → not 422', $r['status'] !== 422, dump_on_fail($r));
 
