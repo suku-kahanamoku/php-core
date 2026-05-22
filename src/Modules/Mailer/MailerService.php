@@ -98,7 +98,7 @@ class MailerService
                 $mail->isMail();
             }
 
-            $mail->setFrom($this->_from, $this->_fromName);
+            $mail->setFrom($this->_from, $fromName ?? $this->_fromName);
             $mail->addReplyTo($fromEmail ?? $this->_from, $fromName ?? $this->_fromName);
             $mail->addAddress($to);
 
