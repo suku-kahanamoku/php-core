@@ -21,6 +21,7 @@ class MailerApi
     {
         $router->get('/', fn(Request $req) => $this->send($req));
         $router->get('/test', fn(Request $req) => $this->sendTest($req));
+        $router->get('/list', fn(Request $req) => $this->listTemplates($req));
     }
 
     private function send(Request $request): void
@@ -81,5 +82,20 @@ class MailerApi
         }
 
         Response::success(['email' => $email], 'Test email sent.');
+    }
+
+    private function listTemplates(Request $request): void
+    {
+        $dir       = __DIR__ . '/../Templater/temps/mail';
+        $templates = [];
+
+        if (is_dir($dir)) {
+            foreach (glob($dir . '/*.php') ?: [] as $file) {
+                $name        = basename($file, '.php');
+                $templates[] = ['template' => 'mail/' . $name];
+            }
+        }
+
+        Response::success($templates, 'Templates listed.');
     }
 }
