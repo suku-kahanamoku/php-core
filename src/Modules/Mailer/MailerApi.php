@@ -33,13 +33,13 @@ class MailerApi
             'fromEmail',
             'fromName',
             'fromPhone',
-            'logoPath',
         ];
 
         $data = [];
         foreach ($requiredFields as $field) {
             $data[$field] = trim((string) $request->get($field, ''));
         }
+        $data['logoPath'] = trim((string) $request->get('logoPath', ''));
 
         VALIDATOR($data)
             ->required($requiredFields)

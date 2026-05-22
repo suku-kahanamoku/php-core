@@ -16,7 +16,7 @@
 
   <div style="max-width:768px;margin:20px auto;background:#ffffff;border-radius:6px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
 
-    <?= $tpl->render('header', ['headerTitle' => 'Test email', 'logoPath' => $logoPath]) ?>
+    <?= $tpl->render('header', ['headerTitle' => 'Test email', 'logoPath' => $logoPath ?? '']) ?>
 
     <!-- CONTENT -->
     <div style="padding:32px;">
@@ -32,7 +32,7 @@
     <?= $tpl->render('footer', [
       'footerEmail' => $_ENV['MAILER_FROM'] ?? '',
       'footerPhone' => '',
-      'logoPath'    => $logoPath,
+      'logoPath'    => $logoPath ?? '',
     ]) ?>
 
   </div>
