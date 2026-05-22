@@ -85,7 +85,18 @@ class MailerService
         $mail = new PHPMailer(true);
 
         try {
-            $mail->isMail();
+            $smtpHost = $_ENV['MAILER_SMTP_HOST'] ?? '';
+            if ($smtpHost !== '') {
+                $mail->isSMTP();
+                $mail->Host       = $smtpHost;
+                $mail->SMTPAuth   = true;
+                $mail->Username   = $_ENV['MAILER_SMTP_USER'] ?? $this->_from;
+                $mail->Password   = $_ENV['MAILER_SMTP_PASS'] ?? '';
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                $mail->Port       = (int) ($_ENV['MAILER_SMTP_PORT'] ?? 587);
+            } else {
+                $mail->isMail();
+            }
 
             $mail->setFrom($this->_from, $this->_fromName);
             $mail->addReplyTo($fromEmail ?? $this->_from, $fromName ?? $this->_fromName);
