@@ -88,7 +88,7 @@ class MailerApi
 
     private function listTemplates(Request $request): void
     {
-        $dir       = __DIR__ . '/../Templater/temps/mail';
+        $dir       = dirname(__DIR__, 3) . '/emails';
         $templates = [];
 
         if (is_dir($dir)) {
