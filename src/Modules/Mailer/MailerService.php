@@ -39,7 +39,7 @@ class MailerService
         $this->_smtpPort = (int) ($_ENV["{$prefix}MAILER_SMTP_PORT"]
             ?? $_ENV['MAILER_SMTP_PORT']
             ?? 587);
-        $this->_tpl      = new TemplaterService();
+        $this->_tpl      = new TemplaterService($franchiseCode);
     }
 
     /**
