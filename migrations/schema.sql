@@ -363,40 +363,11 @@ INSERT INTO `enumeration` (`franchise_code`, `type`, `syscode`, `label`, `value`
   ('zajeci', 'wine_kind', 'medium_sweet',  'Medium sweet',    'medium_sweet',  80),
   ('zajeci', 'wine_kind', 'very_sweet',    'Very sweet',      'very_sweet',    90),
   ('zajeci', 'wine_kind', 'dessert',       'Dessert',         'dessert',       100),
-  -- Wine quality
-  ('zajeci', 'wine_quality', 'kabinett',                'Kabinett',                    'kabinett',                10),
-  ('zajeci', 'wine_quality', 'late_harvest',            'Late harvest',                'late_harvest',            20),
-  ('zajeci', 'wine_quality', 'selection_of_grapes',     'Selection of grapes',         'selection_of_grapes',     30),
-  ('zajeci', 'wine_quality', 'selection_of_berries',    'Selection of berries',        'selection_of_berries',    40),
-  ('zajeci', 'wine_quality', 'ice_wine',                'Ice wine',                    'ice_wine',                50),
-  ('zajeci', 'wine_quality', 'straw_wine',              'Straw wine',                  'straw_wine',              60),
-  ('zajeci', 'wine_quality', 'quality_wine',            'Quality wine',                'quality_wine',            70),
-  ('zajeci', 'wine_quality', 'archive_wine',            'Archive wine',                'archive_wine',            80),
-  ('zajeci', 'wine_quality', 'table_wine',              'Table wine',                  'table_wine',              90),
   -- Wine colors
   ('zajeci', 'wine_color', 'white',  'White',  'white',  10),
   ('zajeci', 'wine_color', 'red',    'Red',    'red',    20),
   ('zajeci', 'wine_color', 'rose',   'Rosé',   'rose',   30),
   ('zajeci', 'wine_color', 'orange', 'Orange', 'orange', 40),
-  -- Wine varieties
-  ('zajeci', 'wine_variety', 'cabernet_sauvignon',  'Cabernet Sauvignon',  'cabernet_sauvignon',  10),
-  ('zajeci', 'wine_variety', 'chardonnay',          'Chardonnay',          'chardonnay',          20),
-  ('zajeci', 'wine_variety', 'frankovka',           'Frankovka',           'frankovka',           30),
-  ('zajeci', 'wine_variety', 'gruner_veltliner',    'Grüner Veltliner',    'gruner_veltliner',    40),
-  ('zajeci', 'wine_variety', 'merlot',              'Merlot',              'merlot',              50),
-  ('zajeci', 'wine_variety', 'modry_portugal',      'Modrý portugal',      'modry_portugal',      60),
-  ('zajeci', 'wine_variety', 'mueller_thurgau',     'Müller-Thurgau',      'mueller_thurgau',     70),
-  ('zajeci', 'wine_variety', 'muscat',              'Muscat',              'muscat',              80),
-  ('zajeci', 'wine_variety', 'other',               'Other',               'other',               90),
-  ('zajeci', 'wine_variety', 'pinot_blanc',         'Pinot Blanc',         'pinot_blanc',         100),
-  ('zajeci', 'wine_variety', 'pinot_gris',          'Pinot Gris',          'pinot_gris',          110),
-  ('zajeci', 'wine_variety', 'pinot_noir',          'Pinot Noir',          'pinot_noir',          120),
-  ('zajeci', 'wine_variety', 'riesling',            'Riesling',            'riesling',            130),
-  ('zajeci', 'wine_variety', 'sauvignon_blanc',     'Sauvignon Blanc',     'sauvignon_blanc',     140),
-  ('zajeci', 'wine_variety', 'st_laurent',          'St. Laurent',         'st_laurent',          150),
-  ('zajeci', 'wine_variety', 'traminer',            'Traminer',            'traminer',            160),
-  ('zajeci', 'wine_variety', 'welschriesling',      'Welschriesling',      'welschriesling',      170),
-  ('zajeci', 'wine_variety', 'zweigelt',            'Zweigelt',            'zweigelt',            180),
   -- Languages
   ('zajeci', 'language', 'cs', 'Čeština', 'cs', 10),
   ('zajeci', 'language', 'en', 'English',  'en', 20),
@@ -429,10 +400,10 @@ INSERT INTO `category` (`franchise_code`, `parent_id`, `syscode`, `name`, `descr
 
 -- ── Seed: 4 wines ────────────────────────────────────────
 INSERT INTO `product` (`franchise_code`, `sku`, `name`, `description`, `price`, `stock_quantity`, `published`, `kind`, `color`, `variant`, `data`) VALUES
-  ('zajeci', 'ZAJ-WHI-001', 'Zaječské Bílé', 'Jemné bílé víno ze Zaječí', 299.00, 50, 1, 'dry', 'white', 'Veltlínské zelené', JSON_OBJECT('year', 2022, 'volume', 0.75, 'quality', 'kabinett', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 12.5, 'serving_temp', '8-10°C')),
-  ('zajeci', 'ZAJ-RED-001', 'Zaječské Červené', 'Kvalitní červené víno tradičního stylu', 349.00, 40, 1, 'dry', 'red', 'Frankovka', JSON_OBJECT('year', 2021, 'volume', 0.75, 'quality', 'selection_of_grapes', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 13.5, 'serving_temp', '16-18°C')),
-  ('zajeci', 'ZAJ-ROE-001', 'Zaječské Rosé', 'Lehké rosé víno s ovocnými tóny', 329.00, 35, 1, 'semi_dry', 'rose', 'Zweigeltrebe', JSON_OBJECT('year', 2023, 'volume', 0.75, 'quality', 'late_harvest', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 12.0, 'serving_temp', '6-8°C')),
-  ('zajeci', 'ZAJ-SWE-001', 'Zaječské Sladké', 'Sladké desertní víno s bohatou chutí', 399.00, 20, 1, 'dessert', 'red', 'Cabernet Moravia', JSON_OBJECT('year', 2020, 'volume', 0.5, 'quality', 'ice_wine', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 11.0, 'serving_temp', '4-6°C'));
+  ('zajeci', 'ZAJ-WHI-001', 'Zaječské Bílé', 'Jemné bílé víno ze Zaječí', 299.00, 50, 1, 'dry', 'white', 'Veltlínské zelené', JSON_OBJECT('year', 2022, 'volume', 0.75, 'quality', 'kabinett', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 12.5)),
+  ('zajeci', 'ZAJ-RED-001', 'Zaječské Červené', 'Kvalitní červené víno tradičního stylu', 349.00, 40, 1, 'dry', 'red', 'Frankovka', JSON_OBJECT('year', 2021, 'volume', 0.75, 'quality', 'selection_of_grapes', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 13.5)),
+  ('zajeci', 'ZAJ-ROE-001', 'Zaječské Rosé', 'Lehké rosé víno s ovocnými tóny', 329.00, 35, 1, 'semi_dry', 'rose', 'Zweigeltrebe', JSON_OBJECT('year', 2023, 'volume', 0.75, 'quality', 'late_harvest', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 12.0)),
+  ('zajeci', 'ZAJ-SWE-001', 'Zaječské Sladké', 'Sladké desertní víno s bohatou chutí', 399.00, 20, 1, 'dessert', 'red', 'Cabernet Moravia', JSON_OBJECT('year', 2020, 'volume', 0.5, 'quality', 'ice_wine', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 11.0));
 
 -- ── Seed: link products 1, 2, 3 to category "top" ──────────
 INSERT INTO `product_category` (`product_id`, `category_id`) VALUES
