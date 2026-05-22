@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Mailer;
 
 use App\Modules\Templater\TemplaterService;
+use PHPMailer\PHPMailer\PHPMailer;
 
 class MailerService
 {
@@ -14,7 +15,7 @@ class MailerService
 
     public function __construct()
     {
-        $this->_from     = $_ENV['MAILER_FROM'] ?? 'noreply@example.com';
+        $this->_from     = $_ENV['MAILER_FROM']      ?? 'noreply@example.com';
         $this->_fromName = $_ENV['MAILER_FROM_NAME'] ?? 'App';
         $this->_tpl      = new TemplaterService();
     }
@@ -81,73 +82,38 @@ class MailerService
         string|null $fromEmail = null,
         string|null $fromName = null,
     ): bool {
-        $boundary = '----=_Part_' . md5(uniqid('', true));
+        $mail = new PHPMailer(true);
 
-        $headers = $this->buildHeaders($boundary, $bcc, $fromEmail, $fromName);
+        try {
+            $mail->isMail();
 
-        $body = $this->buildBody($html, $attachments, $boundary);
+            $mail->setFrom($this->_from, $this->_fromName);
+            $mail->addReplyTo($fromEmail ?? $this->_from, $fromName ?? $this->_fromName);
+            $mail->addAddress($to);
 
-        return mail($to, $subject, $body, $headers);
-    }
-
-    private function buildHeaders(
-        string $boundary,
-        string|array|null $bcc,
-        string|null $fromEmail = null,
-        string|null $fromName = null,
-    ): string {
-        $resolvedFrom     = $fromEmail ?? $this->_from;
-        $resolvedFromName = $fromName ?? $this->_fromName;
-
-        $lines = [
-            'From: ' . $resolvedFromName . ' <' . $this->_from . '>',
-            'Reply-To: ' . $resolvedFrom,
-            'MIME-Version: 1.0',
-            'Content-Type: multipart/mixed; boundary="' . $boundary . '"',
-            'X-Mailer: php-core',
-        ];
-
-        if ($bcc !== null) {
-            $bccList = is_array($bcc) ? implode(', ', $bcc) : $bcc;
-            $lines[] = 'Bcc: ' . $bccList;
-        }
-
-        return implode("\r\n", $lines);
-    }
-
-    /**
-     * @param  string[] $attachments
-     */
-    private function buildBody(
-        string $html,
-        array $attachments,
-        string $boundary
-    ): string {
-        $body  = "--{$boundary}\r\n";
-        $body .= "Content-Type: text/html; charset=UTF-8\r\n";
-        $body .= "Content-Transfer-Encoding: base64\r\n\r\n";
-        $body .= chunk_split(base64_encode($html)) . "\r\n";
-
-        foreach ($attachments as $filePath) {
-            if (!file_exists($filePath)) {
-                continue;
+            if ($bcc !== null) {
+                foreach ((array) $bcc as $bccAddr) {
+                    $mail->addBCC($bccAddr);
+                }
             }
-            $fileName  = basename($filePath);
-            $fileData  = chunk_split(
-                base64_encode((string) file_get_contents($filePath))
-            );
-            $mimeType  = mime_content_type($filePath) ?: 'application/octet-stream';
 
-            $body .= "--{$boundary}\r\n";
-            $body .= "Content-Type: {$mimeType}; name=\"{$fileName}\"\r\n";
-            $body .= "Content-Disposition: attachment; filename=\"{$fileName}\"\r\n";
-            $body .= "Content-Transfer-Encoding: base64\r\n\r\n";
-            $body .= $fileData . "\r\n";
+            foreach ($attachments as $filePath) {
+                if (file_exists($filePath)) {
+                    $mail->addAttachment($filePath);
+                }
+            }
+
+            $mail->isHTML(true);
+            $mail->CharSet = 'UTF-8';
+            $mail->Subject = $subject;
+            $mail->Body    = $html;
+
+            $mail->send();
+            return true;
+        } catch (\Exception $e) {
+            error_log('MailerService: ' . $e->getMessage());
+            return false;
         }
-
-        $body .= "--{$boundary}--";
-
-        return $body;
     }
 
     // ── Zkratka pro testovaci email ───────────────────────────────────────────
