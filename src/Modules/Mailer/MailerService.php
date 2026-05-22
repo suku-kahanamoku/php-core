@@ -11,12 +11,34 @@ class MailerService
 {
     private string $_from;
     private string $_fromName;
+    private string $_smtpHost;
+    private string $_smtpUser;
+    private string $_smtpPass;
+    private int    $_smtpPort;
     private TemplaterService $_tpl;
 
-    public function __construct()
+    public function __construct(string $franchiseCode = '')
     {
-        $this->_from     = $_ENV['MAILER_FROM']      ?? 'noreply@example.com';
-        $this->_fromName = $_ENV['MAILER_FROM_NAME'] ?? 'App';
+        $prefix = $franchiseCode !== '' ? strtoupper($franchiseCode) . '_' : '';
+
+        $this->_from     = $_ENV["{$prefix}MAILER_FROM"]
+            ?? $_ENV['MAILER_FROM']
+            ?? '';
+        $this->_fromName = $_ENV["{$prefix}MAILER_FROM_NAME"]
+            ?? $_ENV['MAILER_FROM_NAME']
+            ?? '';
+        $this->_smtpHost = $_ENV["{$prefix}MAILER_SMTP_HOST"]
+            ?? $_ENV['MAILER_SMTP_HOST']
+            ?? '';
+        $this->_smtpUser = $_ENV["{$prefix}MAILER_SMTP_USER"]
+            ?? $_ENV['MAILER_SMTP_USER']
+            ?? $this->_from;
+        $this->_smtpPass = $_ENV["{$prefix}MAILER_SMTP_PASS"]
+            ?? $_ENV['MAILER_SMTP_PASS']
+            ?? '';
+        $this->_smtpPort = (int) ($_ENV["{$prefix}MAILER_SMTP_PORT"]
+            ?? $_ENV['MAILER_SMTP_PORT']
+            ?? 587);
         $this->_tpl      = new TemplaterService();
     }
 
@@ -85,15 +107,15 @@ class MailerService
         $mail = new PHPMailer(true);
 
         try {
-            $smtpHost = $_ENV['MAILER_SMTP_HOST'] ?? '';
+            $smtpHost = $this->_smtpHost;
             if ($smtpHost !== '') {
                 $mail->isSMTP();
                 $mail->Host       = $smtpHost;
                 $mail->SMTPAuth   = true;
-                $mail->Username   = $_ENV['MAILER_SMTP_USER'] ?? $this->_from;
-                $mail->Password   = $_ENV['MAILER_SMTP_PASS'] ?? '';
+                $mail->Username   = $this->_smtpUser;
+                $mail->Password   = $this->_smtpPass;
                 $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-                $mail->Port       = (int) ($_ENV['MAILER_SMTP_PORT'] ?? 587);
+                $mail->Port       = $this->_smtpPort;
             } else {
                 $mail->isMail();
             }

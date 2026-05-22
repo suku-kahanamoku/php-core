@@ -12,9 +12,9 @@ class MailerApi
 {
     private MailerService $_service;
 
-    public function __construct()
+    public function __construct(string $franchiseCode = '')
     {
-        $this->_service = new MailerService();
+        $this->_service = new MailerService($franchiseCode);
     }
 
     public function registerRoutes(Router $router): void
