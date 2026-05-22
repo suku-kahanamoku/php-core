@@ -398,18 +398,43 @@ INSERT INTO `user` (`franchise_code`, `first_name`, `last_name`, `email`, `passw
 INSERT INTO `category` (`franchise_code`, `parent_id`, `syscode`, `name`, `description`, `position`) VALUES
   ('zajeci', NULL, 'top', 'Top Produkty', 'Nejlepší vína z nabídky', 10);
 
--- ── Seed: 4 wines ────────────────────────────────────────
+-- ── Seed: 6 wines ────────────────────────────────────────
 INSERT INTO `product` (`franchise_code`, `sku`, `name`, `description`, `price`, `stock_quantity`, `published`, `kind`, `color`, `variant`, `data`) VALUES
-  ('zajeci', 'ZAJ-WHI-001', 'Zaječské Bílé', 'Jemné bílé víno ze Zaječí', 299.00, 50, 1, 'dry', 'white', 'Veltlínské zelené', JSON_OBJECT('year', 2022, 'volume', 0.75, 'quality', 'kabinett', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 12.5)),
-  ('zajeci', 'ZAJ-RED-001', 'Zaječské Červené', 'Kvalitní červené víno tradičního stylu', 349.00, 40, 1, 'dry', 'red', 'Frankovka', JSON_OBJECT('year', 2021, 'volume', 0.75, 'quality', 'selection_of_grapes', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 13.5)),
-  ('zajeci', 'ZAJ-ROE-001', 'Zaječské Rosé', 'Lehké rosé víno s ovocnými tóny', 329.00, 35, 1, 'semi_dry', 'rose', 'Zweigeltrebe', JSON_OBJECT('year', 2023, 'volume', 0.75, 'quality', 'late_harvest', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 12.0)),
-  ('zajeci', 'ZAJ-SWE-001', 'Zaječské Sladké', 'Sladké desertní víno s bohatou chutí', 399.00, 20, 1, 'dessert', 'red', 'Cabernet Moravia', JSON_OBJECT('year', 2020, 'volume', 0.5, 'quality', 'ice_wine', 'winery', 'Vinařství Zaječí', 'region', 'Moravie', 'alcohol', 11.0));
+  ('zajeci', 'ZAJ-MT-2025', 'Müller Thurgau 2025',
+   'Moravské zemské víno. Vinařská obec Zaječí, viniční trať U Kapličky. Cukernatost hroznů při sběru 21 °NM, zbytkový cukr do 4 g/l. Kvašeno a školeno v dubovém sudu, bez použití selektovaných kvasinek a enzymů.',
+   299.00, 50, 1, 'dry', 'white', 'Müller-Thurgau',
+   JSON_OBJECT('year', 2025, 'volume', 0.75, 'alcohol', 12.0, 'batch', '12025', 'winery', 'Vinařství Zaječí', 'region', 'Zaječí – U Kapličky', 'sugar_at_harvest', 21)),
+
+  ('zajeci', 'ZAJ-SZ-2025', 'Sylvánské zelené 2025',
+   'Moravské zemské víno. Vinařská obec Zaječí, viniční trať Stará Hora. Cukernatost hroznů při sběru 22 °NM, zbytkový cukr do 4 g/l. Kvašeno a školeno ve skle, bez použití selektovaných kvasinek a enzymů.',
+   299.00, 50, 1, 'dry', 'white', 'Sylvánské zelené',
+   JSON_OBJECT('year', 2025, 'volume', 0.75, 'alcohol', 12.0, 'batch', '52025', 'winery', 'Vinařství Zaječí', 'region', 'Zaječí – Stará Hora', 'sugar_at_harvest', 22)),
+
+  ('zajeci', 'ZAJ-NB-2025', 'Neuburské 2025',
+   'Moravské zemské víno. Vinařská obec Zaječí, viniční trať U Kapličky, severní svah. Cukernatost hroznů při sběru 22 °NM, zbytkový cukr do 9 g/l. Kvašeno a školeno ve skle, bez použití selektovaných kvasinek a enzymů.',
+   319.00, 40, 1, 'semi_dry', 'white', 'Neuburské',
+   JSON_OBJECT('year', 2025, 'volume', 0.75, 'alcohol', 12.0, 'batch', '82025', 'winery', 'Vinařství Zaječí', 'region', 'Zaječí – U Kapličky (sever)', 'sugar_at_harvest', 22)),
+
+  ('zajeci', 'ZAJ-RR-2024', 'Rýnský ryzlink 2024',
+   'Moravské zemské víno. Vinařská obec Přítluky, viniční trať U křížku. Cukernatost hroznů při sběru 23 °NM, zbytkový cukr do 1 g/l. Kvašeno a školeno v akátovém sudu, bez použití selektovaných kvasinek a enzymů.',
+   349.00, 40, 1, 'dry', 'white', 'Rýnský ryzlink',
+   JSON_OBJECT('year', 2024, 'volume', 0.75, 'alcohol', 12.5, 'batch', '92024', 'winery', 'Vinařství Zaječí', 'region', 'Přítluky – U křížku', 'sugar_at_harvest', 23)),
+
+  ('zajeci', 'ZAJ-SK-2025', 'Slovakia 2025',
+   'Experimentální odrůda vzniklá křížením Rýnského ryzlinku a Muškátu Ottonel (šlechtitelka Ing. Dorota Pospíšilová, CSc., VÚVV Bratislava). Odrůda není dosud uznána v ČR ani na Slovensku – zkušební výsadba. Moravské zemské víno, vinařská obec Moravská Nová Ves, viniční trať Stará hora. Cukernatost hroznů při sběru 23 °NM, zbytkový cukr do 4 g/l. Kvašeno a školeno ve skle, bez použití selektovaných kvasinek a enzymů.',
+   349.00, 30, 1, 'dry', 'white', 'Slovakia',
+   JSON_OBJECT('year', 2025, 'volume', 0.75, 'alcohol', 12.5, 'batch', '92025', 'winery', 'Vinařství Zaječí', 'region', 'Moravská Nová Ves – Stará hora', 'sugar_at_harvest', 23)),
+
+  ('zajeci', 'ZAJ-MM-2025', 'Moravský muškát 2025',
+   'Moravské zemské víno. Vinařská obec Zaječí, viniční trať Nová Hora. Cukernatost hroznů při sběru 23 °NM, zbytkový cukr cca 25 g/l. Kvašeno a školeno ve skle, bez použití selektovaných kvasinek a enzymů.',
+   329.00, 35, 1, 'semi_sweet', 'white', 'Moravský muškát',
+   JSON_OBJECT('year', 2025, 'volume', 0.75, 'alcohol', 13.0, 'batch', '22025', 'winery', 'Vinařství Zaječí', 'region', 'Zaječí – Nová Hora', 'sugar_at_harvest', 23));
 
 -- ── Seed: link products 1, 2, 3 to category "top" ──────────
 INSERT INTO `product_category` (`product_id`, `category_id`) VALUES
-  ((SELECT id FROM product WHERE franchise_code = 'zajeci' AND sku = 'ZAJ-WHI-001'), (SELECT id FROM category WHERE franchise_code = 'zajeci' AND syscode = 'top')),
-  ((SELECT id FROM product WHERE franchise_code = 'zajeci' AND sku = 'ZAJ-RED-001'), (SELECT id FROM category WHERE franchise_code = 'zajeci' AND syscode = 'top')),
-  ((SELECT id FROM product WHERE franchise_code = 'zajeci' AND sku = 'ZAJ-ROE-001'), (SELECT id FROM category WHERE franchise_code = 'zajeci' AND syscode = 'top'));
+  ((SELECT id FROM product WHERE franchise_code = 'zajeci' AND sku = 'ZAJ-MT-2025'), (SELECT id FROM category WHERE franchise_code = 'zajeci' AND syscode = 'top')),
+  ((SELECT id FROM product WHERE franchise_code = 'zajeci' AND sku = 'ZAJ-SZ-2025'), (SELECT id FROM category WHERE franchise_code = 'zajeci' AND syscode = 'top')),
+  ((SELECT id FROM product WHERE franchise_code = 'zajeci' AND sku = 'ZAJ-NB-2025'), (SELECT id FROM category WHERE franchise_code = 'zajeci' AND syscode = 'top'));
 
 -- ── Seed: 3 tasting packages (as enumerations) ───────────
 INSERT INTO `enumeration` (`franchise_code`, `type`, `syscode`, `label`, `value`, `position`, `published`, `data`) VALUES
