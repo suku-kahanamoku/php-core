@@ -84,7 +84,7 @@ class ProductApi
             'variant'        => $request->get('variant'),
             'data'           => $request->get('data'),
             'category_ids'   => $request->get('category_ids'),
-            'file_ids'       => $request->get('file_ids'),
+          
         ], $request->projection());
         Response::created($product, 'Product created');
     }
