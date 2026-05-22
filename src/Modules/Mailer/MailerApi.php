@@ -33,6 +33,7 @@ class MailerApi
             'fromEmail',
             'fromName',
             'fromPhone',
+            'logoPath',
         ];
 
         $data = [];
@@ -54,6 +55,7 @@ class MailerApi
                 'fromEmail' => $data['fromEmail'],
                 'fromName'  => $data['fromName'],
                 'fromPhone' => $data['fromPhone'],
+                'logoPath'  => $data['logoPath'],
             ],
         );
 

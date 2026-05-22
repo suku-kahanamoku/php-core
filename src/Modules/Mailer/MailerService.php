@@ -157,7 +157,10 @@ class MailerService
             to: $to,
             subject: 'Test email',
             template: 'mail/test',
-            templateData: ['email' => $to],
+            templateData: [
+                'email'    => $to,
+                'logoPath' => 'logo',
+            ],
         );
     }
 }

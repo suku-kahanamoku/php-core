@@ -1,7 +1,7 @@
 <div style="background-color:#1a2b3c;padding:24px 32px;text-align:center;">
 
     <?php if (empty($footerName)): ?>
-        <img src="" alt="Logo"
+        <img src="<?= htmlspecialchars($logoPath ?? '') ?>" alt="Logo"
             onerror="this.style.display='none'" style="height:36px;margin-bottom:8px;">
     <?php else: ?>
         <p style="margin:0 0 8px;font-size:16px;font-weight:bold;color:#ffffff;">
