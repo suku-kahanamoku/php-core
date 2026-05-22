@@ -43,8 +43,10 @@ $token = $tmpToken;
 
 $prodRegEmail = 'prod_reg_' . time() . '@example.com';
 $r            = request('POST', "{$base}/users", [
-    'first_name' => 'Reg', 'last_name' => 'User',
-    'email'      => $prodRegEmail, 'password' => 'Password123',
+    'first_name' => 'Reg',
+    'last_name' => 'User',
+    'email'      => $prodRegEmail,
+    'password' => 'Password123',
 ]);
 $prodRegId = $r['data']['data']['id'] ?? null;
 $r         = request('POST', "{$base}/auth/login", ['email' => $prodRegEmail, 'password' => 'Password123'], false);
@@ -64,9 +66,14 @@ if ($prodRegId) {
 section('Products – create');
 $prodSku = TEST_PREFIX . 'prod_' . time();
 $r       = request('POST', "{$base}/products", [
-    'name'  => 'Test Product', 'sku' => $prodSku,
-    'price' => 199.0, 'category_ids' => [$prodCatId], 'stock_quantity' => 10,
-    'kind'  => 'dry', 'color' => 'white', 'variant' => 'riesling',
+    'name'  => 'Test Product',
+    'sku' => $prodSku,
+    'price' => 199.0,
+    'category_ids' => [$prodCatId],
+    'stock_quantity' => 10,
+    'kind'  => 'dry',
+    'color' => 'white',
+    'variant' => 'riesling',
     'data'  => ['quality' => 'late_harvest', 'volume' => 0.75, 'year' => 2022],
 ]);
 assert_test('POST /products 201', $r['status'] === 201, dump_on_fail($r));
@@ -123,7 +130,7 @@ if ($prodId) {
 section('Products – filter by category.syscode');
 if ($prodId && $prodCatId) {
     // Nacti syscode kategorie ktera byla vytvorena
-    $r = request('GET', "{$base}/categories/{$prodCatId}", [], false);
+    $r              = request('GET', "{$base}/categories/{$prodCatId}", [], false);
     $prodCatSyscode = $r['data']['data']['syscode'] ?? null;
 
     if ($prodCatSyscode) {
@@ -146,8 +153,7 @@ if ($prodId && $prodCatId) {
     assert_test('filter category.id: our product is in results', in_array($prodId, $foundIds, true), dump_on_fail($r));
 }
 
-section('Products – filter by category.id (nonexistent → 0 results)');
-{
+section('Products – filter by category.id (nonexistent → 0 results)'); {
     $f = urlencode(json_encode(['category.id' => ['value' => 999999]]));
     $r = request('GET', "{$base}/products?q={$f}", [], false);
     assert_test('filter by category.id nonexistent → 200', $r['status'] === 200, dump_on_fail($r));
@@ -178,7 +184,10 @@ if ($prodId && $prodCatId) {
     $items   = $r['data']['data'] ?? [];
     $ourProd = null;
     foreach ($items as $item) {
-        if ($item['id'] === $prodId) { $ourProd = $item; break; }
+        if ($item['id'] === $prodId) {
+            $ourProd = $item;
+            break;
+        }
     }
 
     if ($ourProd) {
@@ -244,8 +253,6 @@ if ($prodCatId) {
     assert_test('combined impossible filter returns 0', ($r['data']['meta']['total'] ?? -1) === 0, dump_on_fail($r));
 }
 
-
-
 section('Products – update');
 if ($prodId) {
     $r = request('PATCH', "{$base}/products/{$prodId}", [
@@ -259,8 +266,13 @@ if ($prodId) {
     assert_test('data.volume preserved', (float)($r['data']['data']['data']['volume'] ?? 0) === 0.75, dump_on_fail($r));
 
     $r = request('PUT', "{$base}/products/{$prodId}", [
-        'name' => 'Test Product Updated', 'sku' => $prodSku, 'price' => 249.0, 'stock_quantity' => 10,
-        'kind' => 'dry', 'color' => 'red', 'variant' => 'merlot',
+        'name' => 'Test Product Updated',
+        'sku' => $prodSku,
+        'price' => 249.0,
+        'stock_quantity' => 10,
+        'kind' => 'dry',
+        'color' => 'red',
+        'variant' => 'merlot',
         'data' => ['quality' => 'quality_wine', 'volume' => 0.75, 'year' => 2021],
     ]);
     assert_test('PUT /products/:id 200', $r['status'] === 200, dump_on_fail($r));
@@ -308,6 +320,70 @@ assert_test('empty projection: 200', $r['status'] === 200, dump_on_fail($r));
 $firstItem = $r['data']['data'][0] ?? [];
 assert_test('empty projection: has id', isset($firstItem['id']));
 assert_test('empty projection: no name', !isset($firstItem['name']));
+
+// ── data.batch ───────────────────────────────────────────────────────────────
+
+section('Products – data.batch create & get');
+$batchSku = TEST_PREFIX . 'batch_' . time();
+$r        = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
+$token    = $r['data']['data']['token'] ?? null;
+$r        = request('POST', "{$base}/products", [
+    'name'  => 'Batch Product',
+    'sku' => $batchSku,
+    'price' => 99.0,
+    'stock_quantity' => 3,
+    'data'  => ['batch' => 'LOT-2024-A', 'year' => 2024],
+]);
+assert_test('POST /products with data.batch → 201', $r['status'] === 201, dump_on_fail($r));
+$batchProdId = $r['data']['data']['id'] ?? null;
+if ($batchProdId) {
+    $r = request('GET', "{$base}/products/{$batchProdId}", [], false);
+    assert_test('GET: data.batch = LOT-2024-A', ($r['data']['data']['data']['batch'] ?? null) === 'LOT-2024-A', dump_on_fail($r));
+    assert_test('GET: data.year = 2024', (int)($r['data']['data']['data']['year'] ?? 0) === 2024, dump_on_fail($r));
+}
+
+section('Products – data.batch filter');
+if ($batchProdId) {
+    $f = urlencode(json_encode(['data.batch' => ['value' => 'LOT-2024-A']]));
+    $r = request('GET', "{$base}/products?q={$f}", [], false);
+    assert_test('filter data.batch eq → 200', $r['status'] === 200, dump_on_fail($r));
+    assert_test('filter data.batch eq → ≥1 result', ($r['data']['meta']['total'] ?? 0) >= 1, dump_on_fail($r));
+    $foundIds = array_column($r['data']['data'] ?? [], 'id');
+    assert_test('filter data.batch: product in results', in_array($batchProdId, $foundIds, true), dump_on_fail($r));
+
+    $f = urlencode(json_encode(['data.batch' => ['value' => '__no_such_batch__']]));
+    $r = request('GET', "{$base}/products?q={$f}", [], false);
+    assert_test('filter data.batch unknown → 0 results', ($r['data']['meta']['total'] ?? -1) === 0, dump_on_fail($r));
+}
+
+section('Products – data.batch PATCH preserves other data fields');
+if ($batchProdId) {
+    $r = request('PATCH', "{$base}/products/{$batchProdId}", [
+        'data' => ['batch' => 'LOT-2024-B'],
+    ]);
+    assert_test('PATCH data.batch → 200', $r['status'] === 200, dump_on_fail($r));
+    assert_test('data.batch updated to LOT-2024-B', ($r['data']['data']['data']['batch'] ?? null) === 'LOT-2024-B', dump_on_fail($r));
+    assert_test('data.year preserved after batch PATCH', (int)($r['data']['data']['data']['year'] ?? 0) === 2024, dump_on_fail($r));
+}
+
+section('Products – data.batch removed via PUT (data without batch)');
+if ($batchProdId) {
+    $r = request('PUT', "{$base}/products/{$batchProdId}", [
+        'name' => 'Batch Product',
+        'sku' => $batchSku,
+        'price' => 99.0,
+        'stock_quantity' => 3,
+        'data' => ['year' => 2024],
+    ]);
+    assert_test('PUT without batch → 200', $r['status'] === 200, dump_on_fail($r));
+    assert_test('data.batch absent after PUT', ($r['data']['data']['data']['batch'] ?? 'PRESENT') === null || !array_key_exists('batch', $r['data']['data']['data'] ?? []), dump_on_fail($r));
+    assert_test('data.year still present after PUT', (int)($r['data']['data']['data']['year'] ?? 0) === 2024, dump_on_fail($r));
+}
+
+if ($batchProdId) {
+    request('DELETE', "{$base}/products/{$batchProdId}?force=true");
+}
+$token = null;
 
 // ─────────────────────────────────────────────────────────────────────────────
 

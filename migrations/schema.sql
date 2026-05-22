@@ -158,7 +158,7 @@ CREATE TABLE `product` (
     `color`          VARCHAR(64)             DEFAULT NULL COMMENT 'e.g. white, red, rose',
     `variant`        VARCHAR(64)             DEFAULT NULL COMMENT 'grape variety / product variant',
     -- flexible JSON attributes (project-specific, filter via dot-notation e.g. data.year)
-    `data`           JSON                    DEFAULT NULL COMMENT 'extra attributes, e.g. quality, volume, year',
+    `data`           JSON                    DEFAULT NULL COMMENT 'extra attributes, e.g. quality, volume, year, batch',
     `created_at`     DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`     DATETIME                DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
