@@ -75,13 +75,7 @@ class ProductApi
         $product = $this->_service->create([
             'name'           => $request->get('name'),
             'sku'            => $request->get('sku'),
-            'description'    => $request->get('description'),
             'price'          => $request->get('price'),
-            'stock_quantity' => $request->get('stock_quantity'),
-            'published'      => $request->get('published'),
-            'kind'           => $request->get('kind'),
-            'color'          => $request->get('color'),
-            'variant'        => $request->get('variant'),
         ], $request->projection());
         Response::created($product, 'Product created');
     }
