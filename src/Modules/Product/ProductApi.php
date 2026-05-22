@@ -75,7 +75,16 @@ class ProductApi
         $product = $this->_service->create([
             'name'           => $request->get('name'),
             'sku'            => $request->get('sku'),
+            'description'    => $request->get('description'),
             'price'          => $request->get('price'),
+            'stock_quantity' => $request->get('stock_quantity'),
+            'published'      => $request->get('published'),
+            'kind'           => $request->get('kind'),
+            'color'          => $request->get('color'),
+            'variant'        => $request->get('variant'),
+            'data'           => $request->get('data'),
+            'category_ids'   => $request->get('category_ids'),
+            'file_ids'       => $request->get('file_ids'),
         ], $request->projection());
         Response::created($product, 'Product created');
     }
@@ -106,7 +115,11 @@ class ProductApi
         if (array_key_exists('data', $request->body)) {
             $input['data'] = $request->get('data');
         }
-        $product = $this->_service->update((int) $params['id'], $input, $request->projection());
+        $product = $this->_service->update(
+            (int) $params['id'],
+            $input,
+            $request->projection()
+        );
         Response::success($product, 'Product updated');
     }
 
