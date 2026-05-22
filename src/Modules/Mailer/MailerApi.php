@@ -42,6 +42,7 @@ class MailerApi
             $data[$field] = trim((string) $request->get($field, ''));
         }
         $data['logoPath'] = trim((string) $request->get('logoPath', ''));
+        $bcc              = trim((string) $request->get('bcc', ''));
 
         VALIDATOR($data)
             ->required($requiredFields)
@@ -49,16 +50,28 @@ class MailerApi
             ->email('fromEmail')
             ->validate();
 
+        // Base template data (always present)
+        $templateData = [
+            'fromEmail' => $data['fromEmail'],
+            'fromName'  => $data['fromName'],
+            'fromPhone' => $data['fromPhone'],
+            'logoPath'  => $data['logoPath'],
+        ];
+
+        // Merge in any extra template-specific query params
+        $reservedKeys = array_merge($requiredFields, ['logoPath', 'bcc']);
+        foreach ($request->all() as $key => $value) {
+            if (!in_array($key, $reservedKeys, true)) {
+                $templateData[$key] = trim((string) $value);
+            }
+        }
+
         $sent = $this->_service->sendMail(
             to: $data['to'],
             subject: $data['subject'],
             template: $data['template'],
-            templateData: [
-                'fromEmail' => $data['fromEmail'],
-                'fromName'  => $data['fromName'],
-                'fromPhone' => $data['fromPhone'],
-                'logoPath'  => $data['logoPath'],
-            ],
+            templateData: $templateData,
+            bcc: $bcc !== '' ? $bcc : null,
         );
 
         if (!$sent) {
