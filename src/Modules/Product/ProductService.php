@@ -91,8 +91,18 @@ class ProductService extends BaseService
             ? trim((string) $input['sku'])
             : $this->_product->generateSku();
 
-        $categoryIds = array_map('intval', (array) ($input['category_ids'] ?? []));
-        $fileIds     = array_map('intval', (array) ($input['file_ids'] ?? []));
+        $categoryIds = array_filter(
+            array_map(
+                'intval',
+                is_array($input['category_ids'] ?? null) ? $input['category_ids'] : []
+            )
+        );
+        $fileIds     = array_filter(
+            array_map(
+                'intval',
+                is_array($input['file_ids'] ?? null) ? $input['file_ids'] : []
+            )
+        );
 
         $created = $this->_product->create([
             'sku'            => $sku,
@@ -217,8 +227,18 @@ class ProductService extends BaseService
             : $this->_product->generateSku();
         $price = $input['price'] ?? null;
 
-        $categoryIds = array_map('intval', (array) ($input['category_ids'] ?? []));
-        $fileIds     = array_map('intval', (array) ($input['file_ids'] ?? []));
+        $categoryIds = array_filter(
+            array_map(
+                'intval',
+                is_array($input['category_ids'] ?? null) ? $input['category_ids'] : []
+            )
+        );
+        $fileIds     = array_filter(
+            array_map(
+                'intval',
+                is_array($input['file_ids'] ?? null) ? $input['file_ids'] : []
+            )
+        );
 
         $this->_product->update($id, [
             'name'           => $name,
