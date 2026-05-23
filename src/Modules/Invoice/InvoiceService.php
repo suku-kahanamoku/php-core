@@ -247,8 +247,19 @@ class InvoiceService extends BaseService
             }
         }
 
-        return $this->_invoice->findById($invoiceId, $projection)
+        $result = $this->_invoice->findById($invoiceId, $projection)
             ?? ['id' => $invoiceId];
+
+        $proj = new Projection($projection);
+        if ($proj->needsJoin('files')) {
+            $result['files'] = $this->_files->findByJunctionItem(
+                'invoice_file',
+                'invoice_id',
+                $invoiceId
+            );
+        }
+
+        return $result;
     }
 
     /**
