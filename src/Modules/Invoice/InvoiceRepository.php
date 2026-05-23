@@ -160,7 +160,15 @@ class InvoiceRepository extends BaseRepository
 
         foreach ($items as &$item) {
             // Dekoduj JSON sloupce
-            foreach (['user', 'billing_address', 'shipping_address'] as $col) {
+            foreach (
+                [
+                    'user',
+                    'billing_address',
+                    'shipping_address',
+                    'payment',
+                    'shipping'
+                ] as $col
+            ) {
                 if (isset($item[$col]) && is_string($item[$col])) {
                     $item[$col] = json_decode($item[$col], true);
                 }
@@ -230,7 +238,15 @@ class InvoiceRepository extends BaseRepository
         }
 
         // Dekoduj JSON sloupce
-        foreach (['user', 'billing_address', 'shipping_address'] as $col) {
+        foreach (
+            [
+                'user',
+                'billing_address',
+                'shipping_address',
+                'payment',
+                'shipping'
+            ] as $col
+        ) {
             if (isset($invoice[$col]) && is_string($invoice[$col])) {
                 $invoice[$col] = json_decode($invoice[$col], true);
             }
