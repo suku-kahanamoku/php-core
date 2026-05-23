@@ -58,7 +58,7 @@ class InvoiceService extends BaseService
 
         $userId = $this->_auth->hasRole('admin') ? null : $this->_auth->id();
 
-        return $this->_invoice->findAll(
+        $result = $this->_invoice->findAll(
             $page,
             $limit,
             $userId,
@@ -66,6 +66,18 @@ class InvoiceService extends BaseService
             $filter,
             $projection,
         );
+
+        $proj = new Projection($projection);
+        if ($proj->needsJoin('files')) {
+            $ids     = array_column($result['data'], 'id');
+            $fileMap = $this->_file->findByJunctionList('invoice_file', 'invoice_id', $ids);
+            foreach ($result['data'] as &$item) {
+                $item['files'] = $fileMap[(int) $item['id']] ?? [];
+            }
+            unset($item);
+        }
+
+        return $result;
     }
 
     /**
