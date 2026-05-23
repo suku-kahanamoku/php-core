@@ -477,4 +477,15 @@ INSERT INTO `enumeration` (`franchise_code`, `type`, `syscode`, `label`, `value`
   ('zajeci', 'payment', 'gopay',      'GoPay',           'gopay',      50, 1, JSON_OBJECT('price', 0,    'icon', 'arcticons:gopay',              'disabled', true)),
   ('zajeci', 'payment', 'apple_pay',  'Apple Pay',       'apple_pay',  60, 1, JSON_OBJECT('price', 0,    'icon', 'simple-icons:applepay',        'disabled', true)),
   ('zajeci', 'payment', 'google_pay', 'Google Pay',      'google_pay', 70, 1, JSON_OBJECT('price', 0,    'icon', 'simple-icons:googlepay',       'disabled', true));
-
+-- ── Seed: contact info ───────────────────────────────────
+INSERT INTO `enumeration` (`franchise_code`, `type`, `syscode`, `label`, `value`, `position`, `published`, `data`) VALUES
+  ('zajeci', 'contact', 'contact', 'Kontakt', 'contact', 10, 1, JSON_OBJECT(
+    'email',   'vyborne@vinozezajeci.cz',
+    'phone1',  '+420 770 199 999',
+    'phone2',  '+420 778 711 111',
+    'street',  'Školní 156',
+    'city',    'Zaječí',
+    'zip',     '69105',
+    'ic',      'IČ 19737491',
+    'dic',     'DIČ CZ7951084053'
+  ));
