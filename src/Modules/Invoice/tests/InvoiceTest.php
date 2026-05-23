@@ -55,14 +55,27 @@ $modelOrderId = $r['data']['data']['id'] ?? null;
 $r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 $token = $r['data']['data']['token'] ?? null;
 
+$r           = request('POST', "{$base}/address", [
+    'type' => 'billing', 'name' => 'Model Inv Addr',
+    'street' => 'Test St 1', 'city' => 'Prague', 'zip' => '10000',
+]);
+$modelAddrId = $r['data']['data']['id'] ?? null;
+
 // ── Invoice model – create() ──────────────────────────────────────────────────
 
 section('Invoice model – create()');
-$r = request('POST', "{$base}/invoices", ['order_id' => $modelOrderId]);
+$invPayload = [
+    'order_id'           => $modelOrderId,
+    'user_id'            => $modelUserId,
+    'status'             => 'issued',
+    'total_amount'       => 199.0,
+    'billing_address_id' => $modelAddrId,
+];
+$r = request('POST', "{$base}/invoices", $invPayload);
 assert_test('create invoice 201', $r['status'] === 201, dump_on_fail($r));
 $modelInvoiceId = $r['data']['data']['id'] ?? null;
 
-$r = request('POST', "{$base}/invoices", ['order_id' => $modelOrderId]);
+$r = request('POST', "{$base}/invoices", $invPayload);
 assert_test('duplicate invoice → 409', $r['status'] === 409, dump_on_fail($r));
 
 // ── Invoice model – getAll() ──────────────────────────────────────────────────
@@ -120,6 +133,9 @@ if ($modelProdId) {
 }
 if ($modelCatId) {
     request('DELETE', "{$base}/categories/{$modelCatId}");
+}
+if ($modelAddrId) {
+    request('DELETE', "{$base}/address/{$modelAddrId}");
 }
 if ($modelUserId) {
     request('DELETE', "{$base}/users/{$modelUserId}");

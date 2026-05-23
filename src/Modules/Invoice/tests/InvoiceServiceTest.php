@@ -55,20 +55,39 @@ $svcOrderId = $r['data']['data']['id'] ?? null;
 // ── InvoiceService – admin-only ───────────────────────────────────────────────
 
 section('InvoiceService – admin-only creation');
-$r = request('POST', "{$base}/invoices", ['order_id' => $svcOrderId]);
+$r = request('POST', "{$base}/invoices", [
+    'order_id'           => $svcOrderId,
+    'user_id'            => $svcUserId,
+    'status'             => 'issued',
+    'total_amount'       => 199.0,
+    'billing_address_id' => 1,
+]);
 assert_test('POST /invoices → 403 for non-admin', $r['status'] === 403, dump_on_fail($r));
 
 $r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 $token = $r['data']['data']['token'] ?? null;
 
+$r           = request('POST', "{$base}/address", [
+    'type' => 'billing', 'name' => 'Svc Inv Addr',
+    'street' => 'Svc St 1', 'city' => 'Prague', 'zip' => '10000',
+]);
+$svcAddrId = $r['data']['data']['id'] ?? null;
+
 // ── InvoiceService – duplicate prevention ─────────────────────────────────────
 
 section('InvoiceService – duplicate order prevention');
-$r = request('POST', "{$base}/invoices", ['order_id' => $svcOrderId]);
+$svcPayload = [
+    'order_id'           => $svcOrderId,
+    'user_id'            => $svcUserId,
+    'status'             => 'issued',
+    'total_amount'       => 199.0,
+    'billing_address_id' => $svcAddrId,
+];
+$r = request('POST', "{$base}/invoices", $svcPayload);
 assert_test('create invoice 201', $r['status'] === 201, dump_on_fail($r));
 $svcInvoiceId = $r['data']['data']['id'] ?? null;
 
-$r = request('POST', "{$base}/invoices", ['order_id' => $svcOrderId]);
+$r = request('POST', "{$base}/invoices", $svcPayload);
 assert_test('duplicate invoice → 409', $r['status'] === 409, dump_on_fail($r));
 
 // ── InvoiceService – updateStatus() ──────────────────────────────────────────
@@ -92,6 +111,9 @@ if ($svcProdId) {
 }
 if ($svcCatId) {
     request('DELETE', "{$base}/categories/{$svcCatId}");
+}
+if ($svcAddrId) {
+    request('DELETE', "{$base}/address/{$svcAddrId}");
 }
 if ($svcUserId) {
     request('DELETE', "{$base}/users/{$svcUserId}");

@@ -60,25 +60,36 @@ class InvoiceApi
     }
 
     /**
-     * POST /invoices — Vystavi fakturu pro objednavku. Vyzaduje roli admin.
+     * POST /invoices — Vystavi fakturu. Vyzaduje roli admin.
      *
-     * @param Request $request  body: order_id (required), due_at, note
+     * @param Request $request  body: order_id, user_id, status, total_amount, billing_address_id (required),
+     *                                currency, due_at, note, file_ids, items
      * @return void
      */
     public function create(Request $request): void
     {
-        $orderId = (int) $request->get('order_id', 0);
-        VALIDATOR(['order_id' => $orderId])->numeric('order_id', 1)->validate();
+        $input = [
+            'order_id'           => (int) $request->get('order_id', 0),
+            'user_id'            => (int) $request->get('user_id', 0),
+            'status'             => trim((string) $request->get('status', '')),
+            'total_amount'       => $request->get('total_amount'),
+            'billing_address_id' => (int) $request->get('billing_address_id', 0),
+            'currency'           => $request->get('currency'),
+            'due_at'             => $request->get('due_at'),
+            'note'               => $request->get('note', ''),
+            'file_ids'           => $request->get('file_ids'),
+            'items'              => $request->get('items'),
+        ];
 
-        $invoice = $this->_service->create(
-            $orderId,
-            [
-                'due_at'   => $request->get('due_at'),
-                'note'     => $request->get('note', ''),
-                'file_ids' => $request->get('file_ids'),
-            ],
-            $request->projection(),
-        );
+        VALIDATOR($input)
+            ->numeric('order_id', 1)
+            ->numeric('user_id', 1)
+            ->required('status')
+            ->numeric('total_amount', 0)
+            ->numeric('billing_address_id', 1)
+            ->validate();
+
+        $invoice = $this->_service->create($input, $request->projection());
         Response::created($invoice, 'Invoice created');
     }
 

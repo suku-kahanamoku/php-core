@@ -7,13 +7,11 @@ namespace App\Modules\Invoice;
 use App\Modules\Auth\Auth;
 use App\Modules\BaseService;
 use App\Modules\Database\Database;
-use App\Modules\Order\OrderRepository;
 use App\Modules\Router\Response;
 
 class InvoiceService extends BaseService
 {
     private InvoiceRepository $_invoice;
-    private OrderRepository   $_order;
 
     /**
      * Konstruktor tridy InvoiceService.
@@ -25,7 +23,6 @@ class InvoiceService extends BaseService
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->_invoice = new InvoiceRepository($db, $franchiseCode);
-        $this->_order   = new OrderRepository($db, $franchiseCode);
         $this->_auth    = $auth;
     }
 
@@ -89,31 +86,27 @@ class InvoiceService extends BaseService
     }
 
     /**
-     * Vystavi fakturu pro existujici objednavku. Vyzaduje roli admin.
+     * Vystavi fakturu. Vyzaduje roli admin.
      * Kazda objednavka muze mit nejvyse jednu fakturu (409 pri duplicite).
-     * Polozky faktury jsou zkopirovat z order_item. Cela operace probiha v transakci.
+     * invoice_number je generovano automaticky. Cela operace probiha v transakci.
      *
-     * @param  int                  $orderId
-     * @param  array<string, mixed> $input  due_at, note
+     * @param  array<string, mixed> $input  order_id, user_id, status, total_amount, billing_address_id (required),
+     *                                      currency, due_at, note, file_ids, items
      * @param  array|null           $projection
      * @return array<string, mixed>
      */
-    public function create(
-        int $orderId,
-        array $input,
-        ?array $projection = null
-    ): array {
+    public function create(array $input, ?array $projection = null): array
+    {
         $this->_auth->requireRole('admin');
 
-        $order = $this->_order->findById($orderId);
-        $this->_requireEntity($order, 'Order not found');
+        $orderId = (int) $input['order_id'];
 
         if ($this->_invoice->findByOrder($orderId)) {
             Response::error('Invoice already exists for this order', 409);
         }
 
-        $orderItems = $order['order_items'] ?? [];
-        $dueAt      = $input['due_at'] ?? date('Y-m-d', strtotime('+14 days'));
+        $items = (array) ($input['items'] ?? []);
+        $dueAt = $input['due_at'] ?? date('Y-m-d', strtotime('+14 days'));
 
         $pdo = $this->_invoice->getPdo();
         $pdo->beginTransaction();
@@ -122,23 +115,23 @@ class InvoiceService extends BaseService
             $invoiceRow = $this->_invoice->create([
                 'invoice_number'     => $this->_invoice->generateNumber(),
                 'order_id'           => $orderId,
-                'user_id'            => $order['user_id'],
-                'status'             => 'issued',
-                'total_amount'       => $order['total_price'],
-                'currency'           => $order['currency'],
+                'user_id'            => (int) $input['user_id'],
+                'status'             => $input['status'],
+                'total_amount'       => $input['total_amount'],
+                'currency'           => $input['currency'] ?? 'CZK',
                 'due_at'             => $dueAt,
-                'billing_address_id' => $order['billing_address_id'] ?? null,
-                'note'               => $input['note']               ?? '',
+                'billing_address_id' => (int) $input['billing_address_id'],
+                'note'               => $input['note'] ?? '',
             ]);
             $invoiceId = (int) $invoiceRow['id'];
 
-            foreach ($orderItems as $item) {
+            foreach ($items as $item) {
                 $this->_invoice->createItem([
                     'invoice_id'  => $invoiceId,
-                    'product_id'  => $item['product_id'],
-                    'description' => $item['product_name'] ?? '',
-                    'quantity'    => $item['quantity'],
-                    'unit_price'  => $item['price'],
+                    'product_id'  => $item['product_id'] ?? null,
+                    'description' => $item['description'] ?? '',
+                    'quantity'    => (int) ($item['quantity'] ?? 1),
+                    'unit_price'  => $item['unit_price'],
                     'total_price' => $item['total_price'],
                 ]);
             }

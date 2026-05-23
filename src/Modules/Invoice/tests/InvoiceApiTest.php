@@ -61,6 +61,12 @@ $invOrderId = $r['data']['data']['id'] ?? null;
 $r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 $token = $r['data']['data']['token'] ?? null;
 
+$r        = request('POST', "{$base}/address", [
+    'type' => 'billing', 'name' => 'Inv Api Addr',
+    'street' => 'Api St 1', 'city' => 'Prague', 'zip' => '10000',
+]);
+$invAddrId = $r['data']['data']['id'] ?? null;
+
 // ── Non-admin protection ──────────────────────────────────────────────────────
 
 section('Invoices – non-admin protection');
@@ -68,7 +74,13 @@ $tmpToken = $token;
 $r        = request('POST', "{$base}/auth/login", ['email' => $invUserEmail, 'password' => $invPassword], false);
 $token    = $r['data']['data']['token'] ?? null;
 
-$r = request('POST', "{$base}/invoices", ['order_id' => $invOrderId]);
+$r = request('POST', "{$base}/invoices", [
+    'order_id'           => $invOrderId,
+    'user_id'            => $invUserId,
+    'status'             => 'issued',
+    'total_amount'       => 199.0,
+    'billing_address_id' => $invAddrId ?? 1,
+]);
 assert_test('POST /invoices → 403 for non-admin', $r['status'] === 403, dump_on_fail($r));
 
 $token = $tmpToken;
@@ -85,11 +97,18 @@ assert_test('has items array', isset($r['data']['data']));
 section('Invoices – CRUD');
 $invoiceId = null;
 if ($invOrderId) {
-    $r = request('POST', "{$base}/invoices", ['order_id' => $invOrderId]);
+    $invPayload = [
+        'order_id'           => $invOrderId,
+        'user_id'            => $invUserId,
+        'status'             => 'issued',
+        'total_amount'       => 199.0,
+        'billing_address_id' => $invAddrId,
+    ];
+    $r = request('POST', "{$base}/invoices", $invPayload);
     assert_test('POST /invoices 201', $r['status'] === 201, dump_on_fail($r));
     $invoiceId = $r['data']['data']['id'] ?? null;
 
-    $r = request('POST', "{$base}/invoices", ['order_id' => $invOrderId]);
+    $r = request('POST', "{$base}/invoices", $invPayload);
     assert_test('POST /invoices 409 duplicate', $r['status'] === 409, dump_on_fail($r));
 }
 
@@ -119,6 +138,9 @@ if ($invProductId) {
 }
 if ($invCatId) {
     request('DELETE', "{$base}/categories/{$invCatId}?force=true");
+}
+if ($invAddrId) {
+    request('DELETE', "{$base}/address/{$invAddrId}");
 }
 if ($invUserId) {
     request('DELETE', "{$base}/users/{$invUserId}?force=true");
