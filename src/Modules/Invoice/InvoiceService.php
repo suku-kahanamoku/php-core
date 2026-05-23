@@ -237,18 +237,23 @@ class InvoiceService extends BaseService
         }
 
         // Generuj PDF faktury a uloz jako soubor
+        $pdfError    = null;
         $fullInvoice = $this->_invoice->findById($invoiceId);
         if ($fullInvoice) {
             try {
                 $this->_generatePdf($fullInvoice);
             } catch (\Throwable $e) {
                 // PDF generovani nesmi blokovat vytvoreni faktury — jen loguj
+                $pdfError = $e->getMessage();
                 error_log('[InvoiceService::_generatePdf] ' . $e->getMessage());
             }
         }
 
         $result = $this->_invoice->findById($invoiceId, $projection)
             ?? ['id' => $invoiceId];
+        if ($pdfError !== null) {
+            $result['_pdf_error'] = $pdfError;
+        }
 
         $proj = new Projection($projection);
         if ($proj->needsJoin('files')) {
