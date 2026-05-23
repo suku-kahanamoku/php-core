@@ -207,7 +207,7 @@ class OrderService extends BaseService
             Response::error($e->getMessage(), 422);
         }
 
-        return ['id' => $orderId ?? null, 'total_price' => $totalPrice ?? 0];
+        return $this->_order->findById($orderId) ?? ['id' => $orderId ?? null];
     }
 
     /**
