@@ -8,6 +8,7 @@ use App\Modules\Address\AddressRepository;
 use App\Modules\Auth\Auth;
 use App\Modules\BaseService;
 use App\Modules\Database\Database;
+use App\Modules\Enumeration\EnumerationRepository;
 use App\Modules\Product\ProductRepository;
 use App\Modules\Role\RoleRepository;
 use App\Modules\Router\Response;
@@ -15,11 +16,12 @@ use App\Modules\User\UserRepository;
 
 class OrderService extends BaseService
 {
-    private OrderRepository   $_order;
-    private UserRepository    $_user;
-    private AddressRepository $_address;
-    private ProductRepository $_product;
-    private RoleRepository    $_role;
+    private OrderRepository         $_order;
+    private UserRepository           $_user;
+    private AddressRepository        $_address;
+    private ProductRepository        $_product;
+    private RoleRepository           $_role;
+    private EnumerationRepository    $_enum;
 
     /**
      * Konstruktor tridy OrderService.
@@ -35,6 +37,7 @@ class OrderService extends BaseService
         $this->_address = new AddressRepository($db, $franchiseCode);
         $this->_product = new ProductRepository($db, $franchiseCode);
         $this->_role    = new RoleRepository($db, $franchiseCode);
+        $this->_enum    = new EnumerationRepository($db, $franchiseCode);
         $this->_auth    = $auth;
     }
 
@@ -134,10 +137,33 @@ class OrderService extends BaseService
             'billing',
         );
 
-        $shippingPrice = (float)  ($shipping['price'] ?? 0);
-        $shippingType  = (string) ($shipping['value'] ?? '');
-        $paymentType   = (string) ($billing['value'] ?? 'bank');
-        $currency      = 'CZK';
+        $shippingSyscode = (string) ($shipping['value'] ?? '');
+        $paymentSyscode  = (string) ($billing['value'] ?? 'bank');
+        $currency        = 'CZK';
+
+        // Snapshot platebni metody z ciselníku
+        $paymentEnum     = $this->_enum->findBySyscode('payment', $paymentSyscode);
+        $paymentSnapshot = null;
+        if ($paymentEnum) {
+            $data            = is_array($paymentEnum['data'] ?? null) ? $paymentEnum['data'] : [];
+            $paymentSnapshot = array_merge(
+                ['type' => $paymentEnum['syscode'], 'label' => $paymentEnum['label']],
+                $data,
+            );
+        }
+
+        // Snapshot zpusobu dopravy z ciselníku
+        $shippingEnum     = $shippingSyscode !== '' ? $this->_enum->findBySyscode('shipping', $shippingSyscode) : null;
+        $shippingSnapshot = null;
+        $shippingPrice    = 0.0;
+        if ($shippingEnum) {
+            $data             = is_array($shippingEnum['data'] ?? null) ? $shippingEnum['data'] : [];
+            $shippingPrice    = (float) ($data['price'] ?? 0);
+            $shippingSnapshot = array_merge(
+                ['type' => $shippingEnum['syscode'], 'label' => $shippingEnum['label']],
+                $data,
+            );
+        }
 
         $pdo = $this->_order->getPdo();
         $pdo->beginTransaction();
@@ -205,9 +231,10 @@ class OrderService extends BaseService
                 'total_price_all'          => $totalPriceAll,
                 'total_price_all_with_vat' => $totalPriceAllWithVat,
                 'currency'                 => $currency,
-                'payment_type'             => $paymentType,
-                'shipping_type'            => $shippingType !== '' ? $shippingType : null,
-                'shipping_price'           => $shippingPrice,
+                'payment'                  => $paymentSnapshot !== null
+                    ? json_encode($paymentSnapshot, JSON_UNESCAPED_UNICODE) : null,
+                'shipping'                 => $shippingSnapshot !== null
+                    ? json_encode($shippingSnapshot, JSON_UNESCAPED_UNICODE) : null,
                 'shipping_address_id'      => $shippingAddressId,
                 'billing_address_id'       => $billingAddressId,
                 'note'                     => $input['note'] ?? null,

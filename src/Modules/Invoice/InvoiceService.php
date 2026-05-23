@@ -194,9 +194,12 @@ class InvoiceService extends BaseService
                 'order_number'             => $order['order_number'],
                 'status'                   => $input['status'] ?? 'issued',
                 'currency'                 => $order['currency'],
-                'payment_type'             => $order['payment_type'],
-                'shipping_type'            => $order['shipping_type'],
-                'shipping_price'           => $order['shipping_price'],
+                'payment'                  => is_array($order['payment'] ?? null)
+                    ? json_encode($order['payment'], JSON_UNESCAPED_UNICODE)
+                    : (is_string($order['payment'] ?? null) ? $order['payment'] : null),
+                'shipping'                 => is_array($order['shipping'] ?? null)
+                    ? json_encode($order['shipping'], JSON_UNESCAPED_UNICODE)
+                    : (is_string($order['shipping'] ?? null) ? $order['shipping'] : null),
                 'total_price'              => $order['total_price'],
                 'total_price_with_vat'     => $order['total_price_with_vat'],
                 'total_price_all'          => $order['total_price_all'],

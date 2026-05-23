@@ -145,7 +145,23 @@ class EnumerationRepository extends BaseRepository
     }
 
     /**
-     * Vraci true, pokud kombinace type + syscode jiz existuje.
+     * Vrati jednu polozku ciselníku dle type + syscode, nebo null.
+     *
+     * @param  string $type
+     * @param  string $syscode
+     * @return array<string, mixed>|null
+     */
+    public function findBySyscode(string $type, string $syscode): ?array
+    {
+        return $this->_db->fetchOne(
+            'SELECT * FROM enumeration
+             WHERE franchise_code = ? AND type = ? AND syscode = ? AND deleted = 0
+             LIMIT 1',
+            [$this->_code, $type, $syscode],
+        ) ?: null;
+    }
+
+    /**
      *
      * @param  string   $type
      * @param  string   $code
@@ -234,5 +250,4 @@ class EnumerationRepository extends BaseRepository
 
         return $this->findById($id, $projection) ?? ['id' => $id];
     }
-
 }

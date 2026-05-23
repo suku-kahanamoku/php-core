@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Invoice;
 
 use App\Modules\Database\Database;
-use App\Modules\File\FileRepository;
-use Dompdf\Dompdf;
+use App\Modules\File\FileRepository;use Dompdf\Dompdf;
 use Dompdf\Options;
 use Endroid\QrCode\Encoding\Encoding;
 use Endroid\QrCode\ErrorCorrectionLevel;
@@ -27,12 +26,10 @@ class InvoicePdfService
     private FileRepository        $_file;
     private InvoiceRepository     $_invoice;
     private string                $_code;
-    private \PDO                  $_pdo;
 
     public function __construct(Database $db, string $franchiseCode)
     {
         $this->_code    = $franchiseCode;
-        $this->_pdo     = $db->getPdo();
         $this->_file    = new FileRepository($db, $franchiseCode);
         $this->_invoice = new InvoiceRepository($db, $franchiseCode);
     }
@@ -49,8 +46,8 @@ class InvoicePdfService
         $invoiceId     = (int) $invoice['id'];
         $invoiceNumber = (string) ($invoice['invoice_number'] ?? 'invoice');
 
-        // Bankovni udaje z enum type=payment syscode=bank
-        $bankEnum = $this->_db_fetchPaymentBank();
+        // Bankovni udaje ze snapshotu faktury
+        $bankEnum = is_array($invoice['payment'] ?? null) ? $invoice['payment'] : null;
 
         // QR kod pro platbu (SPAYD format)
         $qrBase64 = $this->_generateQrBase64($invoice, $bankEnum);
@@ -82,27 +79,6 @@ class InvoicePdfService
     }
 
     // ── Private helpers ──────────────────────────────────────────────────────
-
-    /**
-     * Nacte bankovni enum (type=payment, syscode=bank).
-     *
-     * @return array<string, mixed>|null
-     */
-    private function _db_fetchPaymentBank(): ?array
-    {
-        $stmt = $this->_pdo->prepare(
-            'SELECT data FROM enumeration
-             WHERE franchise_code = ? AND type = ? AND syscode = ? AND deleted = 0
-             LIMIT 1',
-        );
-        $stmt->execute([$this->_code, 'payment', 'bank']);
-        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
-        if (!$row) {
-            return null;
-        }
-        $data = json_decode((string) $row['data'], true);
-        return is_array($data) ? $data : null;
-    }
 
     /**
      * Vytvori base64 PNG QR kodu pro platbu ve formatu SPAYD.
