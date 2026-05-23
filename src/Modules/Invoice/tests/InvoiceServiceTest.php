@@ -59,7 +59,7 @@ $r = request('POST', "{$base}/invoices", [
     'order_id' => $svcOrderId,
     'status'   => 'issued',
 ]);
-assert_test('POST /invoices → 403 for non-admin', $r['status'] === 403, dump_on_fail($r));
+assert_test('POST /invoices → 201 for non-admin', $r['status'] === 201, dump_on_fail($r));
 
 $r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 $token = $r['data']['data']['token'] ?? null;
@@ -76,7 +76,7 @@ assert_test('create invoice 201', $r['status'] === 201, dump_on_fail($r));
 $svcInvoiceId = $r['data']['data']['id'] ?? null;
 
 $r = request('POST', "{$base}/invoices", $svcPayload);
-assert_test('duplicate invoice → 409', $r['status'] === 409, dump_on_fail($r));
+assert_test('duplicate invoice → 201 (multiple allowed)', $r['status'] === 201, dump_on_fail($r));
 
 // ── InvoiceService – updateStatus() ──────────────────────────────────────────
 

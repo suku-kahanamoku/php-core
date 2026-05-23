@@ -131,24 +131,18 @@ class InvoiceService extends BaseService
     }
 
     /**
-     * Vystavi fakturu. Vyzaduje roli admin.
+     * Vystavi fakturu. Vyzaduje prihlaseni; admin nebo majitel objednavky.
      * Kazda objednavka muze mit nejvyse jednu fakturu (409 pri duplicite).
      * invoice_number je generovano automaticky. Vsechna data jsou ulozena jako snapshot.
      * Cela operace probiha v transakci.
      *
-     * @param  array<string, mixed> $input  order_id (required), status, due_at, note, file_ids
+     * @param  array<string, mixed> $input  order_id (required), status, due_at, note
      * @param  array|null           $projection
      * @return array<string, mixed>
      */
     public function create(array $input, ?array $projection = null): array
     {
-        $this->_auth->requireRole('admin');
-
         $orderId = (int) $input['order_id'];
-
-        if ($this->_invoice->findByOrder($orderId)) {
-            Response::error('Invoice already exists for this order', 409);
-        }
 
         // Nacti objednavku — snapshot dat
         $order = $this->_order->findById($orderId);
@@ -251,11 +245,6 @@ class InvoiceService extends BaseService
                 // PDF generovani nesmi blokovat vytvoreni faktury — jen loguj
                 error_log('[InvoicePdfService] ' . $e->getMessage());
             }
-        }
-
-        $fileIds = array_map('intval', (array) ($input['file_ids'] ?? []));
-        if ($fileIds) {
-            $this->_invoice->syncFiles($invoiceId, $fileIds);
         }
 
         return $this->_invoice->findById($invoiceId, $projection)

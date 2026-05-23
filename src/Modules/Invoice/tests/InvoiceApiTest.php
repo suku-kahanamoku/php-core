@@ -63,7 +63,9 @@ $token = $r['data']['data']['token'] ?? null;
 
 // ── Non-admin protection ──────────────────────────────────────────────────────
 
-section('Invoices – non-admin protection');
+// ── Non-admin can also create invoice ───────────────────────────────────────
+
+section('Invoices – non-admin can create');
 $tmpToken = $token;
 $r        = request('POST', "{$base}/auth/login", ['email' => $invUserEmail, 'password' => $invPassword], false);
 $token    = $r['data']['data']['token'] ?? null;
@@ -72,7 +74,7 @@ $r = request('POST', "{$base}/invoices", [
     'order_id' => $invOrderId,
     'status'   => 'issued',
 ]);
-assert_test('POST /invoices → 403 for non-admin', $r['status'] === 403, dump_on_fail($r));
+assert_test('POST /invoices → 201 for non-admin', $r['status'] === 201, dump_on_fail($r));
 
 $token = $tmpToken;
 
@@ -97,7 +99,7 @@ if ($invOrderId) {
     $invoiceId = $r['data']['data']['id'] ?? null;
 
     $r = request('POST', "{$base}/invoices", $invPayload);
-    assert_test('POST /invoices 409 duplicate', $r['status'] === 409, dump_on_fail($r));
+    assert_test('duplicate invoice → 201 (multiple allowed)', $r['status'] === 201, dump_on_fail($r));
 }
 
 if ($invoiceId) {
@@ -196,10 +198,17 @@ if ($invFileOrderId && $invFileId) {
     $r = request('POST', "{$base}/invoices", [
         'order_id'  => $invFileOrderId,
         'status'    => 'issued',
-        'file_ids'  => [$invFileId],
     ]);
     assert_test('inv files projection: create invoice with file → 201', $r['status'] === 201, dump_on_fail($r));
     $invFilesInvoiceId = $r['data']['data']['id'] ?? null;
+
+    // Prirad soubor k fakture pres PATCH /invoices/:id/files
+    if ($invFilesInvoiceId) {
+        $r = request('PATCH', "{$base}/invoices/{$invFilesInvoiceId}/files", [
+            'file_ids' => [$invFileId],
+        ]);
+        assert_test('inv files projection: sync file → 200', $r['status'] === 200, dump_on_fail($r));
+    }
 }
 
 section('Invoices – files projection in getById');

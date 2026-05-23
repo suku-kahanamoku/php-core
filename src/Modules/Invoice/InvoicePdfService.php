@@ -61,20 +61,16 @@ class InvoicePdfService
         // HTML → PDF
         $pdfContent = $this->_htmlToPdf($html, $invoiceNumber);
 
-        // Uloz na disk
-        $relPath = $this->_saveToDisk($invoiceId, $invoiceNumber, $pdfContent);
-
-        // Registruj v DB
-        $fileId = $this->_file->insert([
-            'type'        => 'pdf',
-            'mime_type'   => 'application/pdf',
-            'path'        => $relPath,
-            'name'        => $invoiceNumber . '.pdf',
-            'size'        => strlen($pdfContent),
-            'visibility'  => 'private',
-            'entity_type' => 'invoice',
-            'entity_id'   => $invoiceId,
-        ]);
+        // Uloz na disk + registruj v DB
+        $safeName = preg_replace('/[^A-Za-z0-9\-_]/', '_', $invoiceNumber) . '.pdf';
+        $fileId = $this->_file->storeContent(
+            content: $pdfContent,
+            name: $safeName,
+            mimeType: 'application/pdf',
+            type: 'pdf',
+            entityType: 'invoice',
+            entityId: $invoiceId,
+        );
 
         // Propoj s fakturou pres junction tabulku
         $this->_invoice->syncFiles($invoiceId, array_merge(
@@ -201,53 +197,6 @@ class InvoicePdfService
         $dompdf->render();
 
         return (string) $dompdf->output();
-    }
-
-    /**
-     * Ulozi PDF obsah na disk a vrati relativni cestu od FILE_ROOT.
-     *
-     * @param  int    $invoiceId
-     * @param  string $invoiceNumber
-     * @param  string $content
-     * @return string  relativni cesta (napr. files/zajeci/invoice/7/2026-00005.pdf)
-     */
-    private function _saveToDisk(int $invoiceId, string $invoiceNumber, string $content): string
-    {
-        $safeNumber = preg_replace('/[^A-Za-z0-9\-_]/', '_', $invoiceNumber);
-        $dir        = $this->_filesRoot() . '/' . $this->_code . '/invoice/' . $invoiceId;
-
-        if (!is_dir($dir) && !mkdir($dir, 0755, true)) {
-            throw new \RuntimeException("Cannot create directory: {$dir}");
-        }
-
-        $filename = $safeNumber . '.pdf';
-        $absPath  = $dir . '/' . $filename;
-
-        if (file_put_contents($absPath, $content) === false) {
-            throw new \RuntimeException("Cannot write PDF to: {$absPath}");
-        }
-
-        return 'files/' . $this->_code . '/invoice/' . $invoiceId . '/' . $filename;
-    }
-
-    /**
-     * Vrati absolutni cestu k FILE_ROOT.
-     *
-     * @return string
-     */
-    private function _root(): string
-    {
-        return rtrim($_ENV['FILE_ROOT'] ?? dirname(__DIR__, 3), '/');
-    }
-
-    /**
-     * Vrati absolutni cestu k /files adresari.
-     *
-     * @return string
-     */
-    private function _filesRoot(): string
-    {
-        return $this->_root() . '/files';
     }
 
     /**

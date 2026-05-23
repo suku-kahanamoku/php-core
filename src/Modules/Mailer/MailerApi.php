@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Mailer;
 
+use App\Modules\Mailer\MailerService;
 use App\Modules\Router\Request;
 use App\Modules\Router\Response;
 use App\Modules\Router\Router;
@@ -11,12 +12,12 @@ use App\Modules\Router\Router;
 class MailerApi
 {
     private MailerService $_service;
-    private string $_code;
+    private string        $_code;
 
     public function __construct(string $franchiseCode = '')
     {
         $this->_code    = $franchiseCode;
-        $this->_service       = new MailerService($franchiseCode);
+        $this->_service = new MailerService($franchiseCode);
     }
 
     public function registerRoutes(Router $router): void
@@ -59,10 +60,30 @@ class MailerApi
         ];
 
         // Merge in any extra template-specific query params
-        $reservedKeys = array_merge($requiredFields, ['logoPath', 'bcc']);
+        $reservedKeys = array_merge($requiredFields, ['logoPath', 'bcc', 'attachments']);
         foreach ($request->all() as $key => $value) {
             if (!in_array($key, $reservedKeys, true)) {
                 $templateData[$key] = trim((string) $value);
+            }
+        }
+
+        // Resolve file attachments from absolute paths (comma-separated)
+        $attachments = [];
+        $attachmentsParam = trim((string) $request->get('attachments', ''));
+        if ($attachmentsParam !== '') {
+            $fileRoot = rtrim($_ENV['FILE_ROOT'] ?? dirname(__DIR__, 3), '/');
+            foreach (explode(',', $attachmentsParam) as $path) {
+                $path = trim($path);
+                if ($path === '') {
+                    continue;
+                }
+                // Relative paths get FILE_ROOT prefix
+                if ($path[0] !== '/') {
+                    $path = $fileRoot . '/' . $path;
+                }
+                if (file_exists($path)) {
+                    $attachments[] = $path;
+                }
             }
         }
 
@@ -71,6 +92,7 @@ class MailerApi
             subject: $data['subject'],
             template: $data['template'],
             templateData: $templateData,
+            attachments: $attachments,
             bcc: $bcc !== '' ? $bcc : null,
         );
 
