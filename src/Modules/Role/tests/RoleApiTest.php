@@ -27,7 +27,7 @@ section('Roles – public list');
 $r = request('GET', "{$base}/roles?limit=100", [], false);
 assert_test('GET /roles 200', $r['status'] === 200, dump_on_fail($r));
 assert_test('data is array', is_array($r['data']['data']));
-assert_test('contains admin role', count(array_filter($r['data']['data'] ?? [], fn ($x) => $x['name'] === 'admin')) > 0);
+assert_test('contains admin role', count(array_filter($r['data']['data'] ?? [], fn($x) => $x['name'] === 'admin')) > 0);
 
 // ── Public: get by id ────────────────────────────────────────────────────────
 
@@ -64,8 +64,10 @@ $tmpToken = $token;
 
 $roleRegEmail = TEST_PREFIX . 'role_reg_' . time() . '@example.com';
 $r            = request('POST', "{$base}/auth/register", [
-    'first_name' => 'Reg', 'last_name' => 'User',
-    'email'      => $roleRegEmail, 'password' => 'Password123',
+    'first_name' => 'Reg',
+    'last_name' => 'User',
+    'email'      => $roleRegEmail,
+    'password' => 'Password123',
 ], false);
 $roleRegUserId = $r['data']['data']['id'] ?? null;
 $r             = request('POST', "{$base}/auth/login", ['email' => $roleRegEmail, 'password' => 'Password123'], false);
@@ -132,8 +134,10 @@ $tempRoleId = $r['data']['data']['id'] ?? null;
 if ($tempRoleId) {
     $tempUserEmail = TEST_PREFIX . 'role_user_' . time() . '@example.com';
     $r             = request('POST', "{$base}/users", [
-        'first_name' => 'Temp', 'last_name' => 'User',
-        'email'      => $tempUserEmail, 'password' => 'Password123',
+        'first_name' => 'Temp',
+        'last_name' => 'User',
+        'email'      => $tempUserEmail,
+        'password' => 'Password123',
         'role_id'    => $tempRoleId,
     ]);
     assert_test('create user with temp_role 201', $r['status'] === 201, dump_on_fail($r));
@@ -151,9 +155,9 @@ if ($tempRoleId) {
 // ── Role filter on users ──────────────────────────────────────────────────────
 
 section('Roles – user CRUD with role assignment');
-$r = request('GET', "{$base}/users?role=admin");
+$r = request('GET', "{$base}/users?q=" . urlencode(json_encode(['role_id' => $adminRoleId])) . '&projection=role');
 assert_test('GET /users?role=admin 200', $r['status'] === 200, dump_on_fail($r));
-assert_test('all returned users are admin', count(array_filter($r['data']['data'] ?? [], fn ($u) => ($u['role']['name'] ?? $u['role'] ?? null) !== 'admin')) === 0);
+assert_test('all returned users are admin', count(array_filter($r['data']['data'] ?? [], fn($u) => ($u['role']['name'] ?? $u['role'] ?? null) !== 'admin')) === 0);
 
 $token = null;
 

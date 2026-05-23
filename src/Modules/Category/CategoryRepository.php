@@ -275,4 +275,38 @@ class CategoryRepository extends BaseRepository
 
         return $map;
     }
+
+    /**
+     * Vrati true, pokud ma kategorie prirazeny alespon jeden aktivni produkt.
+     *
+     * @param  int $categoryId
+     * @return bool
+     */
+    public function hasProducts(int $categoryId): bool
+    {
+        $row = $this->_db->fetchOne(
+            'SELECT pc.product_id FROM product_category pc
+             INNER JOIN product p ON p.id = pc.product_id
+             WHERE p.franchise_code = ? AND pc.category_id = ? AND p.deleted = 0 LIMIT 1',
+            [$this->_code, $categoryId],
+        );
+
+        return (bool) $row;
+    }
+
+    /**
+     * Vrati produkty prirazene ke kategorii.
+     *
+     * @param  int $categoryId
+     * @return list<array{id: int, sku: string, name: string, price: float}>
+     */
+    public function findProducts(int $categoryId): array
+    {
+        return $this->_db->fetchAll(
+            'SELECT p.id, p.sku, p.name, p.price FROM product p
+             INNER JOIN product_category pc ON pc.product_id = p.id
+             WHERE p.franchise_code = ? AND pc.category_id = ? AND p.deleted = 0',
+            [$this->_code, $categoryId],
+        );
+    }
 }

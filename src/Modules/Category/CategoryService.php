@@ -7,13 +7,11 @@ namespace App\Modules\Category;
 use App\Modules\Auth\Auth;
 use App\Modules\BaseService;
 use App\Modules\Database\Database;
-use App\Modules\Product\ProductRepository;
 use App\Modules\Router\Response;
 
 class CategoryService extends BaseService
 {
     private CategoryRepository $_category;
-    private ProductRepository  $_product;
 
     /**
      * Konstruktor tridy CategoryService.
@@ -25,7 +23,6 @@ class CategoryService extends BaseService
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->_category = new CategoryRepository($db, $franchiseCode);
-        $this->_product  = new ProductRepository($db, $franchiseCode);
         $this->_auth     = $auth;
     }
 
@@ -72,7 +69,7 @@ class CategoryService extends BaseService
         $category = $this->_category->findById($id, $projection);
         $this->_requireEntity($category, 'Category not found');
 
-        $category['products'] = $this->_product->findByCategoryId($id);
+        $category['products'] = $this->_category->findProducts($id);
         return $category;
     }
 
@@ -182,7 +179,7 @@ class CategoryService extends BaseService
 
         $this->_requireEntity($this->_category->findById($id), 'Category not found');
 
-        if ($this->_product->existsForCategory($id)) {
+        if ($this->_category->hasProducts($id)) {
             Response::error('Category is in use by products', 409);
         }
 
@@ -202,7 +199,7 @@ class CategoryService extends BaseService
 
         $this->_requireEntity($this->_category->findById($id), 'Category not found');
 
-        if ($this->_product->existsForCategory($id)) {
+        if ($this->_category->hasProducts($id)) {
             Response::error('Category is in use by products', 409);
         }
 
