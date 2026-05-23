@@ -455,7 +455,7 @@ INSERT INTO `enumeration` (`franchise_code`, `type`, `syscode`, `label`, `value`
 
 -- ── Seed: payment methods (as enumerations) ──────────────
 INSERT INTO `enumeration` (`franchise_code`, `type`, `syscode`, `label`, `value`, `position`, `published`, `data`) VALUES
-  ('zajeci', 'payment', 'bank',       'Bankovní převod', 'bank',       10, 1, JSON_OBJECT('price', 0,    'icon', 'mdi:bank-outline',            'disabled', false)),
+  ('zajeci', 'payment', 'bank',       'Bankovní převod', 'bank',       10, 1, JSON_OBJECT('price', 0,    'icon', 'mdi:bank-outline',            'disabled', false, 'account', '2403322687/2010', 'iban', 'CZ0220100000002403322687', 'swift', 'FIOBCZPPXXX')),
   ('zajeci', 'payment', 'cash',       'Hotovost',        'cash',       20, 1, JSON_OBJECT('price', 0,    'icon', 'mdi:cash-100',                 'disabled', false)),
   ('zajeci', 'payment', 'card',       'Platební karta',  'card',       30, 1, JSON_OBJECT('price', 0,    'icon', 'mdi:credit-card-outline',      'disabled', true)),
   ('zajeci', 'payment', 'paypal',     'PayPal',          'paypal',     40, 1, JSON_OBJECT('price', 0,    'icon', 'logos:paypal',                 'disabled', true)),
