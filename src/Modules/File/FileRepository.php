@@ -123,10 +123,9 @@ class FileRepository extends BaseRepository
 
     /**
      * Nacte soubory entity pres junction tabulku.
-     * Vraci pole objektu [{id, path, name, mime_type}].
      *
-     * @param  string $junctionTable   Nazev junction tabulky (napr. 'product_file')
-     * @param  string $entityFkColumn  FK sloupec entity v junction tabulce (napr. 'product_id')
+     * @param  string $junctionTable
+     * @param  string $entityFkColumn
      * @param  int    $entityId
      * @return list<array{id: int, path: string, name: string, mime_type: string}>
      */
@@ -183,54 +182,5 @@ class FileRepository extends BaseRepository
         }
 
         return $map;
-    }
-
-    /**
-     * Ulozi raw obsah souboru na disk, zaregistruje zaznam v DB a vrati file ID.
-     *
-     * Pouziti pro programaticky generovane soubory (napr. PDF faktury),
-     * kde nevznika HTTP upload — obsah je rovnou k dispozici jako string.
-     *
-     * @param  string      $content      Raw obsah souboru
-     * @param  string      $name         Zobrazovany nazev (napr. '2026-00001.pdf')
-     * @param  string      $mimeType     MIME type (napr. 'application/pdf')
-     * @param  string      $type         Pripona / typ (napr. 'pdf')
-     * @param  string      $entityType   Nazev entity (napr. 'invoice')
-     * @param  int         $entityId     ID entity
-     * @param  string      $visibility   'public' | 'private'
-     * @return int  nove file.id
-     */
-    public function storeContent(
-        string $content,
-        string $name,
-        string $mimeType,
-        string $type,
-        string $entityType,
-        int $entityId,
-        string $visibility = 'private',
-    ): int {
-        $root    = rtrim($_ENV['FILE_ROOT'] ?? dirname(__DIR__, 3), '/');
-        $dir     = $root . '/files/' . $this->_code . '/' . $entityType . '/' . $entityId;
-        $relPath = 'files/' . $this->_code . '/' . $entityType . '/' . $entityId . '/' . $name;
-        $absPath = $root . '/' . $relPath;
-
-        if (!is_dir($dir) && !mkdir($dir, 0755, true)) {
-            throw new \RuntimeException("Cannot create directory: {$dir}");
-        }
-
-        if (file_put_contents($absPath, $content) === false) {
-            throw new \RuntimeException("Cannot write file: {$absPath}");
-        }
-
-        return $this->insert([
-            'type'        => $type,
-            'mime_type'   => $mimeType,
-            'path'        => $relPath,
-            'name'        => $name,
-            'size'        => strlen($content),
-            'visibility'  => $visibility,
-            'entity_type' => $entityType,
-            'entity_id'   => $entityId,
-        ]);
     }
 }

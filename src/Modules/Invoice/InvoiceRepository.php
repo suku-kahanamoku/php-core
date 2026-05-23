@@ -327,7 +327,21 @@ class InvoiceRepository extends BaseRepository
     }
 
     /**
-     * Zmeni stav faktury (a nastavi paid_at pro status 'paid') a vrati aktualizovany zaznam.
+     * Vrati aktualni ID souboru linkovanych k fakture.
+     *
+     * @param  int $invoiceId
+     * @return list<int>
+     */
+    public function getFileIds(int $invoiceId): array
+    {
+        $rows = $this->_db->fetchAll(
+            'SELECT file_id FROM invoice_file WHERE invoice_id = ?',
+            [$invoiceId],
+        );
+        return array_map(static fn($r) => (int) $r['file_id'], $rows);
+    }
+
+    /** (a nastavi paid_at pro status 'paid') a vrati aktualizovany zaznam.
      *
      * @param  int        $id
      * @param  string     $status

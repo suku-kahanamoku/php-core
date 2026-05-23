@@ -9,19 +9,25 @@ use App\Modules\Auth\Auth;
 use App\Modules\BaseService;
 use App\Modules\Database\Database;
 use App\Modules\File\FileRepository;
+use App\Modules\File\FileService;
 use App\Modules\Order\OrderRepository;
 use App\Modules\Router\Response;
 use App\Modules\User\UserRepository;
 use App\Utils\Projection;
+use Endroid\QrCode\Encoding\Encoding;
+use Endroid\QrCode\ErrorCorrectionLevel;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\PngWriter;
 
 class InvoiceService extends BaseService
 {
     private InvoiceRepository $_invoice;
-    private FileRepository    $_file;
     private OrderRepository   $_order;
     private AddressRepository $_address;
     private UserRepository    $_user;
-    private InvoicePdfService $_pdf;
+    private FileRepository    $_files;
+    private FileService       $_fileService;
+    private string            $_code;
 
     /**
      * Konstruktor tridy InvoiceService.
@@ -32,13 +38,14 @@ class InvoiceService extends BaseService
      */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->_invoice = new InvoiceRepository($db, $franchiseCode);
-        $this->_file    = new FileRepository($db, $franchiseCode);
-        $this->_order   = new OrderRepository($db, $franchiseCode);
-        $this->_address = new AddressRepository($db, $franchiseCode);
-        $this->_user    = new UserRepository($db, $franchiseCode);
-        $this->_pdf     = new InvoicePdfService($db, $franchiseCode);
-        $this->_auth    = $auth;
+        $this->_invoice     = new InvoiceRepository($db, $franchiseCode);
+        $this->_order       = new OrderRepository($db, $franchiseCode);
+        $this->_address     = new AddressRepository($db, $franchiseCode);
+        $this->_user        = new UserRepository($db, $franchiseCode);
+        $this->_files       = new FileRepository($db, $franchiseCode);
+        $this->_fileService = new FileService($db, $franchiseCode, $auth);
+        $this->_code        = $franchiseCode;
+        $this->_auth        = $auth;
     }
 
     /**
@@ -81,7 +88,7 @@ class InvoiceService extends BaseService
         $proj = new Projection($projection);
         if ($proj->needsJoin('files')) {
             $ids     = array_column($result['data'], 'id');
-            $fileMap = $this->_file->findByJunctionList(
+            $fileMap = $this->_files->findByJunctionList(
                 'invoice_file',
                 'invoice_id',
                 $ids
@@ -120,7 +127,7 @@ class InvoiceService extends BaseService
 
         $proj = new Projection($projection);
         if ($proj->needsJoin('files')) {
-            $invoice['files'] = $this->_file->findByJunctionItem(
+            $invoice['files'] = $this->_files->findByJunctionItem(
                 'invoice_file',
                 'invoice_id',
                 $id
@@ -243,10 +250,10 @@ class InvoiceService extends BaseService
         $fullInvoice = $this->_invoice->findById($invoiceId);
         if ($fullInvoice) {
             try {
-                $this->_pdf->generate($fullInvoice);
+                $this->_generatePdf($fullInvoice);
             } catch (\Throwable $e) {
                 // PDF generovani nesmi blokovat vytvoreni faktury — jen loguj
-                error_log('[InvoicePdfService] ' . $e->getMessage());
+                error_log('[InvoiceService::_generatePdf] ' . $e->getMessage());
             }
         }
 
@@ -260,6 +267,103 @@ class InvoiceService extends BaseService
      * @param  array<string, mixed> $address
      * @return array<string, mixed>
      */
+    /**
+     * Vygeneruje PDF faktury, ulozi ho na disk, zaregistruje v DB a linkne ke fakture.
+     *
+     * @param  array<string, mixed> $invoice  Kompletni faktura z findById()
+     * @return int  file.id
+     */
+    private function _generatePdf(array $invoice): int
+    {
+        $invoiceId     = (int) $invoice['id'];
+        $invoiceNumber = (string) ($invoice['invoice_number'] ?? 'invoice');
+        $bankEnum      = is_array($invoice['payment'] ?? null) ? $invoice['payment'] : null;
+
+        $qrBase64 = $this->_generateQrBase64($invoice, $bankEnum);
+        $html     = $this->_renderInvoiceTemplate($invoice, $bankEnum, $qrBase64);
+
+        $pdfContent = $this->_fileService->htmlToPdf($html, $invoiceNumber);
+
+        $safeName = preg_replace('/[^A-Za-z0-9\-_]/', '_', $invoiceNumber) . '.pdf';
+        $fileId   = $this->_fileService->storeContent(
+            content: $pdfContent,
+            name: $safeName,
+            mimeType: 'application/pdf',
+            type: 'pdf',
+            entityType: 'invoice',
+            entityId: $invoiceId,
+        );
+
+        $this->_invoice->syncFiles($invoiceId, array_merge(
+            $this->_invoice->getFileIds($invoiceId),
+            [$fileId],
+        ));
+
+        return $fileId;
+    }
+
+    /**
+     * Vytvori base64 PNG QR kodu pro platbu ve formatu SPAYD.
+     *
+     * @param  array<string, mixed> $invoice
+     * @param  array<string, mixed>|null $bank
+     * @return string|null
+     */
+    private function _generateQrBase64(array $invoice, ?array $bank): ?string
+    {
+        if ($bank === null || empty($bank['iban'])) {
+            return null;
+        }
+
+        $amount   = number_format((float) ($invoice['total_price_all_with_vat'] ?? 0), 2, '.', '');
+        $currency = strtoupper((string) ($invoice['currency'] ?? 'CZK'));
+        $msg      = 'Faktura ' . ($invoice['invoice_number'] ?? '');
+        $vs       = preg_replace('/\D/', '', (string) ($invoice['invoice_number'] ?? ''));
+        $vs       = substr($vs, -10);
+
+        $spayd = implode('*', array_filter([
+            'SPD',
+            '1.0',
+            'ACC:' . $bank['iban'],
+            'AM:'  . $amount,
+            'CC:'  . $currency,
+            'MSG:' . substr($msg, 0, 60),
+            $vs !== '' ? 'X-VS:' . $vs : null,
+        ]));
+
+        try {
+            $qr     = new QrCode($spayd, new Encoding('UTF-8'), ErrorCorrectionLevel::Low, 200, 4);
+            $result = (new PngWriter())->write($qr);
+            return 'data:image/png;base64,' . base64_encode($result->getString());
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * Vyrenderuje PHP sablonu emails/{franchise}/invoice.php do HTML stringu.
+     *
+     * @param  array<string, mixed> $invoice
+     * @param  array<string, mixed>|null $bank
+     * @param  string|null $qrBase64
+     * @return string
+     */
+    private function _renderInvoiceTemplate(array $invoice, ?array $bank, ?string $qrBase64): string
+    {
+        $templatePath = dirname(__DIR__, 3) . '/emails/' . $this->_code . '/invoice.php';
+
+        if (!file_exists($templatePath)) {
+            throw new \RuntimeException("Invoice template not found: {$templatePath}");
+        }
+
+        ob_start();
+        $data        = $invoice;
+        $bankDetails = $bank;
+        $qrCode      = $qrBase64;
+        include $templatePath;
+        return (string) ob_get_clean();
+    }
+
     private function _addressSnapshot(array $address): array
     {
         return array_filter([

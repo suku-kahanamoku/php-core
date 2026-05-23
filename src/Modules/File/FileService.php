@@ -8,6 +8,8 @@ use App\Modules\Auth\Auth;
 use App\Modules\BaseService;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 
 /**
  * FileService – business logika pro spravu souboru.
@@ -239,6 +241,78 @@ class FileService extends BaseService
         $this->_requireEntity($file, 'File not found');
 
         return $this->_files->softDelete($id);
+    }
+
+    /**
+     * Ulozi obsah (string) primu na disk do files/ a vytvori zaznam v DB.
+     * Nevyzaduje autentizaci — pouziva se pro interni server-side generovani souboru (napr. PDF faktur).
+     *
+     * @param  string $content     Raw obsah souboru
+     * @param  string $name        Nazev souboru
+     * @param  string $mimeType    MIME typ (napr. application/pdf)
+     * @param  string $type        Pripona bez tecky (napr. pdf)
+     * @param  string $entityType  Typ entity (napr. invoice)
+     * @param  int    $entityId    ID entity
+     * @param  string $visibility  'public' | 'private'
+     * @return int  file.id
+     */
+    public function storeContent(
+        string $content,
+        string $name,
+        string $mimeType,
+        string $type,
+        string $entityType,
+        int $entityId,
+        string $visibility = 'private',
+    ): int {
+        $root    = rtrim($this->_root(), '/');
+        $dir     = $root . '/files/' . $this->_files->getCode() . '/' . $entityType . '/' . $entityId;
+        $relPath = 'files/' . $this->_files->getCode() . '/' . $entityType . '/' . $entityId . '/' . $name;
+        $absPath = $root . '/' . $relPath;
+
+        if (!is_dir($dir) && !mkdir($dir, 0755, true)) {
+            throw new \RuntimeException("Cannot create directory: {$dir}");
+        }
+
+        if (file_put_contents($absPath, $content) === false) {
+            throw new \RuntimeException("Cannot write file: {$absPath}");
+        }
+
+        return $this->_files->insert([
+            'type'        => $type,
+            'mime_type'   => $mimeType,
+            'path'        => $relPath,
+            'name'        => $name,
+            'size'        => strlen($content),
+            'visibility'  => in_array($visibility, ['public', 'private']) ? $visibility : 'private',
+            'entity_type' => $entityType,
+            'entity_id'   => $entityId,
+        ]);
+    }
+
+    /**
+     * Prevede HTML retezec na PDF pomoci Dompdf a vrati raw PDF obsah.
+     *
+     * @param  string $html
+     * @param  string $title
+     * @return string  raw PDF bytes
+     */
+    public function htmlToPdf(string $html, string $title = ''): string
+    {
+        $options = new Options();
+        $options->set('defaultFont', 'DejaVu Sans');
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('isRemoteEnabled', false);
+        $options->set('isFontSubsettingEnabled', true);
+        $options->set('defaultMediaType', 'print');
+        $options->set('dpi', 96);
+
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html, 'UTF-8');
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        return (string) $dompdf->output();
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────
