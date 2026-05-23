@@ -18,7 +18,7 @@ $issuedAt        = isset($data['issued_at']) ? date('d.m.Y', strtotime($data['is
 $dueAt           = isset($data['due_at']) ? date('d.m.Y', strtotime($data['due_at'])) : '';
 $paidAt          = isset($data['paid_at']) && $data['paid_at'] ? date('d.m.Y', strtotime($data['paid_at'])) : null;
 $currency        = $data['currency'] ?? 'CZK';
-$paymentType     = $data['payment_type'] ?? '';
+$paymentType     = $bankDetails['type'] ?? '';
 $isBankTransfer  = $paymentType === 'bank';
 
 // Ceny

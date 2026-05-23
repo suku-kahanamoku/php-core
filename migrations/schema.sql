@@ -486,6 +486,6 @@ INSERT INTO `enumeration` (`franchise_code`, `type`, `syscode`, `label`, `value`
     'street',  'Školní 156',
     'city',    'Zaječí',
     'zip',     '69105',
-    'ic',      'IČ 19737491',
-    'dic',     'DIČ CZ7951084053'
+    'ic',     '19737491',
+    'dic',    'CZ7951084053'
   ));

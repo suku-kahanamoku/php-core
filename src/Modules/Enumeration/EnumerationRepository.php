@@ -153,12 +153,18 @@ class EnumerationRepository extends BaseRepository
      */
     public function findBySyscode(string $type, string $syscode): ?array
     {
-        return $this->_db->fetchOne(
+        $row = $this->_db->fetchOne(
             'SELECT * FROM enumeration
              WHERE franchise_code = ? AND type = ? AND syscode = ? AND deleted = 0
              LIMIT 1',
             [$this->_code, $type, $syscode],
         ) ?: null;
+
+        if ($row !== null && isset($row['data'])) {
+            $row['data'] = $row['data'] ? json_decode($row['data'], true) : null;
+        }
+
+        return $row;
     }
 
     /**
