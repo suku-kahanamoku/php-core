@@ -62,17 +62,13 @@ class InvoiceApi
     /**
      * POST /invoices — Vystavi fakturu. Vyzaduje roli admin.
      *
-     * @param Request $request  body: order_id (required), status, due_at, note, file_ids
+     * @param Request $request  body: order_id (required)
      * @return void
      */
     public function create(Request $request): void
     {
         $input = [
             'order_id' => (int) $request->get('order_id', 0),
-            'status'   => trim((string) $request->get('status', '')),
-            'due_at'   => $request->get('due_at'),
-            'note'     => $request->get('note', ''),
-            'file_ids' => $request->get('file_ids'),
         ];
 
         VALIDATOR($input)

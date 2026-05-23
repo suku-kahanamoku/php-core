@@ -21,6 +21,7 @@ class InvoiceService extends BaseService
     private OrderRepository   $_order;
     private AddressRepository $_address;
     private UserRepository    $_user;
+    private InvoicePdfService $_pdf;
 
     /**
      * Konstruktor tridy InvoiceService.
@@ -36,6 +37,7 @@ class InvoiceService extends BaseService
         $this->_order   = new OrderRepository($db, $franchiseCode);
         $this->_address = new AddressRepository($db, $franchiseCode);
         $this->_user    = new UserRepository($db, $franchiseCode);
+        $this->_pdf     = new InvoicePdfService($db, $franchiseCode);
         $this->_auth    = $auth;
     }
 
@@ -239,6 +241,17 @@ class InvoiceService extends BaseService
         }
 
         $invoiceId = $invoiceId ?? 0;
+
+        // Generuj PDF faktury a uloz jako soubor
+        $fullInvoice = $this->_invoice->findById($invoiceId);
+        if ($fullInvoice) {
+            try {
+                $this->_pdf->generate($fullInvoice);
+            } catch (\Throwable $e) {
+                // PDF generovani nesmi blokovat vytvoreni faktury — jen loguj
+                error_log('[InvoicePdfService] ' . $e->getMessage());
+            }
+        }
 
         $fileIds = array_map('intval', (array) ($input['file_ids'] ?? []));
         if ($fileIds) {
