@@ -26,17 +26,26 @@ class InvoiceRepository extends BaseRepository
         $this->_alias = 'i';
         $this->_own   = [
             'invoice_number',
+            'order_id',
+            'order_number',
             'status',
-            'total_amount',
             'currency',
+            'payment_type',
+            'shipping_type',
+            'shipping_price',
+            'total_price',
+            'total_price_with_vat',
+            'total_price_all',
+            'total_price_all_with_vat',
+            'user',
+            'billing_address',
+            'shipping_address',
+            'note',
             'issued_at',
             'due_at',
             'paid_at',
-            'order_id',
-            'user_id',
-            'billing_address_id',
         ];
-        $this->_rel = ['user', 'files'];
+        $this->_rel = ['files'];
     }
 
     /**
@@ -116,20 +125,11 @@ class InvoiceRepository extends BaseRepository
         $sys        = $this->_sys;
         $baseSelect = $this->_buildSelect($proj);
 
-        // Auto-JOIN user kdyz filtr obsahuje user.* sloupce nebo projekce to vyzaduje.
-        $decodedFilter  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
-        $needsUserFilter = !empty(array_filter(
-            array_keys($decodedFilter),
-            static fn($k) => str_starts_with((string) $k, 'user.')
-        ));
-
+        // user je JSON sloupec — neni potreba JOIN
         $joinSql = '';
         $relSel  = '';
-        if ($proj->needsJoin('user') || $needsUserFilter) {
-            $joinSql = 'LEFT JOIN user u ON u.id = i.user_id AND u.deleted = 0';
-            $relSel  = ', u.first_name, u.last_name, u.email';
-        }
 
+        // Auto-JOIN user byl odstranen — user.* filtry matchuji JSON sloupec
         $select = "{$baseSelect}{$relSel}";
 
         $total = (int) $this->_db->fetchOne(
@@ -160,20 +160,16 @@ class InvoiceRepository extends BaseRepository
         }
 
         foreach ($items as &$item) {
+            // Dekoduj JSON sloupce
+            foreach (['user', 'billing_address', 'shipping_address'] as $col) {
+                if (isset($item[$col]) && is_string($item[$col])) {
+                    $item[$col] = json_decode($item[$col], true);
+                }
+            }
             if ($needsFileIds) {
                 $item['file_ids'] = $fileIdsMap[(int) $item['id']] ?? [];
             }
-            $item = $proj->apply(
-                $item,
-                $sys,
-                [
-                    'user'  => [
-                        'fk' => 'user_id',
-                        'nest' => ['first_name', 'last_name', 'email']
-                    ],
-                    'files' => ['file_ids'],
-                ]
-            );
+            $item = $proj->apply($item, $sys, ['files' => ['file_ids']]);
         }
         unset($item);
 
@@ -222,18 +218,10 @@ class InvoiceRepository extends BaseRepository
 
         $sys        = $this->_sys;
         $baseSelect = $this->_buildSelect($proj);
-
-        $joinSql = '';
-        $relSel  = '';
-        if ($proj->needsJoin('user')) {
-            $joinSql = 'LEFT JOIN user u ON u.id = i.user_id AND u.deleted = 0';
-            $relSel  = ', u.first_name, u.last_name, u.email';
-        }
-
-        $select = "{$baseSelect}{$relSel}";
+        $select     = $baseSelect;
 
         $invoice = $this->_db->fetchOne(
-            "SELECT {$select} FROM invoice i {$joinSql}
+            "SELECT {$select} FROM invoice i
              WHERE i.id = ? AND i.franchise_code = ? AND i.deleted = 0",
             [$id, $this->_code],
         );
@@ -242,11 +230,19 @@ class InvoiceRepository extends BaseRepository
             return null;
         }
 
+        // Dekoduj JSON sloupce
+        foreach (['user', 'billing_address', 'shipping_address'] as $col) {
+            if (isset($invoice[$col]) && is_string($invoice[$col])) {
+                $invoice[$col] = json_decode($invoice[$col], true);
+            }
+        }
+
         $invoice['items'] = $this->_db->fetchAll(
-            'SELECT ii.*, p.name AS product_name, p.sku
+            'SELECT ii.id, ii.product_name, ii.sku, ii.quantity,
+                    ii.price, ii.price_with_vat, ii.vat_rate,
+                    ii.total_price, ii.total_price_with_vat
              FROM invoice_item ii
-             LEFT JOIN product p ON p.id = ii.product_id
-             WHERE ii.invoice_id = ?',
+             WHERE ii.invoice_id = ? AND ii.deleted = 0',
             [$id],
         );
 
@@ -255,23 +251,10 @@ class InvoiceRepository extends BaseRepository
                 'SELECT file_id FROM invoice_file WHERE invoice_id = ?',
                 [$id]
             );
-            $invoice['file_ids'] = array_map(
-                'intval',
-                array_column($fileRows, 'file_id')
-            );
+            $invoice['file_ids'] = array_map('intval', array_column($fileRows, 'file_id'));
         }
 
-        return $proj->apply(
-            $invoice,
-            $sys,
-            [
-                'user'  => [
-                    'fk' => 'user_id',
-                    'nest' => ['first_name', 'last_name', 'email']
-                ],
-                'files' => ['file_ids'],
-            ]
-        );
+        return $proj->apply($invoice, $sys, ['files' => ['file_ids']]);
     }
 
     /**

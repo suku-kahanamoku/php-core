@@ -62,31 +62,21 @@ class InvoiceApi
     /**
      * POST /invoices — Vystavi fakturu. Vyzaduje roli admin.
      *
-     * @param Request $request  body: order_id, user_id, status, total_amount, billing_address_id (required),
-     *                                currency, due_at, note, file_ids, items
+     * @param Request $request  body: order_id (required), status, due_at, note, file_ids
      * @return void
      */
     public function create(Request $request): void
     {
         $input = [
-            'order_id'           => (int) $request->get('order_id', 0),
-            'user_id'            => (int) $request->get('user_id', 0),
-            'status'             => trim((string) $request->get('status', '')),
-            'total_amount'       => $request->get('total_amount'),
-            'billing_address_id' => (int) $request->get('billing_address_id', 0),
-            'currency'           => $request->get('currency'),
-            'due_at'             => $request->get('due_at'),
-            'note'               => $request->get('note', ''),
-            'file_ids'           => $request->get('file_ids'),
-            'items'              => $request->get('items'),
+            'order_id' => (int) $request->get('order_id', 0),
+            'status'   => trim((string) $request->get('status', '')),
+            'due_at'   => $request->get('due_at'),
+            'note'     => $request->get('note', ''),
+            'file_ids' => $request->get('file_ids'),
         ];
 
         VALIDATOR($input)
             ->numeric('order_id', 1)
-            ->numeric('user_id', 1)
-            ->required('status')
-            ->numeric('total_amount', 0)
-            ->numeric('billing_address_id', 1)
             ->validate();
 
         $invoice = $this->_service->create($input, $request->projection());

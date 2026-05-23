@@ -65,11 +65,8 @@ $modelAddrId = $r['data']['data']['id'] ?? null;
 
 section('Invoice model – create()');
 $invPayload = [
-    'order_id'           => $modelOrderId,
-    'user_id'            => $modelUserId,
-    'status'             => 'issued',
-    'total_amount'       => 199.0,
-    'billing_address_id' => $modelAddrId,
+    'order_id' => $modelOrderId,
+    'status'   => 'issued',
 ];
 $r = request('POST', "{$base}/invoices", $invPayload);
 assert_test('create invoice 201', $r['status'] === 201, dump_on_fail($r));

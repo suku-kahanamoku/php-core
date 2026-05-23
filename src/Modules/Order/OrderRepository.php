@@ -28,6 +28,9 @@ class OrderRepository extends BaseRepository
             'order_number',
             'status',
             'total_price',
+            'total_price_with_vat',
+            'total_price_all',
+            'total_price_all_with_vat',
             'currency',
             'payment_type',
             'shipping_type',
@@ -209,10 +212,11 @@ class OrderRepository extends BaseRepository
         }
 
         $order['order_items'] = $this->_db->fetchAll(
-            'SELECT oi.*, p.name AS product_name, p.sku
+            'SELECT oi.id, oi.product_id, oi.product_name, oi.sku,
+                    oi.quantity, oi.price, oi.price_with_vat, oi.vat_rate,
+                    oi.total_price, oi.total_price_with_vat
              FROM order_item oi
-             LEFT JOIN product p ON p.id = oi.product_id
-             WHERE oi.order_id = ?',
+             WHERE oi.order_id = ? AND oi.deleted = 0',
             [$id],
         );
 

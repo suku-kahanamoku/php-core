@@ -61,12 +61,6 @@ $invOrderId = $r['data']['data']['id'] ?? null;
 $r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
 $token = $r['data']['data']['token'] ?? null;
 
-$r        = request('POST', "{$base}/address", [
-    'type' => 'billing', 'name' => 'Inv Api Addr',
-    'street' => 'Api St 1', 'city' => 'Prague', 'zip' => '10000',
-]);
-$invAddrId = $r['data']['data']['id'] ?? null;
-
 // ── Non-admin protection ──────────────────────────────────────────────────────
 
 section('Invoices – non-admin protection');
@@ -75,11 +69,8 @@ $r        = request('POST', "{$base}/auth/login", ['email' => $invUserEmail, 'pa
 $token    = $r['data']['data']['token'] ?? null;
 
 $r = request('POST', "{$base}/invoices", [
-    'order_id'           => $invOrderId,
-    'user_id'            => $invUserId,
-    'status'             => 'issued',
-    'total_amount'       => 199.0,
-    'billing_address_id' => $invAddrId ?? 1,
+    'order_id' => $invOrderId,
+    'status'   => 'issued',
 ]);
 assert_test('POST /invoices → 403 for non-admin', $r['status'] === 403, dump_on_fail($r));
 
@@ -98,11 +89,8 @@ section('Invoices – CRUD');
 $invoiceId = null;
 if ($invOrderId) {
     $invPayload = [
-        'order_id'           => $invOrderId,
-        'user_id'            => $invUserId,
-        'status'             => 'issued',
-        'total_amount'       => 199.0,
-        'billing_address_id' => $invAddrId,
+        'order_id' => $invOrderId,
+        'status'   => 'issued',
     ];
     $r = request('POST', "{$base}/invoices", $invPayload);
     assert_test('POST /invoices 201', $r['status'] === 201, dump_on_fail($r));
@@ -205,19 +193,10 @@ if ($invFileProdId && $invFileUserId) {
 }
 
 if ($invFileOrderId && $invFileId) {
-    $r = request('POST', "{$base}/address", [
-        'type' => 'billing', 'name' => 'Inv File Addr',
-        'street' => 'File St 1', 'city' => 'Prague', 'zip' => '10000',
-    ]);
-    $invFileAddrId = $r['data']['data']['id'] ?? null;
-
     $r = request('POST', "{$base}/invoices", [
-        'order_id'           => $invFileOrderId,
-        'user_id'            => $invFileUserId,
-        'status'             => 'issued',
-        'total_amount'       => 5.0,
-        'billing_address_id' => $invFileAddrId,
-        'file_ids'           => [$invFileId],
+        'order_id'  => $invFileOrderId,
+        'status'    => 'issued',
+        'file_ids'  => [$invFileId],
     ]);
     assert_test('inv files projection: create invoice with file → 201', $r['status'] === 201, dump_on_fail($r));
     $invFilesInvoiceId = $r['data']['data']['id'] ?? null;
@@ -239,7 +218,7 @@ if ($invFilesInvoiceId && $invFileId) {
 
 section('Invoices – no files when not in projection');
 if ($invFilesInvoiceId) {
-    $r = request('GET', "{$base}/invoices/{$invFilesInvoiceId}?projection=id,status,total_amount");
+    $r = request('GET', "{$base}/invoices/{$invFilesInvoiceId}?projection=id,status,total_price");
     assert_test('GET /invoices/:id without files projection → 200', $r['status'] === 200, dump_on_fail($r));
     $data = $r['data']['data'] ?? [];
     assert_test('no files field when not projected', !isset($data['files']), dump_on_fail($r));
@@ -261,7 +240,7 @@ if ($invFilesInvoiceId && $invFileId) {
 section('Invoices – no files in list when not in projection');
 if ($invFilesInvoiceId) {
     $f = urlencode(json_encode(['id' => ['value' => $invFilesInvoiceId]]));
-    $r = request('GET', "{$base}/invoices?q={$f}&projection=id,status,total_amount");
+    $r = request('GET', "{$base}/invoices?q={$f}&projection=id,status,total_price");
     assert_test('GET /invoices list without files projection → 200', $r['status'] === 200, dump_on_fail($r));
     $item = $r['data']['data'][0] ?? [];
     assert_test('list: no files field when not projected', !isset($item['files']), dump_on_fail($r));
@@ -273,9 +252,6 @@ if ($invFilesInvoiceId) {
 }
 if ($invFileOrderId) {
     request('DELETE', "{$base}/orders/{$invFileOrderId}?force=true");
-}
-if ($invFileAddrId ?? null) {
-    request('DELETE', "{$base}/address/{$invFileAddrId}");
 }
 if ($invFileProdId) {
     request('DELETE', "{$base}/products/{$invFileProdId}?force=true");
@@ -298,9 +274,6 @@ if ($invProductId) {
 }
 if ($invCatId) {
     request('DELETE', "{$base}/categories/{$invCatId}?force=true");
-}
-if ($invAddrId) {
-    request('DELETE', "{$base}/address/{$invAddrId}");
 }
 if ($invUserId) {
     request('DELETE', "{$base}/users/{$invUserId}?force=true");

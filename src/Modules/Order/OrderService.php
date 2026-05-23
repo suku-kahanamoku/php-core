@@ -143,8 +143,9 @@ class OrderService extends BaseService
         $pdo->beginTransaction();
 
         try {
-            $totalPrice    = 0;
-            $preparedItems = [];
+            $totalPrice        = 0.0;
+            $totalPriceWithVat = 0.0;
+            $preparedItems     = [];
 
             foreach ($carts as $cart) {
                 $productId = (int) ($cart['product_id'] ?? 0);
@@ -169,30 +170,47 @@ class OrderService extends BaseService
                     );
                 }
 
-                $lineTotal = round($product['price'] * $qty, 2);
-                $totalPrice += $lineTotal;
+                $price        = (float) $product['price'];
+                $priceWithVat = (float) $product['price_with_vat'];
+                $vatRate      = (float) $product['vat_rate'];
+
+                $lineTotal        = round($price * $qty, 2);
+                $lineTotalWithVat = round($priceWithVat * $qty, 2);
+
+                $totalPrice        += $lineTotal;
+                $totalPriceWithVat += $lineTotalWithVat;
+
                 $preparedItems[] = [
-                    'product_id'  => $productId,
-                    'quantity'    => $qty,
-                    'price'       => $product['price'],
-                    'total_price' => $lineTotal,
+                    'product_id'           => $productId,
+                    'product_name'         => $product['name'],
+                    'sku'                  => $product['sku'],
+                    'quantity'             => $qty,
+                    'price'                => $price,
+                    'price_with_vat'       => $priceWithVat,
+                    'vat_rate'             => $vatRate,
+                    'total_price'          => $lineTotal,
+                    'total_price_with_vat' => $lineTotalWithVat,
                 ];
             }
 
-            $totalPrice += $shippingPrice;
+            $totalPriceAll        = round($totalPrice + $shippingPrice, 2);
+            $totalPriceAllWithVat = round($totalPriceWithVat + $shippingPrice, 2);
 
             $orderRow = $this->_order->create([
-                'order_number'        => $this->_order->generateNumber(),
-                'user_id'             => $userId,
-                'status'              => 'pending',
-                'total_price'         => $totalPrice,
-                'currency'            => $currency,
-                'payment_type'        => $paymentType,
-                'shipping_type'       => $shippingType !== '' ? $shippingType : null,
-                'shipping_price'      => $shippingPrice,
-                'shipping_address_id' => $shippingAddressId,
-                'billing_address_id'  => $billingAddressId,
-                'note'                => $input['note'] ?? null,
+                'order_number'             => $this->_order->generateNumber(),
+                'user_id'                  => $userId,
+                'status'                   => 'pending',
+                'total_price'              => round($totalPrice, 2),
+                'total_price_with_vat'     => round($totalPriceWithVat, 2),
+                'total_price_all'          => $totalPriceAll,
+                'total_price_all_with_vat' => $totalPriceAllWithVat,
+                'currency'                 => $currency,
+                'payment_type'             => $paymentType,
+                'shipping_type'            => $shippingType !== '' ? $shippingType : null,
+                'shipping_price'           => $shippingPrice,
+                'shipping_address_id'      => $shippingAddressId,
+                'billing_address_id'       => $billingAddressId,
+                'note'                     => $input['note'] ?? null,
             ]);
             $orderId = (int) $orderRow['id'];
 

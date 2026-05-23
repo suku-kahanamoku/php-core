@@ -604,7 +604,7 @@ if ($token !== null) {
         assert_test('invoices eq filter: skipped (no data)', true);
     }
 
-    $r = request('GET', $base . '/invoices?limit=100&q=' . urlencode('{"total_amount":{"value":0,"operator":"gte"}}'));
+    $r = request('GET', $base . '/invoices?limit=100&q=' . urlencode('{"total_price":{"value":0,"operator":"gte"}}'));
     assert_test('invoices gte total_amount filter: 200', $r['status'] === 200);
 
     // ── Multi-column filter integration ───────────────────────────────────────

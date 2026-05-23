@@ -4,17 +4,23 @@ declare(strict_types=1);
 
 namespace App\Modules\Invoice;
 
+use App\Modules\Address\AddressRepository;
 use App\Modules\Auth\Auth;
 use App\Modules\BaseService;
 use App\Modules\Database\Database;
 use App\Modules\File\FileRepository;
+use App\Modules\Order\OrderRepository;
 use App\Modules\Router\Response;
+use App\Modules\User\UserRepository;
 use App\Utils\Projection;
 
 class InvoiceService extends BaseService
 {
     private InvoiceRepository $_invoice;
-    private FileRepository $_file;
+    private FileRepository    $_file;
+    private OrderRepository   $_order;
+    private AddressRepository $_address;
+    private UserRepository    $_user;
 
     /**
      * Konstruktor tridy InvoiceService.
@@ -27,6 +33,9 @@ class InvoiceService extends BaseService
     {
         $this->_invoice = new InvoiceRepository($db, $franchiseCode);
         $this->_file    = new FileRepository($db, $franchiseCode);
+        $this->_order   = new OrderRepository($db, $franchiseCode);
+        $this->_address = new AddressRepository($db, $franchiseCode);
+        $this->_user    = new UserRepository($db, $franchiseCode);
         $this->_auth    = $auth;
     }
 
@@ -70,7 +79,11 @@ class InvoiceService extends BaseService
         $proj = new Projection($projection);
         if ($proj->needsJoin('files')) {
             $ids     = array_column($result['data'], 'id');
-            $fileMap = $this->_file->findByJunctionList('invoice_file', 'invoice_id', $ids);
+            $fileMap = $this->_file->findByJunctionList(
+                'invoice_file',
+                'invoice_id',
+                $ids
+            );
             foreach ($result['data'] as &$item) {
                 $item['files'] = $fileMap[(int) $item['id']] ?? [];
             }
@@ -94,9 +107,11 @@ class InvoiceService extends BaseService
 
         $invoice = $this->_invoice->findById($id, $projection);
         $this->_requireEntity($invoice, 'Invoice not found');
+        $invoiceUserId = is_array($invoice['user'] ?? null)
+            ? (int) ($invoice['user']['id'] ?? 0) : 0;
         if (
             !$this->_auth->hasRole('admin')
-            && (int) $invoice['user_id'] !== $this->_auth->id()
+            && $invoiceUserId !== $this->_auth->id()
         ) {
             Response::forbidden();
         }
@@ -116,10 +131,10 @@ class InvoiceService extends BaseService
     /**
      * Vystavi fakturu. Vyzaduje roli admin.
      * Kazda objednavka muze mit nejvyse jednu fakturu (409 pri duplicite).
-     * invoice_number je generovano automaticky. Cela operace probiha v transakci.
+     * invoice_number je generovano automaticky. Vsechna data jsou ulozena jako snapshot.
+     * Cela operace probiha v transakci.
      *
-     * @param  array<string, mixed> $input  order_id, user_id, status, total_amount, billing_address_id (required),
-     *                                      currency, due_at, note, file_ids, items
+     * @param  array<string, mixed> $input  order_id (required), status, due_at, note, file_ids
      * @param  array|null           $projection
      * @return array<string, mixed>
      */
@@ -133,34 +148,87 @@ class InvoiceService extends BaseService
             Response::error('Invoice already exists for this order', 409);
         }
 
-        $items = (array) ($input['items'] ?? []);
-        $dueAt = $input['due_at'] ?? date('Y-m-d', strtotime('+14 days'));
+        // Nacti objednavku — snapshot dat
+        $order = $this->_order->findById($orderId);
+        if (!$order) {
+            Response::error('Order not found', 404);
+        }
+
+        // Snapshot uzivatele
+        $userSnapshot = null;
+        if (!empty($order['user_id'])) {
+            $u = $this->_user->findById((int) $order['user_id']);
+            if ($u) {
+                $userSnapshot = [
+                    'id'         => (int) $u['id'],
+                    'first_name' => $u['first_name'] ?? null,
+                    'last_name'  => $u['last_name']  ?? null,
+                    'email'      => $u['email']       ?? null,
+                    'phone'      => $u['phone']       ?? null,
+                ];
+            }
+        }
+
+        // Snapshot adres
+        $billingSnapshot  = null;
+        $shippingSnapshot = null;
+        if (!empty($order['billing_address_id'])) {
+            $a = $this->_address->findById((int) $order['billing_address_id']);
+            if ($a) {
+                $billingSnapshot = $this->_addressSnapshot($a);
+            }
+        }
+        if (!empty($order['shipping_address_id'])) {
+            $a = $this->_address->findById((int) $order['shipping_address_id']);
+            if ($a) {
+                $shippingSnapshot = $this->_addressSnapshot($a);
+            }
+        }
+
+        $issuedAt = $input['issued_at'] ?? date('Y-m-d H:i:s');
+        $dueAt    = $input['due_at'] ?? date('Y-m-d', strtotime($issuedAt . ' +14 days'));
 
         $pdo = $this->_invoice->getPdo();
         $pdo->beginTransaction();
 
         try {
             $invoiceRow = $this->_invoice->create([
-                'invoice_number'     => $this->_invoice->generateNumber(),
-                'order_id'           => $orderId,
-                'user_id'            => (int) $input['user_id'],
-                'status'             => $input['status'],
-                'total_amount'       => $input['total_amount'],
-                'currency'           => $input['currency'] ?? 'CZK',
-                'due_at'             => $dueAt,
-                'billing_address_id' => (int) $input['billing_address_id'],
-                'note'               => $input['note'] ?? '',
+                'invoice_number'           => $this->_invoice->generateNumber(),
+                'order_id'                 => $orderId,
+                'order_number'             => $order['order_number'],
+                'status'                   => $input['status'] ?? 'issued',
+                'currency'                 => $order['currency'],
+                'payment_type'             => $order['payment_type'],
+                'shipping_type'            => $order['shipping_type'],
+                'shipping_price'           => $order['shipping_price'],
+                'total_price'              => $order['total_price'],
+                'total_price_with_vat'     => $order['total_price_with_vat'],
+                'total_price_all'          => $order['total_price_all'],
+                'total_price_all_with_vat' => $order['total_price_all_with_vat'],
+                'user'                     => $userSnapshot !== null
+                    ? json_encode($userSnapshot, JSON_UNESCAPED_UNICODE) : null,
+                'billing_address'          => $billingSnapshot !== null
+                    ? json_encode($billingSnapshot, JSON_UNESCAPED_UNICODE) : null,
+                'shipping_address'         => $shippingSnapshot !== null
+                    ? json_encode($shippingSnapshot, JSON_UNESCAPED_UNICODE) : null,
+                'note'                     => $input['note'] ?? $order['note'] ?? null,
+                'issued_at'                => $issuedAt,
+                'due_at'                   => $dueAt,
             ]);
             $invoiceId = (int) $invoiceRow['id'];
 
-            foreach ($items as $item) {
+            // Snapshot polozek z order_items
+            foreach ($order['order_items'] ?? [] as $oi) {
                 $this->_invoice->createItem([
-                    'invoice_id'  => $invoiceId,
-                    'product_id'  => $item['product_id'] ?? null,
-                    'description' => $item['description'] ?? '',
-                    'quantity'    => (int) ($item['quantity'] ?? 1),
-                    'unit_price'  => $item['unit_price'],
-                    'total_price' => $item['total_price'],
+                    'invoice_id'           => $invoiceId,
+                    'product_name'         => $oi['product_name'] ?? '',
+                    'sku'                  => $oi['sku'] ?? null,
+                    'quantity'             => (int) $oi['quantity'],
+                    'price'                => $oi['price'],
+                    'price_with_vat'       => $oi['price_with_vat'],
+                    'vat_rate'             => $oi['vat_rate'],
+                    'total_price'          => $oi['total_price'],
+                    'total_price_with_vat' => $oi['total_price_with_vat'],
                 ]);
             }
 
@@ -177,7 +245,30 @@ class InvoiceService extends BaseService
             $this->_invoice->syncFiles($invoiceId, $fileIds);
         }
 
-        return $this->_invoice->findById($invoiceId, $projection) ?? ['id' => $invoiceId];
+        return $this->_invoice->findById($invoiceId, $projection)
+            ?? ['id' => $invoiceId];
+    }
+
+    /**
+     * Vytvori snapshot adresniho zaznamu (bez systemovych poli).
+     *
+     * @param  array<string, mixed> $address
+     * @return array<string, mixed>
+     */
+    private function _addressSnapshot(array $address): array
+    {
+        return array_filter([
+            'id'         => $address['id']        ?? null,
+            'type'       => $address['type']       ?? null,
+            'name'       => $address['name']       ?? null,
+            'street'     => $address['street']     ?? null,
+            'city'       => $address['city']       ?? null,
+            'zip'        => $address['zip']        ?? null,
+            'country'    => $address['country']    ?? null,
+            'company'    => $address['company']    ?? null,
+            'vat_number' => $address['vat_number'] ?? null,
+            'phone'      => $address['phone']      ?? null,
+        ], static fn($v) => $v !== null);
     }
 
     /**
