@@ -7,11 +7,13 @@ namespace App\Modules\Invoice;
 use App\Modules\Auth\Auth;
 use App\Modules\BaseService;
 use App\Modules\Database\Database;
+use App\Modules\File\FileRepository;
 use App\Modules\Router\Response;
 
 class InvoiceService extends BaseService
 {
     private InvoiceRepository $_invoice;
+    private FileRepository $_file;
 
     /**
      * Konstruktor tridy InvoiceService.
@@ -23,6 +25,7 @@ class InvoiceService extends BaseService
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->_invoice = new InvoiceRepository($db, $franchiseCode);
+        $this->_file    = new FileRepository($db, $franchiseCode);
         $this->_auth    = $auth;
     }
 
@@ -81,6 +84,12 @@ class InvoiceService extends BaseService
         if (!$this->_auth->hasRole('admin') && (int) $invoice['user_id'] !== $this->_auth->id()) {
             Response::forbidden();
         }
+
+        $invoice['files'] = $this->_file->findByJunctionItem(
+            'invoice_file',
+            'invoice_id',
+            $id
+        );
 
         return $invoice;
     }

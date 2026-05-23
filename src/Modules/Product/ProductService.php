@@ -6,12 +6,17 @@ namespace App\Modules\Product;
 
 use App\Modules\Auth\Auth;
 use App\Modules\BaseService;
+use App\Modules\Category\CategoryRepository;
 use App\Modules\Database\Database;
+use App\Modules\File\FileRepository;
 use App\Modules\Router\Response;
+use App\Utils\Projection;
 
 class ProductService extends BaseService
 {
     private ProductRepository $_product;
+    private CategoryRepository $_category;
+    private FileRepository $_file;
 
     /**
      * Konstruktor tridy ProductService.
@@ -22,8 +27,10 @@ class ProductService extends BaseService
      */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
-        $this->_product = new ProductRepository($db, $franchiseCode);
-        $this->_auth    = $auth;
+        $this->_product  = new ProductRepository($db, $franchiseCode);
+        $this->_category = new CategoryRepository($db, $franchiseCode);
+        $this->_file     = new FileRepository($db, $franchiseCode);
+        $this->_auth     = $auth;
     }
 
     /**
@@ -49,13 +56,36 @@ class ProductService extends BaseService
         string $filter = '',
         ?array $projection = null,
     ): array {
-        return $this->_product->findAll(
-            $page,
-            $limit,
-            $sort,
-            $filter,
-            $projection,
-        );
+        $result = $this->_product->findAll($page, $limit, $sort, $filter, $projection);
+        $proj   = new Projection($projection);
+
+        if ($proj->needsJoin('categories')) {
+            $ids    = array_column($result['data'], 'id');
+            $catMap = $this->_category->findByJunctionList(
+                'product_category',
+                'product_id',
+                $ids
+            );
+            foreach ($result['data'] as &$item) {
+                $item['categories'] = $catMap[(int) $item['id']] ?? [];
+            }
+            unset($item);
+        }
+
+        if ($proj->needsJoin('files')) {
+            $ids     = array_column($result['data'], 'id');
+            $fileMap = $this->_file->findByJunctionList(
+                'product_file',
+                'product_id',
+                $ids
+            );
+            foreach ($result['data'] as &$item) {
+                $item['files'] = $fileMap[(int) $item['id']] ?? [];
+            }
+            unset($item);
+        }
+
+        return $result;
     }
 
     /**
@@ -70,6 +100,22 @@ class ProductService extends BaseService
     {
         $product = $this->_product->findById($id, $projection);
         $this->_requireEntity($product, 'Product not found');
+
+        $proj = new Projection($projection);
+        if ($proj->needsJoin('categories')) {
+            $product['categories'] = $this->_category->findByJunctionItem(
+                'product_category',
+                'product_id',
+                $id
+            );
+        }
+        if ($proj->needsJoin('files')) {
+            $product['files'] = $this->_file->findByJunctionItem(
+                'product_file',
+                'product_id',
+                $id
+            );
+        }
 
         return $product;
     }

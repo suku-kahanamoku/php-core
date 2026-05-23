@@ -229,6 +229,106 @@ if ($prodId) {
     assert_test('no category_ids field when not projected', !isset($data['category_ids']), dump_on_fail($r));
 }
 
+// ── Files projection ──────────────────────────────────────────────────────────
+
+section('Products – files projection setup: upload + commit file');
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
+$token = $r['data']['data']['token'] ?? null;
+
+$prodFileTmp = tempnam(sys_get_temp_dir(), 'phpcore_prod_file_') . '.txt';
+file_put_contents($prodFileTmp, 'product file projection test content');
+
+$ch = curl_init("{$base}/files/upload");
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, ['file' => new CURLFile($prodFileTmp, 'text/plain', 'prod_proj_test.txt')]);
+curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer {$token}"]);
+$raw = curl_exec($ch);
+$uploadStatus = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+curl_close($ch);
+$uploadData = json_decode($raw, true) ?? [];
+assert_test('files projection: upload → 201', $uploadStatus === 201, json_encode($uploadData));
+$prodFileTempPath = $uploadData['data']['path'] ?? null;
+
+$prodFileId = null;
+if ($prodFileTempPath) {
+    $r = request('POST', "{$base}/files/commit", [
+        'path'        => $prodFileTempPath,
+        'name'        => TEST_PREFIX . 'prod_proj_file_' . time() . '.txt',
+        'entity_type' => 'product',
+    ]);
+    assert_test('files projection: commit → 200', $r['status'] === 200, dump_on_fail($r));
+    $prodFileId = $r['data']['data']['id'] ?? null;
+}
+
+section('Products – files projection setup: create product with file');
+$prodFileSku = TEST_PREFIX . 'file_proj_' . time();
+$prodFileProductId = null;
+if ($prodFileId) {
+    $r = request('POST', "{$base}/products", [
+        'name'     => TEST_PREFIX . 'file_proj_product',
+        'sku'      => $prodFileSku,
+        'price'    => 10.0,
+        'file_ids' => [$prodFileId],
+    ]);
+    assert_test('files projection: create product with file → 201', $r['status'] === 201, dump_on_fail($r));
+    $prodFileProductId = $r['data']['data']['id'] ?? null;
+}
+
+section('Products – files projection in getById');
+if ($prodFileProductId && $prodFileId) {
+    $r = request('GET', "{$base}/products/{$prodFileProductId}?projection=id,name,files", [], false);
+    assert_test('GET /products/:id?projection=files → 200', $r['status'] === 200, dump_on_fail($r));
+    $data = $r['data']['data'] ?? [];
+    assert_test('getById: files field is array', is_array($data['files'] ?? null), dump_on_fail($r));
+    assert_test('getById: file_ids field is array', is_array($data['file_ids'] ?? null), dump_on_fail($r));
+    assert_test('getById: files count = 1', count($data['files'] ?? []) === 1, dump_on_fail($r));
+    $file = $data['files'][0] ?? [];
+    assert_test('getById: file id matches', ($file['id'] ?? null) === $prodFileId, dump_on_fail($r));
+    assert_test('getById: file has name', isset($file['name']), dump_on_fail($r));
+    assert_test('getById: file_ids contains file id', in_array($prodFileId, $data['file_ids'] ?? [], true), dump_on_fail($r));
+}
+
+section('Products – no files when not in projection');
+if ($prodFileProductId) {
+    $r = request('GET', "{$base}/products/{$prodFileProductId}?projection=id,name,price", [], false);
+    assert_test('GET /products/:id without files projection → 200', $r['status'] === 200, dump_on_fail($r));
+    $data = $r['data']['data'] ?? [];
+    assert_test('no files field when not projected', !isset($data['files']), dump_on_fail($r));
+    assert_test('no file_ids field when not projected', !isset($data['file_ids']), dump_on_fail($r));
+}
+
+section('Products – files projection in list');
+if ($prodFileProductId && $prodFileId) {
+    $f = urlencode(json_encode(['id' => ['value' => $prodFileProductId]]));
+    $r = request('GET', "{$base}/products?q={$f}&projection=id,name,files", [], false);
+    assert_test('GET /products?projection=files → 200', $r['status'] === 200, dump_on_fail($r));
+    $item = $r['data']['data'][0] ?? [];
+    assert_test('list: files field is array', is_array($item['files'] ?? null), dump_on_fail($r));
+    assert_test('list: file_ids field is array', is_array($item['file_ids'] ?? null), dump_on_fail($r));
+    assert_test('list: files count = 1', count($item['files'] ?? []) === 1, dump_on_fail($r));
+    assert_test('list: file_ids contains file id', in_array($prodFileId, $item['file_ids'] ?? [], true), dump_on_fail($r));
+}
+
+section('Products – no files in list when not in projection');
+if ($prodFileProductId) {
+    $f = urlencode(json_encode(['id' => ['value' => $prodFileProductId]]));
+    $r = request('GET', "{$base}/products?q={$f}&projection=id,name,price", [], false);
+    assert_test('GET /products?projection=id,name,price → 200', $r['status'] === 200, dump_on_fail($r));
+    $item = $r['data']['data'][0] ?? [];
+    assert_test('list: no files field when not projected', !isset($item['files']), dump_on_fail($r));
+    assert_test('list: no file_ids field when not projected', !isset($item['file_ids']), dump_on_fail($r));
+}
+
+if ($prodFileProductId) {
+    request('DELETE', "{$base}/products/{$prodFileProductId}?force=true");
+}
+if ($prodFileId) {
+    request('DELETE', "{$base}/files/{$prodFileId}?force=true");
+}
+@unlink($prodFileTmp);
+
 section('Products – filter category + other filter combined');
 if ($prodId && $prodCatId) {
     $f = urlencode(json_encode([
