@@ -13,7 +13,7 @@ $user            = is_array($data['user'] ?? null) ? $data['user'] : [];
 $billing         = is_array($data['billing_address'] ?? null) ? $data['billing_address'] : [];
 $shipping        = is_array($data['shipping_address'] ?? null) ? $data['shipping_address'] : [];
 $items           = $data['items'] ?? [];
-$invoiceNumber   = $data['invoice_number'] ?? '';
+$invoiceNumber   = str_replace('-', '', $data['invoice_number'] ?? '');
 $issuedAt        = isset($data['issued_at']) ? date('d.m.Y', strtotime($data['issued_at'])) : '';
 $dueAt           = isset($data['due_at']) ? date('d.m.Y', strtotime($data['due_at'])) : '';
 $paidAt          = isset($data['paid_at']) && $data['paid_at'] ? date('d.m.Y', strtotime($data['paid_at'])) : null;
@@ -357,14 +357,6 @@ if ($shippingPrice > 0) {
             </td>
             <td style="text-align:right; vertical-align:bottom;">
                 <div class="header-number"><?= htmlspecialchars($invoiceNumber) ?></div>
-                <?php
-                $statusClass = 'status-' . htmlspecialchars($data['status'] ?? 'draft');
-                ?>
-                <div style="margin-top:4px;">
-                    <span class="status-badge <?= $statusClass ?>">
-                        <?= htmlspecialchars($data['status'] ?? '') ?>
-                    </span>
-                </div>
             </td>
         </tr>
     </table>
@@ -412,49 +404,67 @@ if ($shippingPrice > 0) {
     <!-- META: PLATEBNI UDAJE + DATUMY -->
     <table class="meta-row">
         <tr>
-            <td class="meta-box">
-                <div class="meta-label">Platební údaje</div>
-                <table>
-                    <?php if (!empty($bankDetails['account'])): ?>
-                        <tr class="meta-kv">
-                            <td class="meta-k">Číslo účtu</td>
-                            <td class="meta-v"><?= htmlspecialchars($bankDetails['account']) ?></td>
-                        </tr>
-                    <?php endif; ?>
-                    <?php if (!empty($bankDetails['iban'])): ?>
-                        <tr class="meta-kv">
-                            <td class="meta-k">IBAN</td>
-                            <td class="meta-v"><?= htmlspecialchars($bankDetails['iban']) ?></td>
-                        </tr>
-                    <?php endif; ?>
-                    <?php if (!empty($bankDetails['swift'])): ?>
-                        <tr class="meta-kv">
-                            <td class="meta-k">BIC/SWIFT</td>
-                            <td class="meta-v"><?= htmlspecialchars($bankDetails['swift']) ?></td>
-                        </tr>
-                    <?php endif; ?>
-                    <tr class="meta-kv">
-                        <td class="meta-k">Způsob platby</td>
-                        <td class="meta-v"><?= htmlspecialchars($paymentType) ?></td>
+            <td class="meta-box" style="width:60%;">
+                <table style="width:100%;">
+                    <tr>
+                        <td style="vertical-align:top;">
+                            <div class="meta-label">Platební údaje</div>
+                            <table>
+                                <?php if (!empty($bankDetails['account'])): ?>
+                                    <tr class="meta-kv">
+                                        <td class="meta-k">Číslo účtu</td>
+                                        <td class="meta-v"><?= htmlspecialchars($bankDetails['account']) ?></td>
+                                    </tr>
+                                <?php endif; ?>
+                                <?php if (!empty($bankDetails['iban'])): ?>
+                                    <tr class="meta-kv">
+                                        <td class="meta-k">IBAN</td>
+                                        <td class="meta-v"><?= htmlspecialchars($bankDetails['iban']) ?></td>
+                                    </tr>
+                                <?php endif; ?>
+                                <?php if (!empty($bankDetails['swift'])): ?>
+                                    <tr class="meta-kv">
+                                        <td class="meta-k">BIC/SWIFT</td>
+                                        <td class="meta-v"><?= htmlspecialchars($bankDetails['swift']) ?></td>
+                                    </tr>
+                                <?php endif; ?>
+                                <?php
+                                $vs = preg_replace('/\D/', '', $invoiceNumber);
+                                $vs = substr($vs, -10);
+                                ?>
+                                <?php if ($vs !== ''): ?>
+                                    <tr class="meta-kv">
+                                        <td class="meta-k">Variabilní symbol</td>
+                                        <td class="meta-v"><?= htmlspecialchars($vs) ?></td>
+                                    </tr>
+                                <?php endif; ?>
+                                <?php if (!empty($data['order_number'])): ?>
+                                    <tr class="meta-kv">
+                                        <td class="meta-k">Č. objednávky</td>
+                                        <td class="meta-v"><?= htmlspecialchars($data['order_number']) ?></td>
+                                    </tr>
+                                <?php endif; ?>
+                            </table>
+                        </td>
+                        <?php if ($isBankTransfer && $qrCode): ?>
+                            <td style="vertical-align:middle;text-align:center;width:120px;padding-left:12px;">
+                                <div style="font-size:9px;color:#888;margin-bottom:4px;">QR platba</div>
+                                <img src="<?= htmlspecialchars($qrCode) ?>" class="qr-img" alt="QR platba">
+                            </td>
+                        <?php endif; ?>
                     </tr>
-                    <tr class="meta-kv">
-                        <td class="meta-k">Měna</td>
-                        <td class="meta-v"><?= htmlspecialchars($currency) ?></td>
-                    </tr>
-                    <?php if (!empty($data['order_number'])): ?>
-                        <tr class="meta-kv">
-                            <td class="meta-k">Č. objednávky</td>
-                            <td class="meta-v"><?= htmlspecialchars($data['order_number']) ?></td>
-                        </tr>
-                    <?php endif; ?>
                 </table>
             </td>
             <td class="party-spacer"></td>
-            <td class="meta-box">
+            <td class="meta-box" style="width:38%;">
                 <div class="meta-label">Datumy</div>
                 <table>
                     <tr class="meta-kv">
                         <td class="meta-k">Datum vystavení</td>
+                        <td class="meta-v"><?= htmlspecialchars($issuedAt) ?></td>
+                    </tr>
+                    <tr class="meta-kv">
+                        <td class="meta-k">Datum daň. povinnosti</td>
                         <td class="meta-v"><?= htmlspecialchars($issuedAt) ?></td>
                     </tr>
                     <tr class="meta-kv">
@@ -513,98 +523,63 @@ if ($shippingPrice > 0) {
         </tbody>
     </table>
 
-    <!-- REKAPITULACE DPH -->
-    <?php if (count($vatGroups) > 0): ?>
-        <table class="vat-table" style="width:50%;margin-left:50%;">
-            <thead>
-                <tr>
-                    <th>DPH</th>
-                    <th>Základ</th>
-                    <th>DPH</th>
-                    <th>Celkem</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($vatGroups as $vg): ?>
-                    <tr>
-                        <td><?= number_format($vg['rate'], 0) ?> %</td>
-                        <td><?= number_format($vg['base'], 2, ',', ' ') ?></td>
-                        <td><?= number_format($vg['vat'], 2, ',', ' ') ?></td>
-                        <td><?= number_format($vg['base'] + $vg['vat'], 2, ',', ' ') ?></td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    <?php endif; ?>
+    <!-- REKAPITULACE DPH + CELKEM -->
+    <table style="width:50%;margin-left:50%;margin-bottom:16px;">
+        <tr>
+            <td style="vertical-align:top;">
+                <?php if (count($vatGroups) > 0): ?>
+                    <table class="vat-table" style="width:100%;">
+                        <thead>
+                            <tr>
+                                <th>DPH</th>
+                                <th>Základ</th>
+                                <th>DPH</th>
+                                <th>Celkem</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($vatGroups as $vg): ?>
+                                <tr>
+                                    <td><?= number_format($vg['rate'], 0) ?> %</td>
+                                    <td><?= number_format($vg['base'], 2, ',', ' ') ?></td>
+                                    <td><?= number_format($vg['vat'], 2, ',', ' ') ?></td>
+                                    <td><?= number_format($vg['base'] + $vg['vat'], 2, ',', ' ') ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
 
-    <!-- CELKOVE CENY -->
-    <table class="totals" style="width:50%;margin-left:50%;margin-top:8px;">
-        <tr>
-            <td class="totals-label">Celkem bez DPH</td>
-            <td class="totals-value"><?= $totalPrice ?> <?= htmlspecialchars($currency) ?></td>
-        </tr>
-        <tr>
-            <td class="totals-label">DPH celkem</td>
-            <td class="totals-value"><?= number_format((float)($data['total_price_with_vat'] ?? 0) - (float)($data['total_price'] ?? 0), 2, ',', ' ') ?> <?= htmlspecialchars($currency) ?></td>
-        </tr>
-        <?php if ($shippingPrice > 0): ?>
-            <tr>
-                <td class="totals-label">Doprava</td>
-                <td class="totals-value"><?= number_format($shippingPrice, 2, ',', ' ') ?> <?= htmlspecialchars($currency) ?></td>
-            </tr>
-        <?php endif; ?>
-        <tr class="grand-total">
-            <td class="totals-label"><strong>K ÚHRADĚ</strong></td>
-            <td class="totals-value"><strong><?= $totalPriceAllWithVat ?> <?= htmlspecialchars($currency) ?></strong></td>
+                <!-- CELKOVE CENY -->
+                <table class="totals" style="width:100%;margin-top:8px;">
+                    <tr>
+                        <td class="totals-label">Celkem bez DPH</td>
+                        <td class="totals-value"><?= $totalPrice ?> <?= htmlspecialchars($currency) ?></td>
+                    </tr>
+                    <tr>
+                        <td class="totals-label">DPH celkem</td>
+                        <td class="totals-value"><?= number_format((float)($data['total_price_with_vat'] ?? 0) - (float)($data['total_price'] ?? 0), 2, ',', ' ') ?> <?= htmlspecialchars($currency) ?></td>
+                    </tr>
+                    <?php if ($shippingPrice > 0): ?>
+                        <tr>
+                            <td class="totals-label">Doprava</td>
+                            <td class="totals-value"><?= number_format($shippingPrice, 2, ',', ' ') ?> <?= htmlspecialchars($currency) ?></td>
+                        </tr>
+                    <?php endif; ?>
+                    <tr class="grand-total">
+                        <td class="totals-label"><strong>K ÚHRADĚ</strong></td>
+                        <td class="totals-value"><strong><?= $totalPriceAllWithVat ?> <?= htmlspecialchars($currency) ?></strong></td>
+                    </tr>
+                </table>
+            </td>
         </tr>
     </table>
 
-    <!-- BANKOVNI PLATBA + QR KOD -->
-    <?php if ($isBankTransfer && !empty($bankDetails)): ?>
-        <table class="payment-section" style="margin-top:20px;">
-            <tr>
-                <?php if ($qrCode): ?>
-                    <td style="width:120px; vertical-align:top;">
-                        <img src="<?= htmlspecialchars($qrCode) ?>" class="qr-img" alt="QR platba">
-                        <div style="font-size:9px;color:#888;text-align:center;margin-top:2px;">QR platba</div>
-                    </td>
-                <?php endif; ?>
-                <td class="bank-td">
-                    <div style="font-size:10px;font-weight:bold;color:#1a2b3c;margin-bottom:6px;">Platební instrukce</div>
-                    <table style="font-size:10px;">
-                        <?php if (!empty($bankDetails['account'])): ?>
-                            <tr>
-                                <td style="color:#888;padding-right:10px;">Číslo účtu</td>
-                                <td style="font-weight:bold;"><?= htmlspecialchars($bankDetails['account']) ?></td>
-                            </tr>
-                        <?php endif; ?>
-                        <?php if (!empty($bankDetails['iban'])): ?>
-                            <tr>
-                                <td style="color:#888;padding-right:10px;">IBAN</td>
-                                <td style="font-weight:bold;"><?= htmlspecialchars($bankDetails['iban']) ?></td>
-                            </tr>
-                        <?php endif; ?>
-                        <?php if (!empty($bankDetails['swift'])): ?>
-                            <tr>
-                                <td style="color:#888;padding-right:10px;">BIC/SWIFT</td>
-                                <td><?= htmlspecialchars($bankDetails['swift']) ?></td>
-                            </tr>
-                        <?php endif; ?>
-                        <tr>
-                            <td style="color:#888;padding-right:10px;">Částka</td>
-                            <td style="font-weight:bold;"><?= $totalPriceAllWithVat ?> <?= htmlspecialchars($currency) ?></td>
-                        </tr>
-                        <tr>
-                            <td style="color:#888;padding-right:10px;">Splatnost</td>
-                            <td><?= htmlspecialchars($dueAt) ?></td>
-                        </tr>
-                    </table>
-                    <p style="margin-top:8px;font-size:9px;color:#888;">
-                        Prosíme o zaplacení do data splatnosti. Při prodlení si vyhrazujeme právo účtovat zákonný úrok z prodlení.
-                    </p>
-                </td>
-            </tr>
-        </table>
+    <!-- BANKOVNI PLATBA -->
+    <?php if ($isBankTransfer): ?>
+        <p style="margin-top:8px;font-size:9px;color:#888;text-align:center;">
+            Prosíme o zaplacení do data splatnosti. Při prodlení si vyhrazujeme právo účtovat zákonný úrok z prodlení.
+        </p>
     <?php endif; ?>
 
     <!-- POZNAMKA -->

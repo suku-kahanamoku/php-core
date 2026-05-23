@@ -8,10 +8,9 @@ use App\Modules\Database\Database;
 use App\Modules\File\FileRepository;
 use Dompdf\Dompdf;
 use Dompdf\Options;
-use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Encoding\Encoding;
 use Endroid\QrCode\ErrorCorrectionLevel;
-use Endroid\QrCode\RoundBlockSizeMode;
+use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 
 /**
@@ -125,28 +124,29 @@ class InvoicePdfService
         $amount  = number_format((float) ($invoice['total_price_all_with_vat'] ?? 0), 2, '.', '');
         $currency = strtoupper((string) ($invoice['currency'] ?? 'CZK'));
         $msg     = 'Faktura ' . ($invoice['invoice_number'] ?? '');
+        $vs      = preg_replace('/\D/', '', (string) ($invoice['invoice_number'] ?? ''));
+        $vs      = substr($vs, -10); // max 10 cislic
 
         // SPAYD (Short Payment Descriptor) — cesky standard pro platebni QR
-        $spayd = implode('*', [
+        $spayd = implode('*', array_filter([
             'SPD',
             '1.0',
             'ACC:' . $bank['iban'],
             'AM:'  . $amount,
             'CC:'  . $currency,
             'MSG:' . substr($msg, 0, 60),
-        ]);
+            $vs !== '' ? 'X-VS:' . $vs : null,
+        ]));
 
         try {
-            $result = Builder::create()
-                ->writer(new PngWriter())
-                ->data($spayd)
-                ->encoding(new Encoding('UTF-8'))
-                ->errorCorrectionLevel(ErrorCorrectionLevel::Low)
-                ->size(200)
-                ->margin(4)
-                ->roundBlockSizeMode(RoundBlockSizeMode::Margin)
-                ->build();
-
+            $qr = new QrCode(
+                $spayd,
+                new Encoding('UTF-8'),
+                ErrorCorrectionLevel::Low,
+                200,
+                4,
+            );
+            $result = (new PngWriter())->write($qr);
             return 'data:image/png;base64,' . base64_encode($result->getString());
         } catch (\Throwable) {
             return null;
