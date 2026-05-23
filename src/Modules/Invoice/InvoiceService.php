@@ -8,6 +8,7 @@ use App\Modules\Address\AddressRepository;
 use App\Modules\Auth\Auth;
 use App\Modules\BaseService;
 use App\Modules\Database\Database;
+use App\Modules\Enumeration\EnumerationRepository;
 use App\Modules\File\FileRepository;
 use App\Modules\File\FileService;
 use App\Modules\Order\OrderRepository;
@@ -21,13 +22,14 @@ use Endroid\QrCode\Writer\PngWriter;
 
 class InvoiceService extends BaseService
 {
-    private InvoiceRepository $_invoice;
-    private OrderRepository   $_order;
-    private AddressRepository $_address;
-    private UserRepository    $_user;
-    private FileRepository    $_files;
-    private FileService       $_fileService;
-    private string            $_code;
+    private InvoiceRepository     $_invoice;
+    private OrderRepository       $_order;
+    private AddressRepository     $_address;
+    private UserRepository        $_user;
+    private FileRepository        $_files;
+    private FileService           $_fileService;
+    private EnumerationRepository $_enum;
+    private string                $_code;
 
     /**
      * Konstruktor tridy InvoiceService.
@@ -44,6 +46,7 @@ class InvoiceService extends BaseService
         $this->_user        = new UserRepository($db, $franchiseCode);
         $this->_files       = new FileRepository($db, $franchiseCode);
         $this->_fileService = new FileService($db, $franchiseCode, $auth);
+        $this->_enum        = new EnumerationRepository($db, $franchiseCode);
         $this->_code        = $franchiseCode;
         $this->_auth        = $auth;
     }
@@ -265,9 +268,11 @@ class InvoiceService extends BaseService
         $invoiceId     = (int) $invoice['id'];
         $invoiceNumber = (string) ($invoice['invoice_number'] ?? 'invoice');
         $bankEnum      = is_array($invoice['payment'] ?? null) ? $invoice['payment'] : null;
+        $contactRow    = $this->_enum->findBySyscode('contact', 'contact');
+        $contact       = is_array($contactRow['data'] ?? null) ? $contactRow['data'] : [];
 
         $qrBase64 = $this->_generateQrBase64($invoice, $bankEnum);
-        $html     = $this->_renderInvoiceTemplate($invoice, $bankEnum, $qrBase64);
+        $html     = $this->_renderInvoiceTemplate($invoice, $bankEnum, $qrBase64, $contact);
 
         $pdfContent = $this->_fileService->htmlToPdf($html, $invoiceNumber);
 
@@ -335,7 +340,7 @@ class InvoiceService extends BaseService
      * @param  string|null $qrBase64
      * @return string
      */
-    private function _renderInvoiceTemplate(array $invoice, ?array $bank, ?string $qrBase64): string
+    private function _renderInvoiceTemplate(array $invoice, ?array $bank, ?string $qrBase64, array $contact = []): string
     {
         $templatePath = dirname(__DIR__, 3) . '/emails/' . $this->_code . '/invoice.php';
 
@@ -347,6 +352,7 @@ class InvoiceService extends BaseService
         $data        = $invoice;
         $bankDetails = $bank;
         $qrCode      = $qrBase64;
+        $supplier    = $contact;
         include $templatePath;
         return (string) ob_get_clean();
     }

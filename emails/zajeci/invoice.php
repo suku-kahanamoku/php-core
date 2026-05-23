@@ -28,15 +28,15 @@ $totalPriceAll        = number_format((float) ($data['total_price_all'] ?? 0), 2
 $totalPriceAllWithVat = number_format((float) ($data['total_price_all_with_vat'] ?? 0), 2, ',', ' ');
 $shippingPrice        = (float) ($data['shipping_price'] ?? 0);
 
-// Dodavatel (z env nebo konstant)
-$supplierName    = $_ENV['COMPANY_NAME']    ?? 'Zajeci.cz';
-$supplierStreet  = $_ENV['COMPANY_STREET']  ?? '';
-$supplierCity    = $_ENV['COMPANY_CITY']    ?? '';
-$supplierZip     = $_ENV['COMPANY_ZIP']     ?? '';
-$supplierIco     = $_ENV['COMPANY_ICO']     ?? '';
-$supplierDic     = $_ENV['COMPANY_DIC']     ?? '';
-$supplierEmail   = $_ENV['COMPANY_EMAIL']   ?? '';
-$supplierPhone   = $_ENV['COMPANY_PHONE']   ?? '';
+// Dodavatel z contact enumu
+$supplierName    = $supplier['name']   ?? 'Zajeci.cz';
+$supplierStreet  = $supplier['street'] ?? '';
+$supplierCity    = $supplier['city']   ?? '';
+$supplierZip     = $supplier['zip']    ?? '';
+$supplierIco     = $supplier['ic']     ?? '';
+$supplierDic     = $supplier['dic']    ?? '';
+$supplierEmail   = $supplier['email']  ?? '';
+$supplierPhone   = $supplier['phone1'] ?? '';
 
 // VAT sadby - agregace polozek
 $vatGroups = [];
