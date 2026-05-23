@@ -9,6 +9,7 @@ use App\Modules\BaseService;
 use App\Modules\Database\Database;
 use App\Modules\File\FileRepository;
 use App\Modules\Router\Response;
+use App\Utils\Projection;
 
 class InvoiceService extends BaseService
 {
@@ -81,15 +82,21 @@ class InvoiceService extends BaseService
 
         $invoice = $this->_invoice->findById($id, $projection);
         $this->_requireEntity($invoice, 'Invoice not found');
-        if (!$this->_auth->hasRole('admin') && (int) $invoice['user_id'] !== $this->_auth->id()) {
+        if (
+            !$this->_auth->hasRole('admin')
+            && (int) $invoice['user_id'] !== $this->_auth->id()
+        ) {
             Response::forbidden();
         }
 
-        $invoice['files'] = $this->_file->findByJunctionItem(
-            'invoice_file',
-            'invoice_id',
-            $id
-        );
+        $proj = new Projection($projection);
+        if ($proj->needsJoin('files')) {
+            $invoice['files'] = $this->_file->findByJunctionItem(
+                'invoice_file',
+                'invoice_id',
+                $id
+            );
+        }
 
         return $invoice;
     }

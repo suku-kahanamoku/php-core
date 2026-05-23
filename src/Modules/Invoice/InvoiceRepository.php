@@ -36,7 +36,7 @@ class InvoiceRepository extends BaseRepository
             'user_id',
             'billing_address_id',
         ];
-        $this->_rel = ['user'];
+        $this->_rel = ['user', 'files'];
     }
 
     /**
@@ -145,8 +145,9 @@ class InvoiceRepository extends BaseRepository
             $params,
         );
 
-        $fileIdsMap = [];
-        if (!empty($items)) {
+        $needsFileIds = $proj->needsJoin('files');
+        $fileIdsMap   = [];
+        if ($needsFileIds && !empty($items)) {
             $ids          = array_column($items, 'id');
             $placeholders = implode(',', array_fill(0, count($ids), '?'));
             $fileRows     = $this->_db->fetchAll(
@@ -159,14 +160,19 @@ class InvoiceRepository extends BaseRepository
         }
 
         foreach ($items as &$item) {
-            $item['file_ids'] = $fileIdsMap[(int) $item['id']] ?? [];
+            if ($needsFileIds) {
+                $item['file_ids'] = $fileIdsMap[(int) $item['id']] ?? [];
+            }
             $item = $proj->apply(
                 $item,
                 $sys,
-                ['user' => [
-                    'fk' => 'user_id',
-                    'nest' => ['first_name', 'last_name', 'email']
-                ]]
+                [
+                    'user'  => [
+                        'fk' => 'user_id',
+                        'nest' => ['first_name', 'last_name', 'email']
+                    ],
+                    'files' => ['file_ids'],
+                ]
             );
         }
         unset($item);
@@ -244,19 +250,27 @@ class InvoiceRepository extends BaseRepository
             [$id],
         );
 
-        $fileRows = $this->_db->fetchAll(
-            'SELECT file_id FROM invoice_file WHERE invoice_id = ?',
-            [$id],
-        );
-        $invoice['file_ids'] = array_map('intval', array_column($fileRows, 'file_id'));
+        if ($proj->needsJoin('files')) {
+            $fileRows            = $this->_db->fetchAll(
+                'SELECT file_id FROM invoice_file WHERE invoice_id = ?',
+                [$id]
+            );
+            $invoice['file_ids'] = array_map(
+                'intval',
+                array_column($fileRows, 'file_id')
+            );
+        }
 
         return $proj->apply(
             $invoice,
             $sys,
-            ['user' => [
-                'fk' => 'user_id',
-                'nest' => ['first_name', 'last_name', 'email']
-            ]]
+            [
+                'user'  => [
+                    'fk' => 'user_id',
+                    'nest' => ['first_name', 'last_name', 'email']
+                ],
+                'files' => ['file_ids'],
+            ]
         );
     }
 
