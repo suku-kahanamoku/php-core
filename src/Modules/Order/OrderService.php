@@ -165,94 +165,78 @@ class OrderService extends BaseService
             );
         }
 
-        $pdo = $this->_order->getPdo();
-        $pdo->beginTransaction();
+        $totalPrice        = 0.0;
+        $totalPriceWithVat = 0.0;
+        $preparedItems     = [];
 
-        try {
-            $totalPrice        = 0.0;
-            $totalPriceWithVat = 0.0;
-            $preparedItems     = [];
+        foreach ($carts as $cart) {
+            $productId = (int) ($cart['product_id'] ?? 0);
+            $qty       = (int) ($cart['quantity'] ?? 1);
 
-            foreach ($carts as $cart) {
-                $productId = (int) ($cart['product_id'] ?? 0);
-                $qty       = (int) ($cart['quantity'] ?? 1);
-
-                if ($productId <= 0 || $qty <= 0) {
-                    throw new \InvalidArgumentException(
-                        "Invalid item: product_id={$productId}, quantity={$qty}",
-                    );
-                }
-
-                $product = $this->_product->findById($productId);
-
-                if (!$product || !$product['published']) {
-                    throw new \RuntimeException(
-                        "Product #{$productId} not found or inactive",
-                    );
-                }
-                if ($product['stock_quantity'] < $qty) {
-                    throw new \RuntimeException(
-                        "Insufficient stock for product #{$productId}",
-                    );
-                }
-
-                $price        = (float) $product['price'];
-                $priceWithVat = (float) $product['price_with_vat'];
-                $vatRate      = (float) $product['vat_rate'];
-
-                $lineTotal        = round($price * $qty, 2);
-                $lineTotalWithVat = round($priceWithVat * $qty, 2);
-
-                $totalPrice        += $lineTotal;
-                $totalPriceWithVat += $lineTotalWithVat;
-
-                $preparedItems[] = [
-                    'product_id'           => $productId,
-                    'product_name'         => $product['name'],
-                    'sku'                  => $product['sku'],
-                    'quantity'             => $qty,
-                    'price'                => $price,
-                    'price_with_vat'       => $priceWithVat,
-                    'vat_rate'             => $vatRate,
-                    'total_price'          => $lineTotal,
-                    'total_price_with_vat' => $lineTotalWithVat,
-                ];
+            if ($productId <= 0 || $qty <= 0) {
+                Response::error("Invalid item: product_id={$productId}, quantity={$qty}", 422);
             }
 
-            $totalPriceAll        = round($totalPrice + $shippingPrice, 2);
-            $totalPriceAllWithVat = round($totalPriceWithVat + $shippingPrice, 2);
+            $product = $this->_product->findById($productId);
 
-            $orderRow = $this->_order->create([
-                'order_number'             => $this->_order->generateNumber(),
-                'user_id'                  => $userId,
-                'status'                   => 'pending',
-                'total_price'              => round($totalPrice, 2),
-                'total_price_with_vat'     => round($totalPriceWithVat, 2),
-                'total_price_all'          => $totalPriceAll,
-                'total_price_all_with_vat' => $totalPriceAllWithVat,
-                'currency'                 => $currency,
-                'payment'                  => $paymentSnapshot !== null
-                    ? json_encode($paymentSnapshot, JSON_UNESCAPED_UNICODE) : null,
-                'shipping'                 => $shippingSnapshot !== null
-                    ? json_encode($shippingSnapshot, JSON_UNESCAPED_UNICODE) : null,
-                'shipping_address_id'      => $shippingAddressId,
-                'billing_address_id'       => $billingAddressId,
-                'note'                     => $input['note'] ?? null,
-            ]);
-            $orderId = (int) $orderRow['id'];
-
-            foreach ($preparedItems as $item) {
-                $this->_order->createItem(array_merge($item, ['order_id' => $orderId]));
-                $this->_product->adjustStock($item['product_id'], -$item['quantity']);
+            if (!$product || !$product['published']) {
+                Response::error("Product #{$productId} not found or inactive", 422);
+            }
+            if ($product['stock_quantity'] < $qty) {
+                Response::error("Insufficient stock for product #{$productId}", 422);
             }
 
-            $pdo->commit();
-        } catch (\Throwable $e) {
-            $pdo->rollBack();
-            Response::error($e->getMessage(), 422);
+            $price        = (float) $product['price'];
+            $priceWithVat = (float) $product['price_with_vat'];
+            $vatRate      = (float) $product['vat_rate'];
+
+            $lineTotal        = round($price * $qty, 2);
+            $lineTotalWithVat = round($priceWithVat * $qty, 2);
+
+            $totalPrice        += $lineTotal;
+            $totalPriceWithVat += $lineTotalWithVat;
+
+            $preparedItems[] = [
+                'product_id'           => $productId,
+                'product_name'         => $product['name'],
+                'sku'                  => $product['sku'],
+                'quantity'             => $qty,
+                'price'                => $price,
+                'price_with_vat'       => $priceWithVat,
+                'vat_rate'             => $vatRate,
+                'total_price'          => $lineTotal,
+                'total_price_with_vat' => $lineTotalWithVat,
+            ];
         }
 
-        return $this->_order->findById($orderId) ?? ['id' => $orderId ?? null];
+        $totalPriceAll        = round($totalPrice + $shippingPrice, 2);
+        $totalPriceAllWithVat = round($totalPriceWithVat + $shippingPrice, 2);
+
+        $orderRow = $this->_order->create([
+            'order_number'             => $this->_order->generateNumber(),
+            'user_id'                  => $userId,
+            'status'                   => 'pending',
+            'total_price'              => round($totalPrice, 2),
+            'total_price_with_vat'     => round($totalPriceWithVat, 2),
+            'total_price_all'          => $totalPriceAll,
+            'total_price_all_with_vat' => $totalPriceAllWithVat,
+            'currency'                 => $currency,
+            'payment'                  => $paymentSnapshot !== null
+                ? json_encode($paymentSnapshot, JSON_UNESCAPED_UNICODE) : null,
+            'shipping'                 => $shippingSnapshot !== null
+                ? json_encode($shippingSnapshot, JSON_UNESCAPED_UNICODE) : null,
+            'shipping_address_id'      => $shippingAddressId,
+            'billing_address_id'       => $billingAddressId,
+            'note'                     => $input['note'] ?? null,
+        ]);
+        $orderId = (int) $orderRow['id'];
+
+        foreach ($preparedItems as $item) {
+            $this->_order->createItem(array_merge($item, ['order_id' => $orderId]));
+            $this->_product->adjustStock($item['product_id'], -$item['quantity']);
+        }
+
+        return $this->_order->findById($orderId) ?? ['id' => $orderId];
     }
 
     /**

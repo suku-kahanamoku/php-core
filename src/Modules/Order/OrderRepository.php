@@ -303,8 +303,4 @@ class OrderRepository extends BaseRepository
      *
      * @return \PDO
      */
-    public function getPdo(): \PDO
-    {
-        return $this->_db->getPdo();
-    }
 }

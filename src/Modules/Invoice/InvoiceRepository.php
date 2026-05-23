@@ -397,14 +397,4 @@ class InvoiceRepository extends BaseRepository
 
         return $year . '-' . str_pad((string) $seq, 5, '0', STR_PAD_LEFT);
     }
-
-    /**
-     * Vrati nativni PDO instanci (pro transakce).
-     *
-     * @return \PDO
-     */
-    public function getPdo(): \PDO
-    {
-        return $this->_db->getPdo();
-    }
 }

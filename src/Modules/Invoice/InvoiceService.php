@@ -191,60 +191,47 @@ class InvoiceService extends BaseService
         $issuedAt = $input['issued_at'] ?? date('Y-m-d H:i:s');
         $dueAt    = $input['due_at'] ?? date('Y-m-d', strtotime($issuedAt . ' +14 days'));
 
-        $pdo = $this->_invoice->getPdo();
-        $pdo->beginTransaction();
+        $invoiceRow = $this->_invoice->create([
+            'invoice_number'           => $this->_invoice->generateNumber(),
+            'order_id'                 => $orderId,
+            'order_number'             => $order['order_number'],
+            'status'                   => $input['status'] ?? 'issued',
+            'currency'                 => $order['currency'],
+            'payment'                  => is_array($order['payment'] ?? null)
+                ? json_encode($order['payment'], JSON_UNESCAPED_UNICODE)
+                : (is_string($order['payment'] ?? null) ? $order['payment'] : null),
+            'shipping'                 => is_array($order['shipping'] ?? null)
+                ? json_encode($order['shipping'], JSON_UNESCAPED_UNICODE)
+                : (is_string($order['shipping'] ?? null) ? $order['shipping'] : null),
+            'total_price'              => $order['total_price'],
+            'total_price_with_vat'     => $order['total_price_with_vat'],
+            'total_price_all'          => $order['total_price_all'],
+            'total_price_all_with_vat' => $order['total_price_all_with_vat'],
+            'user'                     => $userSnapshot !== null
+                ? json_encode($userSnapshot, JSON_UNESCAPED_UNICODE) : null,
+            'billing_address'          => $billingSnapshot !== null
+                ? json_encode($billingSnapshot, JSON_UNESCAPED_UNICODE) : null,
+            'shipping_address'         => $shippingSnapshot !== null
+                ? json_encode($shippingSnapshot, JSON_UNESCAPED_UNICODE) : null,
+            'note'                     => $input['note'] ?? $order['note'] ?? null,
+            'issued_at'                => $issuedAt,
+            'due_at'                   => $dueAt,
+        ]);
+        $invoiceId = (int) $invoiceRow['id'];
 
-        try {
-            $invoiceRow = $this->_invoice->create([
-                'invoice_number'           => $this->_invoice->generateNumber(),
-                'order_id'                 => $orderId,
-                'order_number'             => $order['order_number'],
-                'status'                   => $input['status'] ?? 'issued',
-                'currency'                 => $order['currency'],
-                'payment'                  => is_array($order['payment'] ?? null)
-                    ? json_encode($order['payment'], JSON_UNESCAPED_UNICODE)
-                    : (is_string($order['payment'] ?? null) ? $order['payment'] : null),
-                'shipping'                 => is_array($order['shipping'] ?? null)
-                    ? json_encode($order['shipping'], JSON_UNESCAPED_UNICODE)
-                    : (is_string($order['shipping'] ?? null) ? $order['shipping'] : null),
-                'total_price'              => $order['total_price'],
-                'total_price_with_vat'     => $order['total_price_with_vat'],
-                'total_price_all'          => $order['total_price_all'],
-                'total_price_all_with_vat' => $order['total_price_all_with_vat'],
-                'user'                     => $userSnapshot !== null
-                    ? json_encode($userSnapshot, JSON_UNESCAPED_UNICODE) : null,
-                'billing_address'          => $billingSnapshot !== null
-                    ? json_encode($billingSnapshot, JSON_UNESCAPED_UNICODE) : null,
-                'shipping_address'         => $shippingSnapshot !== null
-                    ? json_encode($shippingSnapshot, JSON_UNESCAPED_UNICODE) : null,
-                'note'                     => $input['note'] ?? $order['note'] ?? null,
-                'issued_at'                => $issuedAt,
-                'due_at'                   => $dueAt,
+        foreach ($order['order_items'] ?? [] as $oi) {
+            $this->_invoice->createItem([
+                'invoice_id'           => $invoiceId,
+                'product_name'         => $oi['product_name'] ?? '',
+                'sku'                  => $oi['sku'] ?? null,
+                'quantity'             => (int) $oi['quantity'],
+                'price'                => $oi['price'],
+                'price_with_vat'       => $oi['price_with_vat'],
+                'vat_rate'             => $oi['vat_rate'],
+                'total_price'          => $oi['total_price'],
+                'total_price_with_vat' => $oi['total_price_with_vat'],
             ]);
-            $invoiceId = (int) $invoiceRow['id'];
-
-            // Snapshot polozek z order_items
-            foreach ($order['order_items'] ?? [] as $oi) {
-                $this->_invoice->createItem([
-                    'invoice_id'           => $invoiceId,
-                    'product_name'         => $oi['product_name'] ?? '',
-                    'sku'                  => $oi['sku'] ?? null,
-                    'quantity'             => (int) $oi['quantity'],
-                    'price'                => $oi['price'],
-                    'price_with_vat'       => $oi['price_with_vat'],
-                    'vat_rate'             => $oi['vat_rate'],
-                    'total_price'          => $oi['total_price'],
-                    'total_price_with_vat' => $oi['total_price_with_vat'],
-                ]);
-            }
-
-            $pdo->commit();
-        } catch (\Throwable $e) {
-            $pdo->rollBack();
-            Response::error($e->getMessage(), 500);
         }
-
-        $invoiceId = $invoiceId ?? 0;
 
         // Generuj PDF faktury a uloz jako soubor
         $fullInvoice = $this->_invoice->findById($invoiceId);
