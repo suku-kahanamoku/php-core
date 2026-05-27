@@ -37,6 +37,7 @@ class ProductRepository extends BaseRepository
             'data',
         ];
         $this->_rel = ['categories', 'files'];
+        $this->_jsonCols = ['data'];
     }
 
     /**
@@ -381,6 +382,8 @@ class ProductRepository extends BaseRepository
         if (isset($data['data']) && is_array($data['data'])) {
             $data['data'] = json_encode($data['data'], JSON_UNESCAPED_UNICODE);
         }
+
+        $data = $this->_patchJsonCols($id, $data);
 
         $this->_db->update(
             'product',

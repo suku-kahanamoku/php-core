@@ -22,9 +22,18 @@ class EnumerationRepository extends BaseRepository
     public function __construct(Database $db, string $franchiseCode)
     {
         parent::__construct($db, $franchiseCode);
-        $this->_table = 'enumeration';
-        $this->_alias = 'e';
-        $this->_own   = ['type', 'syscode', 'label', 'value', 'position', 'published', 'data'];
+        $this->_table    = 'enumeration';
+        $this->_alias    = 'e';
+        $this->_own      = [
+            'type',
+            'syscode',
+            'label',
+            'value',
+            'position',
+            'published',
+            'data'
+        ];
+        $this->_jsonCols = ['data'];
     }
 
     /**
@@ -243,9 +252,7 @@ class EnumerationRepository extends BaseRepository
      */
     public function update(int $id, array $data, ?array $projection = null): array
     {
-        if (isset($data['data']) && is_array($data['data'])) {
-            $data['data'] = json_encode($data['data'], JSON_UNESCAPED_UNICODE);
-        }
+        $data = $this->_patchJsonCols($id, $data);
 
         $this->_db->update(
             'enumeration',

@@ -29,11 +29,13 @@ abstract class BaseRepository
     protected Database $_db;
     protected string   $_code;
 
-    protected string $_table = '';
-    protected string $_alias = '';
-    protected array  $_sys   = ['id', 'created_at', 'updated_at', 'deleted'];
-    protected array  $_own   = [];
-    protected array  $_rel   = [];
+    protected string $_table    = '';
+    protected string $_alias    = '';
+    protected array  $_sys      = ['id', 'created_at', 'updated_at', 'deleted'];
+    protected array  $_own      = [];
+    protected array  $_rel      = [];
+    /** Nazvy sloupcu, ktere jsou v DB ulozeny jako JSON (napr. ['data']). */
+    protected array  $_jsonCols = [];
 
     /**
      * @param Database $db
@@ -101,7 +103,60 @@ abstract class BaseRepository
     }
 
     /**
-     * Soft-smazani zaznamu (nastavi deleted = 1).
+     * PATCH semantika pro JSON sloupce.
+     *
+     * Pro kazdy sloupec z $_jsonCols, ktery je v $data pritomen jako pole,
+     * nacte aktualni zaznam a merguje existujici JSON s dodanymi atributy.
+     * Ostatni klice v JSON sloupci zustavaji nedotceny.
+     *
+     * - hodnota null  → ulozi NULL do DB (beze zmeny)
+     * - hodnota pole  → merguje s existujicim JSON a JSON-enkoduje
+     *
+     * @param  int                  $id
+     * @param  array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    protected function _patchJsonCols(int $id, array $data): array
+    {
+        $jsonKeysInData = array_intersect(array_keys($data), $this->_jsonCols);
+
+        if (empty($jsonKeysInData)) {
+            return $data;
+        }
+
+        $current = $this->findById($id) ?? [];
+
+        foreach ($jsonKeysInData as $col) {
+            $newVal = $data[$col];
+
+            if ($newVal === null) {
+                // null explicitne nastavi sloupec na NULL, zadny merge
+                continue;
+            }
+
+            if (is_array($newVal)) {
+                $existing    = (isset($current[$col]) && is_array($current[$col]))
+                    ? $current[$col] : [];
+                $data[$col]  = json_encode(
+                    array_merge($existing, $newVal),
+                    JSON_UNESCAPED_UNICODE
+                );
+            }
+            // Jiz retezec nebo jiny skalar – neupravovat
+        }
+
+        return $data;
+    }
+
+    /**
+     * PATCH semantika pro JSON sloupce.
+     *
+     * Pro kazdy sloupec z $_jsonCols, ktery je v $data pritomen jako pole,
+     * nacte aktualni zaznam a merguje existujici JSON s dodanymi atributy.
+     * Ostatni klice v JSON sloupci zustavaji nedotceny.
+     *
+     * - hodnota null  → ulozi NULL do DB (beze zmeny)
+     * - hodnota pole  → merguje s existujicim JSON a JSON-enkoduje
      *
      * @param  int $id
      * @return int  Pocet ovlivnenych radku (0 nebo 1)
