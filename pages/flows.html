@@ -35,6 +35,156 @@
 <button class="text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-500 hover:border-slate-400 hover:text-slate-700 cursor-pointer font-semibold transition-colors" onclick="showTab('text')">&#128221; Text (CMS)</button>
 <button class="text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-500 hover:border-slate-400 hover:text-slate-700 cursor-pointer font-semibold transition-colors" onclick="showTab('enumeration')">&#128290; Enumeration</button>
 <button class="text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-500 hover:border-slate-400 hover:text-slate-700 cursor-pointer font-semibold transition-colors" onclick="showTab('role')">&#128737; Role</button></div>
+<div class="my-6 max-w-[900px] mx-auto">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <div class="bg-white p-4 rounded-lg border border-slate-200">
+    <h3 class="text-sm font-bold mb-2">Auth flow (generated)</h3>
+    <div class="mermaid">
+sequenceDiagram
+    participant C as Client
+    participant A as API (/auth)
+    participant S as AuthService
+    participant T as UserTokenRepository
+    C->>A: POST /auth/login {email,password}
+    A->>S: login()
+    S->>T: create(token)
+    T-->>S: stored
+    S-->>A: return token
+    A-->>C: 200 {token}
+
+    C->>A: POST /auth/logout (Authorization: Bearer)
+    A->>S: logout()
+    S->>T: delete(token)
+    T-->>S: deleted
+    S-->>A: 200 Logged out
+    A-->>C: 200
+    </div>
+  </div>
+</div><!-- GENERATED MODULE FLOWS START -->
+<div class="module-flow mb-6">
+<h3 class="text-sm font-bold mb-2">Module: Address</h3>
+<div class="grid gap-2">
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span></div><div><div class="font-mono text-slate-700">/address</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span></div><div><div class="font-mono text-slate-700">/addresses/:id</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span></div><div><div class="font-mono text-slate-700">/addresses</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">PATCH</span></div><div><div class="font-mono text-slate-700">/addresses/:id</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">PUT</span></div><div><div class="font-mono text-slate-700">/addresses/:id</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">DELETE</span></div><div><div class="font-mono text-slate-700">/addresses/:id</div><div class="text-xs text-slate-500"></div></div></div>
+</div>
+</div>
+<div class="module-flow mb-6">
+<h3 class="text-sm font-bold mb-2">Module: Auth</h3>
+<div class="grid gap-2">
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span></div><div><div class="font-mono text-slate-700">/auth/login</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span></div><div><div class="font-mono text-slate-700">/auth/logout</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span></div><div><div class="font-mono text-slate-700">/auth/me</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span></div><div><div class="font-mono text-slate-700">/auth/register</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span></div><div><div class="font-mono text-slate-700">/auth/change</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span></div><div><div class="font-mono text-slate-700">/auth/reset</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span></div><div><div class="font-mono text-slate-700">/auth/oauth</div><div class="text-xs text-slate-500"></div></div></div>
+</div>
+</div>
+<div class="module-flow mb-6">
+<h3 class="text-sm font-bold mb-2">Module: Category</h3>
+<div class="grid gap-2">
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span></div><div><div class="font-mono text-slate-700">/categories</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span></div><div><div class="font-mono text-slate-700">/categories/:id</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span></div><div><div class="font-mono text-slate-700">/categories</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">PATCH</span></div><div><div class="font-mono text-slate-700">/categories/:id</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">PUT</span></div><div><div class="font-mono text-slate-700">/categories/:id</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">DELETE</span></div><div><div class="font-mono text-slate-700">/categories/:id</div><div class="text-xs text-slate-500"></div></div></div>
+</div>
+</div>
+<div class="module-flow mb-6">
+<h3 class="text-sm font-bold mb-2">Module: Enumeration</h3>
+<div class="grid gap-2">
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span></div><div><div class="font-mono text-slate-700">/enumerations</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span></div><div><div class="font-mono text-slate-700">/enumerations/types</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span></div><div><div class="font-mono text-slate-700">/enumerations/:id</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span></div><div><div class="font-mono text-slate-700">/enumerations</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">PATCH</span></div><div><div class="font-mono text-slate-700">/enumerations/:id</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">PUT</span></div><div><div class="font-mono text-slate-700">/enumerations/:id</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">DELETE</span></div><div><div class="font-mono text-slate-700">/enumerations/:id</div><div class="text-xs text-slate-500"></div></div></div>
+</div>
+</div>
+<div class="module-flow mb-6">
+<h3 class="text-sm font-bold mb-2">Module: File</h3>
+<div class="grid gap-2">
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span></div><div><div class="font-mono text-slate-700">/files</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span></div><div><div class="font-mono text-slate-700">/files/:id</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span></div><div><div class="font-mono text-slate-700">/files/upload</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span></div><div><div class="font-mono text-slate-700">/files/commit</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">DELETE</span></div><div><div class="font-mono text-slate-700">/files/:id</div><div class="text-xs text-slate-500"></div></div></div>
+</div>
+</div>
+<div class="module-flow mb-6">
+<h3 class="text-sm font-bold mb-2">Module: Invoice</h3>
+<div class="grid gap-2">
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span></div><div><div class="font-mono text-slate-700">/invoices</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span></div><div><div class="font-mono text-slate-700">/invoices/:id</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span></div><div><div class="font-mono text-slate-700">/invoices</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">PATCH</span></div><div><div class="font-mono text-slate-700">/invoices/:id/status</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">DELETE</span></div><div><div class="font-mono text-slate-700">/invoices/:id</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">PATCH</span></div><div><div class="font-mono text-slate-700">/invoices/:id/files</div><div class="text-xs text-slate-500"></div></div></div>
+</div>
+</div>
+<div class="module-flow mb-6">
+<h3 class="text-sm font-bold mb-2">Module: Order</h3>
+<div class="grid gap-2">
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span></div><div><div class="font-mono text-slate-700">/orders</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span></div><div><div class="font-mono text-slate-700">/orders/:id</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span></div><div><div class="font-mono text-slate-700">/orders</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">PATCH</span></div><div><div class="font-mono text-slate-700">/orders/:id/status</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">DELETE</span></div><div><div class="font-mono text-slate-700">/orders/:id</div><div class="text-xs text-slate-500"></div></div></div>
+</div>
+</div>
+<div class="module-flow mb-6">
+<h3 class="text-sm font-bold mb-2">Module: Product</h3>
+<div class="grid gap-2">
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span></div><div><div class="font-mono text-slate-700">/products</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span></div><div><div class="font-mono text-slate-700">/products/:id</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span></div><div><div class="font-mono text-slate-700">/products</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">PATCH</span></div><div><div class="font-mono text-slate-700">/products/:id</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">PUT</span></div><div><div class="font-mono text-slate-700">/products/:id</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">DELETE</span></div><div><div class="font-mono text-slate-700">/products/:id</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">PATCH</span></div><div><div class="font-mono text-slate-700">/products/:id/stock</div><div class="text-xs text-slate-500"></div></div></div>
+</div>
+</div>
+<div class="module-flow mb-6">
+<h3 class="text-sm font-bold mb-2">Module: Role</h3>
+<div class="grid gap-2">
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span></div><div><div class="font-mono text-slate-700">/roles</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span></div><div><div class="font-mono text-slate-700">/roles/:id</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span></div><div><div class="font-mono text-slate-700">/roles</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">PATCH</span></div><div><div class="font-mono text-slate-700">/roles/:id</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">PUT</span></div><div><div class="font-mono text-slate-700">/roles/:id</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">DELETE</span></div><div><div class="font-mono text-slate-700">/roles/:id</div><div class="text-xs text-slate-500"></div></div></div>
+</div>
+</div>
+<div class="module-flow mb-6">
+<h3 class="text-sm font-bold mb-2">Module: Text</h3>
+<div class="grid gap-2">
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span></div><div><div class="font-mono text-slate-700">/texts</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span></div><div><div class="font-mono text-slate-700">/texts/:id</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span></div><div><div class="font-mono text-slate-700">/texts/by</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span></div><div><div class="font-mono text-slate-700">/texts</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">PATCH</span></div><div><div class="font-mono text-slate-700">/texts/:id</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">PUT</span></div><div><div class="font-mono text-slate-700">/texts/:id</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">DELETE</span></div><div><div class="font-mono text-slate-700">/texts/:id</div><div class="text-xs text-slate-500"></div></div></div>
+</div>
+</div>
+<div class="module-flow mb-6">
+<h3 class="text-sm font-bold mb-2">Module: User</h3>
+<div class="grid gap-2">
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span></div><div><div class="font-mono text-slate-700">/users</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span></div><div><div class="font-mono text-slate-700">/users/:id</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span></div><div><div class="font-mono text-slate-700">/users</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">PATCH</span></div><div><div class="font-mono text-slate-700">/users/:id</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">PUT</span></div><div><div class="font-mono text-slate-700">/users/:id</div><div class="text-xs text-slate-500"></div></div></div>
+<div class="bg-white border border-slate-200 rounded-lg p-3 flex items-start gap-3"><div><span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">DELETE</span></div><div><div class="font-mono text-slate-700">/users/:id</div><div class="text-xs text-slate-500"></div></div></div>
+</div>
+</div>
+<!-- GENERATED MODULE FLOWS END -->
 <div id="tab-auth" class="block"><div class="overflow-x-auto"><div class="min-w-[860px]"><div class="grid sticky top-0 z-10 bg-slate-100 pt-3 pb-2" style="grid-template-columns:200px 1fr 160px 1fr 220px">
   <div class="p-2.5 rounded-xl text-center text-xs font-bold border-2 border-blue-500 bg-blue-50 text-blue-700">&#128187; Klient<small class="block font-normal text-xs mt-0.5 opacity-80">frontend / curl</small></div>
   <div></div>
