@@ -99,6 +99,8 @@ POST /auth/logout
 Authorization: Bearer <token>
 ```
 
+Note: This endpoint requires a valid Bearer token in the `Authorization` header; requests without a token will return `401 Unauthorized`.
+
 ---
 
 ## Response Envelope

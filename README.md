@@ -79,6 +79,8 @@ curl http://localhost/php/php-core/api/products \
 
 Tokens expire after 24 hours (configurable via `TOKEN_LIFETIME` in `.env`). Logout invalidates the token server-side.
 
+Note: `POST /api/auth/logout` requires the `Authorization: Bearer <token>` header; calls without a valid token will be rejected with 401.
+
 ## Multi-tenancy
 
 Every request is scoped to a `franchise_code` resolved from the HTTP `Host` header. Allowed codes are defined in `.env` as a comma-separated list:
