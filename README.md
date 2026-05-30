@@ -35,7 +35,7 @@ php bin/migrate.php
 
 Default admin credentials:
 - **Email:** `admin@example.com`
-- **Password:** `12345678` *(change immediately in production)*
+- **Password:** `password` *(change immediately in production)*
 
 ## Development server
 
