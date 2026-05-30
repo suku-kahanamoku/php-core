@@ -239,13 +239,1221 @@
       </div>
 
       <div id="ep-list">
-        <!-- PROJECTION INFO -->
-        <div class="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-5 text-xs text-blue-800">
-          <strong>Projekce (výběr polí):</strong> Přidejte <code>?projection=pole1,pole2</code> k libovolnému endpointu pro výběr jen požadovaných polí.
-          Prázdné <code>?projection=</code> vrátí pouze systémová pole (<code>id</code>, <code>created_at</code>, <code>updated_at</code>).
-          Vynechání parametru vrátí všechna pole. Relace se aktivují jménem, např. <code>projection=user</code> nebo <code>projection=user.email</code>.
-        </div>
-        <!-- ═══════════════════════════════ AUTH ═══════════════════════════════ -->
+<!-- GENERATED API EP-LIST START -->
+<div class="module-section mb-6" data-module="address">
+  <h2 class="text-sm font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">
+    Address &nbsp;<span class="text-slate-400 font-normal text-xs">/api/address/…</span>
+  </h2>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="address" data-search="get address /address ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span>
+      <code class="text-sm font-mono text-slate-700">/address</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /address</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="address" data-search="get address /addresses/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span>
+      <code class="text-sm font-mono text-slate-700">/addresses/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /addresses/:id</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="address" data-search="post address /addresses ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span>
+      <code class="text-sm font-mono text-slate-700">/addresses</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /addresses</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="address" data-search="patch address /addresses/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-amber-500 text-white px-2 py-0.5 rounded text-xs font-bold">PATCH</span>
+      <code class="text-sm font-mono text-slate-700">/addresses/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /addresses/:id</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="address" data-search="put address /addresses/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-orange-600 text-white px-2 py-0.5 rounded text-xs font-bold">PUT</span>
+      <code class="text-sm font-mono text-slate-700">/addresses/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /addresses/:id</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="address" data-search="delete address /addresses/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-red-600 text-white px-2 py-0.5 rounded text-xs font-bold">DELETE</span>
+      <code class="text-sm font-mono text-slate-700">/addresses/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /addresses/:id</code></pre></div>
+    </div>
+  </div>
+</div>
+<div class="module-section mb-6" data-module="auth">
+  <h2 class="text-sm font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">
+    Auth &nbsp;<span class="text-slate-400 font-normal text-xs">/api/auth/…</span>
+  </h2>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="auth" data-search="post auth /auth/login ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span>
+      <code class="text-sm font-mono text-slate-700">/auth/login</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /auth/login</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="auth" data-search="post auth /auth/logout ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span>
+      <code class="text-sm font-mono text-slate-700">/auth/logout</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /auth/logout</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="auth" data-search="get auth /auth/me ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span>
+      <code class="text-sm font-mono text-slate-700">/auth/me</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /auth/me</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="auth" data-search="post auth /auth/register ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span>
+      <code class="text-sm font-mono text-slate-700">/auth/register</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /auth/register</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="auth" data-search="post auth /auth/change ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span>
+      <code class="text-sm font-mono text-slate-700">/auth/change</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /auth/change</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="auth" data-search="post auth /auth/reset ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span>
+      <code class="text-sm font-mono text-slate-700">/auth/reset</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /auth/reset</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="auth" data-search="post auth /auth/oauth ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span>
+      <code class="text-sm font-mono text-slate-700">/auth/oauth</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /auth/oauth</code></pre></div>
+    </div>
+  </div>
+</div>
+<div class="module-section mb-6" data-module="category">
+  <h2 class="text-sm font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">
+    Category &nbsp;<span class="text-slate-400 font-normal text-xs">/api/category/…</span>
+  </h2>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="category" data-search="get category /categories ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span>
+      <code class="text-sm font-mono text-slate-700">/categories</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /categories</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="category" data-search="get category /categories/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span>
+      <code class="text-sm font-mono text-slate-700">/categories/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /categories/:id</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="category" data-search="post category /categories ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span>
+      <code class="text-sm font-mono text-slate-700">/categories</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /categories</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="category" data-search="patch category /categories/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-amber-500 text-white px-2 py-0.5 rounded text-xs font-bold">PATCH</span>
+      <code class="text-sm font-mono text-slate-700">/categories/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /categories/:id</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="category" data-search="put category /categories/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-orange-600 text-white px-2 py-0.5 rounded text-xs font-bold">PUT</span>
+      <code class="text-sm font-mono text-slate-700">/categories/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /categories/:id</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="category" data-search="delete category /categories/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-red-600 text-white px-2 py-0.5 rounded text-xs font-bold">DELETE</span>
+      <code class="text-sm font-mono text-slate-700">/categories/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /categories/:id</code></pre></div>
+    </div>
+  </div>
+</div>
+<div class="module-section mb-6" data-module="enumeration">
+  <h2 class="text-sm font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">
+    Enumeration &nbsp;<span class="text-slate-400 font-normal text-xs">/api/enumeration/…</span>
+  </h2>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="enumeration" data-search="get enumeration /enumerations ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span>
+      <code class="text-sm font-mono text-slate-700">/enumerations</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /enumerations</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="enumeration" data-search="get enumeration /enumerations/types ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span>
+      <code class="text-sm font-mono text-slate-700">/enumerations/types</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /enumerations/types</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="enumeration" data-search="get enumeration /enumerations/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span>
+      <code class="text-sm font-mono text-slate-700">/enumerations/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /enumerations/:id</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="enumeration" data-search="post enumeration /enumerations ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span>
+      <code class="text-sm font-mono text-slate-700">/enumerations</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /enumerations</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="enumeration" data-search="patch enumeration /enumerations/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-amber-500 text-white px-2 py-0.5 rounded text-xs font-bold">PATCH</span>
+      <code class="text-sm font-mono text-slate-700">/enumerations/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /enumerations/:id</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="enumeration" data-search="put enumeration /enumerations/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-orange-600 text-white px-2 py-0.5 rounded text-xs font-bold">PUT</span>
+      <code class="text-sm font-mono text-slate-700">/enumerations/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /enumerations/:id</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="enumeration" data-search="delete enumeration /enumerations/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-red-600 text-white px-2 py-0.5 rounded text-xs font-bold">DELETE</span>
+      <code class="text-sm font-mono text-slate-700">/enumerations/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /enumerations/:id</code></pre></div>
+    </div>
+  </div>
+</div>
+<div class="module-section mb-6" data-module="file">
+  <h2 class="text-sm font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">
+    File &nbsp;<span class="text-slate-400 font-normal text-xs">/api/file/…</span>
+  </h2>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="file" data-search="get file /files ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span>
+      <code class="text-sm font-mono text-slate-700">/files</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /files</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="file" data-search="get file /files/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span>
+      <code class="text-sm font-mono text-slate-700">/files/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /files/:id</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="file" data-search="post file /files/upload ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span>
+      <code class="text-sm font-mono text-slate-700">/files/upload</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /files/upload</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="file" data-search="post file /files/commit ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span>
+      <code class="text-sm font-mono text-slate-700">/files/commit</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /files/commit</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="file" data-search="delete file /files/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-red-600 text-white px-2 py-0.5 rounded text-xs font-bold">DELETE</span>
+      <code class="text-sm font-mono text-slate-700">/files/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /files/:id</code></pre></div>
+    </div>
+  </div>
+</div>
+<div class="module-section mb-6" data-module="invoice">
+  <h2 class="text-sm font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">
+    Invoice &nbsp;<span class="text-slate-400 font-normal text-xs">/api/invoice/…</span>
+  </h2>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="invoice" data-search="get invoice /invoices ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span>
+      <code class="text-sm font-mono text-slate-700">/invoices</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /invoices</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="invoice" data-search="get invoice /invoices/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span>
+      <code class="text-sm font-mono text-slate-700">/invoices/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /invoices/:id</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="invoice" data-search="post invoice /invoices ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span>
+      <code class="text-sm font-mono text-slate-700">/invoices</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /invoices</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="invoice" data-search="patch invoice /invoices/:id/status ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-amber-500 text-white px-2 py-0.5 rounded text-xs font-bold">PATCH</span>
+      <code class="text-sm font-mono text-slate-700">/invoices/:id/status</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /invoices/:id/status</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="invoice" data-search="delete invoice /invoices/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-red-600 text-white px-2 py-0.5 rounded text-xs font-bold">DELETE</span>
+      <code class="text-sm font-mono text-slate-700">/invoices/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /invoices/:id</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="invoice" data-search="patch invoice /invoices/:id/files ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-amber-500 text-white px-2 py-0.5 rounded text-xs font-bold">PATCH</span>
+      <code class="text-sm font-mono text-slate-700">/invoices/:id/files</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /invoices/:id/files</code></pre></div>
+    </div>
+  </div>
+</div>
+<div class="module-section mb-6" data-module="order">
+  <h2 class="text-sm font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">
+    Order &nbsp;<span class="text-slate-400 font-normal text-xs">/api/order/…</span>
+  </h2>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="order" data-search="get order /orders ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span>
+      <code class="text-sm font-mono text-slate-700">/orders</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /orders</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="order" data-search="get order /orders/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span>
+      <code class="text-sm font-mono text-slate-700">/orders/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /orders/:id</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="order" data-search="post order /orders ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span>
+      <code class="text-sm font-mono text-slate-700">/orders</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /orders</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="order" data-search="patch order /orders/:id/status ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-amber-500 text-white px-2 py-0.5 rounded text-xs font-bold">PATCH</span>
+      <code class="text-sm font-mono text-slate-700">/orders/:id/status</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /orders/:id/status</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="order" data-search="delete order /orders/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-red-600 text-white px-2 py-0.5 rounded text-xs font-bold">DELETE</span>
+      <code class="text-sm font-mono text-slate-700">/orders/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /orders/:id</code></pre></div>
+    </div>
+  </div>
+</div>
+<div class="module-section mb-6" data-module="product">
+  <h2 class="text-sm font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">
+    Product &nbsp;<span class="text-slate-400 font-normal text-xs">/api/product/…</span>
+  </h2>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="product" data-search="get product /products ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span>
+      <code class="text-sm font-mono text-slate-700">/products</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /products</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="product" data-search="get product /products/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span>
+      <code class="text-sm font-mono text-slate-700">/products/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /products/:id</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="product" data-search="post product /products ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span>
+      <code class="text-sm font-mono text-slate-700">/products</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /products</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="product" data-search="patch product /products/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-amber-500 text-white px-2 py-0.5 rounded text-xs font-bold">PATCH</span>
+      <code class="text-sm font-mono text-slate-700">/products/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /products/:id</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="product" data-search="put product /products/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-orange-600 text-white px-2 py-0.5 rounded text-xs font-bold">PUT</span>
+      <code class="text-sm font-mono text-slate-700">/products/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /products/:id</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="product" data-search="delete product /products/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-red-600 text-white px-2 py-0.5 rounded text-xs font-bold">DELETE</span>
+      <code class="text-sm font-mono text-slate-700">/products/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /products/:id</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="product" data-search="patch product /products/:id/stock ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-amber-500 text-white px-2 py-0.5 rounded text-xs font-bold">PATCH</span>
+      <code class="text-sm font-mono text-slate-700">/products/:id/stock</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /products/:id/stock</code></pre></div>
+    </div>
+  </div>
+</div>
+<div class="module-section mb-6" data-module="role">
+  <h2 class="text-sm font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">
+    Role &nbsp;<span class="text-slate-400 font-normal text-xs">/api/role/…</span>
+  </h2>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="role" data-search="get role /roles ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span>
+      <code class="text-sm font-mono text-slate-700">/roles</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /roles</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="role" data-search="get role /roles/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span>
+      <code class="text-sm font-mono text-slate-700">/roles/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /roles/:id</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="role" data-search="post role /roles ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span>
+      <code class="text-sm font-mono text-slate-700">/roles</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /roles</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="role" data-search="patch role /roles/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-amber-500 text-white px-2 py-0.5 rounded text-xs font-bold">PATCH</span>
+      <code class="text-sm font-mono text-slate-700">/roles/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /roles/:id</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="role" data-search="put role /roles/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-orange-600 text-white px-2 py-0.5 rounded text-xs font-bold">PUT</span>
+      <code class="text-sm font-mono text-slate-700">/roles/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /roles/:id</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="role" data-search="delete role /roles/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-red-600 text-white px-2 py-0.5 rounded text-xs font-bold">DELETE</span>
+      <code class="text-sm font-mono text-slate-700">/roles/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /roles/:id</code></pre></div>
+    </div>
+  </div>
+</div>
+<div class="module-section mb-6" data-module="text">
+  <h2 class="text-sm font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">
+    Text &nbsp;<span class="text-slate-400 font-normal text-xs">/api/text/…</span>
+  </h2>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="text" data-search="get text /texts ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span>
+      <code class="text-sm font-mono text-slate-700">/texts</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /texts</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="text" data-search="get text /texts/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span>
+      <code class="text-sm font-mono text-slate-700">/texts/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /texts/:id</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="text" data-search="get text /texts/by ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span>
+      <code class="text-sm font-mono text-slate-700">/texts/by</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /texts/by</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="text" data-search="post text /texts ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span>
+      <code class="text-sm font-mono text-slate-700">/texts</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /texts</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="text" data-search="patch text /texts/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-amber-500 text-white px-2 py-0.5 rounded text-xs font-bold">PATCH</span>
+      <code class="text-sm font-mono text-slate-700">/texts/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /texts/:id</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="text" data-search="put text /texts/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-orange-600 text-white px-2 py-0.5 rounded text-xs font-bold">PUT</span>
+      <code class="text-sm font-mono text-slate-700">/texts/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /texts/:id</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="text" data-search="delete text /texts/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-red-600 text-white px-2 py-0.5 rounded text-xs font-bold">DELETE</span>
+      <code class="text-sm font-mono text-slate-700">/texts/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /texts/:id</code></pre></div>
+    </div>
+  </div>
+</div>
+<div class="module-section mb-6" data-module="user">
+  <h2 class="text-sm font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">
+    User &nbsp;<span class="text-slate-400 font-normal text-xs">/api/user/…</span>
+  </h2>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="user" data-search="get user /users ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span>
+      <code class="text-sm font-mono text-slate-700">/users</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /users</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="user" data-search="get user /users/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span>
+      <code class="text-sm font-mono text-slate-700">/users/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /users/:id</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="user" data-search="post user /users ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span>
+      <code class="text-sm font-mono text-slate-700">/users</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /users</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="user" data-search="patch user /users/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-amber-500 text-white px-2 py-0.5 rounded text-xs font-bold">PATCH</span>
+      <code class="text-sm font-mono text-slate-700">/users/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /users/:id</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="user" data-search="put user /users/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-orange-600 text-white px-2 py-0.5 rounded text-xs font-bold">PUT</span>
+      <code class="text-sm font-mono text-slate-700">/users/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /users/:id</code></pre></div>
+    </div>
+  </div>
+  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="user" data-search="delete user /users/:id ">
+    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
+      <span class="method-badge bg-red-600 text-white px-2 py-0.5 rounded text-xs font-bold">DELETE</span>
+      <code class="text-sm font-mono text-slate-700">/users/:id</code>
+      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
+      <span class="text-xs text-slate-500 ml-2"></span>
+      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+    </div>
+    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+  "success": true,
+  "data": null
+}</pre></div>
+      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /users/:id</code></pre></div>
+    </div>
+  </div>
+</div>
+<!-- GENERATED API EP-LIST END -->
+
+<!-- ═══════════════════════════════ AUTH ═══════════════════════════════ -->
         <div class="module-section mb-6" data-module="auth">
           <h2
             class="text-sm font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2"
