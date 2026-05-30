@@ -347,130 +347,339 @@
     </div>
   </div>
 </div>
-<div class="module-section mb-6" data-module="auth">
-  <h2 class="text-sm font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">
-    Auth &nbsp;<span class="text-slate-400 font-normal text-xs">/api/auth/…</span>
-  </h2>
-  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="auth" data-search="post auth /auth/login ">
-    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
-      <span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span>
-      <code class="text-sm font-mono text-slate-700">/auth/login</code>
-      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
-      <span class="text-xs text-slate-500 ml-2"></span>
-      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
-    </div>
-    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
-      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
-      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+<!-- ═══════════════════════════════ AUTH ═══════════════════════════════ -->
+        <div class="module-section mb-6" data-module="auth">
+          <h2
+            class="text-sm font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2"
+          >
+            &#128273; Auth &nbsp;<span
+              class="text-slate-400 font-normal text-xs"
+              >/api/auth/…</span
+            >
+          </h2>
+
+          <!-- login -->
+          <div
+            class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden"
+            data-module="auth"
+            data-search="post auth login přihlášení token"
+          >
+            <div
+              class="ep-row flex items-center gap-3 px-4 py-3"
+              onclick="toggleDetail(this)"
+            >
+              <span
+                class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold"
+                >POST</span
+              >
+              <code class="text-sm font-mono text-slate-700">/auth/login</code>
+              <span
+                class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1"
+                >&#128275; public</span
+              >
+              <span class="text-xs text-slate-500 ml-2"
+                >Přihlášení – vrátí Bearer token</span
+              >
+              <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+            </div>
+            <div
+              class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4"
+            >
+              <div>
+                <div class="text-xs font-bold text-slate-500 mb-1">
+                  Request body (JSON)
+                </div>
+                <pre
+                  class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
+                ><code>{
+  "email": "admin@example.com",
+  "password": "password"
+}</code></pre>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-500 mb-1">
+                  Response 200
+                </div>
+                <pre
+                  class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
+                ><code>{
+  "success": true,
+  "data": {
+    "token": "a3f9c2d8...",
+    "id": 1,
+    "email": "admin@example.com",
+    "role": "admin"
+  }
+}</code></pre>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
+                <pre
+                  class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
+                ><code>curl -X POST $BASE/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email":"admin@example.com",
+    "password":"password"
+  }'</code></pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- logout -->
+          <div
+            class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden"
+            data-module="auth"
+            data-search="post auth logout odhlášení token invalidate"
+          >
+            <div
+              class="ep-row flex items-center gap-3 px-4 py-3"
+              onclick="toggleDetail(this)"
+            >
+              <span
+                class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold"
+                >POST</span
+              >
+              <code class="text-sm font-mono text-slate-700">/auth/logout</code>
+              <span
+                class="bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded font-bold ml-1"
+                >&#128274; auth</span
+              >
+              <span class="text-xs text-slate-500 ml-2"
+                >Odhlášení – invaliduje token v DB</span
+              >
+              <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+            </div>
+            <div
+              class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4"
+            >
+              <div>
+                <div class="text-xs font-bold text-slate-500 mb-1">
+                  Request body
+                </div>
+                <pre
+                  class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
+                ><code>// Prázdné tělo
+// Token čte z Authorization headeru</code></pre>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-500 mb-1">
+                  Response 200
+                </div>
+                <pre
+                  class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
+                ><code>{
   "success": true,
   "data": null
-}</pre></div>
-      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /auth/login</code></pre></div>
-    </div>
-  </div>
-  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="auth" data-search="post auth /auth/logout ">
-    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
-      <span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span>
-      <code class="text-sm font-mono text-slate-700">/auth/logout</code>
-      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
-      <span class="text-xs text-slate-500 ml-2"></span>
-      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
-    </div>
-    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
-      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
-      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
+}</code></pre>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
+                <pre
+                  class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
+                ><code>curl -X POST $BASE/auth/logout \
+  -H "Authorization: Bearer $TOKEN"</code></pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- me -->
+          <div
+            class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden"
+            data-module="auth"
+            data-search="get auth me current user info profil"
+          >
+            <div
+              class="ep-row flex items-center gap-3 px-4 py-3"
+              onclick="toggleDetail(this)"
+            >
+              <span
+                class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold"
+                >GET</span
+              >
+              <code class="text-sm font-mono text-slate-700">/auth/me</code>
+              <span
+                class="bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded font-bold ml-1"
+                >&#128274; auth</span
+              >
+              <span class="text-xs text-slate-500 ml-2"
+                >Přihlášený uživatel – info o sobě</span
+              >
+              <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+            </div>
+            <div
+              class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4"
+            >
+              <div>
+                <div class="text-xs font-bold text-slate-500 mb-1">
+                  Bez těla
+                </div>
+                <pre
+                  class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
+                ><code>// GET – žádné tělo</code></pre>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-500 mb-1">
+                  Response 200
+                </div>
+                <pre
+                  class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
+                ><code>{
+  "success": true,
+  "data": {
+    "id": 1,
+    "email": "admin@example.com",
+    "first_name": "Admin",
+    "last_name": "User",
+    "role": "admin"
+  }
+}</code></pre>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
+                <pre
+                  class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs"
+                ><code>curl $BASE/auth/me \
+  -H "Authorization: Bearer $TOKEN"</code></pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- register -->
+          <div
+            class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden"
+            data-module="auth"
+            data-search="post auth register registrace nový uživatel"
+          >
+            <div
+              class="ep-row flex items-center gap-3 px-4 py-3"
+              onclick="toggleDetail(this)"
+            >
+              <span
+                class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold"
+                >POST</span
+              >
+              <code class="text-sm font-mono text-slate-700"
+                >/auth/register</code
+              >
+              <span
+                class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1"
+                >&#128275; public</span
+              >
+              <span class="text-xs text-slate-500 ml-2"
+                >Registrace nového uživatele</span
+              >
+              <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+            </div>
+            <div
+              class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4"
+            >
+              <div>
+                <div class="text-xs font-bold text-slate-500 mb-1">
+                  Request body
+                </div>
+                <pre
+                  class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
+                ><code>{
+  "first_name": "Jan",
+  "last_name": "Novák",
+  "email": "jan@example.com",
+  "password": "tajne123"
+}</code></pre>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-500 mb-1">
+                  Response 201
+                </div>
+                <pre
+                  class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
+                ><code>{
+  "success": true,
+  "data": {
+    "id": 5,
+    "email": "jan@example.com",
+    "role": "user"
+  }
+}</code></pre>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
+                <pre
+                  class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
+                ><code>curl -X POST $BASE/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"first_name":"Jan",
+       "last_name":"Novák",
+       "email":"jan@example.com",
+       "password":"tajne123"}'</code></pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- change-password -->
+          <div
+            class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden"
+            data-module="auth"
+            data-search="post auth change-password heslo změna"
+          >
+            <div
+              class="ep-row flex items-center gap-3 px-4 py-3"
+              onclick="toggleDetail(this)"
+            >
+              <span
+                class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold"
+                >POST</span
+              >
+              <code class="text-sm font-mono text-slate-700"
+                >/auth/change-password</code
+              >
+              <span
+                class="bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded font-bold ml-1"
+                >&#128274; auth</span
+              >
+              <span class="text-xs text-slate-500 ml-2"
+                >Změna hesla přihlášeného uživatele</span
+              >
+              <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
+            </div>
+            <div
+              class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4"
+            >
+              <div>
+                <div class="text-xs font-bold text-slate-500 mb-1">
+                  Request body
+                </div>
+                <pre
+                  class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
+                ><code>{
+  "current_password": "stare",
+  "new_password": "nove123"
+}</code></pre>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-500 mb-1">
+                  Response 200
+                </div>
+                <pre
+                  class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
+                ><code>{
   "success": true,
   "data": null
-}</pre></div>
-      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /auth/logout</code></pre></div>
-    </div>
-  </div>
-  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="auth" data-search="get auth /auth/me ">
-    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
-      <span class="method-badge bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">GET</span>
-      <code class="text-sm font-mono text-slate-700">/auth/me</code>
-      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
-      <span class="text-xs text-slate-500 ml-2"></span>
-      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
-    </div>
-    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
-      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
-      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
-  "success": true,
-  "data": null
-}</pre></div>
-      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /auth/me</code></pre></div>
-    </div>
-  </div>
-  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="auth" data-search="post auth /auth/register ">
-    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
-      <span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span>
-      <code class="text-sm font-mono text-slate-700">/auth/register</code>
-      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
-      <span class="text-xs text-slate-500 ml-2"></span>
-      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
-    </div>
-    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
-      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
-      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
-  "success": true,
-  "data": null
-}</pre></div>
-      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /auth/register</code></pre></div>
-    </div>
-  </div>
-  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="auth" data-search="post auth /auth/change ">
-    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
-      <span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span>
-      <code class="text-sm font-mono text-slate-700">/auth/change</code>
-      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
-      <span class="text-xs text-slate-500 ml-2"></span>
-      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
-    </div>
-    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
-      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
-      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
-  "success": true,
-  "data": null
-}</pre></div>
-      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /auth/change</code></pre></div>
-    </div>
-  </div>
-  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="auth" data-search="post auth /auth/reset ">
-    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
-      <span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span>
-      <code class="text-sm font-mono text-slate-700">/auth/reset</code>
-      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
-      <span class="text-xs text-slate-500 ml-2"></span>
-      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
-    </div>
-    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
-      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
-      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
-  "success": true,
-  "data": null
-}</pre></div>
-      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /auth/reset</code></pre></div>
-    </div>
-  </div>
-  <div class="ep-item bg-white rounded-xl border border-slate-200 mb-2 overflow-hidden" data-module="auth" data-search="post auth /auth/oauth ">
-    <div class="ep-row flex items-center gap-3 px-4 py-3" onclick="toggleDetail(this)">
-      <span class="method-badge bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">POST</span>
-      <code class="text-sm font-mono text-slate-700">/auth/oauth</code>
-      <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold ml-1">&#128275; public</span>
-      <span class="text-xs text-slate-500 ml-2"></span>
-      <span class="ml-auto text-slate-400 text-xs">&#9660;</span>
-    </div>
-    <div class="ep-detail border-t border-slate-100 px-4 py-4 grid md:grid-cols-3 gap-4">
-      <div><div class="text-xs font-bold text-slate-500 mb-1">Request</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">// see implementation</pre></div>
-      <div><div class="text-xs font-bold text-slate-500 mb-1">Response</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed">{
-  "success": true,
-  "data": null
-}</pre></div>
-      <div><div class="text-xs font-bold text-slate-500 mb-1">curl</div><pre class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"><code>curl /auth/oauth</code></pre></div>
-    </div>
-  </div>
-</div>
+}</code></pre>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-500 mb-1">curl</div>
+                <pre
+                  class="bg-slate-900 text-green-400 rounded-lg p-3 text-xs leading-relaxed"
+                ><code>curl -X POST $BASE/auth/change-password \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"current_password":"stare",
+       "new_password":"nove123"}'</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
 <div class="module-section mb-6" data-module="category">
   <h2 class="text-sm font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">
     Category &nbsp;<span class="text-slate-400 font-normal text-xs">/api/category/…</span>
