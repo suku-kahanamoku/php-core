@@ -24,7 +24,7 @@ class MailerService
             : '';
         $prefix = $normalizedCode !== '' ? $normalizedCode . '_' : '';
 
-        $this->_from     = $_ENV["{$prefix}MAILER_FROM"]
+        $this->_from = $_ENV["{$prefix}MAILER_FROM"]
             ?? $_ENV['MAILER_FROM']
             ?? '';
         $this->_fromName = $_ENV["{$prefix}MAILER_FROM_NAME"]
@@ -42,7 +42,7 @@ class MailerService
         $this->_smtpPort = (int) ($_ENV["{$prefix}MAILER_SMTP_PORT"]
             ?? $_ENV['MAILER_SMTP_PORT']
             ?? 587);
-        $this->_tpl      = new TemplaterService($franchiseCode);
+        $this->_tpl = new TemplaterService($franchiseCode);
     }
 
     /**
@@ -73,14 +73,14 @@ class MailerService
         $allSent    = true;
 
         foreach ($recipients as $recipient) {
-            $sent    = $this->send(
+            $sent = $this->send(
                 $recipient,
                 $subject,
                 $html,
                 $attachments,
                 $bcc,
                 $templateData['fromEmail'] ?? null,
-                $templateData['fromName'] ?? null
+                $templateData['fromName']  ?? null,
             );
             $allSent = $allSent && $sent;
         }
@@ -148,6 +148,21 @@ class MailerService
             return true;
         } catch (\Exception $e) {
             error_log('MailerService: ' . $e->getMessage());
+
+            // Temporary local debug log for shared hosting where PHP error_log is not accessible.
+            $debugLog = dirname(__DIR__, 3) . '/temp/mailer-error.log';
+            $line     = sprintf(
+                "[%s] to=%s subject=%s from=%s smtpHost=%s smtpUser=%s error=%s\n",
+                date('Y-m-d H:i:s'),
+                $to,
+                $subject,
+                $this->_from,
+                $this->_smtpHost,
+                $this->_smtpUser,
+                $e->getMessage(),
+            );
+            @file_put_contents($debugLog, $line, FILE_APPEND);
+
             return false;
         }
     }
