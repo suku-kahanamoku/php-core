@@ -105,11 +105,11 @@ class MailerApi
 
     private function sendContactForm(Request $request): void
     {
-        $name       = trim((string) $request->get('name', ''));
-        $email      = trim((string) $request->get('email', ''));
-        $project    = trim((string) $request->get('project', ''));
-        $message    = trim((string) $request->get('message', ''));
-        $phone      = trim((string) $request->get('phone', ''));
+        $name    = trim((string) $request->get('name', ''));
+        $email   = trim((string) $request->get('email', ''));
+        $project = trim((string) $request->get('project', ''));
+        $message = trim((string) $request->get('message', ''));
+        $phone   = trim((string) $request->get('phone', ''));
 
         $envPrefix = $this->_code !== ''
             ? trim(preg_replace('/[^A-Z0-9]+/', '_', strtoupper($this->_code)), '_') . '_'
@@ -121,9 +121,9 @@ class MailerApi
                 ?? $_ENV['MAILER_ADMIN_EMAIL']
                 ?? $_ENV["{$envPrefix}MAILER_FROM"]
                 ?? $_ENV['MAILER_FROM']
-                ?? ''
+                ?? '',
         ));
-        $adminName  = trim((string) (
+        $adminName = trim((string) (
             $_ENV["{$envPrefix}MAILER_ADMIN_NAME"]
             ?? $_ENV['MAILER_ADMIN_NAME']
             ?? $_ENV["{$envPrefix}MAILER_FROM_NAME"]
@@ -144,7 +144,7 @@ class MailerApi
             ->validate();
 
         if ($adminEmail === '' || !filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
-            Response::error('Admin email is not configured or invalid.', 500);
+            Response::error("$adminEmail, $email, $name, $project, $message", 500);
         }
 
         $templatePrefix = $this->_code !== '' ? $this->_code . '/' : '';
