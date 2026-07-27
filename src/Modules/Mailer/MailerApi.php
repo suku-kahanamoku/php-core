@@ -166,21 +166,7 @@ class MailerApi
         );
 
         if (!$adminSent) {
-            Response::error(json_encode([
-                'to'           => $adminEmail,
-                'subject'      => 'New msg from contact form',
-                'template'     => $templatePrefix . 'contact-form-admin',
-                'templateData' => [
-                    'fromEmail' => $email,
-                    'fromName'  => $name,
-                    'fromPhone' => $phone,
-                    'name'      => $name,
-                    'email'     => $email,
-                    'project'   => $project,
-                    'msg'       => $message,
-                    'phone'     => $phone,
-                ],
-            ]), 500);
+            Response::error('Failed to send admin notification email.', 500);
         }
 
         $userSent = $this->_service->sendMail(

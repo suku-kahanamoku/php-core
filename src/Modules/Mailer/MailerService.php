@@ -148,21 +148,6 @@ class MailerService
             return true;
         } catch (\Exception $e) {
             error_log('MailerService: ' . $e->getMessage());
-
-            // Temporary local debug log for shared hosting where PHP error_log is not accessible.
-            $debugLog = dirname(__DIR__, 3) . '/temp/mailer-error.log';
-            $line     = sprintf(
-                "[%s] to=%s subject=%s from=%s smtpHost=%s smtpUser=%s error=%s\n",
-                date('Y-m-d H:i:s'),
-                $to,
-                $subject,
-                $this->_from,
-                $this->_smtpHost,
-                $this->_smtpUser,
-                $e->getMessage(),
-            );
-            @file_put_contents($debugLog, $line, FILE_APPEND);
-
             return false;
         }
     }
