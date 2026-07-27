@@ -144,7 +144,7 @@ class MailerApi
             ->validate();
 
         if ($adminEmail === '' || !filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
-            Response::error("$adminEmail, $email, $name, $project, $message", 500);
+            Response::error('Admin email is not configured or invalid.', 500);
         }
 
         $templatePrefix = $this->_code !== '' ? $this->_code . '/' : '';
@@ -166,7 +166,7 @@ class MailerApi
         );
 
         if (!$adminSent) {
-            Response::error('Failed to send admin notification email.', 500);
+            Response::error("$adminEmail, $email, $name, $project, $message", 500);
         }
 
         $userSent = $this->_service->sendMail(
