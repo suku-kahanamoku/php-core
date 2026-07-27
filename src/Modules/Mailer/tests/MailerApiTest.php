@@ -38,6 +38,24 @@ $r = request('GET', "{$base}/mailer?to=test@example.com&subject=Test&template=te
 // Buď 200 (SMTP dostupné) nebo 500 (SMTP nedostupné) — obojí je validní chování
 assert_test('GET /mailer with valid params → not 422', $r['status'] !== 422, dump_on_fail($r));
 
+section('Mailer – POST /mailer validation: invalid email');
+$r = request('POST', "{$base}/mailer", [
+    'name'    => 'Test Testerovic',
+    'email'   => 'not-valid-email',
+    'project' => 'ai-strategy',
+    'message' => 'Test Test',
+], false);
+assert_test('POST /mailer invalid email → 422', $r['status'] === 422, dump_on_fail($r));
+
+section('Mailer – POST /mailer validation: valid JSON body');
+$r = request('POST', "{$base}/mailer", [
+    'name'    => 'Test Testerovic',
+    'email'   => 'sukusovi@gmail.com',
+    'project' => 'ai-strategy',
+    'message' => 'Test Test',
+], false);
+assert_test('POST /mailer with valid JSON → not 400/422', !in_array($r['status'], [400, 422]), dump_on_fail($r));
+
 // ── Mailer – GET /test validation ─────────────────────────────────────────────
 
 section('Mailer – /test: missing email param');

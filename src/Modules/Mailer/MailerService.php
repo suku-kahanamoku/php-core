@@ -19,7 +19,10 @@ class MailerService
 
     public function __construct(string $franchiseCode = '')
     {
-        $prefix = $franchiseCode !== '' ? strtoupper($franchiseCode) . '_' : '';
+        $normalizedCode = $franchiseCode !== ''
+            ? trim(preg_replace('/[^A-Z0-9]+/', '_', strtoupper($franchiseCode)), '_')
+            : '';
+        $prefix = $normalizedCode !== '' ? $normalizedCode . '_' : '';
 
         $this->_from     = $_ENV["{$prefix}MAILER_FROM"]
             ?? $_ENV['MAILER_FROM']
