@@ -166,7 +166,21 @@ class MailerApi
         );
 
         if (!$adminSent) {
-            Response::error("$adminEmail, $email, $name, $project, $message", 500);
+            Response::error(json_encode([
+                'to'           => $adminEmail,
+                'subject'      => 'New msg from contact form',
+                'template'     => $templatePrefix . 'contact-form-admin',
+                'templateData' => [
+                    'fromEmail' => $email,
+                    'fromName'  => $name,
+                    'fromPhone' => $phone,
+                    'name'      => $name,
+                    'email'     => $email,
+                    'project'   => $project,
+                    'msg'       => $message,
+                    'phone'     => $phone,
+                ],
+            ]), 500);
         }
 
         $userSent = $this->_service->sendMail(
