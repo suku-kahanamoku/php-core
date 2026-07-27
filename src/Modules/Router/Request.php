@@ -33,10 +33,11 @@ class Request
      */
     public static function resolveCode(): string
     {
-        $host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '';
-        $host = explode(':', $host)[0];
-        $host = preg_replace('/^www\./i', '', $host);
-        $code = $host !== '' ? $host : 'default';
+        $forwardedHost = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_X_ORIGINAL_HOST'] ?? '';
+        $hostHeader    = $forwardedHost !== '' ? $forwardedHost : ($_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '');
+        $host          = trim(explode(',', $hostHeader)[0]);
+        $host          = strtolower(preg_replace('/^www\./i', '', self::extractHost($host)) ?? '');
+        $code          = $host !== '' ? $host : 'default';
 
         // Podporuje format "host:alias,host2:alias2" i puvodni "host,host2"
         $map = [];
@@ -44,10 +45,18 @@ class Request
         $entries = array_map('trim', explode(',', $_ENV['FRANCHISE_CODES'] ?? 'default'));
         foreach ($entries as $entry) {
             if (str_contains($entry, ':')) {
-                [$host, $alias] = explode(':', $entry, 2);
-                $map[trim($host)] = trim($alias);
+                $parts   = explode(':', $entry);
+                $alias   = trim((string) array_pop($parts));
+                $mapHost = trim(implode(':', $parts));
+                $mapHost = strtolower(preg_replace('/^www\./i', '', self::extractHost($mapHost)) ?? '');
+                if ($mapHost !== '' && $alias !== '') {
+                    $map[$mapHost] = $alias;
+                }
             } else {
-                $map[$entry] = $entry;
+                $mapHost = strtolower(preg_replace('/^www\./i', '', self::extractHost($entry)) ?? '');
+                if ($mapHost !== '') {
+                    $map[$mapHost] = trim($entry);
+                }
             }
         }
 
@@ -59,7 +68,7 @@ class Request
                     'success' => false,
                     'message' => "Franchise \"$code\" not recognised.",
                     'errors'  => null,
-                ]
+                ],
             );
             exit;
         }
@@ -68,8 +77,33 @@ class Request
     }
 
     /**
+     * Extracts host from plain host, host:port, or URL-like strings.
+     */
+    private static function extractHost(string $value): string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return '';
+        }
+
+        if (str_contains($value, '://')) {
+            $parsed = parse_url($value, PHP_URL_HOST);
+            if (is_string($parsed) && $parsed !== '') {
+                return $parsed;
+            }
+        }
+
+        $value = explode('/', $value)[0];
+        if (str_contains($value, ':')) {
+            $value = explode(':', $value)[0];
+        }
+
+        return trim($value);
+    }
+
+    /**
      * Rozparsuje cestu z URL a odstraní základní adresář skriptu.
-     * 
+     *
      * @return string
      */
     private function _parsePath(): string
@@ -128,7 +162,7 @@ class Request
 
     /**
      * Vrati vsechny parametry z body i query stringu jako jeden pole.
-     * 
+     *
      * @return array
      */
     public function all(): array
@@ -183,7 +217,7 @@ class Request
 
         if (is_array($raw)) {
             return array_values(
-                array_filter(array_map('trim', $raw), fn($v) => $v !== '')
+                array_filter(array_map('trim', $raw), fn($v) => $v !== ''),
             );
         }
 
@@ -192,7 +226,7 @@ class Request
             $decoded = json_decode($raw, true);
             if (is_array($decoded)) {
                 return array_values(
-                    array_filter(array_map('trim', $decoded), fn($v) => $v !== '')
+                    array_filter(array_map('trim', $decoded), fn($v) => $v !== ''),
                 );
             }
         }
@@ -200,8 +234,8 @@ class Request
         return array_values(
             array_filter(
                 array_map('trim', explode(',', (string) $raw)),
-                fn($v) => $v !== ''
-            )
+                fn($v) => $v !== '',
+            ),
         );
     }
 
