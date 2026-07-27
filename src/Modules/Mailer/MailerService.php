@@ -19,10 +19,7 @@ class MailerService
 
     public function __construct(string $franchiseCode = '')
     {
-        $normalizedCode = $franchiseCode !== ''
-            ? trim(preg_replace('/[^A-Z0-9]+/', '_', strtoupper($franchiseCode)), '_')
-            : '';
-        $prefix = $normalizedCode !== '' ? $normalizedCode . '_' : '';
+        $prefix = $this->resolveMailerEnvPrefix($franchiseCode);
 
         $this->_from = $_ENV["{$prefix}MAILER_FROM"]
             ?? $_ENV['MAILER_FROM']
@@ -43,6 +40,15 @@ class MailerService
             ?? $_ENV['MAILER_SMTP_PORT']
             ?? 587);
         $this->_tpl = new TemplaterService($franchiseCode);
+    }
+
+    private function resolveMailerEnvPrefix(string $franchiseCode): string
+    {
+        if ($franchiseCode === '') {
+            return '';
+        }
+
+        return trim(preg_replace('/[^A-Z0-9]+/', '_', strtoupper($franchiseCode)), '_') . '_';
     }
 
     /**

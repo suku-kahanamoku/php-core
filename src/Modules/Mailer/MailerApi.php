@@ -23,6 +23,7 @@ class MailerApi
     {
         $router->get('/', fn(Request $req) => $this->send($req));
         $router->post('/', fn(Request $req) => $this->sendContactForm($req));
+        $router->post('/newsletter', fn(Request $req) => $this->sendNewsletter($req));
         $router->get('/test', fn(Request $req) => $this->sendTest($req));
         $router->get('/list', fn(Request $req) => $this->listTemplates($req));
     }
@@ -111,24 +112,14 @@ class MailerApi
         $message = trim((string) $request->get('message', ''));
         $phone   = trim((string) $request->get('phone', ''));
 
-        $envPrefix = $this->_code !== ''
-            ? trim(preg_replace('/[^A-Z0-9]+/', '_', strtoupper($this->_code)), '_') . '_'
-            : '';
+        [
+            'adminEmail' => $adminEmail,
+            'adminName'  => $adminName
+        ] = $this->resolveAdminMailbox();
 
         $adminEmail = trim((string) $request->get(
             'adminEmail',
-            $_ENV["{$envPrefix}MAILER_ADMIN_EMAIL"]
-                ?? $_ENV['MAILER_ADMIN_EMAIL']
-                ?? $_ENV["{$envPrefix}MAILER_FROM"]
-                ?? $_ENV['MAILER_FROM']
-                ?? '',
-        ));
-        $adminName = trim((string) (
-            $_ENV["{$envPrefix}MAILER_ADMIN_NAME"]
-            ?? $_ENV['MAILER_ADMIN_NAME']
-            ?? $_ENV["{$envPrefix}MAILER_FROM_NAME"]
-            ?? $_ENV['MAILER_FROM_NAME']
-            ?? ''
+            $adminEmail,
         ));
 
         $data = [
@@ -195,6 +186,101 @@ class MailerApi
             ],
             'Contact form emails sent.',
         );
+    }
+
+    private function sendNewsletter(Request $request): void
+    {
+        $email = trim((string) $request->get('email', ''));
+
+        VALIDATOR(['email' => $email])
+            ->required(['email'])
+            ->email('email')
+            ->validate();
+
+        [
+            'adminEmail' => $adminEmail,
+            'adminName'  => $adminName
+        ] = $this->resolveAdminMailbox();
+
+        if ($adminEmail === '' || !filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
+            Response::error('Admin email is not configured or invalid.', 500);
+        }
+
+        $templatePrefix = $this->_code !== '' ? $this->_code . '/' : '';
+
+        $adminSent = $this->_service->sendMail(
+            to: $adminEmail,
+            subject: 'New newsletter subscription',
+            template: $templatePrefix . 'newsletter-admin',
+            templateData: [
+                'fromEmail' => $email,
+                'fromName'  => $adminName,
+                'fromPhone' => '',
+                'email'     => $email,
+            ],
+        );
+
+        if (!$adminSent) {
+            Response::error('Failed to send admin newsletter notification email.', 500);
+        }
+
+        $userSent = $this->_service->sendMail(
+            to: $email,
+            subject: 'Newsletter subscription confirmation',
+            template: $templatePrefix . 'newsletter',
+            templateData: [
+                'fromEmail' => $adminEmail,
+                'fromName'  => $adminName,
+                'fromPhone' => '',
+                'email'     => $email,
+            ],
+        );
+
+        if (!$userSent) {
+            Response::error('Failed to send newsletter confirmation email to user.', 500);
+        }
+
+        Response::success(
+            [
+                'adminEmail' => $adminEmail,
+                'recipient'  => $email,
+            ],
+            'Newsletter emails sent.',
+        );
+    }
+
+    /**
+     * @return array{adminEmail: string, adminName: string}
+     */
+    private function resolveAdminMailbox(): array
+    {
+        $envPrefix = $this->resolveMailerEnvPrefix();
+
+        return [
+            'adminEmail' => trim((string) (
+                $_ENV["{$envPrefix}MAILER_ADMIN_EMAIL"]
+                ?? $_ENV['MAILER_ADMIN_EMAIL']
+                ?? $_ENV["{$envPrefix}MAILER_FROM"]
+                ?? $_ENV['MAILER_FROM']
+                ?? ''
+            )),
+            'adminName' => trim((string) (
+                $_ENV["{$envPrefix}MAILER_ADMIN_NAME"]
+                ?? $_ENV['MAILER_ADMIN_NAME']
+                ?? $_ENV["{$envPrefix}MAILER_FROM_NAME"]
+                ?? $_ENV['MAILER_FROM_NAME']
+                ?? ''
+            )),
+        ];
+    }
+
+    private function resolveMailerEnvPrefix(): string
+    {
+        if ($this->_code === '') {
+            return '';
+        }
+
+        return trim(preg_replace('/[^A-Z0-9]+/', '_', strtoupper($this->_code)), '_') . '_';
     }
 
     private function sendTest(Request $request): void
