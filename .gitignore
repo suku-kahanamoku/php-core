@@ -6,12 +6,13 @@ temp/
 files/
 .vscode/
 
-.github/
+.github/*
 !.github/copilot-instructions.md
 !.github/COPILOT-OPTIMIZATION.md
 !.github/instructions/
 !.github/prompts/
 !.github/agents/
+!.github/skills/
 
 .php-cs-fixer.php
 .php-cs-fixer.cache
