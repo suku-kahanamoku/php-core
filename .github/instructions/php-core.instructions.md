@@ -4,6 +4,7 @@ These instructions are loaded only when a task is clearly about this repository.
 
 ## Where to look first
 
+- `src/Modules/<Domain>/README.md` for module-specific behavior and file map.
 - `README.md` for setup, architecture, and repository conventions.
 - `API.md` for endpoint contracts, filters, projection rules, and response shapes.
 - `src/Modules/<Domain>/` for module logic.
