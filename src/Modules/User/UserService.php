@@ -132,7 +132,7 @@ class UserService extends BaseService
      * Vyzaduje prihlaseni; uzivatel muze menit vlastni profil, admin muze menit kohokoliv a take roli.
      *
      * @param  int                  $id
-     * @param  array<string, mixed> $input  first_name, last_name, phone, role (admin only)
+     * @param  array<string, mixed> $input  first_name, last_name, phone, email/status/role_id (admin only)
      * @param  array|null           $projection
      * @return array<string, mixed>
      */
@@ -157,6 +157,18 @@ class UserService extends BaseService
         }
 
         if ($this->_auth->hasRole('admin')) {
+            if (array_key_exists('email', $input) && $input['email'] !== null) {
+                $email = trim((string) $input['email']);
+                if ($this->_user->emailExists($email, $id)) {
+                    Response::error('Email already registered', 409);
+                }
+                $set['email'] = $email;
+            }
+
+            if (array_key_exists('status', $input) && $input['status'] !== null) {
+                $set['status'] = (string) $input['status'];
+            }
+
             if (array_key_exists('role_id', $input) && $input['role_id'] !== null) {
                 VALIDATOR(
                     [

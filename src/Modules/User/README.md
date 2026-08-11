@@ -19,4 +19,5 @@ Routes:
 Notes:
 - Admin-only for list/create/update/delete.
 - Self-or-admin access applies to detail and address lookup routes.
+- Only admins may change `email`, `status` and `role_id`; ordinary users may update their own name and phone.
 - Keep user role and validation behavior consistent with auth and API docs.

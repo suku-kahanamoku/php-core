@@ -64,8 +64,16 @@ if ($userCreatedId) {
     assert_test('GET /users/:id 200', $r['status'] === 200, dump_on_fail($r));
     assert_test('email matches', $r['data']['data']['email'] === $userEmail);
 
-    $r = request('PATCH', "{$base}/users/{$userCreatedId}", ['phone' => '+420123456789']);
+    $updatedEmail = TEST_PREFIX . 'updated_' . time() . '@example.com';
+    $r = request('PATCH', "{$base}/users/{$userCreatedId}", [
+        'phone' => '+420123456789', 'email' => $updatedEmail, 'status' => 'inactive',
+    ]);
     assert_test('PATCH /users/:id 200', $r['status'] === 200, dump_on_fail($r));
+    assert_test('PATCH updates email', $r['data']['data']['email'] === $updatedEmail, dump_on_fail($r));
+    assert_test('PATCH updates status', $r['data']['data']['status'] === 'inactive', dump_on_fail($r));
+
+    $r = request('PATCH', "{$base}/users/{$userCreatedId}", ['status' => 'unknown']);
+    assert_test('PATCH invalid status → 422', $r['status'] === 422, dump_on_fail($r));
 
     $r = request('PUT', "{$base}/users/{$userCreatedId}", ['first_name' => 'Updated', 'last_name' => 'Name']);
     assert_test('PUT /users/:id 200', $r['status'] === 200, dump_on_fail($r));

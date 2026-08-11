@@ -1,6 +1,6 @@
 vendor/
 .env
-.env.example
+!.env.example
 
 temp/
 files/

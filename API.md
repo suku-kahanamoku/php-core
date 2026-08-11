@@ -705,7 +705,7 @@ Request:
 | `email`      | ✓        | Unique per franchise                       |
 | `password`   | ✓        | Min 8 characters, stored as bcrypt hash    |
 | `phone`      | —        | Optional                                   |
-| `role`       | —        | Role `name` string; defaults to `"user"`   |
+| `role_id`    | —        | Role ID; defaults to the `user` role        |
 
 #### `PATCH /users/:id`
 
@@ -713,10 +713,15 @@ Send only changed fields (password change uses `/auth/change-password`):
 ```json
 {
   "first_name": "Janka",
+  "email": "janka@example.com",
   "phone": "+420987654321",
-  "role": "manager"
+  "status": "active",
+  "role_id": 2
 }
 ```
+
+`email`, `status` and `role_id` can only be changed by an administrator. `status`
+accepts `active`, `inactive` or `banned`; e-mail remains unique per franchise.
 
 ---
 

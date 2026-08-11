@@ -61,7 +61,7 @@ class UserApi
     /**
      * POST /users — Vytvori noveho uzivatele. Vyzaduje roli admin.
      *
-     * @param Request $request  body: first_name, last_name, email (required), password (required), phone, role
+     * @param Request $request  body: first_name, last_name, email (required), password (required), phone, role_id
      * @return void
      */
     public function create(Request $request): void
@@ -88,16 +88,28 @@ class UserApi
     /**
      * PATCH /users/:id — Castecna aktualizace uzivatele. Vyzaduje prihlaseni; vlastnik nebo admin.
      *
-     * @param Request $request  body: first_name, last_name, phone, role_id
+     * @param Request $request  body: first_name, last_name, phone, email, status, role_id
      * @param array{id: string} $params
      * @return void
      */
     public function update(Request $request, array $params): void
     {
+        $email  = $request->get('email');
+        $status = $request->get('status');
+        $validator = VALIDATOR(['email' => $email, 'status' => $status])
+            ->email('email')
+            ->in('status', ['active', 'inactive', 'banned']);
+        if ($email !== null) {
+            $validator->required('email');
+        }
+        $validator->validate();
+
         $user = $this->_service->update((int) $params['id'], [
             'first_name' => $request->get('first_name'),
             'last_name'  => $request->get('last_name'),
+            'email'      => $email,
             'phone'      => $request->get('phone'),
+            'status'     => $status,
             'role_id'    => $request->get('role_id') !== null
                 ? (int) $request->get('role_id') : null,
         ], $request->projection());

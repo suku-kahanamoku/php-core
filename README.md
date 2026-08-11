@@ -91,6 +91,19 @@ FRANCHISE_CODES=default,shop1,shop2
 
 Requests from unknown hosts return `403 Forbidden`.
 
+### Zoo CRM tenant
+
+The companion Nuxt application in `nuxt/zoo` uses the `zoo` tenant. For a local
+installation, keep `zoo.localhost:zoo` in `FRANCHISE_CODES`, then seed its roles,
+administrator and animal categories:
+
+```bash
+mysql -u php_core -p php_core < migrations/zoo_seed.sql
+```
+
+The development administrator is `admin@zoo.local` with password `password`.
+Change it immediately outside local development.
+
 ## Project structure
 
 ```
@@ -294,5 +307,4 @@ Tables (16): `enumeration`, `role`, `user`, `address`, `user_token`, `category`,
 - **`category.syscode`** — machine-readable identifier for filtering via `category_syscode` query param.
 - **`product.data`** — flexible JSON column. Filter via dot-notation: `q={"data.year":{"value":2022}}`.
 - **`deleted`** — soft-delete flag (`TINYINT(1) DEFAULT 0`) present on every entity table.
-
 
