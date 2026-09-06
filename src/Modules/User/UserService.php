@@ -59,8 +59,11 @@ class UserService extends BaseService
         string $sort = '',
         string $filter = '',
         ?array $projection = null,
+        bool $internalRead = false,
     ): array {
-        $this->_auth->requireRole('admin');
+        if (!$internalRead) {
+            $this->_auth->requireRole('admin');
+        }
         return $this->_user->findAll(
             $page,
             $limit,
@@ -79,11 +82,17 @@ class UserService extends BaseService
      * @param  array|null $projection
      * @return array<string, mixed>
      */
-    public function get(int $id, ?array $projection = null): array
+    public function get(
+        int $id,
+        ?array $projection = null,
+        bool $internalRead = false,
+    ): array
     {
-        $this->_auth->require();
+        if (!$internalRead) {
+            $this->_auth->require();
+        }
 
-        $isAdmin = $this->_auth->hasRole('admin');
+        $isAdmin = $internalRead || $this->_auth->hasRole('admin');
         if (!$isAdmin && $this->_auth->id() !== $id) {
             Response::notFound('User not found');
         }

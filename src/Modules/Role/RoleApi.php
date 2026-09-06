@@ -9,6 +9,7 @@ use App\Modules\Database\Database;
 use App\Modules\Router\Request;
 use App\Modules\Router\Response;
 use App\Modules\Router\Router;
+use App\Utils\InternalAuth;
 
 class RoleApi
 {
@@ -40,6 +41,7 @@ class RoleApi
             (string) $request->get('sort', ''),
             (string) $request->get('q', ''),
             $request->projection(),
+            InternalAuth::check($request),
         );
         Response::successList($result, $request);
     }
@@ -53,7 +55,11 @@ class RoleApi
      */
     public function get(Request $request, array $params): void
     {
-        $item    = $this->_service->get((int) $params['id'], $request->projection());
+        $item = $this->_service->get(
+            (int) $params['id'],
+            $request->projection(),
+            InternalAuth::check($request),
+        );
         Response::successItem($item, $request);
     }
 

@@ -50,9 +50,12 @@ class RoleService extends BaseService
         int $limit = 20,
         string $sort = '',
         string $filter = '',
-        ?array $projection = null
+        ?array $projection = null,
+        bool $internalRead = false,
     ): array {
-        $this->_auth->requireRole('admin');
+        if (!$internalRead) {
+            $this->_auth->requireRole('admin');
+        }
         return $this->_role->findAll($page, $limit, $sort, $filter, $projection);
     }
 
@@ -70,9 +73,15 @@ class RoleService extends BaseService
      *   user_count: int
      * }
      */
-    public function get(int $id, ?array $projection = null): array
+    public function get(
+        int $id,
+        ?array $projection = null,
+        bool $internalRead = false,
+    ): array
     {
-        $this->_auth->requireRole('admin');
+        if (!$internalRead) {
+            $this->_auth->requireRole('admin');
+        }
         $role = $this->_role->findById($id);
         $this->_requireEntity($role, 'Role not found');
 
