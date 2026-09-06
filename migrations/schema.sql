@@ -68,6 +68,8 @@ CREATE TABLE `user` (
     `last_name`     VARCHAR(100) NOT NULL,
     `email`         VARCHAR(255) NOT NULL,
     `phone`         VARCHAR(30)           DEFAULT NULL,
+    `client_type_id` INT UNSIGNED         DEFAULT NULL COMMENT 'logical FK → enumeration.id (type client_type)',
+    `profile`       JSON                  DEFAULT NULL COMMENT 'CRM customer profile and recommendations',
     `password`      VARCHAR(255) NOT NULL,
     `role_id`       INT UNSIGNED NOT NULL COMMENT 'FK → role.id',
     `status`        ENUM('active','inactive','banned') NOT NULL DEFAULT 'active',
@@ -79,6 +81,7 @@ CREATE TABLE `user` (
     UNIQUE KEY `uq_user_franchise_email` (`franchise_code`, `email`),
     KEY `idx_user_franchise` (`franchise_code`),
     KEY `idx_user_role_id`   (`role_id`),
+    KEY `idx_user_client_type_id` (`client_type_id`),
     KEY `idx_user_deleted`   (`deleted`),
     CONSTRAINT `fk_user_role` FOREIGN KEY (`role_id`) REFERENCES `role` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

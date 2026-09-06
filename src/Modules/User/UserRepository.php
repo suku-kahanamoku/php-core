@@ -30,10 +30,13 @@ class UserRepository extends BaseRepository
             'last_name',
             'email',
             'phone',
+            'client_type_id',
+            'profile',
             'role_id',
             'status',
         ];
-        $this->_rel = ['role'];
+        $this->_rel = ['role', 'client_type'];
+        $this->_jsonCols = ['profile'];
     }
 
     /**
@@ -104,9 +107,24 @@ class UserRepository extends BaseRepository
             array_keys($decodedFilter),
             static fn($k) => str_starts_with((string) $k, 'role.')
         ));
+        $needsClientTypeFilter = !empty(array_filter(
+            array_keys($decodedFilter),
+            static fn($k) => str_starts_with((string) $k, 'client_type.')
+        ));
         $needsRoleJoin = $proj->needsJoin('role') || $needsRoleFilter;
-        $joinSql       = $needsRoleJoin ? 'LEFT JOIN role r ON r.id = u.role_id AND r.deleted = 0' : '';
-        $relSel        = $needsRoleJoin ? ', r.name AS role_name' : '';
+        $needsClientTypeJoin = $proj->needsJoin('client_type') || $needsClientTypeFilter;
+        $joinSql = $needsRoleJoin
+            ? ' LEFT JOIN role r ON r.id = u.role_id AND r.deleted = 0'
+            : '';
+        if ($needsClientTypeJoin) {
+            $joinSql .= " LEFT JOIN enumeration ct ON ct.id = u.client_type_id
+                AND ct.franchise_code = u.franchise_code
+                AND ct.type = 'client_type' AND ct.deleted = 0";
+        }
+        $relSel = $needsRoleJoin ? ', r.name AS role_name, r.label AS role_label' : '';
+        if ($needsClientTypeJoin) {
+            $relSel .= ', ct.syscode AS client_type_syscode, ct.label AS client_type_label';
+        }
 
         $select = "{$baseSelect}{$relSel}";
 
@@ -124,13 +142,26 @@ class UserRepository extends BaseRepository
         );
 
         foreach ($items as &$item) {
+            if (isset($item['profile'])) {
+                $item['profile'] = $item['profile'] ? json_decode($item['profile'], true) : null;
+            }
             $item = $proj->apply(
                 $item,
                 $sys,
-                ['role' => [
-                    'fk' => 'role_id',
-                    'nest' => ['name' => 'role_name', 'id' => 'role_id']
-                ]]
+                [
+                    'role' => [
+                        'fk' => 'role_id',
+                        'nest' => ['name' => 'role_name', 'label' => 'role_label', 'id' => 'role_id']
+                    ],
+                    'client_type' => [
+                        'fk' => 'client_type_id',
+                        'nest' => [
+                            'syscode' => 'client_type_syscode',
+                            'label' => 'client_type_label',
+                            'id' => 'client_type_id'
+                        ]
+                    ]
+                ]
             );
         }
         unset($item);
@@ -167,7 +198,13 @@ class UserRepository extends BaseRepository
         $relSel  = '';
         if ($proj->needsJoin('role')) {
             $joinSql = 'LEFT JOIN role r ON r.id = u.role_id AND r.deleted = 0';
-            $relSel  = ', r.name AS role_name';
+            $relSel  = ', r.name AS role_name, r.label AS role_label';
+        }
+        if ($proj->needsJoin('client_type')) {
+            $joinSql .= " LEFT JOIN enumeration ct ON ct.id = u.client_type_id
+                AND ct.franchise_code = u.franchise_code
+                AND ct.type = 'client_type' AND ct.deleted = 0";
+            $relSel .= ', ct.syscode AS client_type_syscode, ct.label AS client_type_label';
         }
 
         $select = "{$baseSelect}{$relSel}";
@@ -182,13 +219,27 @@ class UserRepository extends BaseRepository
             return null;
         }
 
+        if (isset($user['profile'])) {
+            $user['profile'] = $user['profile'] ? json_decode($user['profile'], true) : null;
+        }
+
         return $proj->apply(
             $user,
             $sys,
-            ['role' => [
-                'fk' => 'role_id',
-                'nest' => ['name' => 'role_name', 'id' => 'role_id']
-            ]]
+            [
+                'role' => [
+                    'fk' => 'role_id',
+                    'nest' => ['name' => 'role_name', 'label' => 'role_label', 'id' => 'role_id']
+                ],
+                'client_type' => [
+                    'fk' => 'client_type_id',
+                    'nest' => [
+                        'syscode' => 'client_type_syscode',
+                        'label' => 'client_type_label',
+                        'id' => 'client_type_id'
+                    ]
+                ]
+            ]
         );
     }
 
@@ -272,6 +323,10 @@ class UserRepository extends BaseRepository
      */
     public function create(array $data, ?array $projection = null): array
     {
+        if (isset($data['profile']) && is_array($data['profile'])) {
+            $data['profile'] = json_encode($data['profile'], JSON_UNESCAPED_UNICODE);
+        }
+
         $id = $this->_db->insert('user', array_merge($data, [
             'franchise_code' => $this->_code,
         ]));
@@ -300,6 +355,8 @@ class UserRepository extends BaseRepository
      */
     public function update(int $id, array $data, ?array $projection = null): array
     {
+        $data = $this->_patchJsonCols($id, $data);
+
         $this->_db->update(
             'user',
             $data,
