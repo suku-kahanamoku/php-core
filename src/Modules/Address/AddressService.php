@@ -43,15 +43,20 @@ class AddressService extends BaseService
         string $filter = '',
         ?array $projection = null,
         ?int $userId = null,
+        bool $internalRead = false,
     ): array {
-        if ($userId === null) {
-            $this->_auth->requireRole('admin');
-        } else {
-            $this->_auth->require();
-            if (!$this->_auth->hasRole('admin') && $this->_auth->id() !== $userId) {
-                Response::notFound('User not found');
+        if (!$internalRead) {
+            if ($userId === null) {
+                $this->_auth->requireRole('admin');
+            } else {
+                $this->_auth->require();
+                if (!$this->_auth->hasRole('admin') && $this->_auth->id() !== $userId) {
+                    Response::notFound('User not found');
+                }
             }
+        }
 
+        if ($userId !== null) {
             $decoded = json_decode($filter, true);
             $decoded = is_array($decoded) ? $decoded : [];
             $decoded['user_id'] = ['value' => $userId];
@@ -70,11 +75,17 @@ class AddressService extends BaseService
      * @param  array|null $projection
      * @return array<string, mixed>
      */
-    public function get(int $id, ?array $projection = null): array
+    public function get(
+        int $id,
+        ?array $projection = null,
+        bool $internalRead = false,
+    ): array
     {
-        $this->_auth->require();
+        if (!$internalRead) {
+            $this->_auth->require();
+            $this->_assertOwner($id);
+        }
 
-        $this->_assertOwner($id);
         $address = $this->_address->findById($id, $projection);
         $this->_requireEntity($address, 'Address not found');
 
