@@ -16,6 +16,6 @@ Routes:
 - `DELETE /roles/:id`
 
 Notes:
-- Read access follows the router/auth configuration in the project.
-- Write operations require admin.
+- List/detail reads require either an admin Bearer token or a valid `X-Internal-Key`.
+- The internal key is read-only here; write operations always require admin.
 - Keep role names lowercase and validated against the documented pattern.

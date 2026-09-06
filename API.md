@@ -28,6 +28,8 @@
    - [Orders](#orders)
    - [Invoices](#invoices)
    - [Files](#files)
+   - [Mailer](#mailer)
+   - [Templater](#templater)
 10. [Soft delete vs. hard delete](#soft-delete-vs-hard-delete)
 11. [Field Reference](#field-reference)
 12. [Common Patterns & Frontend Recipes](#common-patterns--frontend-recipes)
@@ -45,13 +47,19 @@ All list endpoints support three universal query parameters:
 | `page`     | Page number (default: `1`)         |
 | `limit`    | Items per page (default: `20`, max: `100`) |
 | `sort`     | JSON sort specification (see [Sorting](#sorting)) |
-| `filter`   | JSON filter specification (see [Filtering](#filtering)) |
+| `q`        | JSON filter specification (see [Filtering](#filtering)) |
 
 ---
 
 ## Authentication
 
-The API uses **Bearer token** authentication.
+The API uses **Bearer token** authentication for users and a separate
+server-only `X-Internal-Key` for narrowly defined trusted operations.
+
+Every request is tenant-scoped. The request host (or trusted proxy's
+`X-Forwarded-Host`) must be present in `FRANCHISE_CODES`; an unknown host returns
+`403` even when the internal key is valid. The internal key is not a universal
+admin credential and must never be sent to browser code.
 
 ### Obtaining a token
 
@@ -254,7 +262,7 @@ GET /roles?sort=[{"position":1},{"name":1}]
 
 ## Filtering
 
-The `filter` parameter accepts a **JSON object** where each key is a column name and the value is a specification object `{ "value": ..., "operator": "..." }`.
+The `q` parameter accepts a **JSON object** where each key is a column name and the value is a specification object `{ "value": ..., "operator": "..." }`.
 
 ### Format
 
@@ -317,7 +325,7 @@ const filter = JSON.stringify({
   status: { value: "active" },
   price:  { value: [100, 500], operator: "range" }
 });
-const url = `/products?filter=${encodeURIComponent(filter)}`;
+const url = `/products?q=${encodeURIComponent(filter)}`;
 ```
 
 ### Combining sort + filter + pagination
@@ -329,44 +337,44 @@ GET /products
   ?page=1
   &limit=20
   &sort=[{"price":1}]
-  &filter={"price":{"value":[100,500],"operator":"range"},"name":{"value":"shirt","operator":"regex"}}
+  &q={"price":{"value":[100,500],"operator":"range"},"name":{"value":"shirt","operator":"regex"}}
 ```
 
 ### Practical filter examples
 
 ```
 # Exact match (default operator)
-filter={"status":{"value":"active"}}
+q={"status":{"value":"active"}}
 
 # Not equal
-filter={"status":{"value":"cancelled","operator":"neq"}}
+q={"status":{"value":"cancelled","operator":"neq"}}
 
 # Numeric comparison – price above 1000
-filter={"price":{"value":1000,"operator":"gt"}}
+q={"price":{"value":1000,"operator":"gt"}}
 
 # Date range
-filter={"created_at":{"value":["2026-01-01","2026-12-31"],"operator":"range"}}
+q={"created_at":{"value":["2026-01-01","2026-12-31"],"operator":"range"}}
 
 # Contains (case-sensitive LIKE)
-filter={"name":{"value":"shirt","operator":"regex"}}
+q={"name":{"value":"shirt","operator":"regex"}}
 
 # Starts with
-filter={"email":{"value":"admin","operator":"start"}}
+q={"email":{"value":"admin","operator":"start"}}
 
 # Ends with
-filter={"email":{"value":"@example.com","operator":"end"}}
+q={"email":{"value":"@example.com","operator":"end"}}
 
 # IN list – multiple statuses
-filter={"status":{"value":["pending","confirmed"],"operator":"in"}}
+q={"status":{"value":["pending","confirmed"],"operator":"in"}}
 
 # IS NULL
-filter={"deleted_at":{"operator":"null"}}
+q={"deleted_at":{"operator":"null"}}
 
 # IS NOT NULL
-filter={"phone":{"operator":"notnull"}}
+q={"phone":{"operator":"notnull"}}
 
-# Multi-column – active products in price range
-filter={"is_active":{"value":1},"price":{"value":[50,200],"operator":"range"}}
+# Multi-column – published products in price range
+q={"published":{"value":1},"price":{"value":[50,200],"operator":"range"}}
 ```
 
 ---
@@ -432,6 +440,8 @@ POST /products?projection=id,sku,name
 
 > **Auth note:** Unless marked as **Public**, all endpoints require `Authorization: Bearer <token>`.  
 > Admin-only endpoints additionally require the authenticated user to have the `admin` role.
+> **Internal** means a server-to-server request with a valid `X-Internal-Key`.
+> This key grants only the operations explicitly marked below.
 
 ---
 
@@ -444,6 +454,9 @@ POST /products?projection=id,sku,name
 | POST   | `/auth/logout`          | Required | Invalidate current token  |
 | GET    | `/auth/me`              | Required | Current user info         |
 | POST   | `/auth/change-password` | Required | Change own password       |
+| POST   | `/auth/reset-password`  | Public   | Request one-time reset    |
+| POST   | `/auth/complete-reset`  | Public   | Complete reset with token |
+| POST   | `/auth/oauth`           | Internal | Trusted OAuth handoff     |
 
 ---
 
@@ -552,14 +565,33 @@ Response `200`: `{ "success": true, "message": "Password changed successfully", 
 
 ---
 
+#### `POST /auth/reset-password`
+
+**Public, rate-limited.** Accepts `{ "email": "jana@example.com" }`. The
+response does not reveal whether the account exists. A short-lived one-time
+token is delivered by the configured reset flow.
+
+#### `POST /auth/complete-reset`
+
+**Public, rate-limited.** Accepts `{ "token": "...", "new_password":
+"newpassword123" }`. A token cannot be reused.
+
+#### `POST /auth/oauth`
+
+**Internal only.** Requires `X-Internal-Key` and provider-verified `provider`,
+`subject`, `email`, `first_name`, and `last_name`. Accounts are bound to the
+provider subject; e-mail alone is not accepted as proof of identity.
+
+---
+
 ### Roles
 
-> **Admin only** for write operations. Read is public (no auth required for list/get if the router allows it — verify your configuration).
+> Writes require admin. Reads require either admin Bearer authentication or a valid internal key.
 
 | Method | Endpoint       | Auth       | Description       |
 |--------|----------------|------------|-------------------|
-| GET    | `/roles`       | Required   | List all roles    |
-| GET    | `/roles/:id`   | Required   | Get role by ID    |
+| GET    | `/roles`       | Admin or internal | List all roles    |
+| GET    | `/roles/:id`   | Admin or internal | Get role by ID    |
 | POST   | `/roles`       | Admin only | Create role       |
 | PATCH  | `/roles/:id`   | Admin only | Partial update    |
 | PUT    | `/roles/:id`   | Admin only | Full replace      |
@@ -596,10 +628,10 @@ Query parameters:
 | `page`    | Page number (default: 1)          |
 | `limit`   | Per page (default: 20, max: 100)  |
 | `sort`    | JSON sort (columns: `name`, `label`, `position`, `created_at`) |
-| `filter`  | JSON filter (same columns)        |
+| `q`       | JSON filter (same columns)        |
 
 ```
-GET /roles?sort=[{"position":1}]&filter={"name":{"value":"adm","operator":"start"}}
+GET /roles?sort=[{"position":1}]&q={"name":{"value":"adm","operator":"start"}}
 ```
 
 #### `POST /roles`
@@ -640,13 +672,13 @@ Full replacement — all fields required:
 
 | Method | Endpoint       | Auth         | Description          |
 |--------|----------------|--------------|----------------------|
-| GET    | `/users`       | Admin only   | List all users       |
-| GET    | `/users/:id`   | Self or admin| Get user by ID       |
+| GET    | `/users`       | Admin or internal | List all users       |
+| GET    | `/users/:id`   | Self, admin, or internal | Get user by ID       |
 | POST   | `/users`       | Admin only   | Create user          |
-| PATCH  | `/users/:id`   | Admin only   | Partial update       |
-| PUT    | `/users/:id`   | Admin only   | Full replace         |
+| PATCH  | `/users/:id`   | Self or admin | Update permitted fields |
+| PUT    | `/users/:id`   | Self or admin | Replace permitted fields |
 | DELETE | `/users/:id`   | Admin only   | Delete user          |
-| GET    | `/users/:id/address` | Self or admin | List user's addresses |
+| GET    | `/users/:id/address` | Self, admin, or internal | List user's addresses |
 
 #### User object
 
@@ -676,13 +708,13 @@ Query parameters:
 | `search`  | Full-text search in `first_name`, `last_name`, `email`    |
 | `role`    | Filter by role name (e.g. `?role=admin`)                  |
 | `sort`    | JSON sort (columns: `first_name`, `last_name`, `email`, `created_at`, `last_login_at`) |
-| `filter`  | JSON filter (same columns + `phone`, `role_id`)           |
+| `q`       | JSON filter (same columns + `phone`, `role_id`)           |
 
 ```
 GET /users?search=jana&role=user&sort=[{"last_name":1}]&page=1&limit=20
 ```
 
-> Note: `search` and `role` are shorthand convenience params. For more complex queries, use `filter`.
+> Note: `search` and `role` are shorthand convenience params. For more complex queries, use `q`.
 
 #### `POST /users`
 
@@ -727,16 +759,18 @@ accepts `active`, `inactive` or `banned`; e-mail remains unique per franchise.
 
 ### Addresses
 
-Addresses belong to a user. They are accessed under `/users/:userId/address` (list) and directly under `/addresses/:id` (get/update/delete).
+Addresses belong to a user. They are available as a global `/address` collection,
+under `/users/:userId/address`, and directly under `/address/:id`.
 
 | Method | Endpoint                    | Auth           | Description                |
 |--------|-----------------------------|----------------|----------------------------|
-| GET    | `/users/:userId/address`    | Self or admin  | List user's addresses      |
-| GET    | `/addresses/:id`            | Self or admin  | Get single address         |
-| POST   | `/addresses`                | Required       | Create address             |
-| PATCH  | `/addresses/:id`            | Self or admin  | Partial update             |
-| PUT    | `/addresses/:id`            | Self or admin  | Full replace               |
-| DELETE | `/addresses/:id`            | Self or admin  | Delete address             |
+| GET    | `/address`                  | Admin or internal | List all tenant addresses |
+| GET    | `/users/:userId/address`    | Self, admin, or internal | List user's addresses |
+| GET    | `/address/:id`              | Self, admin, or internal | Get single address |
+| POST   | `/address`                  | Required       | Create own address         |
+| PATCH  | `/address/:id`              | Self or admin  | Partial update             |
+| PUT    | `/address/:id`              | Self or admin  | Full replace               |
+| DELETE | `/address/:id`              | Self or admin  | Delete address             |
 
 #### Address object
 
@@ -776,7 +810,7 @@ Query parameters:
 |-----------|--------------------------------------------------|
 | `type`    | Filter by type: `billing` or `shipping`          |
 | `sort`    | JSON sort (columns: `type`, `city`, `is_default`, `created_at`) |
-| `filter`  | JSON filter                                      |
+| `q`       | JSON filter                                      |
 | `page`    | Page number                                      |
 | `limit`   | Per page (max: 100)                              |
 
@@ -784,7 +818,7 @@ Query parameters:
 GET /users/1/address?type=billing&sort=[{"is_default":-1}]
 ```
 
-#### `POST /addresses`
+#### `POST /address`
 
 ```json
 {
@@ -795,12 +829,12 @@ GET /users/1/address?type=billing&sort=[{"is_default":-1}]
   "city": "Brno",
   "zip": "602 00",
   "country": "CZ",
-  "is_default": 1,
-  "user_id": 42
+  "is_default": 1
 }
 ```
 
-> `user_id` is only respected when the caller has the `admin` role. Otherwise the address is created for the authenticated user.
+The address is always created for the authenticated caller; request `user_id`
+does not reassign ownership.
 
 > When `is_default: 1` is set, all other addresses of the same `type` for that user are automatically cleared (`is_default → 0`).
 
@@ -810,8 +844,8 @@ GET /users/1/address?type=billing&sort=[{"is_default":-1}]
 
 | Method | Endpoint           | Auth       | Description           |
 |--------|--------------------|------------|-----------------------|
-| GET    | `/categories`      | Required   | List all categories   |
-| GET    | `/categories/:id`  | Required   | Get category by ID    |
+| GET    | `/categories`      | Public     | Published categories; admin sees all |
+| GET    | `/categories/:id`  | Public     | Published category; admin may read any |
 | POST   | `/categories`      | Admin only | Create category       |
 | PATCH  | `/categories/:id`  | Admin only | Partial update        |
 | PUT    | `/categories/:id`  | Admin only | Full replace          |
@@ -859,13 +893,13 @@ Query parameters:
 | `page`    | Page number                                         |
 | `limit`   | Per page (max: 100)                                 |
 | `sort`    | JSON sort (columns: `name`, `position`, `parent_id`, `created_at`) |
-| `filter`  | JSON filter                                         |
+| `q`       | JSON filter                                         |
 
 ```
-GET /categories?sort=[{"position":1},{"name":1}]&filter={"parent_id":{"operator":"null"}}
+GET /categories?sort=[{"position":1},{"name":1}]&q={"parent_id":{"operator":"null"}}
 ```
 
-> Tip: Use `filter={"parent_id":{"operator":"null"}}` to get only top-level (root) categories.
+> Tip: Use `q={"parent_id":{"operator":"null"}}` to get only top-level (root) categories.
 
 #### `POST /categories`
 
@@ -893,8 +927,8 @@ GET /categories?sort=[{"position":1},{"name":1}]&filter={"parent_id":{"operator"
 
 | Method | Endpoint               | Auth       | Description            |
 |--------|------------------------|------------|------------------------|
-| GET    | `/products`            | Required   | List all products      |
-| GET    | `/products/:id`        | Required   | Get product by ID      |
+| GET    | `/products`            | Public     | Published products; admin sees all |
+| GET    | `/products/:id`        | Public     | Published product; admin may read any |
 | POST   | `/products`            | Admin only | Create product         |
 | PATCH  | `/products/:id`        | Admin only | Partial update         |
 | PUT    | `/products/:id`        | Admin only | Full replace           |
@@ -913,7 +947,7 @@ GET /categories?sort=[{"position":1},{"name":1}]&filter={"parent_id":{"operator"
   "price": "299.00",
   "vat_rate": "21.00",
   "stock_quantity": 150,
-  "is_active": 1,
+  "published": 1,
   "kind": "dry",
   "color": "white",
   "variant": "riesling",
@@ -929,7 +963,7 @@ GET /categories?sort=[{"position":1},{"name":1}]&filter={"parent_id":{"operator"
 | `price`          | decimal string | e.g. `"299.00"`                                           |
 | `vat_rate`       | decimal string | Percentage, e.g. `"21.00"` = 21 % VAT                    |
 | `stock_quantity` | integer        | Can be negative (backordering)                            |
-| `is_active`      | 0 or 1         | `1` = visible/active                                      |
+| `published`      | 0 or 1         | `1` = visible to anonymous reads                          |
 | `kind`           | string or null | Project-specific attribute, e.g. dry, sweet               |
 | `color`          | string or null | Project-specific attribute, e.g. white, red               |
 | `variant`        | string or null | Project-specific attribute, e.g. variant variety            |
@@ -949,12 +983,12 @@ Query parameters:
 | `category_id`     | Filter products belonging to a category ID                                       |
 | `category_syscode`| Filter products belonging to a category identified by its `syscode`              |
 | `sort`            | JSON sort (columns: `name`, `sku`, `price`, `stock_quantity`, `created_at`)      |
-| `filter`          | JSON filter — supports `kind`, `color`, `variant`, `is_active`, `price`, `stock_quantity`, `vat_rate` and dot-notation for JSON attributes e.g. `data.year` |
+| `q`               | JSON filter — supports `kind`, `color`, `variant`, `published`, `price`, `stock_quantity`, `vat_rate` and dot-notation for JSON attributes e.g. `data.year` |
 
 ```
-GET /products?category_id=3&search=shirt&sort=[{"price":1}]&filter={"stock_quantity":{"value":0,"operator":"gt"}}
+GET /products?category_id=3&search=shirt&sort=[{"price":1}]&q={"stock_quantity":{"value":0,"operator":"gt"}}
 GET /products?category_syscode=top
-GET /products?filter={"is_active":{"value":1},"data.year":{"value":2022},"color":{"value":"white"}}
+GET /products?q={"published":{"value":1},"data.year":{"value":2022},"color":{"value":"white"}}
 ```
 
 #### `POST /products`
@@ -967,7 +1001,7 @@ GET /products?filter={"is_active":{"value":1},"data.year":{"value":2022},"color"
   "price": 499.00,
   "vat_rate": 21,
   "stock_quantity": 50,
-  "is_active": 1,
+  "published": 1,
   "kind": "dry",
   "color": "white",
   "variant": "riesling",
@@ -984,7 +1018,7 @@ GET /products?filter={"is_active":{"value":1},"data.year":{"value":2022},"color"
 | `price`        | ✓        | Numeric                                                         |
 | `vat_rate`     | —        | Default: `21`                                                   |
 | `stock_quantity`| —       | Default: `0`                                                    |
-| `is_active`    | —        | `1` or `0`, default: `1`                                        |
+| `published`    | —        | `1` or `0`, default: `1`                                        |
 | `kind`         | —        | Project-specific string attribute                               |
 | `color`        | —        | Project-specific string attribute                               |
 | `variant`      | —        | Project-specific string attribute                               |
@@ -1034,9 +1068,9 @@ Enumerations are the system's codebook/lookup tables (order statuses, payment me
 
 | Method | Endpoint                    | Auth       | Description                     |
 |--------|-----------------------------|------------|---------------------------------|
-| GET    | `/enumerations`             | Required   | List enumeration items          |
-| GET    | `/enumerations/types`       | Required   | List all distinct type names    |
-| GET    | `/enumerations/:id`         | Required   | Get single enumeration item     |
+| GET    | `/enumerations`             | Public     | Allowed published items; admin sees all |
+| GET    | `/enumerations/types`       | Public     | Allowed public types; admin sees all |
+| GET    | `/enumerations/:id`         | Public     | Allowed public item; admin may read any |
 | POST   | `/enumerations`             | Admin only | Create enumeration item         |
 | PATCH  | `/enumerations/:id`         | Admin only | Partial update                  |
 | PUT    | `/enumerations/:id`         | Admin only | Full replace                    |
@@ -1052,7 +1086,8 @@ Enumerations are the system's codebook/lookup tables (order statuses, payment me
   "label": "Pending",
   "value": "pending",
   "position": 10,
-  "is_active": 1,
+  "published": 1,
+  "data": null,
   "created_at": "2026-01-01T00:00:00",
   "updated_at": null
 }
@@ -1064,17 +1099,14 @@ Enumerations are the system's codebook/lookup tables (order statuses, payment me
 | `syscode`  | string  | Machine key — unique within `(franchise, type)`          |
 | `label`    | string  | Human-readable display label                             |
 | `value`    | string  | Stored value (may differ from syscode)                   |
-| `is_active`| 0 or 1  |                                                          |
+| `published`| 0 or 1  | `1` = available to anonymous reads                       |
+| `data`     | object or null | Optional structured metadata                         |
 
-#### Built-in types (default seed data)
+#### Publicly readable types
 
-| Type             | Example syscodes                                            |
-|------------------|-------------------------------------------------------------|
-| `order_status`   | `pending`, `confirmed`, `processing`, `shipped`, `delivered`, `cancelled`, `refunded` |
-| `invoice_status` | `draft`, `issued`, `paid`, `overdue`, `cancelled`, `refunded` |
-| `payment_method` | `bank_transfer`, `cash`, `card`, `online`                   |
-| `currency`       | `CZK`, `EUR`, `USD`                                         |
-| `vat_rate`       | `0`, `10`, `12`, `21`                                       |
+Anonymous requests are restricted to: `contact`, `taste`, `payment`,
+`shipping`, `wine_color`, `wine_quality`, `wine_kind`, and `country_code`.
+Administrators can read every type belonging to the current tenant.
 
 #### `GET /enumerations`
 
@@ -1083,14 +1115,14 @@ Query parameters:
 | Parameter   | Description                                                   |
 |-------------|---------------------------------------------------------------|
 | `type`      | Filter by type name (e.g. `?type=order_status`)               |
-| `is_active` | `1` for active only, `0` for inactive only                    |
-| `sort`      | JSON sort (columns: `type`, `syscode`, `label`, `position`, `is_active`) |
-| `filter`    | JSON filter                                                   |
+| `published` | Admin filter; anonymous requests are always forced to `1`      |
+| `sort`      | JSON sort (columns: `type`, `syscode`, `label`, `position`, `published`) |
+| `q`         | JSON filter                                                   |
 | `page`      | Page number                                                   |
 | `limit`     | Per page (max: 100)                                           |
 
 ```
-GET /enumerations?type=order_status&is_active=1&sort=[{"position":1}]
+GET /enumerations?type=order_status&q={"published":{"value":1}}&sort=[{"position":1}]
 ```
 
 #### `GET /enumerations/types`
@@ -1100,7 +1132,7 @@ Returns a flat list of distinct type strings:
 {
   "success": true,
   "message": "OK",
-  "data": ["currency", "invoice_status", "order_status", "payment_method", "vat_rate"]
+  "data": ["contact", "country_code", "payment", "shipping", "taste", "wine_color", "wine_kind", "wine_quality"]
 }
 ```
 
@@ -1108,12 +1140,13 @@ Returns a flat list of distinct type strings:
 
 ```json
 {
-  "type": "payment_method",
-  "syscode": "crypto",
-  "label": "Cryptocurrency",
-  "value": "crypto",
+  "type": "payment",
+  "syscode": "bank",
+  "label": "Bank transfer",
+  "value": "bank",
   "position": 50,
-  "is_active": 1
+  "published": 1,
+  "data": null
 }
 ```
 
@@ -1125,9 +1158,9 @@ CMS content blocks — multilingual, versioned by `(syscode, language)`.
 
 | Method | Endpoint                  | Auth       | Description                    |
 |--------|---------------------------|------------|--------------------------------|
-| GET    | `/texts`                  | Required   | List text blocks               |
-| GET    | `/texts/:id`              | Required   | Get text block by ID           |
-| GET    | `/texts/by-key/:syscode`  | Required   | Get text block by syscode      |
+| GET    | `/texts`                  | Public     | Active public fields; admin sees all |
+| GET    | `/texts/:id`              | Public     | Active public text; admin may read any |
+| GET    | `/texts/by-key/:syscode`  | Public     | Active public text by syscode  |
 | POST   | `/texts`                  | Admin only | Create text block              |
 | PATCH  | `/texts/:id`              | Admin only | Partial update                 |
 | PUT    | `/texts/:id`              | Admin only | Full replace                   |
@@ -1142,7 +1175,7 @@ CMS content blocks — multilingual, versioned by `(syscode, language)`.
   "title": "Welcome to our store",
   "content": "<h1>Hello!</h1><p>Shop our collection...</p>",
   "language": "cs",
-  "is_active": 1,
+  "published": 1,
   "created_by": 1,
   "created_at": "2026-01-01T00:00:00",
   "updated_at": "2026-04-15T09:30:00"
@@ -1154,7 +1187,7 @@ CMS content blocks — multilingual, versioned by `(syscode, language)`.
 | `syscode`  | string  | Machine key, unique per `(franchise, syscode, language)` |
 | `language` | string  | BCP-47 language tag, e.g. `cs`, `en`, `de`         |
 | `content`  | string  | Arbitrary text / HTML                              |
-| `is_active`| 0 or 1  |                                                    |
+| `published`| 0 or 1  | `1` = available to anonymous reads                 |
 
 #### `GET /texts`
 
@@ -1163,15 +1196,15 @@ Query parameters:
 | Parameter   | Description                                                  |
 |-------------|--------------------------------------------------------------|
 | `language`  | Language code (default: `cs`)                                |
-| `is_active` | `1` active only, `0` inactive only                           |
+| `published` | Admin filter; anonymous requests are always forced to `1`     |
 | `search`    | Full-text search in `title`, `syscode`, `content`            |
-| `sort`      | JSON sort (columns: `syscode`, `title`, `language`, `is_active`, `created_at`) |
-| `filter`    | JSON filter                                                  |
+| `sort`      | JSON sort (columns: `syscode`, `title`, `language`, `created_at`) |
+| `q`         | JSON filter                                                  |
 | `page`      | Page number                                                  |
 | `limit`     | Per page (max: 100)                                          |
 
 ```
-GET /texts?language=en&is_active=1&search=hero&sort=[{"syscode":1}]
+GET /texts?language=en&q={"published":{"value":1}}&search=hero&sort=[{"syscode":1}]
 ```
 
 #### `GET /texts/by-key/:syscode`
@@ -1190,7 +1223,7 @@ GET /texts/by-key/homepage_hero?language=cs
   "title": "Welcome to our store",
   "content": "<h1>Hello!</h1>",
   "language": "cs",
-  "is_active": 1
+  "published": 1
 }
 ```
 
@@ -1213,10 +1246,15 @@ GET /texts/by-key/homepage_hero?language=cs
   "id": 100,
   "order_number": "ORD-2026-000100",
   "user_id": 1,
+  "customer": null,
   "status": "pending",
-  "total_amount": "1495.00",
+  "total_price": "1235.54",
+  "total_price_with_vat": "1495.00",
+  "total_price_all": "1359.54",
+  "total_price_all_with_vat": "1619.00",
   "currency": "CZK",
-  "payment_method": "bank_transfer",
+  "payment": { "type": "bank", "label": "Bank transfer" },
+  "shipping": { "type": "dpd", "label": "DPD", "price": 124 },
   "shipping_address_id": 5,
   "billing_address_id": 3,
   "note": "",
@@ -1225,7 +1263,7 @@ GET /texts/by-key/homepage_hero?language=cs
 }
 ```
 
-#### Order object (detail — includes items)
+#### Order object (detail — includes order items)
 
 ```json
 {
@@ -1233,15 +1271,19 @@ GET /texts/by-key/homepage_hero?language=cs
   "order_number": "ORD-2026-000100",
   "user_id": 1,
   "status": "pending",
-  "total_amount": "1495.00",
+  "total_price": "1235.54",
+  "total_price_with_vat": "1495.00",
+  "total_price_all": "1359.54",
+  "total_price_all_with_vat": "1619.00",
   "currency": "CZK",
-  "payment_method": "bank_transfer",
+  "payment": { "type": "bank", "label": "Bank transfer" },
+  "shipping": { "type": "dpd", "label": "DPD", "price": 124 },
   "shipping_address_id": 5,
   "billing_address_id": 3,
   "note": "",
   "created_at": "2026-05-01T09:00:00",
   "updated_at": null,
-  "items": [
+  "order_items": [
     {
       "id": 201,
       "product_id": 10,
@@ -1267,8 +1309,8 @@ Query parameters:
 | Parameter | Description                                                        |
 |-----------|--------------------------------------------------------------------|
 | `status`  | Quick filter by status string (shorthand)                          |
-| `sort`    | JSON sort (columns: `order_number`, `status`, `total_amount`, `created_at`, `user_id`) |
-| `filter`  | JSON filter                                                        |
+| `sort`    | JSON sort (columns include `order_number`, `status`, totals, `created_at`, `user_id`) |
+| `q`       | JSON filter                                                        |
 | `page`    | Page number                                                        |
 | `limit`   | Per page (max: 100)                                                |
 
@@ -1276,7 +1318,7 @@ Query parameters:
 
 ```
 GET /orders?status=pending&sort=[{"created_at":-1}]
-GET /orders?filter={"status":{"value":["pending","confirmed"],"operator":"in"},"total_amount":{"value":1000,"operator":"gte"}}
+GET /orders?q={"status":{"value":["pending","confirmed"],"operator":"in"},"total_price_all_with_vat":{"value":1000,"operator":"gte"}}
 ```
 
 #### Order statuses
@@ -1286,7 +1328,10 @@ Any status → `cancelled` or `refunded`
 
 #### `POST /orders`
 
-**Public** — guest checkout is supported. When authenticated the order is linked to the caller's account automatically; for a guest supply `user.email`.
+**Public** — guest checkout is supported. An authenticated order is linked to
+the caller's account. A guest order keeps `user_id = null` and stores the
+submitted contact and address values in the order's immutable `customer` JSON
+snapshot; it does not find or create an account by e-mail.
 
 ```json
 {
@@ -1294,32 +1339,33 @@ Any status → `cancelled` or `refunded`
     "email": "jana@example.com",
     "first_name": "Jana",
     "last_name": "Nováková",
-    "phone": "+420123456789"
+    "phone": "+420123456789",
+    "address": {
+      "main": {
+        "company": "ACME s.r.o.",
+        "street": "Obchodní 1",
+        "city": "Praha",
+        "zip": "110 00",
+        "country": "CZ"
+      },
+      "shipping": {
+        "name": "Jana Nováková",
+        "street": "Hlavní 123",
+        "city": "Praha",
+        "zip": "110 00",
+        "country": "CZ"
+      }
+    }
   },
   "carts": [
     { "product_id": 10, "quantity": 3 },
     { "product_id": 15, "quantity": 1 }
   ],
   "shipping": {
-    "value": "dpd",
-    "total_price": 150.00,
-    "address": {
-      "name": "Jana Nováková",
-      "street": "Hlavní 123",
-      "city": "Praha",
-      "zip": "110 00",
-      "country": "CZ"
-    }
+    "value": "dpd"
   },
   "billing": {
-    "value": "bank_transfer",
-    "address": {
-      "company": "ACME s.r.o.",
-      "street": "Obchodní 1",
-      "city": "Praha",
-      "zip": "110 00",
-      "country": "CZ"
-    }
+    "value": "bank"
   },
   "note": "Leave at door"
 }
@@ -1327,26 +1373,19 @@ Any status → `cancelled` or `refunded`
 
 | Field          | Required | Notes                                                                                     |
 |----------------|----------|-------------------------------------------------------------------------------------------|
-| `user`         | —        | Omit when authenticated; provide `email` for guest checkout                               |
-| `user.email`   | —        | Used to find or create a user account for the order                                       |
+| `user`         | —        | Contact data and address snapshot for guest checkout; authenticated orders use the caller |
+| `user.email`   | —        | Stored in the guest `customer` snapshot; never used to attach/create an account            |
 | `carts`        | ✓        | Array of `{ product_id, quantity }` — must not be empty                                   |
-| `shipping`     | —        | `value` = shipping method name; `total_price` = cost (float); `address` = address object  |
-| `billing`      | —        | `value` = payment method (`bank_transfer`, `cash`, `card`, `online`); `address` = object  |
+| `user.address` | —        | `main` and `shipping` address objects; saved as records only for authenticated checkout   |
+| `shipping`     | —        | `value` = shipping enumeration syscode; price is resolved server-side from enumeration data |
+| `billing`      | —        | `value` = payment enumeration syscode                                                     |
 | `note`         | —        | Free text                                                                                 |
 
-`total_amount` is calculated server-side (items + shipping cost). `order_number` is generated automatically. Stock is decremented atomically in a transaction.
+All totals are calculated server-side from current product and shipping data.
+`order_number` is generated automatically and stock is decremented atomically
+in the same transaction.
 
-Response `201`:
-```json
-{
-  "success": true,
-  "message": "Order created",
-  "data": {
-    "id": 100,
-    "total_amount": 1045.00
-  }
-}
-```
+Response `201` contains the created order object.
 
 > Use `GET /orders/:id` to fetch the full order detail after creation.
 
@@ -1364,10 +1403,11 @@ Invoices are generated from orders.
 
 | Method | Endpoint                    | Auth       | Description              |
 |--------|-----------------------------|------------|--------------------------|
-| GET    | `/invoices`                 | Admin only | List all invoices        |
-| GET    | `/invoices/:id`             | Admin only | Get invoice by ID        |
-| POST   | `/invoices`                 | Admin only | Create invoice from order|
+| GET    | `/invoices`                 | Required   | Own invoices; admin sees all |
+| GET    | `/invoices/:id`             | Self or admin | Get invoice by ID     |
+| POST   | `/invoices`                 | Admin or internal | Create invoice from order |
 | PATCH  | `/invoices/:id/status`      | Admin only | Update invoice status    |
+| PATCH  | `/invoices/:id/files`       | Admin only | Replace attached files   |
 | DELETE | `/invoices/:id`             | Admin only | Delete invoice           |
 
 #### Invoice object (list)
@@ -1377,11 +1417,16 @@ Invoices are generated from orders.
   "id": 50,
   "invoice_number": "INV-2026-000050",
   "order_id": 100,
-  "user_id": 1,
+  "order_number": "ORD-2026-000100",
   "status": "issued",
-  "total_amount": "1495.00",
+  "total_price": "1235.54",
+  "total_price_with_vat": "1495.00",
+  "total_price_all": "1359.54",
+  "total_price_all_with_vat": "1619.00",
   "currency": "CZK",
-  "billing_address_id": 3,
+  "user": { "id": 1, "first_name": "Jana", "last_name": "Nováková", "email": "jana@example.com" },
+  "billing_address": { "street": "Obchodní 1", "city": "Praha", "zip": "110 00", "country": "CZ" },
+  "shipping_address": { "street": "Hlavní 123", "city": "Praha", "zip": "110 00", "country": "CZ" },
   "note": "",
   "issued_at": "2026-05-01T09:05:00",
   "due_at": "2026-05-15",
@@ -1416,13 +1461,13 @@ Query parameters:
 | Parameter | Description                                                        |
 |-----------|--------------------------------------------------------------------|
 | `status`  | Quick filter by status string                                      |
-| `sort`    | JSON sort (columns: `invoice_number`, `status`, `total_amount`, `issued_at`, `due_at`, `paid_at`) |
-| `filter`  | JSON filter                                                        |
+| `sort`    | JSON sort (columns include `invoice_number`, `status`, totals, `issued_at`, `due_at`, `paid_at`) |
+| `q`       | JSON filter                                                        |
 | `page`    | Page number                                                        |
 | `limit`   | Per page (max: 100)                                                |
 
 ```
-GET /invoices?filter={"status":{"value":"overdue"}}&sort=[{"due_at":1}]
+GET /invoices?q={"status":{"value":"overdue"}}&sort=[{"due_at":1}]
 ```
 
 #### Invoice statuses
@@ -1435,14 +1480,13 @@ Any → `cancelled` or `refunded`
 
 ```json
 {
-  "order_id": 100,
-  "due_at": "2026-05-15",
-  "note": "Please pay within 14 days",
-  "file_ids": [1, 2]
+  "order_id": 100
 }
 ```
 
-`invoice_number`, `total_amount`, `currency`, `user_id`, `billing_address_id` are all copied from the source order automatically. Only one invoice per order is allowed (returns `409` on duplicate).
+The invoice number, totals, currency, customer, address, payment, shipping, and
+line-item snapshots are created from the source order automatically. Only one
+invoice per order is allowed (returns `409` on duplicate).
 
 #### `PATCH /invoices/:id/status`
 
@@ -1468,10 +1512,10 @@ Two-phase file upload: `upload` saves the file to a temporary directory and retu
 
 | Method | Endpoint                  | Auth       | Description                              |
 |--------|---------------------------|------------|------------------------------------------|
-| GET    | `/files`                  | Admin only | List all committed files                 |
-| GET    | `/files/:id`              | Required   | Get file metadata                        |
-| GET    | `/files/:id/download`     | Required   | Download file (attachment)               |
-| GET    | `/files/:id/preview`      | Required   | Preview file inline (browser)            |
+| GET    | `/files`                  | Required   | Own committed files; admin sees all      |
+| GET    | `/files/:id`              | Owner/admin| Get file metadata                        |
+| GET    | `/files/content?path=...` | Authorized | Serve committed content                  |
+| GET    | `/files/temp?path=...`    | Owner      | Serve caller's temporary upload          |
 | POST   | `/files/upload`           | Required   | Phase 1 — save to temp, return path      |
 | POST   | `/files/commit`           | Required   | Phase 2 — move to permanent, insert DB  |
 | DELETE | `/files/:id`              | Admin only | Soft delete / hard delete (`?force=true`)|
@@ -1481,6 +1525,7 @@ Two-phase file upload: `upload` saves the file to a temporary directory and retu
 ```json
 {
   "id": 1,
+  "user_id": 7,
   "type": "pdf",
   "mime_type": "application/pdf",
   "path": "files/default/abc123.pdf",
@@ -1497,6 +1542,7 @@ Two-phase file upload: `upload` saves the file to a temporary directory and retu
 
 | Field         | Type    | Notes                                                     |
 |---------------|---------|-----------------------------------------------------------|
+| `user_id`     | integer | User who committed the file                               |
 | `type`        | string  | File extension, e.g. `pdf`, `jpg`                         |
 | `mime_type`   | string  | MIME type, e.g. `application/pdf`                         |
 | `path`        | string  | Relative path from `FILE_ROOT`                            |
@@ -1508,7 +1554,7 @@ Two-phase file upload: `upload` saves the file to a temporary directory and retu
 
 ```
 POST /files/upload   (multipart/form-data: file)
-  → { path: "temp/default/uuid.pdf" }
+  → { path: "temp/default/7/uuid.pdf" }
 
 POST /files/commit   { path, name, visibility?, entity_type?, entity_id? }
   → committed File object
@@ -1524,14 +1570,14 @@ Multipart form-data with a `file` field.
 
 Response `201`:
 ```json
-{ "success": true, "data": { "path": "temp/default/abc-uuid.pdf" } }
+{ "success": true, "data": { "path": "temp/default/7/abc-uuid.pdf" } }
 ```
 
 #### `POST /files/commit`
 
 ```json
 {
-  "path":        "temp/default/abc-uuid.pdf",
+  "path":        "temp/default/7/abc-uuid.pdf",
   "name":        "invoice_100.pdf",
   "visibility":  "private",
   "entity_type": "invoice",
@@ -1548,6 +1594,10 @@ Response `201`:
 | `entity_id`   | —        | Optional polymorphic reference ID              |
 
 Response `200`: committed File object.
+
+`/files/content` and `/files/temp` validate the canonical tenant-scoped path
+before sending bytes. Direct web access to the physical `/files` and `/temp`
+directories is blocked.
 
 #### `DELETE /files/:id`
 
@@ -1569,6 +1619,32 @@ Response `200`: committed File object.
 GET /files?q={"deleted":1}            # soft-deleted files
 GET /files?q={"search":"invoice"}     # name/type contains 'invoice'
 ```
+
+---
+
+### Mailer
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/mailer` | Public, rate-limited | Send validated contact-form notifications |
+| POST | `/mailer/newsletter` | Public, rate-limited | Send newsletter subscription notifications |
+| POST | `/mailer/send` | Admin or internal | Send a named transactional template |
+| GET | `/mailer/test?email=...` | Admin or internal | Send a test message |
+| GET | `/mailer/list` | Admin or internal | List templates for the current tenant |
+| GET | `/mailer` | — | Always returns `405 Method Not Allowed` |
+
+Generic mail accepts only a safe template name. Attachments are resolved from
+the current tenant's permanent file directory; arbitrary filesystem paths are
+ignored. Public forms choose their recipients and templates server-side and do
+not act as a general mail relay.
+
+---
+
+### Templater
+
+`GET /templater?template=<name>` renders an HTML preview for an authenticated
+administrator. Template names are sanitized against path traversal. The
+internal key does not grant access to this development/support endpoint.
 
 ---
 
@@ -1598,12 +1674,12 @@ DELETE /products/5?force=true  # hard delete
 | `/users`        | `first_name`, `last_name`, `email`, `phone`, `role_id`, `created_at`, `last_login_at` |
 | `/users/:id/address` | `type`, `city`, `zip`, `country`, `is_default`, `created_at`  |
 | `/categories`   | `name`, `description`, `parent_id`, `position`, `created_at`        |
-| `/products`     | `name`, `sku`, `price`, `vat_rate`, `stock_quantity`, `created_at`, `kind`, `color`, `variant`, `data.*` |
-| `/enumerations` | `type`, `syscode`, `label`, `value`, `position`, `is_active`, `created_at` |
-| `/texts`        | `syscode`, `title`, `language`, `is_active`, `created_at` |
+| `/products`     | `name`, `sku`, `price`, `vat_rate`, `stock_quantity`, `published`, `created_at`, `kind`, `color`, `variant`, `data.*` |
+| `/enumerations` | `type`, `syscode`, `label`, `value`, `position`, `published`, `created_at` |
+| `/texts`        | `syscode`, `title`, `language`, `published`, `created_at` |
 | `/files`        | `name`, `type`, `size`, `visibility`, `entity_type`, `entity_id`, `deleted`, `created_at` |
-| `/orders`       | `order_number`, `status`, `total_amount`, `currency`, `payment_method`, `user_id`, `created_at` |
-| `/invoices`     | `invoice_number`, `status`, `total_amount`, `currency`, `user_id`, `order_id`, `issued_at`, `due_at`, `paid_at` |
+| `/orders`       | `order_number`, `status`, total fields, `currency`, `user_id`, `created_at` |
+| `/invoices`     | `invoice_number`, `status`, total fields, `currency`, `order_id`, `issued_at`, `due_at`, `paid_at` |
 
 ---
 
@@ -1616,7 +1692,7 @@ async function fetchPage({ page, limit, sort, filter }) {
   const params = new URLSearchParams({ page, limit });
   if (sort.length)       params.set('sort',   JSON.stringify(sort));
   if (filter && Object.keys(filter).length) {
-    params.set('filter', JSON.stringify(filter));
+    params.set('q', JSON.stringify(filter));
   }
 
   const res = await fetch(`/api/products?${params}`, {
@@ -1685,7 +1761,7 @@ async function createUser(data) {
 
 ```js
 async function loadOptions(type) {
-  const params = new URLSearchParams({ type, is_active: 1, limit: 100 });
+  const params = new URLSearchParams({ type, limit: 100 });
   const res    = await fetch(`/api/enumerations?${params}`, {
     headers: { Authorization: `Bearer ${token}` }
   });
@@ -1694,32 +1770,32 @@ async function loadOptions(type) {
 }
 
 const orderStatuses  = await loadOptions('order_status');
-const paymentMethods = await loadOptions('payment_method');
+const paymentMethods = await loadOptions('payment');
 ```
 
 ### 5. Create an order
 
 ```js
 const order = await apiFetch('POST', '/orders', {
-  user: { email: 'jana@example.com', first_name: 'Jana', last_name: 'Nováková' },
+  user: {
+    email: 'jana@example.com',
+    first_name: 'Jana',
+    last_name: 'Nováková',
+    address: {
+      main: { street: 'Obchodní 5', city: 'Praha', zip: '110 00', country: 'CZ' },
+      shipping: { street: 'Hlavní 1', city: 'Praha', zip: '110 00', country: 'CZ' }
+    }
+  },
   carts: [
     { product_id: 10, quantity: 2 },
     { product_id: 42, quantity: 1 }
   ],
-  shipping: {
-    value: 'dpd',
-    total_price: 150,
-    address: { street: 'Hlavní 1', city: 'Praha', zip: '110 00', country: 'CZ' }
-  },
-  billing: {
-    value: 'card',
-    address: { street: 'Obchodní 5', city: 'Praha', zip: '110 00', country: 'CZ' }
-  },
+  shipping: { value: 'dpd' },
+  billing: { value: 'card' },
   note: 'Leave at door'
 });
 // order.data.id           — new order ID
-// order.data.total_amount — calculated total (incl. shipping)
-// Use GET /orders/:id for full order detail
+// order.data — created order; totals and shipping price are calculated server-side
 ```
 
 ### 6. Stock adjustment

@@ -12,4 +12,5 @@ Routes:
 Notes:
 - Returns HTML preview output.
 - Template names are sanitized before rendering to avoid path traversal.
+- Requires an admin Bearer token; `X-Internal-Key` does not grant access.
 - This module is support tooling for email/template work rather than a data CRUD module.

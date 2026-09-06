@@ -17,5 +17,6 @@ Routes:
 - `DELETE /texts/:id`
 
 Notes:
-- Public reads, admin writes.
-- Keep `language`, `syscode`, and `is_active` handling aligned with the API docs.
+- Anonymous reads expose only published public text fields; an admin Bearer token can access the full tenant record.
+- All writes require the admin role.
+- Keep `language`, `syscode`, and `published` handling aligned with the API docs.

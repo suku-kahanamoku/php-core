@@ -97,6 +97,12 @@ Server-to-server operations (OAuth handoff, generic transactional mail and
 invoice creation) additionally require the same non-public `INTERNAL_API_KEY`
 in PHP and the corresponding Nuxt deployment.
 
+The internal key is not a universal administrator credential. It also permits
+read-only access to users, roles, and addresses for trusted server proxies, but
+it does not unlock orders, invoice reads, files, or template previews. Every
+request must still resolve a valid tenant. Never send the key to a browser or
+store it in a public frontend runtime variable.
+
 ### Existing database / production migration
 
 Never run `migrations/schema.sql` on an existing database. It contains `DROP
@@ -204,43 +210,47 @@ php tests/api_test.php http://myserver.com/api
 | GET  | `/auth/me` | required | Current user info |
 | POST | `/auth/register` | public | Register new user |
 | POST | `/auth/change-password` | required | Change password |
+| POST | `/auth/reset-password` | public | Request one-time password reset |
+| POST | `/auth/complete-reset` | public | Complete reset with token |
+| POST | `/auth/oauth` | internal | Trusted OAuth handoff |
 
-### Roles *(admin)*
-| Method | Path | Description |
-|--------|------|-------------|
-| GET    | `/roles` | List roles |
-| POST   | `/roles` | Create role |
-| GET    | `/roles/:id` | Get role |
-| PATCH  | `/roles/:id` | Partial update |
-| PUT    | `/roles/:id` | Full replace |
-| DELETE | `/roles/:id` | Delete (fails if users assigned) |
+### Roles
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET    | `/roles` | admin or internal | List roles |
+| POST   | `/roles` | admin | Create role |
+| GET    | `/roles/:id` | admin or internal | Get role |
+| PATCH  | `/roles/:id` | admin | Partial update |
+| PUT    | `/roles/:id` | admin | Full replace |
+| DELETE | `/roles/:id` | admin | Delete (fails if users assigned) |
 
-### Users *(admin)*
-| Method | Path | Description |
-|--------|------|-------------|
-| GET    | `/users` | List users |
-| POST   | `/users` | Create user |
-| GET    | `/users/:id` | Get user |
-| PATCH  | `/users/:id` | Partial update |
-| PUT    | `/users/:id` | Full replace |
-| DELETE | `/users/:id` | Delete user |
-| GET    | `/users/:userId/address` | User's addresses |
+### Users
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET    | `/users` | admin or internal | List users |
+| POST   | `/users` | admin | Create user |
+| GET    | `/users/:id` | self, admin, or internal | Get user |
+| PATCH  | `/users/:id` | self or admin | Update permitted profile fields |
+| PUT    | `/users/:id` | self or admin | Replace permitted profile fields |
+| DELETE | `/users/:id` | admin | Delete user |
+| GET    | `/users/:userId/address` | self, admin, or internal | User's addresses |
 
 ### Address
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
+| GET    | `/address` | admin or internal | List all tenant addresses |
 | POST   | `/address` | required | Create address |
-| GET    | `/address/:id` | required | Get address |
-| PATCH  | `/address/:id` | required | Partial update |
-| PUT    | `/address/:id` | required | Full replace |
-| DELETE | `/address/:id` | required | Delete address |
+| GET    | `/address/:id` | owner, admin, or internal | Get address |
+| PATCH  | `/address/:id` | owner or admin | Partial update |
+| PUT    | `/address/:id` | owner or admin | Full replace |
+| DELETE | `/address/:id` | owner or admin | Delete address |
 
 ### Categories
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET    | `/categories` | public | List (tree structure) |
+| GET    | `/categories` | public | List published categories (admin: all) |
 | POST   | `/categories` | admin | Create |
-| GET    | `/categories/:id` | public | Get with products |
+| GET    | `/categories/:id` | public | Get published category (admin: any) |
 | PATCH  | `/categories/:id` | admin | Partial update |
 | PUT    | `/categories/:id` | admin | Full replace |
 | DELETE | `/categories/:id` | admin | Delete (fails if has active products) |
@@ -248,9 +258,9 @@ php tests/api_test.php http://myserver.com/api
 ### Products
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET    | `/products` | public | List products |
+| GET    | `/products` | public | List published products (admin: all) |
 | POST   | `/products` | admin | Create |
-| GET    | `/products/:id` | public | Get product |
+| GET    | `/products/:id` | public | Get published product (admin: any) |
 | PATCH  | `/products/:id` | admin | Partial update |
 | PUT    | `/products/:id` | admin | Full replace |
 | DELETE | `/products/:id` | admin | Soft delete / `?force=true` for hard delete |
@@ -259,7 +269,7 @@ php tests/api_test.php http://myserver.com/api
 ### Texts (CMS)
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET    | `/texts` | public | List texts |
+| GET    | `/texts` | public | List published public text fields (admin: all) |
 | POST   | `/texts` | admin | Create |
 | GET    | `/texts/by-key/:syscode` | public | Get by syscode + language |
 | GET    | `/texts/:id` | public | Get by ID |
@@ -270,8 +280,8 @@ php tests/api_test.php http://myserver.com/api
 ### Enumerations
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET    | `/enumerations` | public | List (grouped by type) |
-| GET    | `/enumerations/types` | public | List all types |
+| GET    | `/enumerations` | public | List allowed public values (admin: all) |
+| GET    | `/enumerations/types` | public | List allowed public types (admin: all) |
 | POST   | `/enumerations` | admin | Create |
 | GET    | `/enumerations/:id` | public | Get by ID |
 | PATCH  | `/enumerations/:id` | admin | Partial update |
@@ -290,9 +300,9 @@ php tests/api_test.php http://myserver.com/api
 ### Invoices
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET    | `/invoices` | admin | List all invoices |
-| POST   | `/invoices` | admin | Generate from order |
-| GET    | `/invoices/:id` | admin | Get invoice with items |
+| GET    | `/invoices` | required | My invoices (admin: all) |
+| POST   | `/invoices` | admin or internal | Generate from order |
+| GET    | `/invoices/:id` | owner or admin | Get invoice with items |
 | PATCH  | `/invoices/:id/status` | admin | Update status |
 | PATCH  | `/invoices/:id/files` | admin | Sync attached files |
 | DELETE | `/invoices/:id` | admin | Soft delete / `?force=true` for hard delete |
@@ -300,13 +310,29 @@ php tests/api_test.php http://myserver.com/api
 ### Files
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET    | `/files` | admin | List committed files |
-| GET    | `/files/:id` | required | Get file metadata |
-| GET    | `/files/:id/download` | required | Download file |
-| GET    | `/files/:id/preview` | required | Preview inline |
+| GET    | `/files` | required | Own committed files (admin: all) |
+| GET    | `/files/:id` | owner or admin | Get file metadata |
+| GET    | `/files/content?path=...` | authorized | Serve committed content |
+| GET    | `/files/temp?path=...` | owner | Serve caller's temporary upload |
 | POST   | `/files/upload` | required | Phase 1 — save to temp, return path |
 | POST   | `/files/commit` | required | Phase 2 — move to permanent, insert DB |
 | DELETE | `/files/:id` | admin | Soft delete / `?force=true` for hard delete |
+
+### Mailer
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/mailer` | public, rate-limited | Validated contact form |
+| POST | `/mailer/newsletter` | public, rate-limited | Newsletter subscription |
+| POST | `/mailer/send` | admin or internal | Generic transactional template |
+| GET | `/mailer/test?email=...` | admin or internal | Send test message |
+| GET | `/mailer/list` | admin or internal | List tenant templates |
+
+### Templater
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/templater?template=...` | admin | Render sanitized template preview |
 
 ## Soft delete vs. hard delete
 
@@ -324,11 +350,14 @@ DELETE /products/5?force=true  # hard delete
 
 ## Database schema
 
-Tables (16): `enumeration`, `role`, `user`, `address`, `user_token`, `category`, `product`, `product_category`, `product_file`, `text`, `order`, `order_item`, `invoice`, `invoice_item`, `invoice_file`, `file`
+Tables (19): `enumeration`, `role`, `user`, `address`, `user_token`, `category`, `product`, `product_category`, `product_file`, `text`, `order`, `order_item`, `invoice`, `invoice_item`, `invoice_file`, `file`, `oauth_identity`, `password_reset_token`, `api_rate_limit`
 
 - **`product_category`** — M:N pivot: products ↔ categories.
 - **`product_file`** — M:N pivot: products ↔ files.
 - **`invoice_file`** — M:N pivot: invoices ↔ files.
 - **`category.syscode`** — machine-readable identifier for filtering via `category_syscode` query param.
 - **`product.data`** — flexible JSON column. Filter via dot-notation: `q={"data.year":{"value":2022}}`.
+- **`order.customer`** — immutable JSON snapshot used by guest checkout.
+- **`file.user_id`** — owner of an uploaded/committed file.
+- **`oauth_identity`**, **`password_reset_token`**, **`api_rate_limit`** — identity binding and abuse protection.
 - **`deleted`** — soft-delete flag (`TINYINT(1) DEFAULT 0`) present on every entity table.

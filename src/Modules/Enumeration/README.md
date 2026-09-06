@@ -17,5 +17,6 @@ Routes:
 - `DELETE /enumerations/:id`
 
 Notes:
-- Public reads, admin writes.
+- Anonymous reads expose only allowed public types and fields. Admin Bearer requests can access the complete tenant codebook.
+- All writes require the admin role.
 - Keep `type`, `syscode`, and `value` handling consistent with the API contract.

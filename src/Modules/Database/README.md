@@ -9,3 +9,4 @@ Notes:
 - This is shared infrastructure, not an HTTP module.
 - Keep connection, query helpers, and transaction behavior stable unless the task is explicitly about database access.
 - Most module work should start in the module Api, then Service, then Repository layer.
+- `migrations/schema.sql` is destructive and belongs only to a fresh database. Existing installations use dated additive migrations after a verified backup.

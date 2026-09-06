@@ -16,6 +16,7 @@ Routes:
 - `DELETE /categories/:id`
 
 Notes:
-- List and detail reads are public in the documented API.
+- Anonymous list/detail reads expose only non-deleted published categories and their public product data; an admin Bearer token can read unpublished records.
 - Detail responses can include nested products.
 - `syscode` is the machine identifier for filtering and linking.
+- Writes require the admin role. Deletion is refused while active products are linked.

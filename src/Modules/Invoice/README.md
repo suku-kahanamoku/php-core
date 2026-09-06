@@ -16,6 +16,7 @@ Routes:
 - `DELETE /invoices/:id`
 
 Notes:
-- Admin-only module.
+- List/detail require Bearer authentication; admins see all invoices and ordinary users only their own.
+- Creation requires either an admin Bearer token or a valid `X-Internal-Key`. Status changes, file synchronization, and deletion remain admin-only.
 - Invoice creation copies key fields from the source order.
 - Invoice detail responses include items and file links when requested.

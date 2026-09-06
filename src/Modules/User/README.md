@@ -17,7 +17,8 @@ Routes:
 - `GET /users/:userId/address`
 
 Notes:
-- Admin-only for list/create/update/delete.
-- Self-or-admin access applies to detail and address lookup routes.
+- A valid `X-Internal-Key` may read list/detail and address lookup routes without a Bearer token.
+- Without the internal key, list is admin-only and detail/address lookup is self-or-admin.
+- The internal key is read-only; create and delete require admin. Owners may update only their own permitted profile fields.
 - Only admins may change `email`, `status` and `role_id`; ordinary users may update their own name and phone.
 - Keep user role and validation behavior consistent with auth and API docs.

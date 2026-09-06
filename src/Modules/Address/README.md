@@ -8,14 +8,16 @@ Read first:
 - `AddressRepository.php`
 
 Routes:
+- `GET /address`
 - `GET /users/:userId/address`
-- `GET /addresses/:id`
-- `POST /addresses`
-- `PATCH /addresses/:id`
-- `PUT /addresses/:id`
-- `DELETE /addresses/:id`
+- `GET /address/:id`
+- `POST /address`
+- `PATCH /address/:id`
+- `PUT /address/:id`
+- `DELETE /address/:id`
 
 Notes:
-- Access is self or admin for reads and updates.
-- `user_id` from the request is only honored for admin callers.
+- A valid `X-Internal-Key` may read the global list, detail, or a user's addresses.
+- Without the internal key, the global list is admin-only and user-scoped reads are self-or-admin.
+- Writes always require a Bearer token. A new address belongs to the caller; request `user_id` is not used to assign it to another user.
 - `is_default` should keep only one default address per type and user.
