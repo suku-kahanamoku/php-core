@@ -9,10 +9,12 @@ use App\Modules\Database\Database;
 use App\Modules\Router\Request;
 use App\Modules\Router\Response;
 use App\Modules\Router\Router;
+use App\Utils\InternalAuth;
 
 class InvoiceApi
 {
     private InvoiceService $_service;
+    private Auth $_auth;
 
     /**
      * Konstruktor tridy InvoiceApi.
@@ -24,6 +26,7 @@ class InvoiceApi
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->_service = new InvoiceService($db, $franchiseCode, $auth);
+        $this->_auth = $auth;
     }
 
     /**
@@ -67,6 +70,9 @@ class InvoiceApi
      */
     public function create(Request $request): void
     {
+        if (!InternalAuth::check($request)) {
+            $this->_auth->requireRole('admin');
+        }
         $input = [
             'order_id' => (int) $request->get('order_id', 0),
         ];

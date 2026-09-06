@@ -8,9 +8,16 @@ use App\Modules\Auth\Auth;
 use App\Modules\BaseService;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
+use App\Utils\QueryPolicy;
 
 class CategoryService extends BaseService
 {
+    private const PUBLIC_FIELDS = [
+        'id', 'created_at', 'updated_at', 'syscode', 'name', 'description',
+        'position', 'published', 'parent_id', 'products', 'children',
+    ];
+    private const PUBLIC_FILTERS = ['id', 'syscode', 'name', 'parent_id'];
+    private const PUBLIC_SORTS = ['id', 'created_at', 'updated_at', 'syscode', 'name', 'position'];
     private CategoryRepository $_category;
 
     /**
@@ -49,7 +56,17 @@ class CategoryService extends BaseService
         string $filter = '',
         ?array $projection = null
     ): array {
-        return $this->_category->findAll($page, $limit, $sort, $filter, $projection);
+        $isAdmin = $this->_auth->hasRole('admin');
+        if (!$isAdmin) {
+            $filter = QueryPolicy::filter($filter, self::PUBLIC_FILTERS, [
+                'deleted' => 0,
+                'published' => ['value' => 1],
+            ]);
+            $sort = QueryPolicy::sort($sort, self::PUBLIC_SORTS);
+            $projection = QueryPolicy::projection($projection, self::PUBLIC_FIELDS);
+        }
+        $result = $this->_category->findAll($page, $limit, $sort, $filter, $projection);
+        return $isAdmin ? $result : QueryPolicy::listFields($result, self::PUBLIC_FIELDS);
     }
 
     /**
@@ -66,11 +83,19 @@ class CategoryService extends BaseService
      */
     public function get(int $id, ?array $projection = null): array
     {
+        $isAdmin = $this->_auth->hasRole('admin');
+        if (!$isAdmin) {
+            $visibility = $this->_category->findById($id, ['published']);
+            if (!$visibility || (int) ($visibility['published'] ?? 0) !== 1) {
+                Response::notFound('Category not found');
+            }
+            $projection = QueryPolicy::projection($projection, self::PUBLIC_FIELDS);
+        }
         $category = $this->_category->findById($id, $projection);
         $this->_requireEntity($category, 'Category not found');
 
-        $category['products'] = $this->_category->findProducts($id);
-        return $category;
+        $category['products'] = $this->_category->findProducts($id, !$isAdmin);
+        return $isAdmin ? $category : QueryPolicy::fields($category, self::PUBLIC_FIELDS);
     }
 
     /**
@@ -94,6 +119,7 @@ class CategoryService extends BaseService
                 ? (int) $input['parent_id']
                 : null,
             'position' => (int) ($input['position'] ?? 0),
+            'published' => (int) ($input['published'] ?? 1),
         ], $projection);
     }
 
@@ -120,6 +146,9 @@ class CategoryService extends BaseService
         }
         if (isset($input['position'])) {
             $set['position'] = (int) $input['position'];
+        }
+        if (isset($input['published'])) {
+            $set['published'] = (int) $input['published'];
         }
         if (array_key_exists('parent_id', $input)) {
             $isEmptyParent    = $input['parent_id'] === null || $input['parent_id'] === '';
@@ -161,6 +190,7 @@ class CategoryService extends BaseService
             'description' => (string) ($input['description'] ?? ''),
             'parent_id'   => $parentId,
             'position'    => (int) ($input['position'] ?? 0),
+            'published'   => (int) ($input['published'] ?? 1),
         ]);
 
         return $this->_category->findById($id, $projection) ?? ['id' => $id];

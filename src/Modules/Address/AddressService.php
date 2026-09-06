@@ -42,8 +42,21 @@ class AddressService extends BaseService
         string $sort = '',
         string $filter = '',
         ?array $projection = null,
+        ?int $userId = null,
     ): array {
-        $this->_auth->requireRole('admin');
+        if ($userId === null) {
+            $this->_auth->requireRole('admin');
+        } else {
+            $this->_auth->require();
+            if (!$this->_auth->hasRole('admin') && $this->_auth->id() !== $userId) {
+                Response::notFound('User not found');
+            }
+
+            $decoded = json_decode($filter, true);
+            $decoded = is_array($decoded) ? $decoded : [];
+            $decoded['user_id'] = ['value' => $userId];
+            $filter = (string) json_encode($decoded);
+        }
 
         return $this->_address->findAll($page, $limit, $sort, $filter, $projection);
     }
@@ -61,6 +74,7 @@ class AddressService extends BaseService
     {
         $this->_auth->require();
 
+        $this->_assertOwner($id);
         $address = $this->_address->findById($id, $projection);
         $this->_requireEntity($address, 'Address not found');
 
@@ -119,6 +133,7 @@ class AddressService extends BaseService
 
         $address = $this->_address->findById($id);
         $this->_requireEntity($address, 'Address not found');
+        $this->_assertOwner($id, $address);
 
         $set        = [];
         $textFields = [
@@ -167,6 +182,7 @@ class AddressService extends BaseService
 
         $address = $this->_address->findById($id);
         $this->_requireEntity($address, 'Address not found');
+        $this->_assertOwner($id, $address);
 
         $isDefault = (int) ($input['is_default'] ?? 0);
         if ($isDefault) {
@@ -201,6 +217,7 @@ class AddressService extends BaseService
 
         $address = $this->_address->findById($id);
         $this->_requireEntity($address, 'Address not found');
+        $this->_assertOwner($id, $address);
 
         return $this->_address->hardDelete($id);
     }
@@ -218,7 +235,20 @@ class AddressService extends BaseService
 
         $address = $this->_address->findById($id);
         $this->_requireEntity($address, 'Address not found');
+        $this->_assertOwner($id, $address);
 
         return $this->_address->softDelete($id);
+    }
+
+    /** @param array<string, mixed>|null $address */
+    private function _assertOwner(int $id, ?array $address = null): void
+    {
+        if ($this->_auth->hasRole('admin')) {
+            return;
+        }
+        $address ??= $this->_address->findById($id);
+        if (!$address || (int) ($address['user_id'] ?? 0) !== $this->_auth->id()) {
+            Response::notFound('Address not found');
+        }
     }
 }

@@ -19,6 +19,7 @@ class FileRepository extends BaseRepository
         $this->_table = 'file';
         $this->_alias = 'f';
         $this->_own   = [
+            'user_id',
             'type',
             'mime_type',
             'path',
@@ -48,6 +49,7 @@ class FileRepository extends BaseRepository
         string $sort = '',
         string $filter = '',
         ?array $projection = null,
+        ?int $ownerId = null,
     ): array {
         $proj   = new Projection($projection);
         $select = $this->_buildSelect($proj);
@@ -60,6 +62,11 @@ class FileRepository extends BaseRepository
 
         $where  = 'f.franchise_code = ? AND f.deleted = ?';
         $params = [$this->_code, $deletedVal];
+
+        if ($ownerId !== null) {
+            $where .= ' AND f.user_id = ?';
+            $params[] = $ownerId;
+        }
 
         if ($search !== '') {
             $where   .= ' AND (f.name LIKE ? OR f.type LIKE ?)';
@@ -121,6 +128,45 @@ class FileRepository extends BaseRepository
         return $this->findById($id, $projection);
     }
 
+    public function findByPath(string $path): ?array
+    {
+        $row = $this->_db->fetchOne(
+            'SELECT * FROM file WHERE franchise_code = ? AND path = ? AND deleted = 0 LIMIT 1',
+            [$this->_code, $path],
+        );
+        return $row ?: null;
+    }
+
+    public function isPubliclyAccessible(int $fileId): bool
+    {
+        $row = $this->_db->fetchOne(
+            "SELECT f.id FROM file f
+             INNER JOIN product_file pf ON pf.file_id = f.id
+             INNER JOIN product p ON p.id = pf.product_id
+             WHERE f.id = ? AND f.franchise_code = ? AND f.visibility = 'public'
+               AND f.deleted = 0 AND p.franchise_code = ? AND p.deleted = 0 AND p.published = 1
+             LIMIT 1",
+            [$fileId, $this->_code, $this->_code],
+        );
+        return (bool) $row;
+    }
+
+    public function belongsToUser(array $file, int $userId): bool
+    {
+        if ((int) ($file['user_id'] ?? 0) === $userId) {
+            return true;
+        }
+        $row = $this->_db->fetchOne(
+            "SELECT inf.file_id FROM invoice_file inf
+             INNER JOIN invoice i ON i.id = inf.invoice_id
+             WHERE inf.file_id = ? AND i.franchise_code = ? AND i.deleted = 0
+               AND CAST(JSON_UNQUOTE(JSON_EXTRACT(i.`user`, '$.id')) AS UNSIGNED) = ?
+             LIMIT 1",
+            [(int) $file['id'], $this->_code, $userId],
+        );
+        return (bool) $row;
+    }
+
     /**
      * Nacte soubory entity pres junction tabulku.
      *
@@ -129,14 +175,20 @@ class FileRepository extends BaseRepository
      * @param  int    $entityId
      * @return list<array{id: int, path: string, name: string, mime_type: string}>
      */
-    public function findByJunctionItem(string $junctionTable, string $entityFkColumn, int $entityId): array
+    public function findByJunctionItem(
+        string $junctionTable,
+        string $entityFkColumn,
+        int $entityId,
+        bool $publicOnly = false,
+    ): array
     {
+        $visibility = $publicOnly ? " AND f.visibility = 'public'" : '';
         $rows = $this->_db->fetchAll(
             "SELECT j.file_id, f.path, f.name, f.mime_type
              FROM {$junctionTable} j
              INNER JOIN file f ON f.id = j.file_id AND f.deleted = 0
-             WHERE j.{$entityFkColumn} = ?",
-            [$entityId],
+             WHERE j.{$entityFkColumn} = ? AND f.franchise_code = ?{$visibility}",
+            [$entityId, $this->_code],
         );
 
         return array_map(static fn($r) => [
@@ -156,19 +208,25 @@ class FileRepository extends BaseRepository
      * @param  list<int> $entityIds
      * @return array<int, list<array{id: int, path: string, name: string, mime_type: string}>>
      */
-    public function findByJunctionList(string $junctionTable, string $entityFkColumn, array $entityIds): array
+    public function findByJunctionList(
+        string $junctionTable,
+        string $entityFkColumn,
+        array $entityIds,
+        bool $publicOnly = false,
+    ): array
     {
         if (empty($entityIds)) {
             return [];
         }
 
         $placeholders = implode(',', array_fill(0, count($entityIds), '?'));
+        $visibility = $publicOnly ? " AND f.visibility = 'public'" : '';
         $rows = $this->_db->fetchAll(
             "SELECT j.{$entityFkColumn} AS entity_id, j.file_id, f.path, f.name, f.mime_type
              FROM {$junctionTable} j
              INNER JOIN file f ON f.id = j.file_id AND f.deleted = 0
-             WHERE j.{$entityFkColumn} IN ({$placeholders})",
-            $entityIds,
+             WHERE j.{$entityFkColumn} IN ({$placeholders}) AND f.franchise_code = ?{$visibility}",
+            [...$entityIds, $this->_code],
         );
 
         $map = [];

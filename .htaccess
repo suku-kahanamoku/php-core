@@ -10,6 +10,11 @@ RewriteRule ^info[.]php - [F,L]
 # Pass Authorization header to PHP (needed for Bearer token auth)
 RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
+# Raw storage paths are never served by Apache. Files are downloaded through
+# /api/files/content, where FileService applies tenant and visibility checks.
+RewriteRule ^temp/ - [F,L]
+RewriteRule ^files/ - [F,L]
+
 # Allow direct access to existing files/dirs
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d

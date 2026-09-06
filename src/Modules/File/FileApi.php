@@ -32,6 +32,8 @@ class FileApi
     public function registerRoutes(Router $router): void
     {
         $router->get('/',        [$this, 'list']);
+        $router->get('/content', [$this, 'download']);
+        $router->get('/temp',    [$this, 'downloadTemp']);
         $router->get('/upload',  [$this, 'methodNotAllowed']); // ochrana pred GET /upload
         $router->get('/:id',     [$this, 'get']);
         $router->post('/upload', [$this, 'upload']);
@@ -63,6 +65,16 @@ class FileApi
             ->validate();
         $item = $this->_service->get((int) $params['id'], $request->projection());
         Response::successItem($item, $request);
+    }
+
+    public function download(Request $request): void
+    {
+        $this->_service->download((string) $request->get('path', ''));
+    }
+
+    public function downloadTemp(Request $request): void
+    {
+        $this->_service->downloadTemp((string) $request->get('path', ''));
     }
 
     // ── POST /files/upload ────────────────────────────────────────────────

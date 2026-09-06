@@ -10,17 +10,13 @@ use App\Modules\BaseService;
 use App\Modules\Database\Database;
 use App\Modules\Enumeration\EnumerationRepository;
 use App\Modules\Product\ProductRepository;
-use App\Modules\Role\RoleRepository;
 use App\Modules\Router\Response;
-use App\Modules\User\UserRepository;
 
 class OrderService extends BaseService
 {
     private OrderRepository         $_order;
-    private UserRepository           $_user;
     private AddressRepository        $_address;
     private ProductRepository        $_product;
-    private RoleRepository           $_role;
     private EnumerationRepository    $_enum;
 
     /**
@@ -33,10 +29,8 @@ class OrderService extends BaseService
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->_order   = new OrderRepository($db, $franchiseCode);
-        $this->_user    = new UserRepository($db, $franchiseCode);
         $this->_address = new AddressRepository($db, $franchiseCode);
         $this->_product = new ProductRepository($db, $franchiseCode);
-        $this->_role    = new RoleRepository($db, $franchiseCode);
         $this->_enum    = new EnumerationRepository($db, $franchiseCode);
         $this->_auth    = $auth;
     }
@@ -94,7 +88,7 @@ class OrderService extends BaseService
         $order = $this->_order->findById($id, $projection);
         $this->_requireEntity($order, 'Order not found');
         if (!$this->_auth->hasRole('admin') && (int) $order['user_id'] !== $this->_auth->id()) {
-            Response::forbidden();
+            Response::notFound('Order not found');
         }
 
         return $order;
@@ -125,17 +119,33 @@ class OrderService extends BaseService
         $shipping = $input['shipping'] ?? [];
         $billing  = $input['billing']  ?? [];
 
-        $userId            = $this->resolveUserId($user);
-        $shippingAddressId = $this->resolveAddress(
-            $userId,
-            $user['address']['shipping'] ?? [],
-            'shipping',
-        );
-        $billingAddressId = $this->resolveAddress(
-            $userId,
-            $user['address']['main'] ?? [],
-            'billing',
-        );
+        $userId = $this->_auth->check() ? $this->_auth->id() : null;
+        $customerSnapshot = null;
+        if ($userId !== null) {
+            $shippingAddressId = $this->resolveAddress(
+                $userId,
+                $user['address']['shipping'] ?? [],
+                'shipping',
+            );
+            $billingAddressId = $this->resolveAddress(
+                $userId,
+                $user['address']['main'] ?? [],
+                'billing',
+            );
+        } else {
+            $email = trim((string) ($user['email'] ?? ''));
+            VALIDATOR(['email' => $email])->required('email')->email('email')->validate();
+            $shippingAddressId = null;
+            $billingAddressId = null;
+            $customerSnapshot = [
+                'first_name' => trim((string) ($user['first_name'] ?? '')),
+                'last_name' => trim((string) ($user['last_name'] ?? '')),
+                'email' => $email,
+                'phone' => trim((string) ($user['phone'] ?? '')),
+                'billing_address' => $this->addressSnapshot($user['address']['main'] ?? []),
+                'shipping_address' => $this->addressSnapshot($user['address']['shipping'] ?? []),
+            ];
+        }
 
         $shippingSyscode = (string) ($shipping['value'] ?? '');
         $paymentSyscode  = (string) ($billing['value'] ?? 'bank');
@@ -215,6 +225,8 @@ class OrderService extends BaseService
         $orderRow = $this->_order->create([
             'order_number'             => $this->_order->generateNumber(),
             'user_id'                  => $userId,
+            'customer'                 => $customerSnapshot !== null
+                ? json_encode($customerSnapshot, JSON_UNESCAPED_UNICODE) : null,
             'status'                   => 'pending',
             'total_price'              => round($totalPrice, 2),
             'total_price_with_vat'     => round($totalPriceWithVat, 2),
@@ -237,43 +249,6 @@ class OrderService extends BaseService
         }
 
         return $this->_order->findById($orderId) ?? ['id' => $orderId];
-    }
-
-    /**
-     * Find existing user by email, or create a guest account. Returns null when no email supplied.
-     *
-     * @param  array<string, mixed> $user
-     * @return int|null
-     */
-    private function resolveUserId(array $user): ?int
-    {
-        if ($this->_auth->check()) {
-            return $this->_auth->id();
-        }
-
-        $email = trim($user['email'] ?? '');
-        if ($email === '') {
-            return null;
-        }
-
-        $existing = $this->_user->findByEmail($email);
-        if ($existing) {
-            return (int) $existing['id'];
-        }
-
-        $roleId = $this->_role->findIdByName('user');
-        if (!$roleId) {
-            return null;
-        }
-
-        return (int) $this->_user->create([
-            'first_name' => $user['first_name'] ?? '',
-            'last_name'  => $user['last_name']  ?? '',
-            'email'      => $email,
-            'phone'      => $user['phone'] ?? null,
-            'password'   => '',   // guest – login disabled
-            'role_id'    => $roleId,
-        ])['id'];
     }
 
     /**
@@ -308,6 +283,26 @@ class OrderService extends BaseService
             'country'    => $country,
             'is_default' => 0,
         ])['id'];
+    }
+
+    /** @param array<string, mixed> $address @return array<string, mixed>|null */
+    private function addressSnapshot(array $address): ?array
+    {
+        if ($address === []) {
+            return null;
+        }
+        $country = strtoupper((string) ($address['state'] ?? $address['country'] ?? 'CZ'));
+        if ($country === 'CS') {
+            $country = 'CZ';
+        }
+        return [
+            'name' => $address['name'] ?? null,
+            'company' => $address['company'] ?? null,
+            'street' => $address['street'] ?? '',
+            'city' => $address['city'] ?? '',
+            'zip' => $address['zip'] ?? '',
+            'country' => $country,
+        ];
     }
 
     /**

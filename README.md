@@ -29,8 +29,8 @@ mysql -u root -p -e "
   FLUSH PRIVILEGES;
 "
 
-# Run migration (creates all tables + seeds enumerations + admin user)
-php bin/migrate.php
+# Fresh/development database only (destructive: drops and recreates tables)
+mysql -u php_core -p php_core < migrations/schema.sql
 ```
 
 Default admin credentials:
@@ -83,13 +83,39 @@ Note: `POST /api/auth/logout` requires the `Authorization: Bearer <token>` heade
 
 ## Multi-tenancy
 
-Every request is scoped to a `franchise_code` resolved from the HTTP `Host` header. Allowed codes are defined in `.env` as a comma-separated list:
+Every request is scoped to a `franchise_code` resolved from the frontend host. Allowed host-to-tenant mappings are defined in `.env` as a comma-separated list:
 
 ```
-FRANCHISE_CODES=default,shop1,shop2
+FRANCHISE_CODES=zoo.localhost:zoo,zoo-crm.netlify.app:zoo,vinozezajeci.cz:zajeci
 ```
 
-Requests from unknown hosts return `403 Forbidden`.
+Requests from unknown hosts return `403 Forbidden`. Do not map the generic PHP
+backend hostname to a tenant. Trusted Nuxt server proxies pass their configured
+frontend hostname in `X-Forwarded-Host`.
+
+Server-to-server operations (OAuth handoff, generic transactional mail and
+invoice creation) additionally require the same non-public `INTERNAL_API_KEY`
+in PHP and the corresponding Nuxt deployment.
+
+### Existing database / production migration
+
+Never run `migrations/schema.sql` on an existing database. It contains `DROP
+TABLE` statements and is intended only for a new local installation.
+
+The additive security migration is idempotent and preserves current business
+rows:
+
+```bash
+mysqldump --single-transaction --quick --skip-lock-tables --no-tablespaces \
+  -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p "$DB_NAME" \
+  > "../${DB_NAME}-before-security-$(date +%Y%m%d-%H%M%S).sql"
+
+mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p "$DB_NAME" \
+  < migrations/20260906_security_hardening.sql
+```
+
+Run the migration locally first, verify its final row reports `1, 1, 1, 3`,
+then run the same committed file in production before deploying the PHP code.
 
 ### Zoo CRM tenant
 
@@ -111,10 +137,9 @@ php-core/
 ├── bootstrap.php          # Autoload, .env, CORS headers, error handling
 ├── .env.example
 ├── composer.json
-├── bin/
-│   └── migrate.php        # DB migration runner
 ├── migrations/
-│   └── schema.sql         # Full schema + seed data
+│   ├── schema.sql                         # destructive fresh schema + seed
+│   └── 20260906_security_hardening.sql   # additive production migration
 ├── pages/
 │   ├── db-schema.html     # Mermaid ER diagram
 │   ├── db-table.html      # HTML schema viewer with FK table
@@ -307,4 +332,3 @@ Tables (16): `enumeration`, `role`, `user`, `address`, `user_token`, `category`,
 - **`category.syscode`** — machine-readable identifier for filtering via `category_syscode` query param.
 - **`product.data`** — flexible JSON column. Filter via dot-notation: `q={"data.year":{"value":2022}}`.
 - **`deleted`** — soft-delete flag (`TINYINT(1) DEFAULT 0`) present on every entity table.
-

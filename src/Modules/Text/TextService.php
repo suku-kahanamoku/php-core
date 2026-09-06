@@ -8,9 +8,13 @@ use App\Modules\Auth\Auth;
 use App\Modules\BaseService;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
+use App\Utils\QueryPolicy;
 
 class TextService extends BaseService
 {
+    private const PUBLIC_FIELDS = ['id', 'syscode', 'title', 'content', 'language', 'published'];
+    private const PUBLIC_FILTERS = ['id', 'syscode', 'title', 'language'];
+    private const PUBLIC_SORTS = ['id', 'syscode', 'title', 'language', 'created_at', 'updated_at'];
     private TextRepository $_text;
 
     /**
@@ -49,13 +53,23 @@ class TextService extends BaseService
         string $filter = '',
         ?array $projection = null,
     ): array {
-        return $this->_text->findAll(
+        $isAdmin = $this->_auth->hasRole('admin');
+        if (!$isAdmin) {
+            $filter = QueryPolicy::filter($filter, self::PUBLIC_FILTERS, [
+                'deleted' => 0,
+                'published' => ['value' => 1],
+            ]);
+            $sort = QueryPolicy::sort($sort, self::PUBLIC_SORTS);
+            $projection = QueryPolicy::projection($projection, self::PUBLIC_FIELDS);
+        }
+        $result = $this->_text->findAll(
             $page,
             $limit,
             $sort,
             $filter,
             $projection
         );
+        return $isAdmin ? $result : QueryPolicy::listFields($result, self::PUBLIC_FIELDS);
     }
 
     /**
@@ -67,11 +81,19 @@ class TextService extends BaseService
      */
     public function get(int $id, ?array $projection = null): array
     {
+        $isAdmin = $this->_auth->hasRole('admin');
+        if (!$isAdmin) {
+            $visibility = $this->_text->findById($id, ['published']);
+            if (!$visibility || (int) ($visibility['published'] ?? 0) !== 1) {
+                Response::notFound('Text not found');
+            }
+            $projection = QueryPolicy::projection($projection, self::PUBLIC_FIELDS);
+        }
         $text = $this->_text->findById($id, $projection);
         if (!$text) {
             Response::notFound('Text not found');
         }
-        return $text;
+        return $isAdmin ? $text : QueryPolicy::fields($text, self::PUBLIC_FIELDS);
     }
 
     /**
@@ -84,10 +106,12 @@ class TextService extends BaseService
     public function getByKey(string $key, string $language): array
     {
         $text = $this->_text->findByKey($key, $language);
-        if (!$text) {
+        if (!$text || (!$this->_auth->hasRole('admin') && (int) ($text['published'] ?? 0) !== 1)) {
             Response::notFound("Text with key '$key' not found");
         }
-        return $text;
+        return $this->_auth->hasRole('admin')
+            ? $text
+            : QueryPolicy::fields($text, self::PUBLIC_FIELDS);
     }
 
     /**

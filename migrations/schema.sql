@@ -17,6 +17,9 @@ DROP TABLE IF EXISTS `product`;
 DROP TABLE IF EXISTS `category`;
 DROP TABLE IF EXISTS `text`;
 DROP TABLE IF EXISTS `file`;
+DROP TABLE IF EXISTS `api_rate_limit`;
+DROP TABLE IF EXISTS `password_reset_token`;
+DROP TABLE IF EXISTS `oauth_identity`;
 DROP TABLE IF EXISTS `user_token`;
 DROP TABLE IF EXISTS `address`;
 DROP TABLE IF EXISTS `user`;
@@ -133,6 +136,7 @@ CREATE TABLE `category` (
     `name`         VARCHAR(255) NOT NULL,
     `description`  TEXT                  DEFAULT NULL,
     `position`   SMALLINT     NOT NULL DEFAULT 0,
+    `published`    TINYINT(1)   NOT NULL DEFAULT 1,
     `deleted`      TINYINT(1)   NOT NULL DEFAULT 0,
     `created_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`   DATETIME              DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
@@ -218,6 +222,7 @@ CREATE TABLE `order` (
     `franchise_code`         VARCHAR(64)    NOT NULL,
     `order_number`           VARCHAR(64)    NOT NULL,
     `user_id`                INT UNSIGNED            DEFAULT NULL,
+    `customer`               JSON                    DEFAULT NULL COMMENT 'guest customer and address snapshot',
     `status`                 ENUM('pending','confirmed','processing','shipped','delivered','cancelled','refunded') NOT NULL DEFAULT 'pending',
     `total_price`            DECIMAL(12, 2) NOT NULL DEFAULT 0.00 COMMENT 'soucet order_items bez DPH',
     `total_price_with_vat`   DECIMAL(12, 2) NOT NULL DEFAULT 0.00 COMMENT 'soucet order_items vcetne DPH',
@@ -337,6 +342,7 @@ CREATE TABLE `invoice_file` (
 CREATE TABLE `file` (
     `id`             INT UNSIGNED   NOT NULL AUTO_INCREMENT,
     `franchise_code` VARCHAR(64)    NOT NULL,
+    `user_id`        INT UNSIGNED            DEFAULT NULL COMMENT 'owner of user-uploaded file',
     `type`           VARCHAR(32)    NOT NULL COMMENT 'pripona: pdf, jpg, csv...',
     `mime_type`      VARCHAR(100)   NOT NULL COMMENT 'application/pdf, image/jpeg...',
     `path`           VARCHAR(512)   NOT NULL COMMENT 'relativni cesta v /files/ po commitu',
@@ -351,9 +357,51 @@ CREATE TABLE `file` (
     `expires_at`     DATETIME                DEFAULT NULL COMMENT 'TTL pro tmp soubory, cron target',
     PRIMARY KEY (`id`),
     KEY `idx_file_franchise`   (`franchise_code`),
+    KEY `idx_file_user`        (`user_id`),
     KEY `idx_file_entity`      (`entity_type`, `entity_id`),
     KEY `idx_file_deleted`     (`deleted`),
     KEY `idx_file_expires`     (`expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `oauth_identity` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `franchise_code` VARCHAR(64) NOT NULL,
+    `user_id` INT UNSIGNED NOT NULL,
+    `provider` VARCHAR(32) NOT NULL,
+    `provider_subject` VARCHAR(255) NOT NULL,
+    `email` VARCHAR(255) NOT NULL,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_oauth_tenant_provider_subject` (`franchise_code`, `provider`, `provider_subject`),
+    KEY `idx_oauth_user` (`user_id`),
+    CONSTRAINT `fk_oauth_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `password_reset_token` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `franchise_code` VARCHAR(64) NOT NULL,
+    `user_id` INT UNSIGNED NOT NULL,
+    `token_hash` CHAR(64) NOT NULL,
+    `expires_at` DATETIME NOT NULL,
+    `used_at` DATETIME DEFAULT NULL,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_password_reset_hash` (`token_hash`),
+    KEY `idx_password_reset_user` (`franchise_code`, `user_id`),
+    KEY `idx_password_reset_expiry` (`expires_at`),
+    CONSTRAINT `fk_password_reset_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `api_rate_limit` (
+    `franchise_code` VARCHAR(64) NOT NULL,
+    `action` VARCHAR(64) NOT NULL,
+    `subject_hash` CHAR(64) NOT NULL,
+    `window_started_at` DATETIME NOT NULL,
+    `attempts` INT UNSIGNED NOT NULL DEFAULT 1,
+    `expires_at` DATETIME NOT NULL,
+    PRIMARY KEY (`franchise_code`, `action`, `subject_hash`, `window_started_at`),
+    KEY `idx_rate_limit_expiry` (`expires_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET foreign_key_checks = 1;

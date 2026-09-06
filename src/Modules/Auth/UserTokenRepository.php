@@ -36,13 +36,13 @@ class UserTokenRepository
     public function findUserByToken(string $token, string $franchiseCode): ?array
     {
         $row = $this->_db->fetchOne(
-            'SELECT u.id, u.email, r.name AS role, u.first_name, u.last_name
+            "SELECT u.id, u.email, r.name AS role, u.first_name, u.last_name
              FROM user_token t
-             JOIN `user` u ON u.id = t.user_id AND u.deleted = 0
+             JOIN `user` u ON u.id = t.user_id AND u.deleted = 0 AND u.status = 'active'
              JOIN `role` r ON r.id = u.role_id AND r.deleted = 0
-             WHERE t.token = ? AND t.expires_at > NOW()
+             WHERE t.token = ? AND t.expires_at > NOW() AND t.deleted = 0
                AND u.franchise_code = ?
-             LIMIT 1',
+             LIMIT 1",
             [$token, $franchiseCode],
         );
 
@@ -75,5 +75,10 @@ class UserTokenRepository
     public function delete(string $token): int
     {
         return $this->_db->delete('user_token', 'token = ?', [$token]);
+    }
+
+    public function deleteByUserId(int $userId): int
+    {
+        return $this->_db->delete('user_token', 'user_id = ?', [$userId]);
     }
 }

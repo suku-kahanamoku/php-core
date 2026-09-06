@@ -78,6 +78,7 @@ class CategoryApi
                 'description' => $request->get('description'),
                 'parent_id'   => $request->get('parent_id'),
                 'position'    => $request->get('position', 0),
+                'published'   => $request->get('published', 1),
             ],
             $request->projection(),
         );
@@ -98,6 +99,7 @@ class CategoryApi
             'description' => $request->get('description'),
             'parent_id'   => $request->get('parent_id'),
             'position'    => $request->get('position'),
+            'published'   => $request->get('published'),
         ], $request->projection());
         Response::success($category, 'Category updated');
     }
@@ -122,6 +124,7 @@ class CategoryApi
                 'description' => $request->get('description'),
                 'parent_id'   => $request->get('parent_id'),
                 'position'    => $request->get('position', 0),
+                'published'   => $request->get('published', 1),
             ],
             $request->projection(),
         );

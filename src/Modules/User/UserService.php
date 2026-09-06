@@ -10,9 +10,14 @@ use App\Modules\Database\Database;
 use App\Modules\Enumeration\EnumerationRepository;
 use App\Modules\Role\RoleRepository;
 use App\Modules\Router\Response;
+use App\Utils\QueryPolicy;
 
 class UserService extends BaseService
 {
+    private const SELF_FIELDS = [
+        'id', 'first_name', 'last_name', 'email', 'phone', 'profile',
+        'client_type_id', 'client_type', 'role',
+    ];
     private UserRepository $_user;
     private RoleRepository $_role;
     private EnumerationRepository $_enumeration;
@@ -78,14 +83,19 @@ class UserService extends BaseService
     {
         $this->_auth->require();
 
-        if (!$this->_auth->hasRole('admin') && $this->_auth->id() !== $id) {
-            Response::forbidden();
+        $isAdmin = $this->_auth->hasRole('admin');
+        if (!$isAdmin && $this->_auth->id() !== $id) {
+            Response::notFound('User not found');
+        }
+
+        if (!$isAdmin) {
+            $projection = QueryPolicy::projection($projection, self::SELF_FIELDS);
         }
 
         $user = $this->_user->findById($id, $projection);
         $this->_requireEntity($user, 'User not found');
 
-        return $user;
+        return $isAdmin ? $user : QueryPolicy::fields($user, self::SELF_FIELDS);
     }
 
     /**
@@ -147,8 +157,9 @@ class UserService extends BaseService
     {
         $this->_auth->require();
 
-        if (!$this->_auth->hasRole('admin') && $this->_auth->id() !== $id) {
-            Response::forbidden();
+        $isAdmin = $this->_auth->hasRole('admin');
+        if (!$isAdmin && $this->_auth->id() !== $id) {
+            Response::notFound('User not found');
         }
 
         $user = $this->_user->findById($id);
@@ -197,9 +208,10 @@ class UserService extends BaseService
             }
         }
 
-        return !empty($set)
+        $result = !empty($set)
             ? $this->_user->update($id, $set, $projection)
             : ($this->_user->findById($id, $projection) ?? ['id' => $id]);
+        return $isAdmin ? $result : QueryPolicy::fields($result, self::SELF_FIELDS);
     }
 
     /**
@@ -215,8 +227,9 @@ class UserService extends BaseService
     {
         $this->_auth->require();
 
-        if (!$this->_auth->hasRole('admin') && $this->_auth->id() !== $id) {
-            Response::forbidden();
+        $isAdmin = $this->_auth->hasRole('admin');
+        if (!$isAdmin && $this->_auth->id() !== $id) {
+            Response::notFound('User not found');
         }
 
         $user = $this->_user->findById($id);
@@ -242,7 +255,8 @@ class UserService extends BaseService
             }
         }
 
-        return $this->_user->update($id, $set, $projection);
+        $result = $this->_user->update($id, $set, $projection);
+        return $isAdmin ? $result : QueryPolicy::fields($result, self::SELF_FIELDS);
     }
 
     /**

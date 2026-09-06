@@ -101,7 +101,7 @@ class InvoiceRepository extends BaseRepository
         $params = [$this->_code];
 
         if ($userId !== null) {
-            $where[]  = 'i.user_id = ?';
+            $where[]  = "CAST(JSON_UNQUOTE(JSON_EXTRACT(i.`user`, '$.id')) AS UNSIGNED) = ?";
             $params[] = $userId;
         }
 

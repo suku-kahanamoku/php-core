@@ -8,9 +8,19 @@ use App\Modules\Auth\Auth;
 use App\Modules\BaseService;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
+use App\Utils\QueryPolicy;
 
 class EnumerationService extends BaseService
 {
+    private const PUBLIC_TYPES = [
+        'contact', 'taste', 'payment', 'shipping', 'wine_color',
+        'wine_quality', 'wine_kind', 'country_code',
+    ];
+    private const PUBLIC_FIELDS = [
+        'id', 'type', 'syscode', 'label', 'value', 'position', 'published', 'data',
+    ];
+    private const PUBLIC_FILTERS = ['id', 'type', 'syscode', 'label', 'value'];
+    private const PUBLIC_SORTS = ['id', 'type', 'syscode', 'label', 'value', 'position'];
     private EnumerationRepository $_enum;
 
     /**
@@ -49,13 +59,33 @@ class EnumerationService extends BaseService
         string $filter = '',
         ?array $projection = null,
     ): array {
-        return $this->_enum->findAll(
+        $isAdmin = $this->_auth->hasRole('admin');
+        if (!$isAdmin) {
+            $decodedFilter = json_decode($filter, true);
+            $requestedType = is_array($decodedFilter) ? ($decodedFilter['type'] ?? null) : null;
+            $requestedType = is_array($requestedType)
+                ? ($requestedType['value'] ?? $requestedType['$eq'] ?? null)
+                : $requestedType;
+            $typeConstraint = is_string($requestedType)
+                && in_array($requestedType, self::PUBLIC_TYPES, true)
+                    ? ['value' => $requestedType]
+                    : ['$in' => self::PUBLIC_TYPES];
+            $filter = QueryPolicy::filter($filter, self::PUBLIC_FILTERS, [
+                'deleted' => 0,
+                'published' => ['value' => 1],
+                'type' => $typeConstraint,
+            ]);
+            $sort = QueryPolicy::sort($sort, self::PUBLIC_SORTS);
+            $projection = QueryPolicy::projection($projection, self::PUBLIC_FIELDS);
+        }
+        $result = $this->_enum->findAll(
             $page,
             $limit,
             $sort,
             $filter,
             $projection
         );
+        return $isAdmin ? $result : QueryPolicy::listFields($result, self::PUBLIC_FIELDS);
     }
 
     /**
@@ -65,7 +95,10 @@ class EnumerationService extends BaseService
      */
     public function types(): array
     {
-        return $this->_enum->getTypes();
+        if ($this->_auth->hasRole('admin')) {
+            return $this->_enum->getTypes();
+        }
+        return array_values(array_intersect($this->_enum->getTypes(), self::PUBLIC_TYPES));
     }
 
     /**
@@ -77,9 +110,20 @@ class EnumerationService extends BaseService
      */
     public function get(int $id, ?array $projection = null): array
     {
+        $isAdmin = $this->_auth->hasRole('admin');
+        if (!$isAdmin) {
+            $visibility = $this->_enum->findById($id);
+            if (!$visibility
+                || (int) ($visibility['published'] ?? 0) !== 1
+                || !in_array((string) ($visibility['type'] ?? ''), self::PUBLIC_TYPES, true)
+            ) {
+                Response::notFound('Enumeration not found');
+            }
+            $projection = QueryPolicy::projection($projection, self::PUBLIC_FIELDS);
+        }
         $item = $this->_enum->findById($id, $projection);
         $this->_requireEntity($item, 'Enumeration not found');
-        return $item;
+        return $isAdmin ? $item : QueryPolicy::fields($item, self::PUBLIC_FIELDS);
     }
 
     /**

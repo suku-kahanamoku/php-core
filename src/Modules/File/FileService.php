@@ -69,7 +69,14 @@ class FileService extends BaseService
         ?array $projection
     ): array {
         $this->_auth->require();
-        return $this->_files->findAll($page, $limit, $sort, $filter, $projection);
+        return $this->_files->findAll(
+            $page,
+            $limit,
+            $sort,
+            $filter,
+            $projection,
+            $this->_auth->hasRole('admin') ? null : $this->_auth->id(),
+        );
     }
 
     /**
@@ -81,10 +88,10 @@ class FileService extends BaseService
      */
     public function get(int $id, ?array $projection): array
     {
-        $this->_auth->require();
-        $file = $this->_files->findById($id, $projection);
+        $file = $this->_files->findById($id);
         $this->_requireEntity($file, 'File not found');
-        return $file;
+        $this->_authorizeRead($file);
+        return $projection === null ? $file : ($this->_files->findById($id, $projection) ?? $file);
     }
 
     /**
@@ -103,12 +110,13 @@ class FileService extends BaseService
         $uuid = $this->_generateUuid();
         $code = $this->_files->getCode();
 
-        $dir = $this->_tempRoot() . '/' . $code;
+        $userId = (int) $this->_auth->id();
+        $dir = $this->_tempRoot() . '/' . $code . '/' . $userId;
         if (!is_dir($dir) && !mkdir($dir, 0755, true)) {
             Response::error('Could not create temp directory', 500);
         }
 
-        $relPath = 'temp/' . $code . '/' . $uuid . '.' . $ext;
+        $relPath = 'temp/' . $code . '/' . $userId . '/' . $uuid . '.' . $ext;
         $absPath = $this->_root() . '/' . $relPath;
 
         if (!move_uploaded_file($uploadedFile['tmp_name'], $absPath)) {
@@ -138,8 +146,10 @@ class FileService extends BaseService
     ): array {
         $this->_auth->require();
 
-        // Bezpecnostni kontrola — povolujeme jen soubory z adresare temp/
-        if (!str_starts_with($path, 'temp/')) {
+        $code = $this->_files->getCode();
+        $userId = (int) $this->_auth->id();
+        $expectedPrefix = 'temp/' . $code . '/' . $userId . '/';
+        if (!str_starts_with($path, $expectedPrefix) || str_contains($path, '..')) {
             Response::error('Invalid temp path', 422);
         }
 
@@ -148,7 +158,6 @@ class FileService extends BaseService
             Response::notFound('Temp file not found');
         }
 
-        $code    = $this->_files->getCode();
         $uuid    = pathinfo($absTemp, PATHINFO_FILENAME);
         $ext     = strtolower(pathinfo($absTemp, PATHINFO_EXTENSION));
         $mime    = mime_content_type($absTemp) ?: 'application/octet-stream';
@@ -187,6 +196,7 @@ class FileService extends BaseService
         }
 
         $data = [
+            'user_id'    => $userId,
             'type'       => $ext,
             'mime_type'  => $mime,
             'path'       => $destRel,
@@ -264,6 +274,7 @@ class FileService extends BaseService
         string $entityType,
         int $entityId,
         string $visibility = 'private',
+        ?int $userId = null,
     ): int {
         $root    = rtrim($this->_root(), '/');
         $dir     = $root . '/files/' . $this->_files->getCode() . '/' . $entityType . '/' . $entityId;
@@ -279,6 +290,7 @@ class FileService extends BaseService
         }
 
         return $this->_files->insert([
+            'user_id'     => $userId,
             'type'        => $type,
             'mime_type'   => $mimeType,
             'path'        => $relPath,
@@ -288,6 +300,54 @@ class FileService extends BaseService
             'entity_type' => $entityType,
             'entity_id'   => $entityId,
         ]);
+    }
+
+    public function download(string $path): never
+    {
+        $path = ltrim(rawurldecode($path), '/');
+        if (str_contains($path, '..') || !str_starts_with($path, 'files/' . $this->_files->getCode() . '/')) {
+            Response::notFound('File not found');
+        }
+        $file = $this->_files->findByPath($path);
+        $this->_requireEntity($file, 'File not found');
+        $this->_authorizeRead($file);
+
+        $absolute = $this->_root() . '/' . $path;
+        $realRoot = realpath($this->_filesRoot());
+        $realFile = realpath($absolute);
+        if ($realRoot === false || $realFile === false || !str_starts_with($realFile, $realRoot . '/')) {
+            Response::notFound('File not found');
+        }
+
+        header('Content-Type: ' . (string) $file['mime_type']);
+        header('Content-Length: ' . (string) filesize($realFile));
+        header('X-Content-Type-Options: nosniff');
+        header('Cache-Control: ' . ($this->_files->isPubliclyAccessible((int) $file['id'])
+            ? 'public, max-age=3600'
+            : 'private, no-store'));
+        readfile($realFile);
+        exit;
+    }
+
+    public function downloadTemp(string $path): never
+    {
+        $this->_auth->require();
+        $path = ltrim(rawurldecode($path), '/');
+        $prefix = 'temp/' . $this->_files->getCode() . '/' . (int) $this->_auth->id() . '/';
+        if (!str_starts_with($path, $prefix) || str_contains($path, '..')) {
+            Response::notFound('File not found');
+        }
+        $realRoot = realpath($this->_tempRoot());
+        $realFile = realpath($this->_root() . '/' . $path);
+        if ($realRoot === false || $realFile === false || !str_starts_with($realFile, $realRoot . '/')) {
+            Response::notFound('File not found');
+        }
+        header('Content-Type: ' . (mime_content_type($realFile) ?: 'application/octet-stream'));
+        header('Content-Length: ' . (string) filesize($realFile));
+        header('X-Content-Type-Options: nosniff');
+        header('Cache-Control: private, no-store');
+        readfile($realFile);
+        exit;
     }
 
     /**
@@ -372,5 +432,22 @@ class FileService extends BaseService
         $prefix = preg_replace('/[^a-z0-9_-]+/', '', $prefix) ?? '';
 
         return $prefix !== '' ? $prefix : null;
+    }
+
+    /** @param array<string, mixed> $file */
+    private function _authorizeRead(array $file): void
+    {
+        if ($this->_files->isPubliclyAccessible((int) $file['id'])) {
+            return;
+        }
+        if (!$this->_auth->check()) {
+            Response::notFound('File not found');
+        }
+        if ($this->_auth->hasRole('admin')) {
+            return;
+        }
+        if (!$this->_files->belongsToUser($file, (int) $this->_auth->id())) {
+            Response::notFound('File not found');
+        }
     }
 }

@@ -388,9 +388,23 @@ class UserRepository extends BaseRepository
                     r.name AS role, u.first_name, u.last_name, u.status
              FROM `user` u
              JOIN `role` r ON r.id = u.role_id AND r.deleted = 0
-             WHERE u.email = ? AND u.franchise_code = ?
+             WHERE u.email = ? AND u.franchise_code = ? AND u.deleted = 0
              LIMIT 1',
             [$email, $this->_code],
+        ) ?: null;
+    }
+
+    /** Vrati autentizacni data uzivatele dle ID. */
+    public function findForLoginById(int $id): ?array
+    {
+        return $this->_db->fetchOne(
+            'SELECT u.id, u.email, u.password,
+                    r.name AS role, u.first_name, u.last_name, u.status
+             FROM `user` u
+             JOIN `role` r ON r.id = u.role_id AND r.deleted = 0
+             WHERE u.id = ? AND u.franchise_code = ? AND u.deleted = 0
+             LIMIT 1',
+            [$id, $this->_code],
         ) ?: null;
     }
 

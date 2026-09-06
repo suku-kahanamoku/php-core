@@ -8,6 +8,7 @@ use App\Modules\Database\Database;
 use App\Modules\Role\RoleRepository;
 use App\Modules\Router\Response;
 use App\Modules\User\UserRepository;
+use App\Modules\Mailer\MailerService;
 
 
 class AuthService
@@ -16,6 +17,9 @@ class AuthService
     private UserTokenRepository $_tokens;
     private RoleRepository      $_roles;
     private Auth                $_auth;
+    private OAuthIdentityRepository $_oauthIdentities;
+    private PasswordResetRepository $_passwordResets;
+    private string $_franchiseCode;
 
     /**
      * Konstruktor tridy AuthService.
@@ -30,6 +34,9 @@ class AuthService
         $this->_tokens = new UserTokenRepository($db);
         $this->_roles  = new RoleRepository($db, $franchiseCode);
         $this->_auth   = $auth;
+        $this->_oauthIdentities = new OAuthIdentityRepository($db, $franchiseCode);
+        $this->_passwordResets = new PasswordResetRepository($db, $franchiseCode);
+        $this->_franchiseCode = $franchiseCode;
     }
 
     /**
@@ -181,36 +188,69 @@ class AuthService
         ]);
     }
 
-    /**
-     * Reset hesla uzivatele dle emailu.
-     * Vygeneruje nove nahodne heslo, ulozi ho a vrati plain-text verzi pro odeslani emailem.
-     *
-     * @param  string $email
-     * @return array{ email: string, password: string }
-     */
+    /** Creates a one-time reset link. The response never contains a password or token. */
     public function resetPassword(string $email): array
     {
         VALIDATOR(['email' => $email])->email('email')->validate();
 
         $user = $this->_users->findByEmail($email);
         if (!$user) {
-            // Neodhalujeme zda email existuje – vzdy vratime uspech
-            return ['email' => $email, 'password' => ''];
+            return ['requested' => true];
         }
 
-        $newPassword = bin2hex(random_bytes(8)); // 16 znaku hex
+        $token = bin2hex(random_bytes(32));
+        $this->_passwordResets->create(
+            (int) $user['id'],
+            hash('sha256', $token),
+            date('Y-m-d H:i:s', time() + 3600),
+        );
 
-        $this->_users->update($user['id'], [
-            'password' => password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 12]),
-        ]);
+        $prefix = trim(preg_replace('/[^A-Z0-9]+/', '_', strtoupper($this->_franchiseCode)), '_');
+        $frontendUrl = rtrim((string) ($_ENV["{$prefix}_FRONTEND_URL"] ?? ''), '/');
+        if ($frontendUrl === '') {
+            throw new \RuntimeException("{$prefix}_FRONTEND_URL is not configured");
+        }
 
-        return ['email' => $email, 'password' => $newPassword];
+        $mailer = new MailerService($this->_franchiseCode);
+        $sent = $mailer->sendMail(
+            to: $email,
+            subject: 'Reset hesla',
+            template: 'reset-password',
+            templateData: [
+                'email' => $email,
+                'resetUrl' => $frontendUrl . '/reset-password?token=' . rawurlencode($token),
+                'logoPath' => $frontendUrl . '/img/logo_white.svg',
+            ],
+        );
+        if (!$sent) {
+            error_log('Password reset email could not be sent.');
+        }
+
+        return ['requested' => true];
+    }
+
+    public function completePasswordReset(string $token, string $newPassword): void
+    {
+        VALIDATOR(['token' => $token, 'new_password' => $newPassword])
+            ->required(['token', 'new_password'])
+            ->minLength('new_password', 8)
+            ->validate();
+
+        $changed = $this->_passwordResets->consumeAndChangePassword(
+            hash('sha256', $token),
+            password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 12]),
+        );
+        if (!$changed) {
+            Response::error('Reset link is invalid or expired.', 422);
+        }
     }
 
     /**
      * OAuth login – najde uzivatele dle emailu, nebo ho vytvori (bez hesla).
      * Vyzadovano pri prihlaseni pres externi poskytovatele (Google, LinkedIn, apod.).
      *
+     * @param  string $provider
+     * @param  string $subject
      * @param  string $email
      * @param  string $firstName
      * @param  string $lastName
@@ -225,13 +265,24 @@ class AuthService
      * }
      */
     public function oauthLogin(
+        string $provider,
+        string $subject,
         string $email,
         string $firstName,
         string $lastName
     ): array {
-        VALIDATOR(['email' => $email])->email('email')->validate();
+        VALIDATOR(['provider' => $provider, 'subject' => $subject, 'email' => $email])
+            ->required(['provider', 'subject', 'email'])
+            ->email('email')
+            ->validate();
+        if (!in_array($provider, ['google', 'linkedin'], true)) {
+            Response::error('Unsupported OAuth provider.', 422);
+        }
 
-        $user = $this->_users->findForLogin($email);
+        $identityUserId = $this->_oauthIdentities->findUserId($provider, $subject);
+        $user = $identityUserId !== null
+            ? $this->_users->findForLoginById($identityUserId)
+            : $this->_users->findForLogin($email);
 
         if (!$user) {
             $roleId = $this->_roles->findIdByName('user');
@@ -256,6 +307,10 @@ class AuthService
             if (!$user) {
                 Response::error('Failed to create user', 500);
             }
+        }
+
+        if ($identityUserId === null) {
+            $this->_oauthIdentities->create((int) $user['id'], $provider, $subject, $email);
         }
 
         if ($user['status'] !== 'active') {

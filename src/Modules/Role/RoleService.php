@@ -52,6 +52,7 @@ class RoleService extends BaseService
         string $filter = '',
         ?array $projection = null
     ): array {
+        $this->_auth->requireRole('admin');
         return $this->_role->findAll($page, $limit, $sort, $filter, $projection);
     }
 
@@ -71,6 +72,7 @@ class RoleService extends BaseService
      */
     public function get(int $id, ?array $projection = null): array
     {
+        $this->_auth->requireRole('admin');
         $role = $this->_role->findById($id);
         $this->_requireEntity($role, 'Role not found');
 

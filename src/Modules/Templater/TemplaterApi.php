@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Templater;
 
+use App\Modules\Auth\Auth;
 use App\Modules\Router\Request;
 use App\Modules\Router\Response;
 use App\Modules\Router\Router;
@@ -11,10 +12,12 @@ use App\Modules\Router\Router;
 class TemplaterApi
 {
     private TemplaterService $_service;
+    private Auth $_auth;
 
-    public function __construct()
+    public function __construct(string $franchiseCode, Auth $auth)
     {
-        $this->_service = new TemplaterService();
+        $this->_service = new TemplaterService($franchiseCode);
+        $this->_auth = $auth;
     }
 
     public function registerRoutes(Router $router): void
@@ -25,15 +28,16 @@ class TemplaterApi
 
     private function preview(Request $request): void
     {
+        $this->_auth->requireRole('admin');
         $data = $request->all();
 
         VALIDATOR($data)->required('template')->validate();
 
         $template = trim((string) $data['template']);
 
-        // Sanitace - zabrani path traversal
-        $template = str_replace(['..', "\0"], '', $template);
-        $template = ltrim($template, '/');
+        if (!preg_match('/^[a-zA-Z0-9_-]+$/', $template)) {
+            Response::error('Invalid template.', 422);
+        }
 
         unset($data['template']);
 

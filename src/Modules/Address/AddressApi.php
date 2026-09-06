@@ -33,7 +33,7 @@ class AddressApi
      * @param array   $params
      * @return void
      */
-    public function list(Request $request, array $params): void
+    public function list(Request $request, array $params = []): void
     {
         $result = $this->_service->list(
             max(1, (int) $request->get('page', 1)),
@@ -41,6 +41,7 @@ class AddressApi
             (string) $request->get('sort', ''),
             (string) $request->get('q', ''),
             $request->projection(),
+            isset($params['userId']) ? (int) $params['userId'] : null,
         );
         Response::successList($result, $request);
     }

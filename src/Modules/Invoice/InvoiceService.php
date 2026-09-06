@@ -117,16 +117,21 @@ class InvoiceService extends BaseService
     {
         $this->_auth->require();
 
-        $invoice = $this->_invoice->findById($id, $projection);
-        $this->_requireEntity($invoice, 'Invoice not found');
-        $invoiceUserId = is_array($invoice['user'] ?? null)
-            ? (int) ($invoice['user']['id'] ?? 0) : 0;
+        $authorizationRecord = $this->_invoice->findById($id, ['user']);
+        $this->_requireEntity($authorizationRecord, 'Invoice not found');
+        $invoiceUserId = is_array($authorizationRecord['user'] ?? null)
+            ? (int) ($authorizationRecord['user']['id'] ?? 0) : 0;
         if (
             !$this->_auth->hasRole('admin')
             && $invoiceUserId !== $this->_auth->id()
         ) {
-            Response::forbidden();
+            Response::notFound('Invoice not found');
         }
+
+        $invoice = $projection === ['user']
+            ? $authorizationRecord
+            : $this->_invoice->findById($id, $projection);
+        $this->_requireEntity($invoice, 'Invoice not found');
 
         $proj = new Projection($projection);
         if ($proj->needsJoin('files')) {
@@ -173,6 +178,14 @@ class InvoiceService extends BaseService
                     'phone'      => $u['phone']       ?? null,
                 ];
             }
+        } elseif (is_array($order['customer'] ?? null)) {
+            $userSnapshot = [
+                'id' => null,
+                'first_name' => $order['customer']['first_name'] ?? null,
+                'last_name' => $order['customer']['last_name'] ?? null,
+                'email' => $order['customer']['email'] ?? null,
+                'phone' => $order['customer']['phone'] ?? null,
+            ];
         }
 
         // Snapshot adres
@@ -189,6 +202,12 @@ class InvoiceService extends BaseService
             if ($a) {
                 $shippingSnapshot = $this->_addressSnapshot($a);
             }
+        }
+        if (is_array($order['customer'] ?? null)) {
+            $billingSnapshot = is_array($order['customer']['billing_address'] ?? null)
+                ? $order['customer']['billing_address'] : $billingSnapshot;
+            $shippingSnapshot = is_array($order['customer']['shipping_address'] ?? null)
+                ? $order['customer']['shipping_address'] : $shippingSnapshot;
         }
 
         $issuedAt = $input['issued_at'] ?? date('Y-m-d H:i:s');

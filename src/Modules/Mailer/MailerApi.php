@@ -4,24 +4,33 @@ declare(strict_types=1);
 
 namespace App\Modules\Mailer;
 
+use App\Modules\Auth\Auth;
+use App\Modules\Database\Database;
 use App\Modules\Router\Request;
 use App\Modules\Router\Response;
 use App\Modules\Router\Router;
+use App\Utils\InternalAuth;
+use App\Utils\RateLimiter;
 
 class MailerApi
 {
     private MailerService $_service;
     private string        $_code;
+    private Auth          $_auth;
+    private RateLimiter   $_rateLimiter;
 
-    public function __construct(string $franchiseCode = '')
+    public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->_code    = $franchiseCode;
         $this->_service = new MailerService($franchiseCode);
+        $this->_auth = $auth;
+        $this->_rateLimiter = new RateLimiter($db, $franchiseCode);
     }
 
     public function registerRoutes(Router $router): void
     {
-        $router->get('/', fn(Request $req) => $this->send($req));
+        $router->get('/', fn(Request $req) => Response::error('Method not allowed', 405));
+        $router->post('/send', fn(Request $req) => $this->send($req));
         $router->post('/', fn(Request $req) => $this->sendContactForm($req));
         $router->post('/newsletter', fn(Request $req) => $this->sendNewsletter($req));
         $router->get('/test', fn(Request $req) => $this->sendTest($req));
@@ -30,6 +39,7 @@ class MailerApi
 
     private function send(Request $request): void
     {
+        $this->requirePrivileged($request);
         $requiredFields = [
             'to',
             'subject',
@@ -51,6 +61,9 @@ class MailerApi
             ->email('to')
             ->email('fromEmail')
             ->validate();
+        if (!preg_match('/^[a-zA-Z0-9_-]+$/', $data['template'])) {
+            Response::error('Invalid template.', 422);
+        }
 
         // Base template data (always present)
         $templateData = [
@@ -73,6 +86,7 @@ class MailerApi
         $attachmentsParam = trim((string) $request->get('attachments', ''));
         if ($attachmentsParam !== '') {
             $fileRoot = rtrim($_ENV['FILE_ROOT'] ?? dirname(__DIR__, 3), '/');
+            $tenantRoot = realpath($fileRoot . '/files/' . $this->_code);
             foreach (explode(',', $attachmentsParam) as $path) {
                 $path = trim($path);
                 if ($path === '') {
@@ -82,8 +96,14 @@ class MailerApi
                 if ($path[0] !== '/') {
                     $path = $fileRoot . '/' . $path;
                 }
-                if (file_exists($path)) {
-                    $attachments[] = $path;
+                $resolved = realpath($path);
+                if (
+                    $tenantRoot !== false
+                    && $resolved !== false
+                    && str_starts_with($resolved, $tenantRoot . '/')
+                    && is_file($resolved)
+                ) {
+                    $attachments[] = $resolved;
                 }
             }
         }
@@ -112,15 +132,17 @@ class MailerApi
         $message = trim((string) $request->get('message', ''));
         $phone   = trim((string) $request->get('phone', ''));
 
+        $this->_rateLimiter->hit(
+            'contact-mail',
+            strtolower($email) . '|' . (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown'),
+            5,
+            3600,
+        );
+
         [
             'adminEmail' => $adminEmail,
             'adminName'  => $adminName
         ] = $this->resolveAdminMailbox();
-
-        $adminEmail = trim((string) $request->get(
-            'adminEmail',
-            $adminEmail,
-        ));
 
         $data = [
             'name'    => $name,
@@ -180,7 +202,6 @@ class MailerApi
 
         Response::success(
             [
-                'adminEmail' => $adminEmail,
                 'recipient'  => $email,
                 'project'    => $project,
             ],
@@ -191,6 +212,13 @@ class MailerApi
     private function sendNewsletter(Request $request): void
     {
         $email = trim((string) $request->get('email', ''));
+
+        $this->_rateLimiter->hit(
+            'newsletter-mail',
+            strtolower($email) . '|' . (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown'),
+            5,
+            3600,
+        );
 
         VALIDATOR(['email' => $email])
             ->required(['email'])
@@ -242,7 +270,6 @@ class MailerApi
 
         Response::success(
             [
-                'adminEmail' => $adminEmail,
                 'recipient'  => $email,
             ],
             'Newsletter emails sent.',
@@ -285,6 +312,7 @@ class MailerApi
 
     private function sendTest(Request $request): void
     {
+        $this->requirePrivileged($request);
         $email = trim((string) $request->get('email', ''));
 
         if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -305,6 +333,7 @@ class MailerApi
 
     private function listTemplates(Request $request): void
     {
+        $this->requirePrivileged($request);
         $dir       = dirname(__DIR__, 3) . '/emails/' . $this->_code;
         $templates = [];
 
@@ -316,5 +345,12 @@ class MailerApi
         }
 
         Response::success($templates, 'Templates listed.');
+    }
+
+    private function requirePrivileged(Request $request): void
+    {
+        if (!InternalAuth::check($request)) {
+            $this->_auth->requireRole('admin');
+        }
     }
 }

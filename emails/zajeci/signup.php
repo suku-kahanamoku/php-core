@@ -6,7 +6,6 @@
 /** @var string $fromName */
 /** @var string $fromPhone */
 /** @var string $email */
-/** @var string $password */
 ?>
 
 <!DOCTYPE html>
@@ -43,12 +42,6 @@
                     <tr>
                         <td style="padding:6px 0;font-weight:bold;width:120px;">E-mail:</td>
                         <td style="padding:6px 0;"><?= htmlspecialchars((string) $email) ?></td>
-                    </tr>
-                <?php endif; ?>
-                <?php if (!empty($password)): ?>
-                    <tr>
-                        <td style="padding:6px 0;font-weight:bold;">Heslo:</td>
-                        <td style="padding:6px 0;font-family:monospace;font-size:15px;letter-spacing:1px;"><?= htmlspecialchars((string) $password) ?></td>
                     </tr>
                 <?php endif; ?>
             </table>

@@ -8,10 +8,13 @@ use App\Modules\Database\Database;
 use App\Modules\Router\Request;
 use App\Modules\Router\Response;
 use App\Modules\Router\Router;
+use App\Utils\InternalAuth;
+use App\Utils\RateLimiter;
 
 class AuthApi
 {
     private AuthService $_service;
+    private RateLimiter $_rateLimiter;
 
     /**
      * Konstruktor tridy AuthApi.
@@ -23,6 +26,7 @@ class AuthApi
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->_service = new AuthService($db, $franchiseCode, $auth);
+        $this->_rateLimiter = new RateLimiter($db, $franchiseCode);
     }
 
     /**
@@ -35,6 +39,7 @@ class AuthApi
     {
         $email    = trim((string) $request->get('email', ''));
         $password = (string) $request->get('password', '');
+        $this->_rateLimiter->hit('login', $this->_subject($email), 10, 900);
 
         VALIDATOR(['email' => $email, 'password' => $password])
             ->required(['email', 'password'])
@@ -75,6 +80,12 @@ class AuthApi
      */
     public function register(Request $request): void
     {
+        $this->_rateLimiter->hit(
+            'register',
+            $this->_subject((string) $request->get('email', '')),
+            5,
+            3600,
+        );
         $id = $this->_service->register(
             trim((string) $request->get('first_name', '')),
             trim((string) $request->get('last_name', '')),
@@ -114,8 +125,20 @@ class AuthApi
 
         VALIDATOR(['email' => $email])->required('email')->email('email')->validate();
 
+        $this->_rateLimiter->hit('password-reset', $this->_subject($email), 5, 3600);
+
         $result = $this->_service->resetPassword($email);
         Response::success($result, 'Password reset successful');
+    }
+
+    public function completePasswordReset(Request $request): void
+    {
+        $this->_rateLimiter->hit('password-reset-complete', $this->_subject('complete'), 10, 3600);
+        $this->_service->completePasswordReset(
+            trim((string) $request->get('token', '')),
+            (string) $request->get('new_password', ''),
+        );
+        Response::success(null, 'Password changed successfully');
     }
 
     /**
@@ -126,13 +149,16 @@ class AuthApi
      */
     public function oauth(Request $request): void
     {
+        InternalAuth::require($request);
+        $provider  = strtolower(trim((string) $request->get('provider', '')));
+        $subject   = trim((string) $request->get('subject', ''));
         $email     = trim((string) $request->get('email', ''));
         $firstName = trim((string) $request->get('first_name', ''));
         $lastName  = trim((string) $request->get('last_name', ''));
 
         VALIDATOR(['email' => $email])->required('email')->email('email')->validate();
 
-        $result = $this->_service->oauthLogin($email, $firstName, $lastName);
+        $result = $this->_service->oauthLogin($provider, $subject, $email, $firstName, $lastName);
         Response::success($result, 'OAuth login successful');
     }
 
@@ -150,6 +176,12 @@ class AuthApi
         $router->post('/register', [$this, 'register']);
         $router->post('/change-password', [$this, 'changePassword']);
         $router->post('/reset-password', [$this, 'resetPassword']);
+        $router->post('/complete-reset', [$this, 'completePasswordReset']);
         $router->post('/oauth', [$this, 'oauth']);
+    }
+
+    private function _subject(string $value): string
+    {
+        return strtolower(trim($value)) . '|' . (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
     }
 }

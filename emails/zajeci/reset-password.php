@@ -6,7 +6,7 @@
 /** @var string $fromName */
 /** @var string $fromPhone */
 /** @var string $email */
-/** @var string $password */
+/** @var string $resetUrl */
 ?>
 
 <!DOCTYPE html>
@@ -32,7 +32,7 @@
                 Obdrželi jsme žádost o resetování hesla k vašemu účtu.
             </p>
             <p style="font-size:14px;color:#555555;margin:0 0 12px;">
-                Bylo vygenerováno nové heslo pro váš účet.
+                Pro nastavení nového hesla použijte následující jednorázový odkaz. Platí jednu hodinu.
             </p>
 
             <table style="width:100%;font-size:14px;color:#555555;margin:0 0 16px;border-collapse:collapse;">
@@ -42,13 +42,13 @@
                         <td style="padding:6px 0;"><?= htmlspecialchars((string) $email) ?></td>
                     </tr>
                 <?php endif; ?>
-                <?php if (!empty($password)): ?>
-                    <tr>
-                        <td style="padding:6px 0;font-weight:bold;">Heslo:</td>
-                        <td style="padding:6px 0;font-family:monospace;font-size:15px;letter-spacing:1px;"><?= htmlspecialchars((string) $password) ?></td>
-                    </tr>
-                <?php endif; ?>
             </table>
+
+            <?php if (!empty($resetUrl)): ?>
+                <p style="margin:0 0 24px;">
+                    <a href="<?= htmlspecialchars((string) $resetUrl) ?>" style="display:inline-block;padding:12px 20px;background:#113b78;color:#ffffff;text-decoration:none;border-radius:4px;">Nastavit nové heslo</a>
+                </p>
+            <?php endif; ?>
 
             <p style="font-size:14px;color:#555555;margin:0 0 12px;">
                 Pokud jste o nové heslo nežádal/a, kontaktujte nás okamžitě.

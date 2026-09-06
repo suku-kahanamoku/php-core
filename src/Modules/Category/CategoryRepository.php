@@ -24,7 +24,7 @@ class CategoryRepository extends BaseRepository
         parent::__construct($db, $franchiseCode);
         $this->_table = 'category';
         $this->_alias = 'c';
-        $this->_own   = ['syscode', 'name', 'description', 'position', 'parent_id'];
+        $this->_own   = ['syscode', 'name', 'description', 'position', 'published', 'parent_id'];
     }
 
     /**
@@ -215,15 +215,21 @@ class CategoryRepository extends BaseRepository
      * @param  int    $entityId
      * @return list<array{id: int, syscode: string, name: string, description: string|null, position: int, parent_id: int|null}>
      */
-    public function findByJunctionItem(string $junctionTable, string $entityFkColumn, int $entityId): array
+    public function findByJunctionItem(
+        string $junctionTable,
+        string $entityFkColumn,
+        int $entityId,
+        bool $publishedOnly = false,
+    ): array
     {
+        $published = $publishedOnly ? ' AND c.published = 1' : '';
         $rows = $this->_db->fetchAll(
-            "SELECT c.id, c.syscode, c.name, c.description, c.position, c.parent_id
+            "SELECT c.id, c.syscode, c.name, c.description, c.position, c.published, c.parent_id
              FROM {$junctionTable} j
              INNER JOIN category c ON c.id = j.category_id AND c.deleted = 0
-             WHERE j.{$entityFkColumn} = ?
+             WHERE j.{$entityFkColumn} = ? AND c.franchise_code = ?{$published}
              ORDER BY c.position ASC",
-            [$entityId],
+            [$entityId, $this->_code],
         );
 
         return array_map(static fn($r) => [
@@ -245,20 +251,26 @@ class CategoryRepository extends BaseRepository
      * @param  list<int> $entityIds
      * @return array<int, list<array{id: int, syscode: string, name: string, description: string|null, position: int, parent_id: int|null}>>
      */
-    public function findByJunctionList(string $junctionTable, string $entityFkColumn, array $entityIds): array
+    public function findByJunctionList(
+        string $junctionTable,
+        string $entityFkColumn,
+        array $entityIds,
+        bool $publishedOnly = false,
+    ): array
     {
         if (empty($entityIds)) {
             return [];
         }
 
         $placeholders = implode(',', array_fill(0, count($entityIds), '?'));
+        $published = $publishedOnly ? ' AND c.published = 1' : '';
         $rows = $this->_db->fetchAll(
-            "SELECT j.{$entityFkColumn} AS entity_id, c.id, c.syscode, c.name, c.description, c.position, c.parent_id
+            "SELECT j.{$entityFkColumn} AS entity_id, c.id, c.syscode, c.name, c.description, c.position, c.published, c.parent_id
              FROM {$junctionTable} j
              INNER JOIN category c ON c.id = j.category_id AND c.deleted = 0
-             WHERE j.{$entityFkColumn} IN ({$placeholders})
+             WHERE j.{$entityFkColumn} IN ({$placeholders}) AND c.franchise_code = ?{$published}
              ORDER BY c.position ASC",
-            $entityIds,
+            [...$entityIds, $this->_code],
         );
 
         $map = [];
@@ -300,12 +312,13 @@ class CategoryRepository extends BaseRepository
      * @param  int $categoryId
      * @return list<array{id: int, sku: string, name: string, price: float}>
      */
-    public function findProducts(int $categoryId): array
+    public function findProducts(int $categoryId, bool $publishedOnly = false): array
     {
+        $published = $publishedOnly ? ' AND p.published = 1' : '';
         return $this->_db->fetchAll(
             'SELECT p.id, p.sku, p.name, p.price FROM product p
              INNER JOIN product_category pc ON pc.product_id = p.id
-             WHERE p.franchise_code = ? AND pc.category_id = ? AND p.deleted = 0',
+             WHERE p.franchise_code = ? AND pc.category_id = ? AND p.deleted = 0' . $published,
             [$this->_code, $categoryId],
         );
     }

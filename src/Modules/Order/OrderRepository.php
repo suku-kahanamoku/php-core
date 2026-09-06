@@ -26,6 +26,7 @@ class OrderRepository extends BaseRepository
         $this->_alias = 'o';
         $this->_own   = [
             'order_number',
+            'customer',
             'status',
             'total_price',
             'total_price_with_vat',
@@ -40,6 +41,7 @@ class OrderRepository extends BaseRepository
             'note',
         ];
         $this->_rel = ['user'];
+        $this->_jsonCols = ['customer', 'payment', 'shipping'];
     }
 
     /**
@@ -145,6 +147,11 @@ class OrderRepository extends BaseRepository
         );
 
         foreach ($items as &$item) {
+            foreach ($this->_jsonCols as $column) {
+                if (isset($item[$column]) && is_string($item[$column])) {
+                    $item[$column] = json_decode($item[$column], true);
+                }
+            }
             $item = $proj->apply(
                 $item,
                 $sys,
@@ -206,6 +213,12 @@ class OrderRepository extends BaseRepository
 
         if (!$order) {
             return null;
+        }
+
+        foreach ($this->_jsonCols as $column) {
+            if (isset($order[$column]) && is_string($order[$column])) {
+                $order[$column] = json_decode($order[$column], true);
+            }
         }
 
         $order['order_items'] = $this->_db->fetchAll(
