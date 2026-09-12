@@ -34,8 +34,8 @@ mysql -u php_core -p php_core < migrations/schema.sql
 ```
 
 Default admin credentials:
-- **Email:** `admin@vinozezajeci.cz`
-- **Password:** `admin`
+- **Email:** `admin@example.com`
+- **Password:** `admin123`
 
 ## Development server
 
@@ -51,7 +51,7 @@ The API uses **Bearer token** authentication. Cookies and sessions are not used.
 ```bash
 curl -X POST http://localhost/php/php-core/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@vinozezajeci.cz","password":"admin"}'
+  -d '{"email":"admin@example.com","password":"admin123"}'
 ```
 
 Response:
@@ -65,7 +65,7 @@ Response:
     "id": 1,
     "first_name": "Admin",
     "last_name": "User",
-    "email": "admin@vinozezajeci.cz",
+    "email": "admin@example.com",
     "role": "admin"
   }
 }

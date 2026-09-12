@@ -53,7 +53,7 @@ if ($adminRoleId) {
 // ── Admin login ───────────────────────────────────────────────────────────────
 
 section('Roles – admin login');
-$r = request('POST', "{$base}/auth/login", ['email' => 'admin@vinozezajeci.cz', 'password' => 'admin'], false);
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'admin123'], false);
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 

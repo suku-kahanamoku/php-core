@@ -28,7 +28,7 @@ $r = request('GET', "{$base}/texts", [], false);
 assert_test('returns 200', $r['status'] === 200, dump_on_fail($r));
 assert_test('data is array', is_array($r['data']['data']));
 
-$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@vinozezajeci.cz', 'password' => 'admin'], false);
+$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'admin123'], false);
 $token = $r['data']['data']['token'] ?? null;
 
 // ── Text model – create() ────────────────────────────────────────────────────

@@ -52,7 +52,7 @@ if ($adminRoleId) {
 // ── Role model – write operations (admin required) ────────────────────────────
 
 section('Role model – create()');
-$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@vinozezajeci.cz', 'password' => 'admin'], false);
+$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'admin123'], false);
 $token = $r['data']['data']['token'] ?? null;
 
 $r = request('POST', "{$base}/roles", ['name' => TEST_PREFIX . 'model_role_' . time(), 'label' => 'Model Role']);

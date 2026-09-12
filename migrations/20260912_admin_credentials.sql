@@ -1,5 +1,5 @@
 -- Standard administrator credentials for all current php-core tenants.
--- Password for every standard administrator below: admin.
+-- Passwords: Zajeci admin123, Zoo/FAnn admin.
 -- Other users with the admin role are preserved with their existing credentials.
 
 SET NAMES utf8mb4;
@@ -12,8 +12,8 @@ SET @fun_admin_role_id = (SELECT `id` FROM `role` WHERE `franchise_code` = 'fun'
 SET @zajeci_admin_user_id = (
   SELECT `id` FROM `user`
   WHERE `franchise_code` = 'zajeci'
-    AND (`email` = 'admin@vinozezajeci.cz' OR `role_id` = @zajeci_admin_role_id)
-  ORDER BY (`email` = 'admin@vinozezajeci.cz') DESC, `id`
+    AND (`email` IN ('admin@example.com', 'admin@vinozezajeci.cz') OR `role_id` = @zajeci_admin_role_id)
+  ORDER BY (`email` = 'admin@example.com') DESC, `id`
   LIMIT 1
 );
 SET @zoo_admin_user_id = (
@@ -32,7 +32,7 @@ SET @fun_admin_user_id = (
 );
 
 UPDATE `user`
-SET `email` = 'admin@vinozezajeci.cz', `password` = '$2y$12$nmRE/TC4K3OYnBRaqnLfz.IGMYHjt1RVgej7139P7u7ijXz0epGWy',
+SET `email` = 'admin@example.com', `password` = '$2y$12$iHtrWWa.BMJBFu3d0YA8EuoojjRMXCa0OHuPfBmVoJcT26OLKGbSC',
     `role_id` = @zajeci_admin_role_id, `status` = 'active', `deleted` = 0
 WHERE `id` = @zajeci_admin_user_id AND @zajeci_admin_role_id IS NOT NULL;
 

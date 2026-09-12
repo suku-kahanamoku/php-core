@@ -24,7 +24,7 @@ $token = null;
 // ── Admin login ───────────────────────────────────────────────────────────────
 
 section('Users – admin login');
-$r = request('POST', "{$base}/auth/login", ['email' => 'admin@vinozezajeci.cz', 'password' => 'admin'], false);
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'admin123'], false);
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 assert_test('role = admin', $r['data']['data']['role'] === 'admin', dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
@@ -95,7 +95,7 @@ $token = null;
 // ── Projection ────────────────────────────────────────────────────────────────
 
 section('Users – projection');
-$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@vinozezajeci.cz', 'password' => 'admin'], false);
+$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'admin123'], false);
 $token = $r['data']['data']['token'] ?? null;
 
 $r = request('GET', "{$base}/users?projection=email,first_name");

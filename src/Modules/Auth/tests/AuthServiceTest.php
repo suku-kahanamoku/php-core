@@ -102,7 +102,7 @@ assert_test('me → 401 after logout', $r['status'] === 401, dump_on_fail($r));
 
 // ── Cleanup ───────────────────────────────────────────────────────────────────
 
-$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@vinozezajeci.cz', 'password' => 'admin'], false);
+$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'admin123'], false);
 $token = $r['data']['data']['token'] ?? null;
 if ($svcUserId) {
     request('DELETE', "{$base}/users/{$svcUserId}");

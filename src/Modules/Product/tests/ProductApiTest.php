@@ -24,7 +24,7 @@ $token = null;
 // ── Admin login + setup: create a category ───────────────────────────────────
 
 section('Products – setup');
-$r = request('POST', "{$base}/auth/login", ['email' => 'admin@vinozezajeci.cz', 'password' => 'admin'], false);
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'admin123'], false);
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
@@ -55,7 +55,7 @@ $token     = $r['data']['data']['token'] ?? null;
 $r = request('POST', "{$base}/products", ['name' => 'x', 'sku' => 'x', 'price' => 1]);
 assert_test('POST /products → 403 for non-admin', $r['status'] === 403, dump_on_fail($r));
 
-$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@vinozezajeci.cz', 'password' => 'admin'], false);
+$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'admin123'], false);
 $token = $r['data']['data']['token'] ?? null;
 if ($prodRegId) {
     request('DELETE', "{$base}/users/{$prodRegId}?force=true");
@@ -232,7 +232,7 @@ if ($prodId) {
 // ── Files projection ──────────────────────────────────────────────────────────
 
 section('Products – files projection setup: upload + commit file');
-$r = request('POST', "{$base}/auth/login", ['email' => 'admin@vinozezajeci.cz', 'password' => 'admin'], false);
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'admin123'], false);
 $token = $r['data']['data']['token'] ?? null;
 
 $prodFileTmp = tempnam(sys_get_temp_dir(), 'phpcore_prod_file_') . '.txt';
@@ -425,7 +425,7 @@ assert_test('empty projection: no name', !isset($firstItem['name']));
 
 section('Products – data.batch create & get');
 $batchSku = TEST_PREFIX . 'batch_' . time();
-$r        = request('POST', "{$base}/auth/login", ['email' => 'admin@vinozezajeci.cz', 'password' => 'admin'], false);
+$r        = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'admin123'], false);
 $token    = $r['data']['data']['token'] ?? null;
 $r        = request('POST', "{$base}/products", [
     'name'  => 'Batch Product',

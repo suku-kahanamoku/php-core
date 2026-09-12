@@ -24,7 +24,7 @@ $token = null;
 // ── Setup: admin creates category + product + order ───────────────────────────
 
 section('Invoices – setup');
-$r = request('POST', "{$base}/auth/login", ['email' => 'admin@vinozezajeci.cz', 'password' => 'admin'], false);
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'admin123'], false);
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
@@ -58,7 +58,7 @@ $r     = request('POST', "{$base}/orders", [
 assert_test('create order 201', $r['status'] === 201, dump_on_fail($r));
 $invOrderId = $r['data']['data']['id'] ?? null;
 
-$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@vinozezajeci.cz', 'password' => 'admin'], false);
+$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'admin123'], false);
 $token = $r['data']['data']['token'] ?? null;
 
 // ── Non-admin protection ──────────────────────────────────────────────────────
@@ -121,7 +121,7 @@ if ($invoiceId) {
 // ── Files projection ──────────────────────────────────────────────────────────
 
 section('Invoices – files projection setup: upload + commit file');
-$r = request('POST', "{$base}/auth/login", ['email' => 'admin@vinozezajeci.cz', 'password' => 'admin'], false);
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'admin123'], false);
 $token = $r['data']['data']['token'] ?? null;
 
 $invFileTmp = tempnam(sys_get_temp_dir(), 'phpcore_inv_file_') . '.txt';
@@ -158,7 +158,7 @@ if ($invFileId && $invOrderId2 = null) {
 }
 
 // Vytvorim novou objednavku + fakturu pro file projection test
-$r = request('POST', "{$base}/auth/login", ['email' => 'admin@vinozezajeci.cz', 'password' => 'admin'], false);
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'admin123'], false);
 $token = $r['data']['data']['token'] ?? null;
 
 $invFileSku = TEST_PREFIX . 'inv_file_proj_' . time();
@@ -174,7 +174,7 @@ $r = request('POST', "{$base}/auth/register", [
 ], false);
 $invFileUserId = $r['data']['data']['id'] ?? null;
 
-$r = request('POST', "{$base}/auth/login", ['email' => 'admin@vinozezajeci.cz', 'password' => 'admin'], false);
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'admin123'], false);
 $token = $r['data']['data']['token'] ?? null;
 
 $invFileOrderId = null;
@@ -190,7 +190,7 @@ if ($invFileProdId && $invFileUserId) {
     assert_test('inv files projection: create order → 201', $r['status'] === 201, dump_on_fail($r));
     $invFileOrderId = $r['data']['data']['id'] ?? null;
 
-    $r = request('POST', "{$base}/auth/login", ['email' => 'admin@vinozezajeci.cz', 'password' => 'admin'], false);
+    $r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'admin123'], false);
     $token = $r['data']['data']['token'] ?? null;
 }
 

@@ -55,7 +55,7 @@ if ($firstEnumId) {
     assert_test('has type + syscode', isset($r['data']['data']['type'], $r['data']['data']['syscode']));
 }
 
-$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@vinozezajeci.cz', 'password' => 'admin'], false);
+$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'admin123'], false);
 $token = $r['data']['data']['token'] ?? null;
 
 // ── Enumeration model – create() ─────────────────────────────────────────────

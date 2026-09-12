@@ -542,11 +542,11 @@ INSERT INTO `enumeration` (`franchise_code`, `type`, `syscode`, `label`, `value`
   ('zajeci', 'invoice_status', 'overdue', 'Overdue', 'overdue', 40),
   ('zajeci', 'invoice_status', 'cancelled', 'Cancelled', 'cancelled', 50);
 
--- ── Seed: admin user (password: admin) ───────────────────
+-- ── Seed: admin user (password: admin123) ───────────────────
 SET @admin_role_id = (SELECT id FROM `role` WHERE franchise_code = 'zajeci' AND name = 'admin' LIMIT 1);
 INSERT INTO `user` (`franchise_code`, `first_name`, `last_name`, `email`, `password`, `role_id`) VALUES
-  ('zajeci', 'Admin', 'User', 'admin@vinozezajeci.cz',
-   '$2y$12$nmRE/TC4K3OYnBRaqnLfz.IGMYHjt1RVgej7139P7u7ijXz0epGWy',
+  ('zajeci', 'Admin', 'User', 'admin@example.com',
+   '$2y$12$iHtrWWa.BMJBFu3d0YA8EuoojjRMXCa0OHuPfBmVoJcT26OLKGbSC',
    @admin_role_id);
 
 -- ── Seed: category "top" ──────────────────────────────────
