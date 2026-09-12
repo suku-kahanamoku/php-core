@@ -23,7 +23,7 @@ $token = null;
 
 // ── Setup ─────────────────────────────────────────────────────────────────────
 
-$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@vinozezajeci.cz', 'password' => 'admin'], false);
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 
@@ -61,7 +61,7 @@ $r = request('POST', "{$base}/invoices", [
 ]);
 assert_test('POST /invoices → 201 for non-admin', $r['status'] === 201, dump_on_fail($r));
 
-$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
+$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@vinozezajeci.cz', 'password' => 'admin'], false);
 $token = $r['data']['data']['token'] ?? null;
 
 // ── InvoiceService – duplicate prevention ─────────────────────────────────────

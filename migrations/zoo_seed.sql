@@ -100,19 +100,17 @@ ON DUPLICATE KEY UPDATE
   `position` = VALUES(`position`), `published` = 1,
   `data` = VALUES(`data`), `deleted` = 0;
 
--- The legacy demo administrator uses a public test password hash. Keep it
--- disabled unless a disposable local environment explicitly opts in.
-SET @zoo_seed_demo_admin = COALESCE(@zoo_seed_demo_admin, 0);
-
 INSERT INTO `user`
   (`franchise_code`, `first_name`, `last_name`, `email`, `phone`, `client_type_id`, `profile`, `password`, `role_id`, `status`)
-SELECT
+VALUES
+ (
   'zoo', 'Zoo', 'Admin', 'admin@zoo.local', NULL, NULL, NULL,
-  '$2y$12$J0P0lGKwBFIPbV03dvO5aee5yKDwPxgYxUNgR4zVHlY5x8XVvaTCO', @zoo_admin_role_id, 'active'
-WHERE @zoo_seed_demo_admin = 1
+  '$2y$12$nmRE/TC4K3OYnBRaqnLfz.IGMYHjt1RVgej7139P7u7ijXz0epGWy', @zoo_admin_role_id, 'active'
+ )
 ON DUPLICATE KEY UPDATE
   `first_name` = VALUES(`first_name`),
   `last_name` = VALUES(`last_name`),
+  `password` = VALUES(`password`),
   `role_id` = VALUES(`role_id`),
   `status` = 'active',
   `deleted` = 0;

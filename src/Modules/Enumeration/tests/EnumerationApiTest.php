@@ -51,7 +51,7 @@ if ($firstEnumId) {
 // ── Admin login ───────────────────────────────────────────────────────────────
 
 section('Enumerations – admin login');
-$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@vinozezajeci.cz', 'password' => 'admin'], false);
 assert_test('admin login 200', $r['status'] === 200, dump_on_fail($r));
 $token = $r['data']['data']['token'] ?? null;
 

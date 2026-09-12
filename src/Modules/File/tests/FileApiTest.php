@@ -50,7 +50,7 @@ function upload_file(string $base, string $tmpFile, string $mime, bool $withAuth
 // ── Auth setup ───────────────────────────────────────────────────────────────
 
 section('Files – auth setup (login as admin)');
-$r = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
+$r = request('POST', "{$base}/auth/login", ['email' => 'admin@vinozezajeci.cz', 'password' => 'admin'], false);
 assert_test('Login as admin → 200', $r['status'] === 200, dump_on_fail($r));
 if (isset($r['data']['data']['token'])) {
     $token = $r['data']['data']['token'];

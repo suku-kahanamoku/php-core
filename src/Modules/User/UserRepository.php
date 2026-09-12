@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\User;
 
 use App\Modules\BaseRepository;
+use App\Modules\CustomerProfile\CustomerProfileRepository;
 use App\Modules\Database\Database;
 use App\Utils\Projection;
 
@@ -30,13 +31,10 @@ class UserRepository extends BaseRepository
             'last_name',
             'email',
             'phone',
-            'client_type_id',
-            'profile',
             'role_id',
             'status',
         ];
-        $this->_rel = ['role', 'client_type'];
-        $this->_jsonCols = ['profile'];
+        $this->_rel = ['role', 'profiles'];
     }
 
     /**
@@ -86,6 +84,17 @@ class UserRepository extends BaseRepository
         $filterArr  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
         $deletedVal = isset($filterArr['deleted']) ? (int) $filterArr['deleted'] : 0;
         unset($filterArr['deleted']);
+        $profileFilter = $filterArr['profile_id'] ?? null;
+        if (is_array($profileFilter)) {
+            $profileFilter = $profileFilter['value'] ?? null;
+        }
+        unset($filterArr['profile_id']);
+        if ((int) $profileFilter > 0) {
+            $where[] = 'EXISTS (SELECT 1 FROM user_profile uf
+                WHERE uf.user_id = u.id AND uf.franchise_code = u.franchise_code
+                AND uf.customer_profile_id = ?)';
+            $params[] = (int) $profileFilter;
+        }
         $filter = count($filterArr) > 0 ? json_encode($filterArr) : '';
         $where[]  = 'u.deleted = ?';
         $params[] = $deletedVal;
@@ -107,24 +116,11 @@ class UserRepository extends BaseRepository
             array_keys($decodedFilter),
             static fn($k) => str_starts_with((string) $k, 'role.')
         ));
-        $needsClientTypeFilter = !empty(array_filter(
-            array_keys($decodedFilter),
-            static fn($k) => str_starts_with((string) $k, 'client_type.')
-        ));
         $needsRoleJoin = $proj->needsJoin('role') || $needsRoleFilter;
-        $needsClientTypeJoin = $proj->needsJoin('client_type') || $needsClientTypeFilter;
         $joinSql = $needsRoleJoin
             ? ' LEFT JOIN role r ON r.id = u.role_id AND r.deleted = 0'
             : '';
-        if ($needsClientTypeJoin) {
-            $joinSql .= " LEFT JOIN enumeration ct ON ct.id = u.client_type_id
-                AND ct.franchise_code = u.franchise_code
-                AND ct.type = 'client_type' AND ct.deleted = 0";
-        }
         $relSel = $needsRoleJoin ? ', r.name AS role_name, r.label AS role_label' : '';
-        if ($needsClientTypeJoin) {
-            $relSel .= ', ct.syscode AS client_type_syscode, ct.label AS client_type_label';
-        }
 
         $select = "{$baseSelect}{$relSel}";
 
@@ -142,9 +138,6 @@ class UserRepository extends BaseRepository
         );
 
         foreach ($items as &$item) {
-            if (isset($item['profile'])) {
-                $item['profile'] = $item['profile'] ? json_decode($item['profile'], true) : null;
-            }
             $item = $proj->apply(
                 $item,
                 $sys,
@@ -152,19 +145,15 @@ class UserRepository extends BaseRepository
                     'role' => [
                         'fk' => 'role_id',
                         'nest' => ['name' => 'role_name', 'label' => 'role_label', 'id' => 'role_id']
-                    ],
-                    'client_type' => [
-                        'fk' => 'client_type_id',
-                        'nest' => [
-                            'syscode' => 'client_type_syscode',
-                            'label' => 'client_type_label',
-                            'id' => 'client_type_id'
-                        ]
                     ]
                 ]
             );
         }
         unset($item);
+
+        if ($proj->needsJoin('profiles')) {
+            $this->attachProfiles($items);
+        }
 
         return $this->_resultList($items, $total, $page, $limit);
     }
@@ -200,12 +189,6 @@ class UserRepository extends BaseRepository
             $joinSql = 'LEFT JOIN role r ON r.id = u.role_id AND r.deleted = 0';
             $relSel  = ', r.name AS role_name, r.label AS role_label';
         }
-        if ($proj->needsJoin('client_type')) {
-            $joinSql .= " LEFT JOIN enumeration ct ON ct.id = u.client_type_id
-                AND ct.franchise_code = u.franchise_code
-                AND ct.type = 'client_type' AND ct.deleted = 0";
-            $relSel .= ', ct.syscode AS client_type_syscode, ct.label AS client_type_label';
-        }
 
         $select = "{$baseSelect}{$relSel}";
 
@@ -219,28 +202,89 @@ class UserRepository extends BaseRepository
             return null;
         }
 
-        if (isset($user['profile'])) {
-            $user['profile'] = $user['profile'] ? json_decode($user['profile'], true) : null;
-        }
-
-        return $proj->apply(
+        $user = $proj->apply(
             $user,
             $sys,
             [
                 'role' => [
                     'fk' => 'role_id',
                     'nest' => ['name' => 'role_name', 'label' => 'role_label', 'id' => 'role_id']
-                ],
-                'client_type' => [
-                    'fk' => 'client_type_id',
-                    'nest' => [
-                        'syscode' => 'client_type_syscode',
-                        'label' => 'client_type_label',
-                        'id' => 'client_type_id'
-                    ]
                 ]
             ]
         );
+        if ($proj->needsJoin('profiles')) {
+            $rows = [$user];
+            $this->attachProfiles($rows);
+            $user = $rows[0];
+        }
+        return $user;
+    }
+
+    public function syncProfiles(int $userId, array $profiles): void
+    {
+        $this->_db->delete('user_profile', 'user_id = ? AND franchise_code = ?', [$userId, $this->_code]);
+        $priorities = [];
+        foreach (array_values($profiles) as $i => $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $profileId = (int) ($item['customer_profile_id'] ?? $item['id'] ?? 0);
+            $priority = max(1, (int) ($item['priority'] ?? ($i + 1)));
+            if ($profileId < 1 || isset($priorities[$priority])) {
+                continue;
+            }
+            $valid = $this->_db->fetchOne(
+                'SELECT id FROM customer_profile WHERE id = ? AND franchise_code = ? AND deleted = 0',
+                [$profileId, $this->_code],
+            );
+            if (!$valid) {
+                continue;
+            }
+            $priorities[$priority] = true;
+            $this->_db->insert('user_profile', [
+                'franchise_code' => $this->_code,
+                'user_id' => $userId,
+                'customer_profile_id' => $profileId,
+                'priority' => $priority,
+            ]);
+        }
+    }
+
+    private function attachProfiles(array &$users): void
+    {
+        if (!$users) {
+            return;
+        }
+        $ids = array_map('intval', array_column($users, 'id'));
+        $marks = implode(',', array_fill(0, count($ids), '?'));
+        $links = $this->_db->fetchAll(
+            "SELECT up.user_id, up.priority, up.customer_profile_id
+             FROM user_profile up
+             JOIN customer_profile cp ON cp.id = up.customer_profile_id
+                AND cp.franchise_code = up.franchise_code AND cp.deleted = 0
+             WHERE up.franchise_code = ? AND up.user_id IN ({$marks})
+             ORDER BY up.user_id, up.priority",
+            [$this->_code, ...$ids],
+        );
+        $profileRows = (new CustomerProfileRepository($this->_db, $this->_code))
+            ->findByIds(array_column($links, 'customer_profile_id'));
+        $profiles = [];
+        foreach ($profileRows as $profile) {
+            $profiles[(int) $profile['id']] = $profile;
+        }
+        $map = [];
+        foreach ($links as $link) {
+            $userId = (int) $link['user_id'];
+            $profile = $profiles[(int) $link['customer_profile_id']] ?? null;
+            if ($profile) {
+                $profile['priority'] = (int) $link['priority'];
+                $map[$userId][] = $profile;
+            }
+        }
+        foreach ($users as &$user) {
+            $user['profiles'] = $map[(int) $user['id']] ?? [];
+        }
+        unset($user);
     }
 
     /**
@@ -323,10 +367,6 @@ class UserRepository extends BaseRepository
      */
     public function create(array $data, ?array $projection = null): array
     {
-        if (isset($data['profile']) && is_array($data['profile'])) {
-            $data['profile'] = json_encode($data['profile'], JSON_UNESCAPED_UNICODE);
-        }
-
         $id = $this->_db->insert('user', array_merge($data, [
             'franchise_code' => $this->_code,
         ]));
@@ -355,8 +395,6 @@ class UserRepository extends BaseRepository
      */
     public function update(int $id, array $data, ?array $projection = null): array
     {
-        $data = $this->_patchJsonCols($id, $data);
-
         $this->_db->update(
             'user',
             $data,

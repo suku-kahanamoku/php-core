@@ -106,7 +106,7 @@ assert_test('401 after logout', $r['status'] === 401, dump_on_fail($r));
 
 // ── Cleanup ───────────────────────────────────────────────────────────────────
 
-$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
+$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@vinozezajeci.cz', 'password' => 'admin'], false);
 $token = $r['data']['data']['token'] ?? null;
 if ($authUserId) {
     request('DELETE', "{$base}/users/{$authUserId}?force=true");

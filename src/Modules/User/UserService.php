@@ -7,7 +7,6 @@ namespace App\Modules\User;
 use App\Modules\Auth\Auth;
 use App\Modules\BaseService;
 use App\Modules\Database\Database;
-use App\Modules\Enumeration\EnumerationRepository;
 use App\Modules\Role\RoleRepository;
 use App\Modules\Router\Response;
 use App\Utils\QueryPolicy;
@@ -15,12 +14,10 @@ use App\Utils\QueryPolicy;
 class UserService extends BaseService
 {
     private const SELF_FIELDS = [
-        'id', 'first_name', 'last_name', 'email', 'phone', 'profile',
-        'client_type_id', 'client_type', 'role',
+        'id', 'first_name', 'last_name', 'email', 'phone', 'profiles', 'role',
     ];
     private UserRepository $_user;
     private RoleRepository $_role;
-    private EnumerationRepository $_enumeration;
 
     /**
      * Konstruktor tridy UserService.
@@ -33,7 +30,6 @@ class UserService extends BaseService
     {
         $this->_user = new UserRepository($db, $franchiseCode);
         $this->_role = new RoleRepository($db, $franchiseCode);
-        $this->_enumeration = new EnumerationRepository($db, $franchiseCode);
         $this->_auth = $auth;
     }
 
@@ -134,15 +130,11 @@ class UserService extends BaseService
             $roleId = $this->_role->findIdByName('user');
         }
 
-        $clientTypeId = $this->_validatedClientTypeId($input['client_type_id'] ?? null);
-
-        return $this->_user->create([
+        $created = $this->_user->create([
             'first_name' => $input['first_name'],
             'last_name'  => $input['last_name'],
             'email'      => $input['email'],
             'phone'      => $input['phone'] ?? null,
-            'client_type_id' => $clientTypeId,
-            'profile'    => is_array($input['profile'] ?? null) ? $input['profile'] : null,
             'password'   => password_hash(
                 $input['password'],
                 PASSWORD_BCRYPT,
@@ -151,6 +143,11 @@ class UserService extends BaseService
             'role_id' => $roleId,
             'status'  => 'active',
         ], $projection);
+        if (is_array($input['profiles'] ?? null)) {
+            $this->_user->syncProfiles((int) $created['id'], $input['profiles']);
+            $created = $this->_user->findById((int) $created['id'], $projection) ?? $created;
+        }
+        return $created;
     }
 
     /**
@@ -208,18 +205,15 @@ class UserService extends BaseService
                 $set['role_id'] = (int) $input['role_id'];
             }
 
-            if (array_key_exists('client_type_id', $input)) {
-                $set['client_type_id'] = $this->_validatedClientTypeId($input['client_type_id']);
-            }
-
-            if (array_key_exists('profile', $input) && is_array($input['profile'])) {
-                $set['profile'] = $input['profile'];
-            }
         }
 
         $result = !empty($set)
             ? $this->_user->update($id, $set, $projection)
             : ($this->_user->findById($id, $projection) ?? ['id' => $id]);
+        if ($isAdmin && array_key_exists('profiles', $input) && is_array($input['profiles'])) {
+            $this->_user->syncProfiles($id, $input['profiles']);
+            $result = $this->_user->findById($id, $projection) ?? $result;
+        }
         return $isAdmin ? $result : QueryPolicy::fields($result, self::SELF_FIELDS);
     }
 
@@ -262,6 +256,9 @@ class UserService extends BaseService
                     ->validate();
                 $set['role_id'] = (int) $input['role_id'];
             }
+            if (is_array($input['profiles'] ?? null)) {
+                $this->_user->syncProfiles($id, $input['profiles']);
+            }
         }
 
         $result = $this->_user->update($id, $set, $projection);
@@ -301,20 +298,4 @@ class UserService extends BaseService
         return $this->_user->softDelete($id);
     }
 
-    /**
-     * Overi, ze ID ukazuje na aktivni polozku ciselnika client_type ve stejne franchise.
-     */
-    private function _validatedClientTypeId(mixed $value): ?int
-    {
-        if ($value === null || $value === '') {
-            return null;
-        }
-
-        $item = $this->_enumeration->findById((int) $value);
-        if (!$item || ($item['type'] ?? null) !== 'client_type') {
-            Response::error('Invalid client type', 422);
-        }
-
-        return (int) $value;
-    }
 }

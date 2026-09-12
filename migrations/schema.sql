@@ -11,6 +11,11 @@ DROP TABLE IF EXISTS `invoice_file`;
 DROP TABLE IF EXISTS `invoice`;
 DROP TABLE IF EXISTS `order_item`;
 DROP TABLE IF EXISTS `order`;
+DROP TABLE IF EXISTS `product_profile_probability`;
+DROP TABLE IF EXISTS `user_profile`;
+DROP TABLE IF EXISTS `customer_profile_preference`;
+DROP TABLE IF EXISTS `customer_profile_objection`;
+DROP TABLE IF EXISTS `customer_profile_question`;
 DROP TABLE IF EXISTS `product_file`;
 DROP TABLE IF EXISTS `product_category`;
 DROP TABLE IF EXISTS `product`;
@@ -23,6 +28,7 @@ DROP TABLE IF EXISTS `oauth_identity`;
 DROP TABLE IF EXISTS `user_token`;
 DROP TABLE IF EXISTS `address`;
 DROP TABLE IF EXISTS `user`;
+DROP TABLE IF EXISTS `customer_profile`;
 DROP TABLE IF EXISTS `enumeration`;
 DROP TABLE IF EXISTS `role`;
 
@@ -45,6 +51,63 @@ CREATE TABLE `enumeration` (
     KEY `idx_enum_franchise` (`franchise_code`),
     KEY `idx_enum_type`      (`type`),
     KEY `idx_enum_deleted`   (`deleted`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ── customer profiles ─────────────────────────────────────
+CREATE TABLE `customer_profile` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `franchise_code` VARCHAR(64) NOT NULL,
+    `profile_number` SMALLINT UNSIGNED DEFAULT NULL,
+    `syscode` VARCHAR(64) NOT NULL,
+    `name` VARCHAR(255) NOT NULL,
+    `selection_need` TEXT DEFAULT NULL,
+    `summary` TEXT DEFAULT NULL,
+    `aura` TEXT DEFAULT NULL,
+    `visual` TEXT DEFAULT NULL,
+    `behavior` TEXT DEFAULT NULL,
+    `business_potential` TEXT DEFAULT NULL,
+    `typical_quote` TEXT DEFAULT NULL,
+    `average_basket` DECIMAL(12,2) DEFAULT NULL,
+    `marketing_note` TEXT DEFAULT NULL,
+    `position` SMALLINT NOT NULL DEFAULT 0,
+    `published` TINYINT(1) NOT NULL DEFAULT 1,
+    `deleted` TINYINT(1) NOT NULL DEFAULT 0,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_customer_profile_tenant_syscode` (`franchise_code`,`syscode`),
+    UNIQUE KEY `uq_customer_profile_tenant_number` (`franchise_code`,`profile_number`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `customer_profile_question` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `customer_profile_id` INT UNSIGNED NOT NULL,
+    `question` TEXT NOT NULL,
+    `position` SMALLINT NOT NULL DEFAULT 0,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_customer_profile_question_position` (`customer_profile_id`,`position`),
+    CONSTRAINT `fk_customer_profile_question_profile` FOREIGN KEY (`customer_profile_id`) REFERENCES `customer_profile` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `customer_profile_objection` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `customer_profile_id` INT UNSIGNED NOT NULL,
+    `objection` TEXT NOT NULL,
+    `position` SMALLINT NOT NULL DEFAULT 0,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_customer_profile_objection_position` (`customer_profile_id`,`position`),
+    CONSTRAINT `fk_customer_profile_objection_profile` FOREIGN KEY (`customer_profile_id`) REFERENCES `customer_profile` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `customer_profile_preference` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `customer_profile_id` INT UNSIGNED NOT NULL,
+    `preference_type` ENUM('animal','product_kind') NOT NULL,
+    `value` VARCHAR(100) NOT NULL,
+    `position` SMALLINT NOT NULL DEFAULT 0,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_customer_profile_preference` (`customer_profile_id`,`preference_type`,`value`),
+    CONSTRAINT `fk_customer_profile_preference_profile` FOREIGN KEY (`customer_profile_id`) REFERENCES `customer_profile` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── role ──────────────────────────────────────────────────
@@ -71,8 +134,6 @@ CREATE TABLE `user` (
     `last_name`     VARCHAR(100) NOT NULL,
     `email`         VARCHAR(255) NOT NULL,
     `phone`         VARCHAR(30)           DEFAULT NULL,
-    `client_type_id` INT UNSIGNED         DEFAULT NULL COMMENT 'logical FK → enumeration.id (type client_type)',
-    `profile`       JSON                  DEFAULT NULL COMMENT 'CRM customer profile and recommendations',
     `password`      VARCHAR(255) NOT NULL,
     `role_id`       INT UNSIGNED NOT NULL COMMENT 'FK → role.id',
     `status`        ENUM('active','inactive','banned') NOT NULL DEFAULT 'active',
@@ -84,9 +145,22 @@ CREATE TABLE `user` (
     UNIQUE KEY `uq_user_franchise_email` (`franchise_code`, `email`),
     KEY `idx_user_franchise` (`franchise_code`),
     KEY `idx_user_role_id`   (`role_id`),
-    KEY `idx_user_client_type_id` (`client_type_id`),
     KEY `idx_user_deleted`   (`deleted`),
     CONSTRAINT `fk_user_role` FOREIGN KEY (`role_id`) REFERENCES `role` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `user_profile` (
+    `franchise_code` VARCHAR(64) NOT NULL,
+    `user_id` INT UNSIGNED NOT NULL,
+    `customer_profile_id` INT UNSIGNED NOT NULL,
+    `priority` SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`user_id`,`customer_profile_id`),
+    UNIQUE KEY `uq_user_profile_priority` (`user_id`,`priority`),
+    KEY `idx_user_profile_profile` (`customer_profile_id`),
+    CONSTRAINT `fk_user_profile_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_user_profile_profile` FOREIGN KEY (`customer_profile_id`) REFERENCES `customer_profile` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── address ───────────────────────────────────────────────
@@ -175,6 +249,21 @@ CREATE TABLE `product` (
     KEY `idx_product_color`     (`color`),
     KEY `idx_product_variant`   (`variant`),
     KEY `idx_product_deleted`   (`deleted`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `product_profile_probability` (
+    `franchise_code` VARCHAR(64) NOT NULL,
+    `product_id` INT UNSIGNED NOT NULL,
+    `customer_profile_id` INT UNSIGNED NOT NULL,
+    `probability_percent` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    `is_target` TINYINT(1) NOT NULL DEFAULT 0,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`product_id`,`customer_profile_id`),
+    KEY `idx_product_profile_profile` (`customer_profile_id`),
+    CONSTRAINT `fk_product_profile_product` FOREIGN KEY (`product_id`) REFERENCES `product` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_product_profile_profile` FOREIGN KEY (`customer_profile_id`) REFERENCES `customer_profile` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `chk_product_profile_probability` CHECK (`probability_percent` BETWEEN 0 AND 100)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── product_category (M:N pivot) ──────────────────────────
@@ -453,11 +542,11 @@ INSERT INTO `enumeration` (`franchise_code`, `type`, `syscode`, `label`, `value`
   ('zajeci', 'invoice_status', 'overdue', 'Overdue', 'overdue', 40),
   ('zajeci', 'invoice_status', 'cancelled', 'Cancelled', 'cancelled', 50);
 
--- ── Seed: admin user (password: password) ────────────────
+-- ── Seed: admin user (password: admin) ───────────────────
 SET @admin_role_id = (SELECT id FROM `role` WHERE franchise_code = 'zajeci' AND name = 'admin' LIMIT 1);
 INSERT INTO `user` (`franchise_code`, `first_name`, `last_name`, `email`, `password`, `role_id`) VALUES
-  ('zajeci', 'Admin', 'User', 'admin@example.com',
-   '$2y$12$J0P0lGKwBFIPbV03dvO5aee5yKDwPxgYxUNgR4zVHlY5x8XVvaTCO',
+  ('zajeci', 'Admin', 'User', 'admin@vinozezajeci.cz',
+   '$2y$12$nmRE/TC4K3OYnBRaqnLfz.IGMYHjt1RVgej7139P7u7ijXz0epGWy',
    @admin_role_id);
 
 -- ── Seed: category "top" ──────────────────────────────────

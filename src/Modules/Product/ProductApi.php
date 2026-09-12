@@ -85,6 +85,7 @@ class ProductApi
             'data'           => $request->get('data'),
             'category_ids'   => $request->get('category_ids'),
             'file_ids'       => $request->get('file_ids'),
+            'profile_probabilities' => $request->get('profile_probabilities'),
         ], $request->projection());
         Response::created($product, 'Product created');
     }
@@ -110,6 +111,7 @@ class ProductApi
             'variant'        => $request->get('variant'),
             'category_ids'   => $request->get('category_ids'),
             'file_ids'       => $request->get('file_ids'),
+            'profile_probabilities' => $request->get('profile_probabilities'),
         ];
         // Zahrn 'data' pouze kdyz byla explicitne odeslana — zabrankuje prepisu existujicich dat
         if (array_key_exists('data', $request->body)) {
@@ -155,6 +157,7 @@ class ProductApi
             'data'           => $request->get('data'),
             'category_ids'   => $request->get('category_ids'),
             'file_ids'       => $request->get('file_ids'),
+            'profile_probabilities' => $request->get('profile_probabilities'),
         ], $request->projection());
         Response::success($product, 'Product replaced');
     }

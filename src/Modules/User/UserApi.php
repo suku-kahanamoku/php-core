@@ -78,8 +78,7 @@ class UserApi
             'email'      => trim((string) $request->get('email', '')),
             'password'   => (string) $request->get('password', ''),
             'phone'      => $request->get('phone'),
-            'client_type_id' => $request->get('client_type_id'),
-            'profile'    => $request->get('profile'),
+            'profiles'   => $request->get('profiles'),
             'role_id'    => $request->get('role_id') !== null
                 ? (int) $request->get('role_id') : null,
         ];
@@ -117,8 +116,7 @@ class UserApi
             'last_name'  => $request->get('last_name'),
             'email'      => $email,
             'phone'      => $request->get('phone'),
-            'client_type_id' => $request->get('client_type_id'),
-            'profile'    => $request->get('profile'),
+            'profiles'   => $request->get('profiles'),
             'status'     => $status,
             'role_id'    => $request->get('role_id') !== null
                 ? (int) $request->get('role_id') : null,
@@ -139,8 +137,7 @@ class UserApi
             'first_name' => trim((string) $request->get('first_name', '')),
             'last_name'  => trim((string) $request->get('last_name', '')),
             'phone'      => $request->get('phone'),
-            'client_type_id' => $request->get('client_type_id'),
-            'profile'    => $request->get('profile'),
+            'profiles'   => $request->get('profiles'),
             'role_id'    => $request->get('role_id') !== null
                 ? (int) $request->get('role_id') : null,
         ];

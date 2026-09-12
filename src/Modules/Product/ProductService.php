@@ -19,7 +19,7 @@ class ProductService extends BaseService
         'id', 'created_at', 'updated_at', 'sku', 'name', 'description',
         'price', 'stock_quantity', 'published', 'kind', 'color', 'variant',
         'data', 'vat_rate', 'price_with_vat', 'categories', 'files',
-        'category_ids', 'file_ids',
+        'category_ids', 'file_ids', 'profile_probabilities',
     ];
     private const PUBLIC_FILTERS = [
         'id', 'sku', 'name', 'price', 'stock_quantity', 'kind', 'color',
@@ -222,6 +222,9 @@ class ProductService extends BaseService
         if ($fileIds) {
             $this->_product->syncFiles($id, $fileIds);
         }
+        if (is_array($input['profile_probabilities'] ?? null)) {
+            $this->_product->syncProfileProbabilities($id, $input['profile_probabilities']);
+        }
 
         return $this->_product->findById($id, $projection) ?? $created;
     }
@@ -286,6 +289,10 @@ class ProductService extends BaseService
                 $id,
                 array_map('intval', $input['file_ids'])
             );
+        }
+
+        if (array_key_exists('profile_probabilities', $input) && is_array($input['profile_probabilities'])) {
+            $this->_product->syncProfileProbabilities($id, $input['profile_probabilities']);
         }
 
         if (array_key_exists('data', $input)) {
@@ -357,6 +364,10 @@ class ProductService extends BaseService
 
         $this->_product->syncCategories($id, $categoryIds);
         $this->_product->syncFiles($id, $fileIds);
+        $this->_product->syncProfileProbabilities(
+            $id,
+            is_array($input['profile_probabilities'] ?? null) ? $input['profile_probabilities'] : [],
+        );
 
         return $this->_product->findById($id, $projection) ?? ['id' => $id];
     }

@@ -36,7 +36,7 @@ class ProductRepository extends BaseRepository
             'variant',
             'data',
         ];
-        $this->_rel = ['categories', 'files'];
+        $this->_rel = ['categories', 'files', 'profile_probabilities'];
         $this->_jsonCols = ['data'];
     }
 
@@ -125,7 +125,7 @@ class ProductRepository extends BaseRepository
             : '';
 
         // Derived table: nacte nejnovejsi sazbu DPH jednou pro cely dotaz (ne per-row).
-        $vatJoin = "JOIN (
+        $vatJoin = "LEFT JOIN (
             SELECT COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(data, '\$.rate')) AS DECIMAL(5,2)), 21) AS rate
             FROM enumeration
             WHERE franchise_code = ? AND type = 'vat_rate' AND deleted = 0
@@ -166,8 +166,8 @@ class ProductRepository extends BaseRepository
         $needsCatIds  = $proj->needsJoin('categories');
         $needsFileIds = $proj->needsJoin('files');
 
-        $vatSel = ', ANY_VALUE(vat.rate) AS vat_rate'
-            . ', ANY_VALUE(ROUND(p.price * (1 + vat.rate / 100), 2)) AS price_with_vat';
+        $vatSel = ', COALESCE(ANY_VALUE(vat.rate), 21) AS vat_rate'
+            . ', ANY_VALUE(ROUND(p.price * (1 + COALESCE(vat.rate, 21) / 100), 2)) AS price_with_vat';
         if ($needsCatIds) {
             $vatSel .= ', GROUP_CONCAT(DISTINCT gc_pc.category_id ORDER BY gc_pc.category_id) AS category_ids';
         }
@@ -221,6 +221,9 @@ class ProductRepository extends BaseRepository
             ]);
         }
         unset($item);
+        if ($proj->needsJoin('profile_probabilities')) {
+            $this->attachProfileProbabilities($items);
+        }
 
         return $this->_resultList($items, $total, $page, $limit);
     }
@@ -254,7 +257,7 @@ class ProductRepository extends BaseRepository
         $sys    = $this->_sys;
         $select = $this->_buildSelect($proj);
 
-        $vatJoin = "JOIN (
+        $vatJoin = "LEFT JOIN (
             SELECT COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(data, '\$.rate')) AS DECIMAL(5,2)), 21) AS rate
             FROM enumeration
             WHERE franchise_code = ? AND type = 'vat_rate' AND deleted = 0
@@ -264,8 +267,8 @@ class ProductRepository extends BaseRepository
 
         $row = $this->_db->fetchOne(
             "SELECT {$select},
-                    vat.rate AS vat_rate,
-                    ROUND(p.price * (1 + vat.rate / 100), 2) AS price_with_vat
+                    COALESCE(vat.rate, 21) AS vat_rate,
+                    ROUND(p.price * (1 + COALESCE(vat.rate, 21) / 100), 2) AS price_with_vat
              FROM product p {$vatJoin}
              WHERE p.id = ? AND p.franchise_code = ? AND p.deleted = 0",
             [$this->_code, $id, $this->_code],
@@ -286,6 +289,11 @@ class ProductRepository extends BaseRepository
         if ($proj->needsJoin('files')) {
             $fileRows        = $this->_db->fetchAll('SELECT file_id FROM product_file WHERE product_id = ?', [$id]);
             $row['file_ids'] = array_map('intval', array_column($fileRows, 'file_id'));
+        }
+        if ($proj->needsJoin('profile_probabilities')) {
+            $rows = [$row];
+            $this->attachProfileProbabilities($rows);
+            $row = $rows[0];
         }
 
         $vatSys = array_merge($sys, ['vat_rate', 'price_with_vat']);
@@ -331,6 +339,63 @@ class ProductRepository extends BaseRepository
                 'file_id'    => (int) $fileId,
             ]);
         }
+    }
+
+    public function syncProfileProbabilities(int $productId, array $values): void
+    {
+        $this->_db->delete('product_profile_probability', 'product_id = ? AND franchise_code = ?', [$productId, $this->_code]);
+        foreach ($values as $value) {
+            if (!is_array($value)) {
+                continue;
+            }
+            $profileId = (int) ($value['customer_profile_id'] ?? $value['id'] ?? 0);
+            $profile = $this->_db->fetchOne(
+                'SELECT id FROM customer_profile WHERE id = ? AND franchise_code = ? AND deleted = 0',
+                [$profileId, $this->_code],
+            );
+            if (!$profile) {
+                continue;
+            }
+            $this->_db->insert('product_profile_probability', [
+                'franchise_code' => $this->_code,
+                'product_id' => $productId,
+                'customer_profile_id' => $profileId,
+                'probability_percent' => min(100, max(0, (int) ($value['probability_percent'] ?? 0))),
+                'is_target' => !empty($value['is_target']) ? 1 : 0,
+            ]);
+        }
+    }
+
+    private function attachProfileProbabilities(array &$products): void
+    {
+        if (!$products) {
+            return;
+        }
+        $ids = array_map('intval', array_column($products, 'id'));
+        $marks = implode(',', array_fill(0, count($ids), '?'));
+        $rows = $this->_db->fetchAll(
+            "SELECT ppp.product_id, ppp.customer_profile_id, ppp.probability_percent,
+                    ppp.is_target, cp.syscode, cp.name
+             FROM product_profile_probability ppp
+             JOIN customer_profile cp ON cp.id = ppp.customer_profile_id
+                AND cp.franchise_code = ppp.franchise_code AND cp.deleted = 0
+             WHERE ppp.franchise_code = ? AND ppp.product_id IN ({$marks})
+             ORDER BY ppp.product_id, cp.position, cp.id",
+            [$this->_code, ...$ids],
+        );
+        $map = [];
+        foreach ($rows as $row) {
+            $productId = (int) $row['product_id'];
+            unset($row['product_id']);
+            $row['customer_profile_id'] = (int) $row['customer_profile_id'];
+            $row['probability_percent'] = (int) $row['probability_percent'];
+            $row['is_target'] = (int) $row['is_target'];
+            $map[$productId][] = $row;
+        }
+        foreach ($products as &$product) {
+            $product['profile_probabilities'] = $map[(int) $product['id']] ?? [];
+        }
+        unset($product);
     }
 
     /**

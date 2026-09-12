@@ -6,29 +6,12 @@
 --   2. creates the required Zoo roles and client-type enumerations,
 --   3. creates a bootstrap Zoo administrator when one does not exist.
 --
--- Before running this file, set a bcrypt password hash in the SAME MySQL
--- session. The e-mail can be overridden as well:
---
---   SET @zoo_admin_email = 'admin@example.cz';
---   SET @zoo_admin_password_hash = '$2y$12$...';
---   SOURCE migrations/20260906_zoo_production.sql;
---
--- Generate the hash outside MySQL without putting the password into shell
--- history, for example:
---   read -rsp 'Zoo admin password: ' ZOO_ADMIN_PASSWORD
---   printf '%s' "$ZOO_ADMIN_PASSWORD" | php -r '$p = stream_get_contents(STDIN); echo password_hash($p, PASSWORD_BCRYPT, ["cost" => 12]), PHP_EOL;'
---   unset ZOO_ADMIN_PASSWORD
---
--- If the password hash is omitted, the administrator is created with an
--- intentionally unusable password and the final verification reports it.
+-- The bootstrap administrator is always admin@zoo.local with password admin.
 
 SET NAMES utf8mb4;
 
-SET @zoo_admin_email = COALESCE(NULLIF(@zoo_admin_email, ''), 'admin@zoo.invalid');
-SET @zoo_admin_password_hash = COALESCE(
-  NULLIF(@zoo_admin_password_hash, ''),
-  '!ZOO_ADMIN_PASSWORD_NOT_CONFIGURED!'
-);
+SET @zoo_admin_email = 'admin@zoo.local';
+SET @zoo_admin_password_hash = '$2y$12$nmRE/TC4K3OYnBRaqnLfz.IGMYHjt1RVgej7139P7u7ijXz0epGWy';
 
 -- --------------------------------------------------------------------------
 -- Schema upgrade
@@ -138,7 +121,6 @@ SET @zoo_admin_role_id = (
   LIMIT 1
 );
 
--- Do not overwrite an existing administrator or its password.
 INSERT INTO `user`
   (`franchise_code`, `first_name`, `last_name`, `email`, `password`, `role_id`, `status`)
 SELECT
@@ -153,21 +135,20 @@ WHERE NOT EXISTS (
 ON DUPLICATE KEY UPDATE
   `id` = `id`;
 
--- Allow a safe second run with a real hash after an earlier run created the
--- intentionally locked bootstrap account. Other passwords are never changed.
 UPDATE `user`
-SET `password` = @zoo_admin_password_hash
+SET
+  `email` = @zoo_admin_email,
+  `password` = @zoo_admin_password_hash,
+  `status` = 'active',
+  `deleted` = 0
 WHERE `franchise_code` = 'zoo'
-  AND `role_id` = @zoo_admin_role_id
-  AND `password` = '!ZOO_ADMIN_PASSWORD_NOT_CONFIGURED!'
-  AND @zoo_admin_password_hash <> '!ZOO_ADMIN_PASSWORD_NOT_CONFIGURED!';
+  AND `role_id` = @zoo_admin_role_id;
 
 COMMIT;
 
 -- --------------------------------------------------------------------------
 -- Verification summary
--- admin_password_ready = 0 means the migration was run without a supplied
--- bcrypt hash and the newly created bootstrap administrator cannot log in.
+-- admin_password_ready = 1 confirms an active bootstrap administrator.
 -- --------------------------------------------------------------------------
 
 SELECT
@@ -200,6 +181,6 @@ SELECT
    FROM `user`
    WHERE `franchise_code` = 'zoo'
      AND `role_id` = @zoo_admin_role_id
-     AND `password` <> '!ZOO_ADMIN_PASSWORD_NOT_CONFIGURED!'
+     AND `password` = @zoo_admin_password_hash
      AND `status` = 'active'
      AND `deleted` = 0) AS admin_password_ready;

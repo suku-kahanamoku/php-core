@@ -370,7 +370,7 @@ assert_test('null spec treated as no-op: empty', $r['sql'] === '');
 ═══════════════════════════════════════════════════════════ */
 
 section('SQL_FILTER integration – auth setup');
-$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'password'], false);
+$r     = request('POST', "{$base}/auth/login", ['email' => 'admin@vinozezajeci.cz', 'password' => 'admin'], false);
 $token = $r['data']['data']['token'] ?? null;
 assert_test('admin login for filter tests', $token !== null, dump_on_fail($r));
 
@@ -405,12 +405,12 @@ if ($token !== null) {
 
     // ── Users ─────────────────────────────────────────────────────────────────
     section('SQL_FILTER integration – GET /users');
-    $r = request('GET', $base . '/users?limit=100&q=' . urlencode('{"email":{"value":"admin@example.com"}}'));
+    $r = request('GET', $base . '/users?limit=100&q=' . urlencode('{"email":{"value":"admin@vinozezajeci.cz"}}'));
     assert_test('users eq email filter: 200', $r['status'] === 200, dump_on_fail($r));
     assert_test('users eq email filter: 1 result', count($r['data']['data']) === 1);
     assert_test(
         'users eq email filter: correct email',
-        ($r['data']['data'][0]['email'] ?? null) === 'admin@example.com',
+        ($r['data']['data'][0]['email'] ?? null) === 'admin@vinozezajeci.cz',
     );
 
     $r = request('GET', $base . '/users?limit=100&q=' . urlencode('{"email":{"value":"@example.com","operator":"end"}}'));

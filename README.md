@@ -34,8 +34,8 @@ mysql -u php_core -p php_core < migrations/schema.sql
 ```
 
 Default admin credentials:
-- **Email:** `admin@example.com`
-- **Password:** `password` *(change immediately in production)*
+- **Email:** `admin@vinozezajeci.cz`
+- **Password:** `admin`
 
 ## Development server
 
@@ -51,7 +51,7 @@ The API uses **Bearer token** authentication. Cookies and sessions are not used.
 ```bash
 curl -X POST http://localhost/php/php-core/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@example.com","password":"password"}'
+  -d '{"email":"admin@vinozezajeci.cz","password":"admin"}'
 ```
 
 Response:
@@ -65,7 +65,7 @@ Response:
     "id": 1,
     "first_name": "Admin",
     "last_name": "User",
-    "email": "admin@example.com",
+    "email": "admin@vinozezajeci.cz",
     "role": "admin"
   }
 }
@@ -131,10 +131,10 @@ administrator and animal categories:
 
 ```bash
 mysql -u php_core -p php_core < migrations/zoo_seed.sql
+mysql -u php_core -p php_core < migrations/20260912_customer_profiles.sql
 ```
 
-The development administrator is `admin@zoo.local` with password `password`.
-Change it immediately outside local development.
+The administrator is `admin@zoo.local` with password `admin`.
 
 ## Project structure
 
@@ -230,10 +230,19 @@ php tests/api_test.php http://myserver.com/api
 | GET    | `/users` | admin or internal | List users |
 | POST   | `/users` | admin | Create user |
 | GET    | `/users/:id` | self, admin, or internal | Get user |
-| PATCH  | `/users/:id` | self or admin | Update permitted profile fields |
-| PUT    | `/users/:id` | self or admin | Replace permitted profile fields |
+| PATCH  | `/users/:id` | self or admin | Update user; admin may synchronize `profiles` |
+| PUT    | `/users/:id` | self or admin | Replace user; admin may synchronize `profiles` |
 | DELETE | `/users/:id` | admin | Delete user |
 | GET    | `/users/:userId/address` | self, admin, or internal | User's addresses |
+
+### Customer profiles
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/customer-profiles` | admin | List tenant profiles with questions, objections and preferences |
+| POST | `/customer-profiles` | admin | Create profile |
+| GET | `/customer-profiles/:id` | admin | Get profile |
+| PATCH / PUT | `/customer-profiles/:id` | admin | Update profile and its child rows |
+| DELETE | `/customer-profiles/:id` | admin | Soft-delete profile |
 
 ### Address
 | Method | Path | Auth | Description |
