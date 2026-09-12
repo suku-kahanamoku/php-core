@@ -90,7 +90,7 @@ class UserRepository extends BaseRepository
         }
         unset($filterArr['profile_id']);
         if ((int) $profileFilter > 0) {
-            $where[] = 'EXISTS (SELECT 1 FROM user_profile uf
+            $where[] = 'EXISTS (SELECT 1 FROM user_customer_profile uf
                 WHERE uf.user_id = u.id AND uf.franchise_code = u.franchise_code
                 AND uf.customer_profile_id = ?)';
             $params[] = (int) $profileFilter;
@@ -222,7 +222,7 @@ class UserRepository extends BaseRepository
 
     public function syncProfiles(int $userId, array $profiles): void
     {
-        $this->_db->delete('user_profile', 'user_id = ? AND franchise_code = ?', [$userId, $this->_code]);
+        $this->_db->delete('user_customer_profile', 'user_id = ? AND franchise_code = ?', [$userId, $this->_code]);
         $priorities = [];
         foreach (array_values($profiles) as $i => $item) {
             if (!is_array($item)) {
@@ -241,7 +241,7 @@ class UserRepository extends BaseRepository
                 continue;
             }
             $priorities[$priority] = true;
-            $this->_db->insert('user_profile', [
+            $this->_db->insert('user_customer_profile', [
                 'franchise_code' => $this->_code,
                 'user_id' => $userId,
                 'customer_profile_id' => $profileId,
@@ -259,7 +259,7 @@ class UserRepository extends BaseRepository
         $marks = implode(',', array_fill(0, count($ids), '?'));
         $links = $this->_db->fetchAll(
             "SELECT up.user_id, up.priority, up.customer_profile_id
-             FROM user_profile up
+             FROM user_customer_profile up
              JOIN customer_profile cp ON cp.id = up.customer_profile_id
                 AND cp.franchise_code = up.franchise_code AND cp.deleted = 0
              WHERE up.franchise_code = ? AND up.user_id IN ({$marks})

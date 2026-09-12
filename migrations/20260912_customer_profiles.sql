@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS `customer_profile_preference` (
   CONSTRAINT `fk_customer_profile_preference_profile` FOREIGN KEY (`customer_profile_id`) REFERENCES `customer_profile` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `user_profile` (
+CREATE TABLE IF NOT EXISTS `user_customer_profile` (
   `franchise_code` VARCHAR(64) NOT NULL,
   `user_id` INT UNSIGNED NOT NULL,
   `customer_profile_id` INT UNSIGNED NOT NULL,
@@ -71,14 +71,14 @@ CREATE TABLE IF NOT EXISTS `user_profile` (
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`user_id`,`customer_profile_id`),
-  UNIQUE KEY `uq_user_profile_priority` (`user_id`,`priority`),
-  KEY `idx_user_profile_tenant` (`franchise_code`),
-  KEY `idx_user_profile_profile` (`customer_profile_id`),
-  CONSTRAINT `fk_user_profile_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_user_profile_profile` FOREIGN KEY (`customer_profile_id`) REFERENCES `customer_profile` (`id`) ON DELETE CASCADE
+  UNIQUE KEY `uq_user_customer_profile_priority` (`user_id`,`priority`),
+  KEY `idx_user_customer_profile_tenant` (`franchise_code`),
+  KEY `idx_user_customer_profile_profile` (`customer_profile_id`),
+  CONSTRAINT `fk_user_customer_profile_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_user_customer_profile_profile` FOREIGN KEY (`customer_profile_id`) REFERENCES `customer_profile` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `product_profile_probability` (
+CREATE TABLE IF NOT EXISTS `product_customer_profile_probability` (
   `franchise_code` VARCHAR(64) NOT NULL,
   `product_id` INT UNSIGNED NOT NULL,
   `customer_profile_id` INT UNSIGNED NOT NULL,
@@ -87,11 +87,11 @@ CREATE TABLE IF NOT EXISTS `product_profile_probability` (
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`product_id`,`customer_profile_id`),
-  KEY `idx_product_profile_tenant` (`franchise_code`),
-  KEY `idx_product_profile_profile` (`customer_profile_id`),
-  CONSTRAINT `fk_product_profile_product` FOREIGN KEY (`product_id`) REFERENCES `product` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_product_profile_profile` FOREIGN KEY (`customer_profile_id`) REFERENCES `customer_profile` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `chk_product_profile_probability` CHECK (`probability_percent` BETWEEN 0 AND 100)
+  KEY `idx_product_customer_profile_tenant` (`franchise_code`),
+  KEY `idx_product_customer_profile_profile` (`customer_profile_id`),
+  CONSTRAINT `fk_product_customer_profile_product` FOREIGN KEY (`product_id`) REFERENCES `product` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_product_customer_profile_profile` FOREIGN KEY (`customer_profile_id`) REFERENCES `customer_profile` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `chk_product_customer_profile_probability` CHECK (`probability_percent` BETWEEN 0 AND 100)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Copy definitions from the legacy client_type enumeration.
@@ -144,12 +144,12 @@ PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- Copy the legacy one-profile user assignment as priority 1.
 SET @sql = IF(@has_user_client_type > 0,
-  'INSERT INTO user_profile (franchise_code,user_id,customer_profile_id,priority) SELECT u.franchise_code,u.id,cp.id,1 FROM user u JOIN enumeration e ON e.id=u.client_type_id AND e.franchise_code=u.franchise_code AND e.type=''client_type'' JOIN customer_profile cp ON cp.franchise_code=u.franchise_code AND cp.syscode=e.syscode WHERE u.client_type_id IS NOT NULL ON DUPLICATE KEY UPDATE priority=VALUES(priority)',
+  'INSERT INTO user_customer_profile (franchise_code,user_id,customer_profile_id,priority) SELECT u.franchise_code,u.id,cp.id,1 FROM user u JOIN enumeration e ON e.id=u.client_type_id AND e.franchise_code=u.franchise_code AND e.type=''client_type'' JOIN customer_profile cp ON cp.franchise_code=u.franchise_code AND cp.syscode=e.syscode WHERE u.client_type_id IS NOT NULL ON DUPLICATE KEY UPDATE priority=VALUES(priority)',
   'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- FAnn probabilities, one row for every product/profile pair in the JSON map.
-INSERT INTO `product_profile_probability`
+INSERT INTO `product_customer_profile_probability`
   (`franchise_code`,`product_id`,`customer_profile_id`,`probability_percent`,`is_target`)
 SELECT p.`franchise_code`, p.`id`, cp.`id`,
        LEAST(100, GREATEST(0, CAST(JSON_UNQUOTE(JSON_EXTRACT(p.`data`, CONCAT('$.purchase_probability.', jt.`syscode`))) AS UNSIGNED))),
@@ -163,7 +163,7 @@ ON DUPLICATE KEY UPDATE `probability_percent`=VALUES(`probability_percent`), `is
 
 -- Zoo target segments and recommended SKU lists have no numeric probability.
 -- A target is represented by 100 %, which keeps the relation explicit and editable.
-INSERT INTO `product_profile_probability`
+INSERT INTO `product_customer_profile_probability`
   (`franchise_code`,`product_id`,`customer_profile_id`,`probability_percent`,`is_target`)
 SELECT p.`franchise_code`, p.`id`, cp.`id`, 100, 1
 FROM `product` p
@@ -174,7 +174,7 @@ WHERE NOT JSON_CONTAINS_PATH(p.`data`, 'one', '$.purchase_probability')
 ON DUPLICATE KEY UPDATE `probability_percent`=VALUES(`probability_percent`), `is_target`=1;
 
 SET @sql = IF(@has_user_profile > 0 AND @has_user_client_type > 0,
-  'INSERT INTO product_profile_probability (franchise_code,product_id,customer_profile_id,probability_percent,is_target) SELECT p.franchise_code,p.id,cp.id,100,1 FROM user u JOIN enumeration e ON e.id=u.client_type_id JOIN customer_profile cp ON cp.franchise_code=u.franchise_code AND cp.syscode=e.syscode JOIN JSON_TABLE(COALESCE(JSON_EXTRACT(u.profile,''$.recommended_product_skus''),JSON_ARRAY()),''$[*]'' COLUMNS(sku VARCHAR(64) PATH ''$'')) jt JOIN product p ON p.franchise_code=u.franchise_code AND p.sku=jt.sku COLLATE utf8mb4_unicode_ci WHERE u.profile IS NOT NULL ON DUPLICATE KEY UPDATE probability_percent=GREATEST(probability_percent,100),is_target=1',
+  'INSERT INTO product_customer_profile_probability (franchise_code,product_id,customer_profile_id,probability_percent,is_target) SELECT p.franchise_code,p.id,cp.id,100,1 FROM user u JOIN enumeration e ON e.id=u.client_type_id JOIN customer_profile cp ON cp.franchise_code=u.franchise_code AND cp.syscode=e.syscode JOIN JSON_TABLE(COALESCE(JSON_EXTRACT(u.profile,''$.recommended_product_skus''),JSON_ARRAY()),''$[*]'' COLUMNS(sku VARCHAR(64) PATH ''$'')) jt JOIN product p ON p.franchise_code=u.franchise_code AND p.sku=jt.sku COLLATE utf8mb4_unicode_ci WHERE u.profile IS NOT NULL ON DUPLICATE KEY UPDATE probability_percent=GREATEST(probability_percent,100),is_target=1',
   'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
@@ -198,5 +198,5 @@ SELECT
   (SELECT COUNT(*) FROM customer_profile WHERE deleted=0) AS profiles,
   (SELECT COUNT(*) FROM customer_profile_question) AS questions,
   (SELECT COUNT(*) FROM customer_profile_objection) AS objections,
-  (SELECT COUNT(*) FROM user_profile) AS user_profile_links,
-  (SELECT COUNT(*) FROM product_profile_probability) AS product_profile_links;
+  (SELECT COUNT(*) FROM user_customer_profile) AS user_customer_profile_links,
+  (SELECT COUNT(*) FROM product_customer_profile_probability) AS product_customer_profile_links;

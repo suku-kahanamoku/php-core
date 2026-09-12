@@ -11,8 +11,8 @@ DROP TABLE IF EXISTS `invoice_file`;
 DROP TABLE IF EXISTS `invoice`;
 DROP TABLE IF EXISTS `order_item`;
 DROP TABLE IF EXISTS `order`;
-DROP TABLE IF EXISTS `product_profile_probability`;
-DROP TABLE IF EXISTS `user_profile`;
+DROP TABLE IF EXISTS `product_customer_profile_probability`;
+DROP TABLE IF EXISTS `user_customer_profile`;
 DROP TABLE IF EXISTS `customer_profile_preference`;
 DROP TABLE IF EXISTS `customer_profile_objection`;
 DROP TABLE IF EXISTS `customer_profile_question`;
@@ -149,7 +149,7 @@ CREATE TABLE `user` (
     CONSTRAINT `fk_user_role` FOREIGN KEY (`role_id`) REFERENCES `role` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE `user_profile` (
+CREATE TABLE `user_customer_profile` (
     `franchise_code` VARCHAR(64) NOT NULL,
     `user_id` INT UNSIGNED NOT NULL,
     `customer_profile_id` INT UNSIGNED NOT NULL,
@@ -157,10 +157,11 @@ CREATE TABLE `user_profile` (
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`user_id`,`customer_profile_id`),
-    UNIQUE KEY `uq_user_profile_priority` (`user_id`,`priority`),
-    KEY `idx_user_profile_profile` (`customer_profile_id`),
-    CONSTRAINT `fk_user_profile_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_user_profile_profile` FOREIGN KEY (`customer_profile_id`) REFERENCES `customer_profile` (`id`) ON DELETE CASCADE
+    UNIQUE KEY `uq_user_customer_profile_priority` (`user_id`,`priority`),
+    KEY `idx_user_customer_profile_tenant` (`franchise_code`),
+    KEY `idx_user_customer_profile_profile` (`customer_profile_id`),
+    CONSTRAINT `fk_user_customer_profile_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_user_customer_profile_profile` FOREIGN KEY (`customer_profile_id`) REFERENCES `customer_profile` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── address ───────────────────────────────────────────────
@@ -251,7 +252,7 @@ CREATE TABLE `product` (
     KEY `idx_product_deleted`   (`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE `product_profile_probability` (
+CREATE TABLE `product_customer_profile_probability` (
     `franchise_code` VARCHAR(64) NOT NULL,
     `product_id` INT UNSIGNED NOT NULL,
     `customer_profile_id` INT UNSIGNED NOT NULL,
@@ -260,10 +261,11 @@ CREATE TABLE `product_profile_probability` (
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`product_id`,`customer_profile_id`),
-    KEY `idx_product_profile_profile` (`customer_profile_id`),
-    CONSTRAINT `fk_product_profile_product` FOREIGN KEY (`product_id`) REFERENCES `product` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_product_profile_profile` FOREIGN KEY (`customer_profile_id`) REFERENCES `customer_profile` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `chk_product_profile_probability` CHECK (`probability_percent` BETWEEN 0 AND 100)
+    KEY `idx_product_customer_profile_tenant` (`franchise_code`),
+    KEY `idx_product_customer_profile_profile` (`customer_profile_id`),
+    CONSTRAINT `fk_product_customer_profile_product` FOREIGN KEY (`product_id`) REFERENCES `product` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_product_customer_profile_profile` FOREIGN KEY (`customer_profile_id`) REFERENCES `customer_profile` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `chk_product_customer_profile_probability` CHECK (`probability_percent` BETWEEN 0 AND 100)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── product_category (M:N pivot) ──────────────────────────

@@ -117,7 +117,7 @@ if ($modelProdId) {
 section('Product model – delete()');
 if ($modelProdId) {
     // Verify 'deleted' field is 0 before deletion.
-    $r = request('GET', "{$base}/products/{$modelProdId}", [], false);
+    $r = request('GET', "{$base}/products/{$modelProdId}");
     assert_test('deleted field is 0 before delete', ($r['data']['data']['deleted'] ?? -1) === 0, dump_on_fail($r));
 
     $r = request('DELETE', "{$base}/products/{$modelProdId}");

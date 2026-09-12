@@ -236,6 +236,12 @@ php tests/api_test.php http://myserver.com/api
 | GET    | `/users/:userId/address` | self, admin, or internal | User's addresses |
 
 ### Customer profiles
+
+Profile definitions are stored in `customer_profile`. User assignments use the
+M:N table `user_customer_profile` with a numeric priority. Product suitability
+uses `product_customer_profile_probability`; the API exposes those rows as the
+`profile_probabilities` field on a product.
+
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | GET | `/customer-profiles` | admin | List tenant profiles with questions, objections and preferences |

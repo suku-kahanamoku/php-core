@@ -343,7 +343,7 @@ class ProductRepository extends BaseRepository
 
     public function syncProfileProbabilities(int $productId, array $values): void
     {
-        $this->_db->delete('product_profile_probability', 'product_id = ? AND franchise_code = ?', [$productId, $this->_code]);
+        $this->_db->delete('product_customer_profile_probability', 'product_id = ? AND franchise_code = ?', [$productId, $this->_code]);
         foreach ($values as $value) {
             if (!is_array($value)) {
                 continue;
@@ -356,7 +356,7 @@ class ProductRepository extends BaseRepository
             if (!$profile) {
                 continue;
             }
-            $this->_db->insert('product_profile_probability', [
+            $this->_db->insert('product_customer_profile_probability', [
                 'franchise_code' => $this->_code,
                 'product_id' => $productId,
                 'customer_profile_id' => $profileId,
@@ -376,7 +376,7 @@ class ProductRepository extends BaseRepository
         $rows = $this->_db->fetchAll(
             "SELECT ppp.product_id, ppp.customer_profile_id, ppp.probability_percent,
                     ppp.is_target, cp.syscode, cp.name
-             FROM product_profile_probability ppp
+             FROM product_customer_profile_probability ppp
              JOIN customer_profile cp ON cp.id = ppp.customer_profile_id
                 AND cp.franchise_code = ppp.franchise_code AND cp.deleted = 0
              WHERE ppp.franchise_code = ? AND ppp.product_id IN ({$marks})
