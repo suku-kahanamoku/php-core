@@ -181,6 +181,6 @@ SELECT
    FROM `user`
    WHERE `franchise_code` = 'zoo'
      AND `role_id` = @zoo_admin_role_id
-     AND `password` = @zoo_admin_password_hash
+     AND `password` = (@zoo_admin_password_hash COLLATE utf8mb4_unicode_ci)
      AND `status` = 'active'
      AND `deleted` = 0) AS admin_password_ready;
