@@ -132,9 +132,13 @@ administrator and animal categories:
 ```bash
 mysql -u php_core -p php_core < migrations/zoo_seed.sql
 mysql -u php_core -p php_core < migrations/20260912_customer_profiles.sql
+mysql -u php_core -p php_core < migrations/20260912_rename_customer_profile_relations.sql
 ```
 
 The administrator is `admin@zoo.local` with password `admin`.
+
+The complete customer-profile schema, columns, keys, and Mermaid relationship
+diagram are documented in [`CUSTOMER_PROFILE_MODEL.md`](CUSTOMER_PROFILE_MODEL.md).
 
 ## Project structure
 
@@ -143,9 +147,12 @@ php-core/
 ├── bootstrap.php          # Autoload, .env, CORS headers, error handling
 ├── .env.example
 ├── composer.json
+├── CUSTOMER_PROFILE_MODEL.md             # customer-profile ER/UML diagram + columns
 ├── migrations/
-│   ├── schema.sql                         # destructive fresh schema + seed
-│   └── 20260906_security_hardening.sql   # additive production migration
+│   ├── schema.sql                                      # destructive fresh schema + seed
+│   ├── 20260906_security_hardening.sql                # additive security migration
+│   ├── 20260912_customer_profiles.sql                 # normalized profile model
+│   └── 20260912_rename_customer_profile_relations.sql # final relation-table names
 ├── pages/
 │   ├── db-schema.html     # Mermaid ER diagram
 │   ├── db-table.html      # HTML schema viewer with FK table
@@ -159,6 +166,7 @@ php-core/
 │   ├── auth/index.php
 │   ├── roles/index.php
 │   ├── users/index.php
+│   ├── customer-profiles/index.php
 │   ├── address/index.php
 │   ├── categories/index.php
 │   ├── products/index.php
@@ -184,6 +192,7 @@ php-core/
         │   └── Router.php            # Regex router with middleware support
         ├── Validator/
         │   └── Validator.php
+        ├── CustomerProfile/           # definitions, questions, objections, preferences
         └── <Module>/                 # Address, Category, Enumeration, File,
             ├── <Module>Repository.php  #   Invoice, Order, Product, Role, Text, User
             ├── <Module>Service.php
@@ -241,6 +250,9 @@ Profile definitions are stored in `customer_profile`. User assignments use the
 M:N table `user_customer_profile` with a numeric priority. Product suitability
 uses `product_customer_profile_probability`; the API exposes those rows as the
 `profile_probabilities` field on a product.
+
+See [`CUSTOMER_PROFILE_MODEL.md`](CUSTOMER_PROFILE_MODEL.md) for the diagram,
+all table columns, primary and foreign keys, uniqueness rules, and examples.
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|

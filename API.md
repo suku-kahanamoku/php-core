@@ -20,6 +20,7 @@
    - [Auth](#auth)
    - [Roles](#roles)
    - [Users](#users)
+   - [Customer Profiles](#customer-profiles)
    - [Addresses](#addresses)
    - [Categories](#categories)
    - [Products](#products)
@@ -39,6 +40,9 @@
 ## Architecture Overview
 
 The API is a multi-tenant REST API. Every resource is scoped to a **franchise_code** (configured server-side via `.env`). The frontend never sends `franchise_code` explicitly — it is resolved automatically from the server configuration.
+
+The normalized customer-profile tables and their columns are shown in
+[`CUSTOMER_PROFILE_MODEL.md`](CUSTOMER_PROFILE_MODEL.md).
 
 All list endpoints support three universal query parameters:
 
@@ -409,10 +413,10 @@ Comma-separated list of field names (snake_case).
 
 | Module | Available relations |
 |--------|-------------------|
-| Users | `role` |
+| Users | `role`, `profiles` |
 | Orders | `user` |
 | Invoices | `user`, `files` |
-| Products | `categories`, `files` |
+| Products | `categories`, `files`, `profile_probabilities` |
 | Others | *(none)* |
 
 ### Examples
@@ -691,6 +695,14 @@ Full replacement — all fields required:
   "phone": "+420123456789",
   "role": "user",
   "role_id": 3,
+  "profiles": [
+    {
+      "id": 4,
+      "syscode": "gift_buyer",
+      "name": "Kupující dárek",
+      "priority": 1
+    }
+  ],
   "last_login_at": "2026-05-01T10:30:00",
   "created_at": "2026-01-15T08:00:00",
   "updated_at": "2026-04-01T14:22:00"
@@ -738,6 +750,7 @@ Request:
 | `password`   | ✓        | Min 8 characters, stored as bcrypt hash    |
 | `phone`      | —        | Optional                                   |
 | `role_id`    | —        | Role ID; defaults to the `user` role        |
+| `profiles`   | —        | Admin only; array of `{customer_profile_id, priority}` stored through `user_customer_profile` |
 
 #### `PATCH /users/:id`
 
@@ -748,12 +761,70 @@ Send only changed fields (password change uses `/auth/change-password`):
   "email": "janka@example.com",
   "phone": "+420987654321",
   "status": "active",
-  "role_id": 2
+  "role_id": 2,
+  "profiles": [
+    { "customer_profile_id": 4, "priority": 1 },
+    { "customer_profile_id": 2, "priority": 2 }
+  ]
 }
 ```
 
 `email`, `status` and `role_id` can only be changed by an administrator. `status`
 accepts `active`, `inactive` or `banned`; e-mail remains unique per franchise.
+Only an administrator may synchronize `profiles`. Sending the array replaces
+all current profile assignments for that user. Priority `1` is the highest and
+each user may use a priority value only once.
+
+---
+
+### Customer Profiles
+
+Customer profiles are independent tenant-scoped records. Questions, objections,
+and preferences are stored in child tables. Users are linked through
+`user_customer_profile`; products are linked through
+`product_customer_profile_probability`. See the complete
+[`database diagram and column reference`](CUSTOMER_PROFILE_MODEL.md).
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/customer-profiles` | Admin only | List profiles with questions, objections, and preferences |
+| GET | `/customer-profiles/:id` | Admin only | Get one profile |
+| POST | `/customer-profiles` | Admin only | Create a profile and its child rows |
+| PATCH | `/customer-profiles/:id` | Admin only | Update supplied fields and supplied child collections |
+| PUT | `/customer-profiles/:id` | Admin only | Update a profile using the same accepted payload fields |
+| DELETE | `/customer-profiles/:id` | Admin only | Soft-delete a profile |
+
+#### Customer profile object
+
+```json
+{
+  "id": 4,
+  "profile_number": 2,
+  "syscode": "gift_buyer",
+  "name": "Kupující dárek",
+  "selection_need": "Potřebuje jistotu, že se trefí.",
+  "summary": null,
+  "aura": null,
+  "visual": null,
+  "behavior": null,
+  "business_potential": null,
+  "typical_quote": null,
+  "average_basket": "1800.00",
+  "marketing_note": null,
+  "position": 20,
+  "published": 1,
+  "questions": ["Pro koho dárek vybíráte?"],
+  "objections": ["Co když se netrefím?"],
+  "preferences": [
+    { "type": "product_kind", "value": "gift_set" }
+  ]
+}
+```
+
+`syscode` and `name` are required when creating a profile. `syscode` and
+`profile_number` are unique inside one tenant. A supplied child collection is
+fully synchronized: omitted collections remain unchanged, while an empty array
+removes all rows of that child type.
 
 ---
 
@@ -952,6 +1023,15 @@ GET /categories?sort=[{"position":1},{"name":1}]&q={"parent_id":{"operator":"nul
   "color": "white",
   "variant": "riesling",
   "data": { "quality": "kabinett", "volume": 0.75, "year": 2022 },
+  "profile_probabilities": [
+    {
+      "customer_profile_id": 4,
+      "probability_percent": 85,
+      "is_target": 1,
+      "syscode": "gift_buyer",
+      "name": "Kupující dárek"
+    }
+  ],
   "created_at": "2026-01-15T08:00:00",
   "updated_at": "2026-04-01T10:00:00"
 }
@@ -970,6 +1050,7 @@ GET /categories?sort=[{"position":1},{"name":1}]&q={"parent_id":{"operator":"nul
 | `data`           | object or null | Flexible JSON attributes — project-defined keys           |
 | `category_ids`   | integer[]      | IDs of all assigned categories (M:N)                      |
 | `file_ids`       | integer[]      | IDs of attached files (M:N via `product_file`)            |
+| `profile_probabilities` | object[] | Profile suitability stored via `product_customer_profile_probability` |
 
 #### `GET /products`
 
@@ -1007,7 +1088,14 @@ GET /products?q={"published":{"value":1},"data.year":{"value":2022},"color":{"va
   "variant": "riesling",
   "data": { "quality": "kabinett", "volume": 0.75, "year": 2022 },
   "category_ids": [3, 7],
-  "file_ids": [1, 2]
+  "file_ids": [1, 2],
+  "profile_probabilities": [
+    {
+      "customer_profile_id": 4,
+      "probability_percent": 85,
+      "is_target": 1
+    }
+  ]
 }
 ```
 
@@ -1025,6 +1113,7 @@ GET /products?q={"published":{"value":1},"data.year":{"value":2022},"color":{"va
 | `data`         | —        | Flexible JSON object — any project-defined key/value pairs      |
 | `category_ids` | —        | Array of category IDs (M:N)                                     |
 | `file_ids`     | —        | Array of file IDs to attach (M:N via `product_file`)            |
+| `profile_probabilities` | — | Array of `{customer_profile_id, probability_percent, is_target}`; probability is clamped to 0–100 |
 
 #### `PATCH /products/:id`
 
@@ -1038,6 +1127,9 @@ Send only the fields to update. For `data`, the provided object is **shallow-mer
 ```
 
 To clear all JSON data, send `"data": null`.
+
+When `profile_probabilities` is supplied, it replaces all current
+profile-probability rows for the product. Omitting it leaves them unchanged.
 
 #### `PUT /products/:id`
 
@@ -1671,7 +1763,8 @@ DELETE /products/5?force=true  # hard delete
 | Endpoint        | Filterable columns                                                  |
 |-----------------|---------------------------------------------------------------------|
 | `/roles`        | `name`, `label`, `position`, `created_at`                           |
-| `/users`        | `first_name`, `last_name`, `email`, `phone`, `role_id`, `created_at`, `last_login_at` |
+| `/users`        | `first_name`, `last_name`, `email`, `phone`, `role_id`, `profile_id`, `created_at`, `last_login_at` |
+| `/customer-profiles` | Profile columns including `profile_number`, `syscode`, `name`, `position`, `published`, `created_at` |
 | `/users/:id/address` | `type`, `city`, `zip`, `country`, `is_default`, `created_at`  |
 | `/categories`   | `name`, `description`, `parent_id`, `position`, `created_at`        |
 | `/products`     | `name`, `sku`, `price`, `vat_rate`, `stock_quantity`, `published`, `created_at`, `kind`, `color`, `variant`, `data.*` |

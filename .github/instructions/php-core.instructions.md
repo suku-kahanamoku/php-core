@@ -7,6 +7,7 @@ These instructions are loaded only when a task is clearly about this repository.
 - `src/Modules/<Domain>/README.md` for module-specific behavior and file map.
 - `README.md` for setup, architecture, and repository conventions.
 - `API.md` for endpoint contracts, filters, projection rules, and response shapes.
+- `CUSTOMER_PROFILE_MODEL.md` for the profile ER/UML diagram, table columns, keys, and relation semantics.
 - `src/Modules/<Domain>/` for module logic.
 - `api/<module>/index.php` for route entry points.
 - `tests/api_test.php` for the main executable test suite.
@@ -30,5 +31,5 @@ These instructions are loaded only when a task is clearly about this repository.
 ## Good task boundaries
 
 - For endpoint work, inspect the relevant module API, service, and repository files only.
-- For docs changes, keep `README.md` and `API.md` consistent with the implementation.
+- For docs changes, keep `README.md`, `API.md`, affected module READMEs, and the relevant model document consistent with the implementation.
 - For bugs, prefer a nearby test or an existing request flow as the cheapest validation.

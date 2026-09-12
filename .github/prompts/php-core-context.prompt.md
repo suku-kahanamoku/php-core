@@ -4,12 +4,12 @@ description: "Prime a Copilot agent for focused php-core work"
 
 Use this prompt when starting any non-trivial task in this repository.
 
-1. Read `README.md` and `API.md` first.
+1. Read `README.md` and `API.md` first. For customer-profile or schema work, also read `CUSTOMER_PROFILE_MODEL.md`.
 2. Inspect only the nearest module files that control the requested behavior.
 3. State one narrow hypothesis and one cheap validation before editing.
 4. Keep changes localized and do not widen scope unless the first check fails.
 5. Preserve the response envelope, auth rules, franchise scoping, and endpoint contracts.
-6. If the task touches docs, keep `README.md` and `API.md` in sync with the implementation.
+6. If the task touches customer profiles, keep `README.md`, `API.md`, module READMEs, and `CUSTOMER_PROFILE_MODEL.md` in sync with the implementation.
 
 Expected output for the agent:
 - The smallest relevant files to inspect.

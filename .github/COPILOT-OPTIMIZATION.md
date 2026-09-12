@@ -12,6 +12,7 @@ Quick maintainer rules:
 2. Put project-specific context in `.github/instructions/*.instructions.md`.
 3. Use reusable prompts for recurring workflows instead of repeating the same setup in chat.
 4. Treat `API.md` and `README.md` as the public source of truth for behavior and setup.
+5. Treat `CUSTOMER_PROFILE_MODEL.md` as the source of truth for profile-table names, columns, keys, and relationships.
 
 Recommended next steps:
 - Add module-level `README.md` files under `src/Modules/<Domain>/` if a domain needs more detail.
