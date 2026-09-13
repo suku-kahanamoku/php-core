@@ -42,7 +42,7 @@
 The API is a multi-tenant REST API. Every resource is scoped to a **franchise_code** (configured server-side via `.env`). The frontend never sends `franchise_code` explicitly — it is resolved automatically from the server configuration.
 
 The normalized customer-profile tables and their columns are shown in
-[`CUSTOMER_PROFILE_MODEL.md`](CUSTOMER_PROFILE_MODEL.md).
+[`src/Modules/CustomerProfile/README.md`](src/Modules/CustomerProfile/README.md).
 
 All list endpoints support three universal query parameters:
 
@@ -783,7 +783,7 @@ Customer profiles are independent tenant-scoped records. Questions, objections,
 and preferences are stored in child tables. Users are linked through
 `user_customer_profile`; products are linked through
 `product_customer_profile_probability`. See the complete
-[`database diagram and column reference`](CUSTOMER_PROFILE_MODEL.md).
+[`database diagram and column reference`](src/Modules/CustomerProfile/README.md).
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|

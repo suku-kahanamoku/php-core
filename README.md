@@ -139,7 +139,7 @@ mysql -u php_core -p php_core < migrations/20260913_user_customer_profile_positi
 The administrator is `admin@zoo.local` with password `admin`.
 
 The complete customer-profile schema, columns, keys, and Mermaid relationship
-diagram are documented in [`CUSTOMER_PROFILE_MODEL.md`](CUSTOMER_PROFILE_MODEL.md).
+diagram are documented in [`src/Modules/CustomerProfile/README.md`](src/Modules/CustomerProfile/README.md).
 
 ## Project structure
 
@@ -148,7 +148,10 @@ php-core/
 ├── bootstrap.php          # Autoload, .env, CORS headers, error handling
 ├── .env.example
 ├── composer.json
-├── CUSTOMER_PROFILE_MODEL.md             # customer-profile ER/UML diagram + columns
+├── src/
+│   └── Modules/
+│       └── CustomerProfile/
+│           └── README.md                 # module guide + ER/UML diagram + columns
 ├── migrations/
 │   ├── schema.sql                                      # destructive fresh schema + seed
 │   ├── 20260906_security_hardening.sql                # additive security migration
@@ -253,7 +256,7 @@ M:N table `user_customer_profile` with a numeric position. Product suitability
 uses `product_customer_profile_probability`; the API exposes those rows as the
 `profile_probabilities` field on a product.
 
-See [`CUSTOMER_PROFILE_MODEL.md`](CUSTOMER_PROFILE_MODEL.md) for the diagram,
+See [`src/Modules/CustomerProfile/README.md`](src/Modules/CustomerProfile/README.md) for the diagram,
 all table columns, primary and foreign keys, uniqueness rules, and examples.
 
 | Method | Path | Auth | Description |
@@ -436,5 +439,5 @@ agreement when writing cross-table relationships.
 - **`deleted`** is the soft-delete flag on entity tables that support soft deletion; junction and cascade-owned child tables do not all contain it.
 
 The profile-focused diagram with every related table column is in
-[`CUSTOMER_PROFILE_MODEL.md`](CUSTOMER_PROFILE_MODEL.md). The complete executable
+[`src/Modules/CustomerProfile/README.md`](src/Modules/CustomerProfile/README.md). The complete executable
 schema remains [`migrations/schema.sql`](migrations/schema.sql).

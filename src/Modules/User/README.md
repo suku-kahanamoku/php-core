@@ -24,5 +24,5 @@ Notes:
 - `user` contains no customer-profile column. The M:N assignments live only in `user_customer_profile`.
 - Admins synchronize assignments through the API field `profiles`; each item contains `customer_profile_id` and a unique per-user `position`, where `1` is first.
 - Profile reads require the `profiles` projection. Filtering users by one assigned profile uses the virtual filter `profile_id`.
-- The complete table diagram and column list are in [`../../../CUSTOMER_PROFILE_MODEL.md`](../../../CUSTOMER_PROFILE_MODEL.md).
+- The complete table diagram and column list are in [`../CustomerProfile/README.md`](../CustomerProfile/README.md).
 - Keep user role and validation behavior consistent with auth and API docs.

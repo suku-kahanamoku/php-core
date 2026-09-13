@@ -23,5 +23,5 @@ Notes:
 - `category_ids` and `file_ids` are validated against the current tenant before links are written.
 - Product-to-profile suitability lives in `product_customer_profile_probability`, not in the `product` table.
 - The API field `profile_probabilities` synchronizes `{customer_profile_id, probability_percent, is_target}` rows; values are tenant-checked and probability is limited to 0–100.
-- The complete table diagram and column list are in [`../../../CUSTOMER_PROFILE_MODEL.md`](../../../CUSTOMER_PROFILE_MODEL.md).
+- The complete table diagram and column list are in [`../CustomerProfile/README.md`](../CustomerProfile/README.md).
 - Keep projection behavior aligned with `API.md`.
