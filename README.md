@@ -134,6 +134,7 @@ mysql -u php_core -p php_core < migrations/zoo_seed.sql
 mysql -u php_core -p php_core < migrations/20260912_customer_profiles.sql
 mysql -u php_core -p php_core < migrations/20260912_rename_customer_profile_relations.sql
 mysql -u php_core -p php_core < migrations/20260913_user_customer_profile_position.sql
+mysql -u php_core -p php_core < migrations/20260913_zoo_product_categories.sql
 ```
 
 The administrator is `admin@zoo.local` with password `admin`.
@@ -174,7 +175,8 @@ php-core/
 │   ├── 20260912_customer_profiles.sql                  # normalized profile model
 │   ├── 20260912_rename_customer_profile_relations.sql  # final relation-table names
 │   ├── 20260913_user_customer_profile_position.sql     # final assignment ordering column
-│   └── 20260913_fun_product_categories.sql             # FAnn product category conversion
+│   ├── 20260913_fun_product_categories.sql             # FAnn product category conversion
+│   └── 20260913_zoo_product_categories.sql             # Zoo product category conversion
 ├── pages/
 │   ├── db-schema.html     # Mermaid ER diagram
 │   ├── db-table.html      # HTML schema viewer with FK table

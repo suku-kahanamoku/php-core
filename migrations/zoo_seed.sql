@@ -287,7 +287,14 @@ VALUES
   ('zoo', NULL, 'birds', 'Ptáci', 'Krmivo, klece a potřeby pro ptáky', 40),
   ('zoo', NULL, 'fish', 'Akvaristika', 'Akvária, technika, péče o vodu a krmivo', 50),
   ('zoo', NULL, 'reptiles', 'Teraristika', 'Terária, živé krmivo, osvětlení a vytápění', 60),
-  ('zoo', NULL, 'horses', 'Koně', 'Krmivo, doplňky a potřeby pro koně', 70)
+  ('zoo', NULL, 'horses', 'Koně', 'Krmivo, doplňky a potřeby pro koně', 70),
+  ('zoo', NULL, 'product-food', 'Krmivo', 'Krmiva pro všechna zvířata.', 100),
+  ('zoo', NULL, 'product-treats', 'Pamlsky', 'Pamlsky a odměny pro zvířata.', 110),
+  ('zoo', NULL, 'product-toys', 'Hračky', 'Hračky a pomůcky pro zabavení zvířat.', 120),
+  ('zoo', NULL, 'product-hygiene', 'Hygiena', 'Hygienické potřeby, steliva a péče.', 130),
+  ('zoo', NULL, 'product-equipment', 'Chovatelské potřeby', 'Vybavení a chovatelské potřeby.', 140),
+  ('zoo', NULL, 'product-supplements', 'Doplňky stravy', 'Vitamíny, minerály a další doplňky stravy.', 150),
+  ('zoo', NULL, 'product-other', 'Ostatní', 'Ostatní produkty.', 160)
 ON DUPLICATE KEY UPDATE
   `name` = VALUES(`name`), `description` = VALUES(`description`),
   `position` = VALUES(`position`), `deleted` = 0;
@@ -367,5 +374,31 @@ INSERT IGNORE INTO `product_category` (`product_id`, `category_id`) VALUES
   ((SELECT id FROM product WHERE franchise_code = 'zoo' AND sku = 'DOG-CAN-6'), (SELECT id FROM category WHERE franchise_code = 'zoo' AND syscode = 'dogs-food')),
   ((SELECT id FROM product WHERE franchise_code = 'zoo' AND sku = 'BIRD-SEED-20'), (SELECT id FROM category WHERE franchise_code = 'zoo' AND syscode = 'wild-birds')),
   ((SELECT id FROM product WHERE franchise_code = 'zoo' AND sku = 'CAT-ECO-24'), (SELECT id FROM category WHERE franchise_code = 'zoo' AND syscode = 'cats-food'));
+
+INSERT IGNORE INTO `product_category` (`product_id`, `category_id`)
+SELECT
+  p.`id`,
+  c.`id`
+FROM `product` p
+JOIN `category` c
+  ON c.`franchise_code` = 'zoo'
+ AND c.`syscode` = CASE p.`kind`
+   WHEN 'food' THEN 'product-food'
+   WHEN 'treats' THEN 'product-treats'
+   WHEN 'toys' THEN 'product-toys'
+   WHEN 'hygiene' THEN 'product-hygiene'
+   WHEN 'equipment' THEN 'product-equipment'
+   WHEN 'supplements' THEN 'product-supplements'
+   ELSE 'product-other'
+ END
+WHERE p.`franchise_code` = 'zoo'
+  AND p.`deleted` = 0
+  AND p.`kind` IS NOT NULL
+  AND TRIM(p.`kind`) <> '';
+
+UPDATE `product`
+SET `kind` = NULL
+WHERE `franchise_code` = 'zoo'
+  AND `kind` IS NOT NULL;
 
 COMMIT;
