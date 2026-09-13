@@ -223,14 +223,14 @@ class UserRepository extends BaseRepository
     public function syncProfiles(int $userId, array $profiles): void
     {
         $this->_db->delete('user_customer_profile', 'user_id = ? AND franchise_code = ?', [$userId, $this->_code]);
-        $priorities = [];
+        $positions = [];
         foreach (array_values($profiles) as $i => $item) {
             if (!is_array($item)) {
                 continue;
             }
             $profileId = (int) ($item['customer_profile_id'] ?? $item['id'] ?? 0);
-            $priority = max(1, (int) ($item['priority'] ?? ($i + 1)));
-            if ($profileId < 1 || isset($priorities[$priority])) {
+            $position = max(1, (int) ($item['position'] ?? ($i + 1)));
+            if ($profileId < 1 || isset($positions[$position])) {
                 continue;
             }
             $valid = $this->_db->fetchOne(
@@ -240,12 +240,12 @@ class UserRepository extends BaseRepository
             if (!$valid) {
                 continue;
             }
-            $priorities[$priority] = true;
+            $positions[$position] = true;
             $this->_db->insert('user_customer_profile', [
                 'franchise_code' => $this->_code,
                 'user_id' => $userId,
                 'customer_profile_id' => $profileId,
-                'priority' => $priority,
+                'position' => $position,
             ]);
         }
     }
@@ -258,12 +258,12 @@ class UserRepository extends BaseRepository
         $ids = array_map('intval', array_column($users, 'id'));
         $marks = implode(',', array_fill(0, count($ids), '?'));
         $links = $this->_db->fetchAll(
-            "SELECT up.user_id, up.priority, up.customer_profile_id
+            "SELECT up.user_id, up.position, up.customer_profile_id
              FROM user_customer_profile up
              JOIN customer_profile cp ON cp.id = up.customer_profile_id
                 AND cp.franchise_code = up.franchise_code AND cp.deleted = 0
              WHERE up.franchise_code = ? AND up.user_id IN ({$marks})
-             ORDER BY up.user_id, up.priority",
+             ORDER BY up.user_id, up.position",
             [$this->_code, ...$ids],
         );
         $profileRows = (new CustomerProfileRepository($this->_db, $this->_code))
@@ -277,7 +277,7 @@ class UserRepository extends BaseRepository
             $userId = (int) $link['user_id'];
             $profile = $profiles[(int) $link['customer_profile_id']] ?? null;
             if ($profile) {
-                $profile['priority'] = (int) $link['priority'];
+                $profile['position'] = (int) $link['position'];
                 $map[$userId][] = $profile;
             }
         }

@@ -700,7 +700,7 @@ Full replacement — all fields required:
       "id": 4,
       "syscode": "gift_buyer",
       "name": "Kupující dárek",
-      "priority": 1
+      "position": 1
     }
   ],
   "last_login_at": "2026-05-01T10:30:00",
@@ -750,7 +750,7 @@ Request:
 | `password`   | ✓        | Min 8 characters, stored as bcrypt hash    |
 | `phone`      | —        | Optional                                   |
 | `role_id`    | —        | Role ID; defaults to the `user` role        |
-| `profiles`   | —        | Admin only; array of `{customer_profile_id, priority}` stored through `user_customer_profile` |
+| `profiles`   | —        | Admin only; array of `{customer_profile_id, position}` stored through `user_customer_profile` |
 
 #### `PATCH /users/:id`
 
@@ -763,8 +763,8 @@ Send only changed fields (password change uses `/auth/change-password`):
   "status": "active",
   "role_id": 2,
   "profiles": [
-    { "customer_profile_id": 4, "priority": 1 },
-    { "customer_profile_id": 2, "priority": 2 }
+    { "customer_profile_id": 4, "position": 1 },
+    { "customer_profile_id": 2, "position": 2 }
   ]
 }
 ```
@@ -772,8 +772,8 @@ Send only changed fields (password change uses `/auth/change-password`):
 `email`, `status` and `role_id` can only be changed by an administrator. `status`
 accepts `active`, `inactive` or `banned`; e-mail remains unique per franchise.
 Only an administrator may synchronize `profiles`. Sending the array replaces
-all current profile assignments for that user. Priority `1` is the highest and
-each user may use a priority value only once.
+all current profile assignments for that user. Position `1` is first and each
+user may use a position value only once.
 
 ---
 

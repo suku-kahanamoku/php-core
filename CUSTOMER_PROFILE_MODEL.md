@@ -6,6 +6,8 @@ pro tenanty Zoo a FAnn. Zdroj pravdy pro nové databáze je
 [`migrations/20260912_customer_profiles.sql`](migrations/20260912_customer_profiles.sql)
 a následné přejmenování vazeb provádí
 [`migrations/20260912_rename_customer_profile_relations.sql`](migrations/20260912_rename_customer_profile_relations.sql).
+Sloupec pořadí vazby sjednocuje
+[`migrations/20260913_user_customer_profile_position.sql`](migrations/20260913_user_customer_profile_position.sql).
 
 ## Diagram tabulek a vazeb
 
@@ -86,7 +88,7 @@ erDiagram
         VARCHAR_64 franchise_code
         INT_UNSIGNED user_id PK,FK
         INT_UNSIGNED customer_profile_id PK,FK
-        SMALLINT_UNSIGNED priority
+        SMALLINT_UNSIGNED position
         DATETIME created_at
         DATETIME updated_at "NULL"
     }
@@ -211,21 +213,21 @@ Smazání profilu smaže preference pomocí `ON DELETE CASCADE`.
 
 ### `user_customer_profile`
 
-Přiřazuje uživateli libovolný počet zákaznických profilů. Sloupec `priority`
-určuje jejich pořadí: `1` je nejvyšší priorita, vyšší čísla jsou další profily.
+Přiřazuje uživateli libovolný počet zákaznických profilů. Sloupec `position`
+určuje jejich pořadí: `1` je první, vyšší čísla jsou další profily.
 
 | Sloupec | Typ | NULL | Význam |
 |---|---|---:|---|
 | `franchise_code` | `VARCHAR(64)` | ne | Tenant vazby. |
 | `user_id` | `INT UNSIGNED` | ne | FK na `user.id`, část složeného PK. |
 | `customer_profile_id` | `INT UNSIGNED` | ne | FK na `customer_profile.id`, část složeného PK. |
-| `priority` | `SMALLINT UNSIGNED` | ne | Priorita profilu u uživatele, výchozí `1`. |
+| `position` | `SMALLINT UNSIGNED` | ne | Pořadí profilu u uživatele, výchozí `1`. |
 | `created_at` | `DATETIME` | ne | Čas vytvoření vazby. |
 | `updated_at` | `DATETIME` | ano | Čas poslední změny vazby. |
 
 Primární klíč je (`user_id`, `customer_profile_id`). Dvojice (`user_id`,
-`priority`) je také unikátní, takže jeden uživatel nemůže mít dvě vazby se
-stejnou prioritou. Smazání uživatele nebo profilu smaže vazbu pomocí
+`position`) je také unikátní, takže jeden uživatel nemůže mít dvě vazby se
+stejným pořadím. Smazání uživatele nebo profilu smaže vazbu pomocí
 `ON DELETE CASCADE`.
 
 ### `product_customer_profile_probability`
@@ -267,7 +269,7 @@ hlídají tenant-scoped repository dotazy před každým zápisem a čtením.
 
 Názvy databázových tabulek nejsou součástí veřejného API:
 
-- uživatel dostává pole `profiles`; každý profil obsahuje také `priority`,
+- uživatel dostává pole `profiles`; každý profil obsahuje také `position`,
 - produkt dostává pole `profile_probabilities` s položkami
   `customer_profile_id`, `probability_percent`, `is_target`, `syscode` a `name`,
 - definice profilů se spravují přes `/customer-profiles`,
@@ -278,8 +280,8 @@ Příklad přiřazení profilů uživateli:
 ```json
 {
   "profiles": [
-    { "customer_profile_id": 3, "priority": 1 },
-    { "customer_profile_id": 2, "priority": 2 }
+    { "customer_profile_id": 3, "position": 1 },
+    { "customer_profile_id": 2, "position": 2 }
   ]
 }
 ```

@@ -133,6 +133,7 @@ administrator and animal categories:
 mysql -u php_core -p php_core < migrations/zoo_seed.sql
 mysql -u php_core -p php_core < migrations/20260912_customer_profiles.sql
 mysql -u php_core -p php_core < migrations/20260912_rename_customer_profile_relations.sql
+mysql -u php_core -p php_core < migrations/20260913_user_customer_profile_position.sql
 ```
 
 The administrator is `admin@zoo.local` with password `admin`.
@@ -151,8 +152,9 @@ php-core/
 ├── migrations/
 │   ├── schema.sql                                      # destructive fresh schema + seed
 │   ├── 20260906_security_hardening.sql                # additive security migration
-│   ├── 20260912_customer_profiles.sql                 # normalized profile model
-│   └── 20260912_rename_customer_profile_relations.sql # final relation-table names
+│   ├── 20260912_customer_profiles.sql                  # normalized profile model
+│   ├── 20260912_rename_customer_profile_relations.sql  # final relation-table names
+│   └── 20260913_user_customer_profile_position.sql     # final assignment ordering column
 ├── pages/
 │   ├── db-schema.html     # Mermaid ER diagram
 │   ├── db-table.html      # HTML schema viewer with FK table
@@ -247,7 +249,7 @@ php tests/api_test.php http://myserver.com/api
 ### Customer profiles
 
 Profile definitions are stored in `customer_profile`. User assignments use the
-M:N table `user_customer_profile` with a numeric priority. Product suitability
+M:N table `user_customer_profile` with a numeric position. Product suitability
 uses `product_customer_profile_probability`; the API exposes those rows as the
 `profile_probabilities` field on a product.
 
@@ -377,14 +379,62 @@ DELETE /products/5?force=true  # hard delete
 
 ## Database schema
 
-Tables (19): `enumeration`, `role`, `user`, `address`, `user_token`, `category`, `product`, `product_category`, `product_file`, `text`, `order`, `order_item`, `invoice`, `invoice_item`, `invoice_file`, `file`, `oauth_identity`, `password_reset_token`, `api_rate_limit`
+The fresh schema contains 25 tables:
 
-- **`product_category`** — M:N pivot: products ↔ categories.
-- **`product_file`** — M:N pivot: products ↔ files.
-- **`invoice_file`** — M:N pivot: invoices ↔ files.
-- **`category.syscode`** — machine-readable identifier for filtering via `category_syscode` query param.
-- **`product.data`** — flexible JSON column. Filter via dot-notation: `q={"data.year":{"value":2022}}`.
-- **`order.customer`** — immutable JSON snapshot used by guest checkout.
-- **`file.user_id`** — owner of an uploaded/committed file.
-- **`oauth_identity`**, **`password_reset_token`**, **`api_rate_limit`** — identity binding and abuse protection.
-- **`deleted`** — soft-delete flag (`TINYINT(1) DEFAULT 0`) present on every entity table.
+`enumeration`, `customer_profile`, `customer_profile_question`,
+`customer_profile_objection`, `customer_profile_preference`, `role`, `user`,
+`user_customer_profile`, `address`, `user_token`, `category`, `product`,
+`product_customer_profile_probability`, `product_category`, `product_file`,
+`text`, `order`, `order_item`, `invoice`, `invoice_item`, `invoice_file`, `file`,
+`oauth_identity`, `password_reset_token`, and `api_rate_limit`.
+
+### Foreign-key relationships
+
+| Source | Column | Target | Cardinality | On parent delete |
+|---|---|---|---|---|
+| `user` | `role_id` | `role.id` | N:1 | `RESTRICT` |
+| `customer_profile_question` | `customer_profile_id` | `customer_profile.id` | N:1 | `CASCADE` |
+| `customer_profile_objection` | `customer_profile_id` | `customer_profile.id` | N:1 | `CASCADE` |
+| `customer_profile_preference` | `customer_profile_id` | `customer_profile.id` | N:1 | `CASCADE` |
+| `user_customer_profile` | `user_id` | `user.id` | N:1, part of user/profile M:N | `CASCADE` |
+| `user_customer_profile` | `customer_profile_id` | `customer_profile.id` | N:1, part of user/profile M:N | `CASCADE` |
+| `address` | `user_id` | `user.id` | N:1 | `CASCADE` |
+| `user_token` | `user_id` | `user.id` | N:1 | `CASCADE` |
+| `category` | `parent_id` | `category.id` | tree/self-reference | `SET NULL` |
+| `product_customer_profile_probability` | `product_id` | `product.id` | N:1, part of product/profile M:N | `CASCADE` |
+| `product_customer_profile_probability` | `customer_profile_id` | `customer_profile.id` | N:1, part of product/profile M:N | `CASCADE` |
+| `product_category` | `product_id` | `product.id` | N:1, part of product/category M:N | `CASCADE` |
+| `product_category` | `category_id` | `category.id` | N:1, part of product/category M:N | `CASCADE` |
+| `product_file` | `product_id` | `product.id` | N:1, part of product/file M:N | `CASCADE` |
+| `product_file` | `file_id` | `file.id` | N:1, part of product/file M:N | `CASCADE` |
+| `order` | `user_id` | `user.id` | N:1, optional | `SET NULL` |
+| `order` | `shipping_address_id` | `address.id` | N:1, optional | `SET NULL` |
+| `order` | `billing_address_id` | `address.id` | N:1, optional | `SET NULL` |
+| `order_item` | `order_id` | `order.id` | N:1 | `CASCADE` |
+| `order_item` | `product_id` | `product.id` | N:1, optional snapshot source | `SET NULL` |
+| `invoice` | `order_id` | `order.id` | N:1, optional | `SET NULL` |
+| `invoice_item` | `invoice_id` | `invoice.id` | N:1 | `CASCADE` |
+| `invoice_file` | `invoice_id` | `invoice.id` | N:1, part of invoice/file M:N | `CASCADE` |
+| `invoice_file` | `file_id` | `file.id` | N:1, part of invoice/file M:N | `CASCADE` |
+| `oauth_identity` | `user_id` | `user.id` | N:1 | `CASCADE` |
+| `password_reset_token` | `user_id` | `user.id` | N:1 | `CASCADE` |
+
+`file.user_id` is a tenant-checked logical owner reference. It is indexed but
+does not currently have a database foreign-key constraint. `franchise_code`
+scopes entity and relation rows to a tenant; repositories validate tenant
+agreement when writing cross-table relationships.
+
+### Important columns and models
+
+- **`user_customer_profile.position`** orders multiple customer profiles for one user; `1` is first and (`user_id`, `position`) is unique.
+- **`product_customer_profile_probability`** stores `probability_percent` and `is_target` for a product/profile pair.
+- **`product_category`**, **`product_file`**, and **`invoice_file`** are M:N junction tables.
+- **`category.syscode`** is the machine-readable identifier used by the `category_syscode` filter.
+- **`product.data`** stores project-specific JSON attributes and supports dot-notation filters such as `q={"data.year":{"value":2022}}`.
+- **`order.customer`** is the immutable guest customer and address snapshot.
+- **`oauth_identity`**, **`password_reset_token`**, and **`api_rate_limit`** support authentication and abuse prevention.
+- **`deleted`** is the soft-delete flag on entity tables that support soft deletion; junction and cascade-owned child tables do not all contain it.
+
+The profile-focused diagram with every related table column is in
+[`CUSTOMER_PROFILE_MODEL.md`](CUSTOMER_PROFILE_MODEL.md). The complete executable
+schema remains [`migrations/schema.sql`](migrations/schema.sql).

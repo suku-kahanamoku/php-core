@@ -67,11 +67,11 @@ CREATE TABLE IF NOT EXISTS `user_customer_profile` (
   `franchise_code` VARCHAR(64) NOT NULL,
   `user_id` INT UNSIGNED NOT NULL,
   `customer_profile_id` INT UNSIGNED NOT NULL,
-  `priority` SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+  `position` SMALLINT UNSIGNED NOT NULL DEFAULT 1,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`user_id`,`customer_profile_id`),
-  UNIQUE KEY `uq_user_customer_profile_priority` (`user_id`,`priority`),
+  UNIQUE KEY `uq_user_customer_profile_position` (`user_id`,`position`),
   KEY `idx_user_customer_profile_tenant` (`franchise_code`),
   KEY `idx_user_customer_profile_profile` (`customer_profile_id`),
   CONSTRAINT `fk_user_customer_profile_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE,
@@ -142,9 +142,9 @@ SET @sql = IF(@has_user_profile > 0 AND @has_user_client_type > 0,
   'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
--- Copy the legacy one-profile user assignment as priority 1.
+-- Copy the legacy one-profile user assignment as position 1.
 SET @sql = IF(@has_user_client_type > 0,
-  'INSERT INTO user_customer_profile (franchise_code,user_id,customer_profile_id,priority) SELECT u.franchise_code,u.id,cp.id,1 FROM user u JOIN enumeration e ON e.id=u.client_type_id AND e.franchise_code=u.franchise_code AND e.type=''client_type'' JOIN customer_profile cp ON cp.franchise_code=u.franchise_code AND cp.syscode=e.syscode WHERE u.client_type_id IS NOT NULL ON DUPLICATE KEY UPDATE priority=VALUES(priority)',
+  'INSERT INTO user_customer_profile (franchise_code,user_id,customer_profile_id,position) SELECT u.franchise_code,u.id,cp.id,1 FROM user u JOIN enumeration e ON e.id=u.client_type_id AND e.franchise_code=u.franchise_code AND e.type=''client_type'' JOIN customer_profile cp ON cp.franchise_code=u.franchise_code AND cp.syscode=e.syscode WHERE u.client_type_id IS NOT NULL ON DUPLICATE KEY UPDATE position=VALUES(position)',
   'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
