@@ -11,6 +11,7 @@ DROP TABLE IF EXISTS `invoice_file`;
 DROP TABLE IF EXISTS `invoice`;
 DROP TABLE IF EXISTS `order_item`;
 DROP TABLE IF EXISTS `order`;
+DROP TABLE IF EXISTS `product_alternative`;
 DROP TABLE IF EXISTS `product_customer_profile_probability`;
 DROP TABLE IF EXISTS `user_customer_profile`;
 DROP TABLE IF EXISTS `customer_profile_preference`;
@@ -257,7 +258,6 @@ CREATE TABLE `product_customer_profile_probability` (
     `product_id` INT UNSIGNED NOT NULL,
     `customer_profile_id` INT UNSIGNED NOT NULL,
     `probability_percent` TINYINT UNSIGNED NOT NULL DEFAULT 0,
-    `is_target` TINYINT(1) NOT NULL DEFAULT 0,
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`product_id`,`customer_profile_id`),
@@ -266,6 +266,22 @@ CREATE TABLE `product_customer_profile_probability` (
     CONSTRAINT `fk_product_customer_profile_product` FOREIGN KEY (`product_id`) REFERENCES `product` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_product_customer_profile_profile` FOREIGN KEY (`customer_profile_id`) REFERENCES `customer_profile` (`id`) ON DELETE CASCADE,
     CONSTRAINT `chk_product_customer_profile_probability` CHECK (`probability_percent` BETWEEN 0 AND 100)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `product_alternative` (
+    `franchise_code` VARCHAR(64) NOT NULL,
+    `product_id` INT UNSIGNED NOT NULL,
+    `alternative_product_id` INT UNSIGNED NOT NULL,
+    `position` SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`product_id`, `alternative_product_id`),
+    UNIQUE KEY `uq_product_alternative_position` (`product_id`, `position`),
+    KEY `idx_product_alternative_tenant` (`franchise_code`),
+    KEY `idx_product_alternative_product` (`alternative_product_id`),
+    CONSTRAINT `fk_product_alternative_source` FOREIGN KEY (`product_id`) REFERENCES `product` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_product_alternative_target` FOREIGN KEY (`alternative_product_id`) REFERENCES `product` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `chk_product_alternative_different` CHECK (`product_id` <> `alternative_product_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── product_category (M:N pivot) ──────────────────────────

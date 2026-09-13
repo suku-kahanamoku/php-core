@@ -20,6 +20,7 @@ class ProductService extends BaseService
         'price', 'stock_quantity', 'published', 'kind', 'color', 'variant',
         'data', 'vat_rate', 'price_with_vat', 'categories', 'files',
         'category_ids', 'file_ids', 'profile_probabilities',
+        'alternatives',
     ];
     private const PUBLIC_FILTERS = [
         'id', 'sku', 'name', 'price', 'stock_quantity', 'kind', 'color',
@@ -196,6 +197,8 @@ class ProductService extends BaseService
             )
         );
         $this->_validateRelations($categoryIds, $fileIds);
+        $alternatives = $this->_normalizeAlternatives($input['alternatives'] ?? []);
+        $this->_validateAlternatives($alternatives);
 
         $created = $this->_product->create([
             'sku'            => $sku,
@@ -221,6 +224,9 @@ class ProductService extends BaseService
         }
         if ($fileIds) {
             $this->_product->syncFiles($id, $fileIds);
+        }
+        if ($alternatives) {
+            $this->_product->syncAlternatives($id, $alternatives);
         }
         if (is_array($input['profile_probabilities'] ?? null)) {
             $this->_product->syncProfileProbabilities($id, $input['profile_probabilities']);
@@ -295,6 +301,12 @@ class ProductService extends BaseService
             $this->_product->syncProfileProbabilities($id, $input['profile_probabilities']);
         }
 
+        if (array_key_exists('alternatives', $input) && is_array($input['alternatives'])) {
+            $alternatives = $this->_normalizeAlternatives($input['alternatives']);
+            $this->_validateAlternatives($alternatives, $id);
+            $this->_product->syncAlternatives($id, $alternatives);
+        }
+
         if (array_key_exists('data', $input)) {
             if (is_array($input['data']) && !empty($input['data'])) {
                 $existing = $this->_product->findById($id);
@@ -342,6 +354,8 @@ class ProductService extends BaseService
             )
         );
         $this->_validateRelations($categoryIds, $fileIds);
+        $alternatives = $this->_normalizeAlternatives($input['alternatives'] ?? []);
+        $this->_validateAlternatives($alternatives, $id);
 
         $this->_product->update($id, [
             'name'           => $name,
@@ -364,6 +378,7 @@ class ProductService extends BaseService
 
         $this->_product->syncCategories($id, $categoryIds);
         $this->_product->syncFiles($id, $fileIds);
+        $this->_product->syncAlternatives($id, $alternatives);
         $this->_product->syncProfileProbabilities(
             $id,
             is_array($input['profile_probabilities'] ?? null) ? $input['profile_probabilities'] : [],
@@ -438,6 +453,50 @@ class ProductService extends BaseService
         foreach (array_unique($fileIds) as $fileId) {
             if (!$this->_file->findById((int) $fileId)) {
                 Response::error('Invalid file ID.', 422);
+            }
+        }
+    }
+
+    /** @return list<array{alternative_product_id:int,position:int}> */
+    private function _normalizeAlternatives(mixed $values): array
+    {
+        if (!is_array($values)) {
+            return [];
+        }
+        $result = [];
+        $seen = [];
+        foreach ($values as $index => $value) {
+            if (!is_array($value)) {
+                continue;
+            }
+            $alternativeProductId = (int) ($value['alternative_product_id'] ?? 0);
+            if ($alternativeProductId <= 0 || isset($seen[$alternativeProductId])) {
+                continue;
+            }
+            $seen[$alternativeProductId] = true;
+            $result[] = [
+                'alternative_product_id' => $alternativeProductId,
+                'position' => max(1, (int) ($value['position'] ?? ($index + 1))),
+            ];
+        }
+        usort($result, static fn(array $a, array $b): int => $a['position'] <=> $b['position']);
+        foreach ($result as $index => &$alternative) {
+            $alternative['position'] = $index + 1;
+        }
+        unset($alternative);
+        return $result;
+    }
+
+    /** @param list<array{alternative_product_id:int,position:int}> $alternatives */
+    private function _validateAlternatives(array $alternatives, ?int $productId = null): void
+    {
+        foreach ($alternatives as $alternative) {
+            $alternativeProductId = $alternative['alternative_product_id'];
+            if ($productId !== null && $alternativeProductId === $productId) {
+                Response::error('A product cannot be its own alternative.', 422);
+            }
+            if (!$this->_product->findById($alternativeProductId, ['id'])) {
+                Response::error('Invalid alternative product ID.', 422);
             }
         }
     }

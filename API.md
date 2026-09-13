@@ -1027,9 +1027,17 @@ GET /categories?sort=[{"position":1},{"name":1}]&q={"parent_id":{"operator":"nul
     {
       "customer_profile_id": 4,
       "probability_percent": 85,
-      "is_target": 1,
       "syscode": "gift_buyer",
       "name": "Kupující dárek"
+    }
+  ],
+  "alternatives": [
+    {
+      "alternative_product_id": 12,
+      "position": 1,
+      "sku": "TSH-003",
+      "name": "Alternative Tee",
+      "price": 449
     }
   ],
   "created_at": "2026-01-15T08:00:00",
@@ -1051,6 +1059,7 @@ GET /categories?sort=[{"position":1},{"name":1}]&q={"parent_id":{"operator":"nul
 | `category_ids`   | integer[]      | IDs of all assigned categories (M:N)                      |
 | `file_ids`       | integer[]      | IDs of attached files (M:N via `product_file`)            |
 | `profile_probabilities` | object[] | Profile suitability stored via `product_customer_profile_probability` |
+| `alternatives` | object[] | Ordered rows containing `alternative_product_id`, `position`, and linked product data |
 
 #### `GET /products`
 
@@ -1092,9 +1101,12 @@ GET /products?q={"published":{"value":1},"data.year":{"value":2022},"color":{"va
   "profile_probabilities": [
     {
       "customer_profile_id": 4,
-      "probability_percent": 85,
-      "is_target": 1
+      "probability_percent": 85
     }
+  ],
+  "alternatives": [
+    { "alternative_product_id": 12, "position": 1 },
+    { "alternative_product_id": 13, "position": 2 }
   ]
 }
 ```
@@ -1113,7 +1125,8 @@ GET /products?q={"published":{"value":1},"data.year":{"value":2022},"color":{"va
 | `data`         | —        | Flexible JSON object — any project-defined key/value pairs      |
 | `category_ids` | —        | Array of category IDs (M:N)                                     |
 | `file_ids`     | —        | Array of file IDs to attach (M:N via `product_file`)            |
-| `profile_probabilities` | — | Array of `{customer_profile_id, probability_percent, is_target}`; probability is clamped to 0–100 |
+| `profile_probabilities` | — | Array of `{customer_profile_id, probability_percent}`; probability is clamped to 0–100 |
+| `alternatives` | — | Array of `{alternative_product_id, position}` rows; IDs are tenant-validated and cannot reference the product itself |
 
 #### `PATCH /products/:id`
 
@@ -1130,6 +1143,10 @@ To clear all JSON data, send `"data": null`.
 
 When `profile_probabilities` is supplied, it replaces all current
 profile-probability rows for the product. Omitting it leaves them unchanged.
+
+When `alternatives` is supplied, it replaces the ordered alternative rows for
+the product. Each row contains `alternative_product_id` and `position`.
+Omitting it leaves the current alternatives unchanged.
 
 #### `PUT /products/:id`
 

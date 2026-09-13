@@ -83,7 +83,6 @@ CREATE TABLE IF NOT EXISTS `product_customer_profile_probability` (
   `product_id` INT UNSIGNED NOT NULL,
   `customer_profile_id` INT UNSIGNED NOT NULL,
   `probability_percent` TINYINT UNSIGNED NOT NULL DEFAULT 0,
-  `is_target` TINYINT(1) NOT NULL DEFAULT 0,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`product_id`,`customer_profile_id`),
@@ -150,31 +149,30 @@ PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- FAnn probabilities, one row for every product/profile pair in the JSON map.
 INSERT INTO `product_customer_profile_probability`
-  (`franchise_code`,`product_id`,`customer_profile_id`,`probability_percent`,`is_target`)
+  (`franchise_code`,`product_id`,`customer_profile_id`,`probability_percent`)
 SELECT p.`franchise_code`, p.`id`, cp.`id`,
-       LEAST(100, GREATEST(0, CAST(JSON_UNQUOTE(JSON_EXTRACT(p.`data`, CONCAT('$.purchase_probability.', jt.`syscode`))) AS UNSIGNED))),
-       IF(JSON_CONTAINS(COALESCE(JSON_EXTRACT(p.`data`, '$.target_segments'), JSON_ARRAY()), JSON_QUOTE(jt.`syscode`)), 1, 0)
+       LEAST(100, GREATEST(0, CAST(JSON_UNQUOTE(JSON_EXTRACT(p.`data`, CONCAT('$.purchase_probability.', jt.`syscode`))) AS UNSIGNED)))
 FROM `product` p
 JOIN JSON_TABLE(JSON_KEYS(COALESCE(JSON_EXTRACT(p.`data`, '$.purchase_probability'), JSON_OBJECT())), '$[*]'
   COLUMNS (`syscode` VARCHAR(64) PATH '$')) jt
 JOIN `customer_profile` cp ON cp.`franchise_code`=p.`franchise_code` AND cp.`syscode`=jt.`syscode` COLLATE utf8mb4_unicode_ci
 WHERE 1
-ON DUPLICATE KEY UPDATE `probability_percent`=VALUES(`probability_percent`), `is_target`=VALUES(`is_target`);
+ON DUPLICATE KEY UPDATE `probability_percent`=VALUES(`probability_percent`);
 
 -- Zoo target segments and recommended SKU lists have no numeric probability.
 -- A target is represented by 100 %, which keeps the relation explicit and editable.
 INSERT INTO `product_customer_profile_probability`
-  (`franchise_code`,`product_id`,`customer_profile_id`,`probability_percent`,`is_target`)
-SELECT p.`franchise_code`, p.`id`, cp.`id`, 100, 1
+  (`franchise_code`,`product_id`,`customer_profile_id`,`probability_percent`)
+SELECT p.`franchise_code`, p.`id`, cp.`id`, 100
 FROM `product` p
 JOIN JSON_TABLE(COALESCE(JSON_EXTRACT(p.`data`, '$.target_segments'), JSON_ARRAY()), '$[*]'
   COLUMNS (`syscode` VARCHAR(64) PATH '$')) jt
 JOIN `customer_profile` cp ON cp.`franchise_code`=p.`franchise_code` AND cp.`syscode`=jt.`syscode` COLLATE utf8mb4_unicode_ci
 WHERE NOT JSON_CONTAINS_PATH(p.`data`, 'one', '$.purchase_probability')
-ON DUPLICATE KEY UPDATE `probability_percent`=VALUES(`probability_percent`), `is_target`=1;
+ON DUPLICATE KEY UPDATE `probability_percent`=VALUES(`probability_percent`);
 
 SET @sql = IF(@has_user_profile > 0 AND @has_user_client_type > 0,
-  'INSERT INTO product_customer_profile_probability (franchise_code,product_id,customer_profile_id,probability_percent,is_target) SELECT p.franchise_code,p.id,cp.id,100,1 FROM user u JOIN enumeration e ON e.id=u.client_type_id JOIN customer_profile cp ON cp.franchise_code=u.franchise_code AND cp.syscode=e.syscode JOIN JSON_TABLE(COALESCE(JSON_EXTRACT(u.profile,''$.recommended_product_skus''),JSON_ARRAY()),''$[*]'' COLUMNS(sku VARCHAR(64) PATH ''$'')) jt JOIN product p ON p.franchise_code=u.franchise_code AND p.sku=jt.sku COLLATE utf8mb4_unicode_ci WHERE u.profile IS NOT NULL ON DUPLICATE KEY UPDATE probability_percent=GREATEST(probability_percent,100),is_target=1',
+  'INSERT INTO product_customer_profile_probability (franchise_code,product_id,customer_profile_id,probability_percent) SELECT p.franchise_code,p.id,cp.id,100 FROM user u JOIN enumeration e ON e.id=u.client_type_id JOIN customer_profile cp ON cp.franchise_code=u.franchise_code AND cp.syscode=e.syscode JOIN JSON_TABLE(COALESCE(JSON_EXTRACT(u.profile,''$.recommended_product_skus''),JSON_ARRAY()),''$[*]'' COLUMNS(sku VARCHAR(64) PATH ''$'')) jt JOIN product p ON p.franchise_code=u.franchise_code AND p.sku=jt.sku COLLATE utf8mb4_unicode_ci WHERE u.profile IS NOT NULL ON DUPLICATE KEY UPDATE probability_percent=GREATEST(probability_percent,100)',
   'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 

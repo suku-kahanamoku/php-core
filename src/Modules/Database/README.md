@@ -14,3 +14,5 @@ Notes:
 - Existing databases run `20260912_customer_profiles.sql`, `20260912_rename_customer_profile_relations.sql`, and then the idempotent `20260913_user_customer_profile_position.sql`; never substitute `schema.sql` for these production migrations.
 - FAnn databases then run `20260913_fun_product_categories.sql` to create catalogue categories, fill `product_category`, and clear the tenant's legacy `product.kind` values.
 - Zoo databases run `20260913_zoo_product_categories.sql` to convert the tenant's product-kind classification while preserving existing animal-category links.
+- All existing databases then run `20260913_remove_product_profile_is_target.sql`; purchase probability becomes the only product/profile suitability value.
+- FAnn databases run `20260913_product_alternatives.sql` to create ordered product-to-product alternatives and convert 27 known legacy names; unmatched free text is preserved.

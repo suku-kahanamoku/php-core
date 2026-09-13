@@ -147,7 +147,15 @@ erDiagram
         INT_UNSIGNED product_id PK,FK
         INT_UNSIGNED customer_profile_id PK,FK
         TINYINT_UNSIGNED probability_percent
-        TINYINT is_target
+        DATETIME created_at
+        DATETIME updated_at "NULL"
+    }
+
+    PRODUCT_ALTERNATIVE {
+        VARCHAR_64 franchise_code
+        INT_UNSIGNED product_id PK,FK
+        INT_UNSIGNED alternative_product_id PK,FK
+        SMALLINT_UNSIGNED position
         DATETIME created_at
         DATETIME updated_at "NULL"
     }
@@ -160,12 +168,17 @@ erDiagram
     CUSTOMER_PROFILE ||--o{ CUSTOMER_PROFILE_PREFERENCE : "obsahuje preference"
     PRODUCT ||--o{ PRODUCT_CUSTOMER_PROFILE_PROBABILITY : "má pravděpodobnosti"
     CUSTOMER_PROFILE ||--o{ PRODUCT_CUSTOMER_PROFILE_PROBABILITY : "hodnotí produkty"
+    PRODUCT ||--o{ PRODUCT_ALTERNATIVE : "má seřazené alternativy"
+    PRODUCT ||--o{ PRODUCT_ALTERNATIVE : "je alternativou"
 ```
 
 `USER_CUSTOMER_PROFILE` vytváří vztah M:N mezi uživatelem a profilem.
 `PRODUCT_CUSTOMER_PROFILE_PROBABILITY` vytváří vztah M:N mezi produktem a
-profilem a k vazbě přidává procentuální pravděpodobnost a příznak cílového
-produktu.
+profilem a k vazbě přidává jedinou procentuální pravděpodobnost nákupu.
+Produkty od 30 % aplikace zobrazují jako pravděpodobné a řadí je sestupně.
+
+`PRODUCT_ALTERNATIVE` je směrová M:N vazba produktu na jiné existující produkty.
+`position` určuje pořadí alternativ; shodu tenantů kontroluje API před zápisem.
 
 ### Tabulky a sloupce
 
@@ -270,14 +283,31 @@ Popisuje vhodnost produktu pro konkrétní profil zákazníka.
 | `franchise_code` | `VARCHAR(64)` | ne | Tenant vazby. |
 | `product_id` | `INT UNSIGNED` | ne | FK na `product.id`, část složeného PK. |
 | `customer_profile_id` | `INT UNSIGNED` | ne | FK na `customer_profile.id`, část složeného PK. |
-| `probability_percent` | `TINYINT UNSIGNED` | ne | Pravděpodobnost nákupu od `0` do `100`, výchozí `0`. |
-| `is_target` | `TINYINT(1)` | ne | `1`, pokud jde o cílový profil produktu. |
+| `probability_percent` | `TINYINT UNSIGNED` | ne | Pravděpodobnost nákupu od `0` do `100`, výchozí `0`. Hodnota alespoň `30` označuje pravděpodobný produkt. |
 | `created_at` | `DATETIME` | ne | Čas vytvoření vazby. |
 | `updated_at` | `DATETIME` | ano | Čas poslední změny vazby. |
 
 Primární klíč je (`product_id`, `customer_profile_id`). Databázový CHECK hlídá
 rozsah `probability_percent` 0–100. Smazání produktu nebo profilu smaže vazbu
 pomocí `ON DELETE CASCADE`.
+
+#### `product_alternative`
+
+Ukládá seřazené alternativní produkty jako směrovou vazbu produktu na produkt.
+
+| Sloupec | Typ | NULL | Význam |
+|---|---|---:|---|
+| `franchise_code` | `VARCHAR(64)` | ne | Tenant vazby. |
+| `product_id` | `INT UNSIGNED` | ne | Zdrojový produkt, část složeného PK. |
+| `alternative_product_id` | `INT UNSIGNED` | ne | Alternativní produkt, část složeného PK. |
+| `position` | `SMALLINT UNSIGNED` | ne | Pořadí alternativy u produktu, výchozí `1`. |
+| `created_at` | `DATETIME` | ne | Čas vytvoření vazby. |
+| `updated_at` | `DATETIME` | ano | Čas poslední změny vazby. |
+
+Primární klíč je (`product_id`, `alternative_product_id`) a dvojice
+(`product_id`, `position`) je unikátní. Oba produktové cizí klíče používají
+`ON DELETE CASCADE`; databázový CHECK zakazuje, aby byl produkt vlastní
+alternativou.
 
 #### Související tabulky `role`, `user` a `product`
 
@@ -302,7 +332,7 @@ Názvy databázových tabulek nejsou součástí veřejného API:
 
 - uživatel dostává pole `profiles`; každý profil obsahuje také `position`,
 - produkt dostává pole `profile_probabilities` s položkami
-  `customer_profile_id`, `probability_percent`, `is_target`, `syscode` a `name`,
+  `customer_profile_id`, `probability_percent`, `syscode` a `name`,
 - definice profilů se spravují přes `/customer-profiles`,
 - `franchise_code` určuje tenant a klient jej neposílá jako editovatelné pole.
 
@@ -324,8 +354,7 @@ Příklad pravděpodobností produktu:
   "profile_probabilities": [
     {
       "customer_profile_id": 3,
-      "probability_percent": 85,
-      "is_target": 1
+      "probability_percent": 85
     }
   ]
 }

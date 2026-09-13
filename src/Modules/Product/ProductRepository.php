@@ -36,7 +36,7 @@ class ProductRepository extends BaseRepository
             'variant',
             'data',
         ];
-        $this->_rel = ['categories', 'files', 'profile_probabilities'];
+        $this->_rel = ['categories', 'files', 'profile_probabilities', 'alternatives'];
         $this->_jsonCols = ['data'];
     }
 
@@ -224,6 +224,9 @@ class ProductRepository extends BaseRepository
         if ($proj->needsJoin('profile_probabilities')) {
             $this->attachProfileProbabilities($items);
         }
+        if ($proj->needsJoin('alternatives')) {
+            $this->attachAlternatives($items);
+        }
 
         return $this->_resultList($items, $total, $page, $limit);
     }
@@ -295,6 +298,11 @@ class ProductRepository extends BaseRepository
             $this->attachProfileProbabilities($rows);
             $row = $rows[0];
         }
+        if ($proj->needsJoin('alternatives')) {
+            $rows = [$row];
+            $this->attachAlternatives($rows);
+            $row = $rows[0];
+        }
 
         $vatSys = array_merge($sys, ['vat_rate', 'price_with_vat']);
         return $proj->apply($row, $vatSys, [
@@ -341,6 +349,20 @@ class ProductRepository extends BaseRepository
         }
     }
 
+    /** @param list<array{alternative_product_id:int,position:int}> $alternatives */
+    public function syncAlternatives(int $productId, array $alternatives): void
+    {
+        $this->_db->delete('product_alternative', 'product_id = ? AND franchise_code = ?', [$productId, $this->_code]);
+        foreach ($alternatives as $alternative) {
+            $this->_db->insert('product_alternative', [
+                'franchise_code' => $this->_code,
+                'product_id' => $productId,
+                'alternative_product_id' => $alternative['alternative_product_id'],
+                'position' => $alternative['position'],
+            ]);
+        }
+    }
+
     public function syncProfileProbabilities(int $productId, array $values): void
     {
         $this->_db->delete('product_customer_profile_probability', 'product_id = ? AND franchise_code = ?', [$productId, $this->_code]);
@@ -361,7 +383,6 @@ class ProductRepository extends BaseRepository
                 'product_id' => $productId,
                 'customer_profile_id' => $profileId,
                 'probability_percent' => min(100, max(0, (int) ($value['probability_percent'] ?? 0))),
-                'is_target' => !empty($value['is_target']) ? 1 : 0,
             ]);
         }
     }
@@ -375,7 +396,7 @@ class ProductRepository extends BaseRepository
         $marks = implode(',', array_fill(0, count($ids), '?'));
         $rows = $this->_db->fetchAll(
             "SELECT ppp.product_id, ppp.customer_profile_id, ppp.probability_percent,
-                    ppp.is_target, cp.syscode, cp.name
+                    cp.syscode, cp.name
              FROM product_customer_profile_probability ppp
              JOIN customer_profile cp ON cp.id = ppp.customer_profile_id
                 AND cp.franchise_code = ppp.franchise_code AND cp.deleted = 0
@@ -389,11 +410,48 @@ class ProductRepository extends BaseRepository
             unset($row['product_id']);
             $row['customer_profile_id'] = (int) $row['customer_profile_id'];
             $row['probability_percent'] = (int) $row['probability_percent'];
-            $row['is_target'] = (int) $row['is_target'];
             $map[$productId][] = $row;
         }
         foreach ($products as &$product) {
             $product['profile_probabilities'] = $map[(int) $product['id']] ?? [];
+        }
+        unset($product);
+    }
+
+    private function attachAlternatives(array &$products): void
+    {
+        if (!$products) {
+            return;
+        }
+        $ids = array_map('intval', array_column($products, 'id'));
+        $marks = implode(',', array_fill(0, count($ids), '?'));
+        $rows = $this->_db->fetchAll(
+            "SELECT pa.product_id, pa.alternative_product_id, pa.position, alternative.sku,
+                    alternative.name, alternative.description, alternative.price,
+                    alternative.stock_quantity, alternative.published, alternative.data
+             FROM product_alternative pa
+             JOIN product alternative ON alternative.id = pa.alternative_product_id
+                AND alternative.franchise_code = pa.franchise_code
+                AND alternative.deleted = 0
+             WHERE pa.franchise_code = ? AND pa.product_id IN ({$marks})
+             ORDER BY pa.product_id, pa.position, alternative.id",
+            [$this->_code, ...$ids],
+        );
+        $map = [];
+        foreach ($rows as $row) {
+            $productId = (int) $row['product_id'];
+            unset($row['product_id']);
+            $row['alternative_product_id'] = (int) $row['alternative_product_id'];
+            $row['position'] = (int) $row['position'];
+            $row['price'] = (float) $row['price'];
+            $row['stock_quantity'] = (int) $row['stock_quantity'];
+            $row['published'] = (int) $row['published'];
+            $row['data'] = $row['data'] ? json_decode($row['data'], true) : null;
+            $map[$productId][] = $row;
+        }
+        foreach ($products as &$product) {
+            $alternatives = $map[(int) $product['id']] ?? [];
+            $product['alternatives'] = $alternatives;
         }
         unset($product);
     }

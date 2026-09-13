@@ -135,6 +135,7 @@ mysql -u php_core -p php_core < migrations/20260912_customer_profiles.sql
 mysql -u php_core -p php_core < migrations/20260912_rename_customer_profile_relations.sql
 mysql -u php_core -p php_core < migrations/20260913_user_customer_profile_position.sql
 mysql -u php_core -p php_core < migrations/20260913_zoo_product_categories.sql
+mysql -u php_core -p php_core < migrations/20260913_remove_product_profile_is_target.sql
 ```
 
 The administrator is `admin@zoo.local` with password `admin`.
@@ -154,6 +155,8 @@ mysql -u php_core -p php_core < migrations/20260912_customer_profiles.sql
 mysql -u php_core -p php_core < migrations/20260912_rename_customer_profile_relations.sql
 mysql -u php_core -p php_core < migrations/20260913_user_customer_profile_position.sql
 mysql -u php_core -p php_core < migrations/20260913_fun_product_categories.sql
+mysql -u php_core -p php_core < migrations/20260913_remove_product_profile_is_target.sql
+mysql -u php_core -p php_core < migrations/20260913_product_alternatives.sql
 ```
 
 The administrator is `admin@fann.cz` with password `admin`.
@@ -176,7 +179,9 @@ php-core/
 │   ├── 20260912_rename_customer_profile_relations.sql  # final relation-table names
 │   ├── 20260913_user_customer_profile_position.sql     # final assignment ordering column
 │   ├── 20260913_fun_product_categories.sql             # FAnn product category conversion
-│   └── 20260913_zoo_product_categories.sql             # Zoo product category conversion
+│   ├── 20260913_zoo_product_categories.sql             # Zoo product category conversion
+│   ├── 20260913_remove_product_profile_is_target.sql   # probability-only product/profile relation
+│   └── 20260913_product_alternatives.sql               # ordered FAnn product alternatives
 ├── pages/
 │   ├── db-schema.html     # Mermaid ER diagram
 │   ├── db-table.html      # HTML schema viewer with FK table
@@ -401,12 +406,12 @@ DELETE /products/5?force=true  # hard delete
 
 ## Database schema
 
-The fresh schema contains 25 tables:
+The fresh schema contains 26 tables:
 
 `enumeration`, `customer_profile`, `customer_profile_question`,
 `customer_profile_objection`, `customer_profile_preference`, `role`, `user`,
 `user_customer_profile`, `address`, `user_token`, `category`, `product`,
-`product_customer_profile_probability`, `product_category`, `product_file`,
+`product_customer_profile_probability`, `product_alternative`, `product_category`, `product_file`,
 `text`, `order`, `order_item`, `invoice`, `invoice_item`, `invoice_file`, `file`,
 `oauth_identity`, `password_reset_token`, and `api_rate_limit`.
 
@@ -425,6 +430,8 @@ The fresh schema contains 25 tables:
 | `category` | `parent_id` | `category.id` | tree/self-reference | `SET NULL` |
 | `product_customer_profile_probability` | `product_id` | `product.id` | N:1, part of product/profile M:N | `CASCADE` |
 | `product_customer_profile_probability` | `customer_profile_id` | `customer_profile.id` | N:1, part of product/profile M:N | `CASCADE` |
+| `product_alternative` | `product_id` | `product.id` | N:1, source product | `CASCADE` |
+| `product_alternative` | `alternative_product_id` | `product.id` | N:1, alternative product | `CASCADE` |
 | `product_category` | `product_id` | `product.id` | N:1, part of product/category M:N | `CASCADE` |
 | `product_category` | `category_id` | `category.id` | N:1, part of product/category M:N | `CASCADE` |
 | `product_file` | `product_id` | `product.id` | N:1, part of product/file M:N | `CASCADE` |
@@ -449,7 +456,8 @@ agreement when writing cross-table relationships.
 ### Important columns and models
 
 - **`user_customer_profile.position`** orders multiple customer profiles for one user; `1` is first and (`user_id`, `position`) is unique.
-- **`product_customer_profile_probability`** stores `probability_percent` and `is_target` for a product/profile pair.
+- **`product_customer_profile_probability`** stores the single `probability_percent` value for a product/profile pair; applications treat values from 30 % as likely products.
+- **`product_alternative`** stores directed, ordered links between existing products; (`product_id`, `position`) is unique and self-links are forbidden.
 - **`product_category`**, **`product_file`**, and **`invoice_file`** are M:N junction tables.
 - **`category.syscode`** is the machine-readable identifier used by the `category_syscode` filter.
 - **`product.data`** stores project-specific JSON attributes and supports dot-notation filters such as `q={"data.year":{"value":2022}}`.
