@@ -141,6 +141,22 @@ The administrator is `admin@zoo.local` with password `admin`.
 The complete customer-profile schema, columns, keys, and Mermaid relationship
 diagram are documented in [`src/Modules/CustomerProfile/README.md`](src/Modules/CustomerProfile/README.md).
 
+### FAnn CRM tenant
+
+The companion application in `nuxt/fan` uses the `fun` tenant. Seed its initial
+catalogue and then convert the legacy FAnn product classification to category
+relations:
+
+```bash
+mysql -u php_core -p php_core < migrations/20260912_fun_seed.sql
+mysql -u php_core -p php_core < migrations/20260912_customer_profiles.sql
+mysql -u php_core -p php_core < migrations/20260912_rename_customer_profile_relations.sql
+mysql -u php_core -p php_core < migrations/20260913_user_customer_profile_position.sql
+mysql -u php_core -p php_core < migrations/20260913_fun_product_categories.sql
+```
+
+The administrator is `admin@fann.cz` with password `admin`.
+
 ## Project structure
 
 ```
@@ -157,7 +173,8 @@ php-core/
 │   ├── 20260906_security_hardening.sql                # additive security migration
 │   ├── 20260912_customer_profiles.sql                  # normalized profile model
 │   ├── 20260912_rename_customer_profile_relations.sql  # final relation-table names
-│   └── 20260913_user_customer_profile_position.sql     # final assignment ordering column
+│   ├── 20260913_user_customer_profile_position.sql     # final assignment ordering column
+│   └── 20260913_fun_product_categories.sql             # FAnn product category conversion
 ├── pages/
 │   ├── db-schema.html     # Mermaid ER diagram
 │   ├── db-table.html      # HTML schema viewer with FK table

@@ -68,6 +68,20 @@ ON DUPLICATE KEY UPDATE
   `data` = VALUES(`data`),
   `deleted` = 0;
 
+INSERT INTO `category`
+  (`franchise_code`, `parent_id`, `syscode`, `name`, `description`, `position`, `published`, `deleted`)
+VALUES
+  ('fun', NULL, 'perfumes', 'Parfémy', 'Parfémy a parfémované vůně.', 10, 1, 0),
+  ('fun', NULL, 'creams-and-care', 'Krémy a péče', 'Krémy, séra, oleje a další péče o pleť a tělo.', 20, 1, 0),
+  ('fun', NULL, 'makeup', 'Líčidla', 'Dekorativní kosmetika a líčidla.', 30, 1, 0),
+  ('fun', NULL, 'other', 'Ostatní', 'Ostatní produkty.', 40, 1, 0)
+ON DUPLICATE KEY UPDATE
+  `name` = VALUES(`name`),
+  `description` = VALUES(`description`),
+  `position` = VALUES(`position`),
+  `published` = 1,
+  `deleted` = 0;
+
 INSERT INTO `product`
   (`franchise_code`, `sku`, `name`, `description`, `price`, `stock_quantity`, `published`, `kind`, `data`)
 VALUES
@@ -110,6 +124,29 @@ ON DUPLICATE KEY UPDATE
   `data` = VALUES(`data`),
   `deleted` = 0;
 
+INSERT IGNORE INTO `product_category` (`product_id`, `category_id`)
+SELECT
+  p.`id`,
+  c.`id`
+FROM `product` p
+JOIN `category` c
+  ON c.`franchise_code` = 'fun'
+ AND c.`syscode` = CASE p.`kind`
+   WHEN 'fragrance' THEN 'perfumes'
+   WHEN 'skincare' THEN 'creams-and-care'
+   WHEN 'makeup' THEN 'makeup'
+   ELSE 'other'
+ END
+WHERE p.`franchise_code` = 'fun'
+  AND p.`deleted` = 0
+  AND p.`kind` IS NOT NULL
+  AND TRIM(p.`kind`) <> '';
+
+UPDATE `product`
+SET `kind` = NULL
+WHERE `franchise_code` = 'fun'
+  AND `kind` IS NOT NULL;
+
 COMMIT;
 
 SELECT
@@ -117,4 +154,6 @@ SELECT
   (SELECT COUNT(*) FROM `user` u JOIN `role` r ON r.`id` = u.`role_id` WHERE u.`franchise_code` = 'fun' AND r.`name` = 'admin' AND u.`deleted` = 0 AND u.`status` = 'active') AS fun_active_admins,
   (SELECT COUNT(*) FROM `enumeration` WHERE `franchise_code` = 'fun' AND `type` = 'client_type' AND `deleted` = 0) AS fun_profiles,
   (SELECT COUNT(*) FROM `product` WHERE `franchise_code` = 'fun' AND `sku` LIKE 'FUN-P%' AND `deleted` = 0) AS fun_products,
+  (SELECT COUNT(*) FROM `category` WHERE `franchise_code` = 'fun' AND `deleted` = 0) AS fun_categories,
+  (SELECT COUNT(DISTINCT pc.`product_id`) FROM `product_category` pc JOIN `product` p ON p.`id` = pc.`product_id` WHERE p.`franchise_code` = 'fun' AND p.`deleted` = 0) AS categorized_fun_products,
   (SELECT COUNT(*) FROM `product` WHERE `franchise_code` = 'fun' AND `sku` LIKE 'FUN-P%' AND JSON_LENGTH(JSON_EXTRACT(`data`, '$.purchase_probability')) = 10) AS products_with_10_probabilities;

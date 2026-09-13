@@ -21,6 +21,7 @@ Notes:
 - All writes and stock adjustments require the admin role.
 - `data` is a JSON field and can be shallow-merged on patch.
 - `category_ids` and `file_ids` are validated against the current tenant before links are written.
+- FAnn product classification uses `category` and `product_category`; migration `20260913_fun_product_categories.sql` converts its legacy `product.kind` values and clears them.
 - Product-to-profile suitability lives in `product_customer_profile_probability`, not in the `product` table.
 - The API field `profile_probabilities` synchronizes `{customer_profile_id, probability_percent, is_target}` rows; values are tenant-checked and probability is limited to 0–100.
 - The complete table diagram and column list are in [`../CustomerProfile/README.md`](../CustomerProfile/README.md).
