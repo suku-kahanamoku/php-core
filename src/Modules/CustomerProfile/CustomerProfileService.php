@@ -10,7 +10,19 @@ class CustomerProfileService extends BaseService
     private CustomerProfileRepository $profiles;
     public function __construct(Database $db,string $code,Auth $auth){$this->profiles=new CustomerProfileRepository($db,$code);$this->_auth=$auth;}
     public function list(int $page,int $limit,string $sort,string $filter):array{$this->_auth->requireRole('admin');return $this->profiles->findAll($page,$limit,$sort,$filter);}
-    public function get(int $id):array{$this->_auth->requireRole('admin');$v=$this->profiles->findById($id);$this->_requireEntity($v,'Customer profile not found');return $v;}
+    public function get(int $id):array
+    {
+        $isAdmin = $this->_auth->hasRole('admin');
+        $value = $this->profiles->findById($id);
+        $this->_requireEntity($value,'Customer profile not found');
+        if (!$isAdmin && (int) ($value['published'] ?? 0) !== 1) {
+            Response::notFound('Customer profile not found');
+        }
+        if (!$isAdmin) {
+            unset($value['franchise_code'], $value['deleted']);
+        }
+        return $value;
+    }
     public function create(array $input):array{$this->_auth->requireRole('admin');$d=$this->sanitize($input,true);if($this->profiles->codeExists($d['syscode']))Response::error('Profile syscode already exists',409);return $this->profiles->create($d);}
     public function update(int $id,array $input):array{$this->_auth->requireRole('admin');$this->_requireEntity($this->profiles->findById($id),'Customer profile not found');$d=$this->sanitize($input,false);if(isset($d['syscode'])&&$this->profiles->codeExists($d['syscode'],$id))Response::error('Profile syscode already exists',409);return $this->profiles->update($id,$d);}
     public function delete(int $id):int{$this->_auth->requireRole('admin');$this->_requireEntity($this->profiles->findById($id),'Customer profile not found');return $this->profiles->softDelete($id);}

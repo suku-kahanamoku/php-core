@@ -65,6 +65,8 @@ $tests = [
     "{$modulesDir}/Product/tests/ProductTest.php",
     "{$modulesDir}/Product/tests/ProductServiceTest.php",
     "{$modulesDir}/Product/tests/ProductApiTest.php",
+    // Customer profile
+    "{$modulesDir}/CustomerProfile/tests/CustomerProfileApiTest.php",
     // Enumeration
     "{$modulesDir}/Enumeration/tests/EnumerationTest.php",
     "{$modulesDir}/Enumeration/tests/EnumerationServiceTest.php",

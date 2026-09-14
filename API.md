@@ -788,7 +788,7 @@ and preferences are stored in child tables. Users are linked through
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
 | GET | `/customer-profiles` | Admin only | List profiles with questions, objections, and preferences |
-| GET | `/customer-profiles/:id` | Admin only | Get one profile |
+| GET | `/customer-profiles/:id` | Public | Get a published profile; unpublished profiles return 404 without an admin Bearer token |
 | POST | `/customer-profiles` | Admin only | Create a profile and its child rows |
 | PATCH | `/customer-profiles/:id` | Admin only | Update supplied fields and supplied child collections |
 | PUT | `/customer-profiles/:id` | Admin only | Update a profile using the same accepted payload fields |

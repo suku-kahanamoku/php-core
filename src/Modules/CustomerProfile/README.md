@@ -20,7 +20,8 @@ Routes:
 
 Notes:
 
-- Every route requires the admin role.
+- `GET /customer-profiles/:id` is public for a published profile; an unpublished profile returns 404 without an admin Bearer token.
+- The list and all create, update, and delete routes require the admin role.
 - `customer_profile` owns the profile definition; it is not an enumeration and is not embedded in `user`.
 - `customer_profile_question`, `customer_profile_objection`, and `customer_profile_preference` contain ordered child rows and are deleted by cascade with their profile.
 - Supplying `questions`, `objections`, or `preferences` synchronizes that complete child collection. Omitting a collection leaves it unchanged.

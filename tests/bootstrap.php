@@ -51,6 +51,7 @@ function cleanup_test_data(): void
         $pdo->prepare('DELETE FROM user        WHERE email   LIKE ?')->execute([$prefix]);
         $pdo->prepare('DELETE FROM role        WHERE name    LIKE ?')->execute([$prefix]);
         $pdo->prepare('DELETE FROM product     WHERE sku     LIKE ?')->execute([$prefix]);
+        $pdo->prepare('DELETE FROM customer_profile WHERE syscode LIKE ?')->execute([$prefix]);
         $pdo->prepare('DELETE FROM category    WHERE name    LIKE ? OR syscode LIKE ?')->execute([$prefix, $prefix]);
         $pdo->prepare('DELETE FROM enumeration WHERE type    LIKE ?')->execute([$prefix]);
         $pdo->prepare('DELETE FROM text        WHERE syscode LIKE ?')->execute([$prefix]);

@@ -287,7 +287,7 @@ all table columns, primary and foreign keys, uniqueness rules, and examples.
 |--------|------|------|-------------|
 | GET | `/customer-profiles` | admin | List tenant profiles with questions, objections and preferences |
 | POST | `/customer-profiles` | admin | Create profile |
-| GET | `/customer-profiles/:id` | admin | Get profile |
+| GET | `/customer-profiles/:id` | public | Get a published profile; unpublished profiles require admin |
 | PATCH / PUT | `/customer-profiles/:id` | admin | Update profile and its child rows |
 | DELETE | `/customer-profiles/:id` | admin | Soft-delete profile |
 
