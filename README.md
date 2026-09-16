@@ -79,6 +79,17 @@ curl http://localhost/php/php-core/api/products \
 
 Tokens expire after 24 hours (configurable via `TOKEN_LIFETIME` in `.env`). Logout invalidates the token server-side.
 
+## Rokid OpenAI Realtime session
+
+`POST /api/openai/realtime-session` creates a short-lived client secret for the
+Rokid Android application. The main `OPENAI_API_KEY` remains server-side; the
+mobile client uses the returned secret to connect directly to OpenAI Realtime.
+The endpoint requires `X-Rokid-Key`, is limited to the configured tenant and is
+rate-limited. See [`src/Modules/OpenAi/README.md`](src/Modules/OpenAi/README.md).
+
+This is intentionally an HTTPS session broker, not a PHP WebSocket daemon.
+CGI/FastCGI requests do not provide a reliable long-running WebSocket process.
+
 Note: `POST /api/auth/logout` requires the `Authorization: Bearer <token>` header; calls without a valid token will be rejected with 401.
 
 ## Multi-tenancy
@@ -222,6 +233,7 @@ php-core/
         ├── Validator/
         │   └── Validator.php
         ├── CustomerProfile/           # definitions, questions, objections, preferences
+        ├── OpenAi/                    # Rokid Realtime client-secret broker
         └── <Module>/                 # Address, Category, Enumeration, File,
             ├── <Module>Repository.php  #   Invoice, Order, Product, Role, Text, User
             ├── <Module>Service.php

@@ -31,6 +31,7 @@
    - [Files](#files)
    - [Mailer](#mailer)
    - [Templater](#templater)
+   - [OpenAI Realtime](#openai-realtime)
 10. [Soft delete vs. hard delete](#soft-delete-vs-hard-delete)
 11. [Field Reference](#field-reference)
 12. [Common Patterns & Frontend Recipes](#common-patterns--frontend-recipes)
@@ -1754,6 +1755,45 @@ not act as a general mail relay.
 `GET /templater?template=<name>` renders an HTML preview for an authenticated
 administrator. Template names are sanitized against path traversal. The
 internal key does not grant access to this development/support endpoint.
+
+---
+
+### OpenAI Realtime
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/openai/realtime-session` | `X-Rokid-Key` | Create a short-lived Realtime client secret |
+
+The endpoint is available only for `ROKID_AI_FRANCHISE_CODE`, accepts at most
+10 attempts per remote address per minute, and never returns the server-side
+`OPENAI_API_KEY`. The returned secret is intended for a direct mobile-to-OpenAI
+Realtime WebSocket connection.
+
+Request:
+
+```http
+POST /openai/realtime-session
+X-Rokid-Key: <ROKID_AI_CLIENT_KEY>
+```
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "Realtime session created.",
+  "data": {
+    "client_secret": "ek_...",
+    "expires_at": 1756310470,
+    "model": "gpt-realtime",
+    "input_audio_format": {"type": "audio/pcm", "rate": 24000},
+    "output_modalities": ["text"]
+  }
+}
+```
+
+Errors: `401` missing/invalid Rokid key, `403` unavailable tenant, `429` rate
+limit, `502` OpenAI unavailable, `503` missing server configuration.
 
 ---
 

@@ -89,6 +89,8 @@ $tests = [
     "{$modulesDir}/Mailer/tests/MailerApiTest.php",
     // File
     "{$modulesDir}/File/tests/FileApiTest.php",
+    // OpenAI (offline transport; no live API call)
+    "{$modulesDir}/OpenAi/tests/OpenAiRealtimeServiceTest.php",
 ];
 
 foreach ($tests as $file) {
