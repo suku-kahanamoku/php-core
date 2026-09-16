@@ -99,11 +99,18 @@ final class OpenAiRealtimeService
                 'model' => self::MODEL,
                 'output_modalities' => ['text'],
                 'instructions' => implode(' ', [
-                    'Jsi strucny cesky asistent pro monochromaticke chytre bryle.',
+                    'Jsi strucny cesky prodejni asistent FAnn pro monochromaticke chytre bryle.',
                     'Odpovidej cesky, prostym textem bez Markdownu.',
                     'Odpoved omez nejvyse na dve kratke vety.',
+                    'Z rozhovoru zjisti potrebu, rozpocet, preference a namitky zakaznika.',
+                    'Kdyz chybi podstatna informace, poloz jednu kratkou doplnujici otazku.',
+                    'Profily a produkty nikdy nevymyslej a vzdy je over pomoci dostupnych nastroju.',
+                    'Nejprve podle potreby nacti profily, potom vyhledej produkty a pred konecnym doporucenim nacti detail vybraneho produktu.',
+                    'V jedne odpovedi volej nejvyse jeden nastroj.',
                 ]),
                 'max_output_tokens' => 128,
+                'tool_choice' => 'auto',
+                'tools' => $this->toolDefinitions(),
                 'audio' => [
                     'input' => [
                         'format' => [
@@ -114,6 +121,52 @@ final class OpenAiRealtimeService
                             'type' => 'server_vad',
                         ],
                     ],
+                ],
+            ],
+        ];
+    }
+
+    /** @return list<array<string, mixed>> Pevne JSON definice read-only FAnn nastroju. */
+    private function toolDefinitions(): array
+    {
+        return [
+            [
+                'type' => 'function',
+                'name' => OpenAiCatalogService::LIST_PROFILES,
+                'description' => 'Nacte publikovane zakaznicke profily vcetne potreb, otazek, namitek a preferenci.',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => new \stdClass(),
+                    'additionalProperties' => false,
+                ],
+            ],
+            [
+                'type' => 'function',
+                'name' => OpenAiCatalogService::SEARCH_PRODUCTS,
+                'description' => 'Vyhleda publikovane produkty podle profilu zakaznika a omezeni z rozhovoru.',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'profile_id' => ['type' => 'integer', 'minimum' => 1, 'description' => 'ID overeneho zakaznickeho profilu.'],
+                        'query' => ['type' => 'string', 'maxLength' => 200, 'description' => 'Potreba, nazev nebo vlastnosti hledaneho produktu.'],
+                        'max_price' => ['type' => 'number', 'exclusiveMinimum' => 0, 'description' => 'Nejvyssi cena s DPH v CZK.'],
+                        'category' => ['type' => 'string', 'maxLength' => 100, 'description' => 'Pozadovana kategorie produktu.'],
+                        'limit' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 5],
+                    ],
+                    'additionalProperties' => false,
+                ],
+            ],
+            [
+                'type' => 'function',
+                'name' => OpenAiCatalogService::GET_PRODUCT,
+                'description' => 'Nacte overeny detail konkretniho publikovaneho produktu pred jeho doporucenim.',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'product_id' => ['type' => 'integer', 'minimum' => 1],
+                    ],
+                    'required' => ['product_id'],
+                    'additionalProperties' => false,
                 ],
             ],
         ];

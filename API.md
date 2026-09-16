@@ -1763,11 +1763,13 @@ internal key does not grant access to this development/support endpoint.
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
 | POST | `/openai/realtime-session` | `X-Rokid-Key` | Create a short-lived Realtime client secret |
+| POST | `/openai/tool` | `X-Rokid-Key` | Execute an allowlisted read-only FAnn catalog tool |
 
-The endpoint is available only for `ROKID_AI_FRANCHISE_CODE`, accepts at most
-10 attempts per remote address per minute, and never returns the server-side
-`OPENAI_API_KEY`. The returned secret is intended for a direct mobile-to-OpenAI
-Realtime WebSocket connection.
+Both endpoints use the tenant resolved from the request host and never return
+the server-side `OPENAI_API_KEY`. Session creation accepts at most 10 attempts
+and catalog tools at most 60 attempts per remote address per minute. The
+returned secret is intended for a direct mobile-to-OpenAI Realtime WebSocket
+connection.
 
 Request:
 
@@ -1794,6 +1796,12 @@ Response `200`:
 
 Errors: `401` missing/invalid Rokid key, `403` unavailable tenant, `429` rate
 limit, `502` OpenAI unavailable, `503` missing server configuration.
+
+`POST /openai/tool` accepts `{ "name": string, "arguments": object }`. Allowed
+names are `list_customer_profiles`, `search_products`, and `get_product`.
+Search arguments may contain `profile_id`, `query`, `max_price`, `category`,
+and `limit` from 1 to 5. The endpoint returns only published tenant data and
+never permits CRM writes.
 
 ---
 

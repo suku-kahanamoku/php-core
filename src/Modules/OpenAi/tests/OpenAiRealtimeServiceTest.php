@@ -40,6 +40,15 @@ assert_test('returns safe client secret', $result['client_secret'] === 'ek_test_
 assert_test('uses gpt-realtime', $captured['payload']['session']['model'] === 'gpt-realtime');
 assert_test('requests text output', $captured['payload']['session']['output_modalities'] === ['text']);
 assert_test('requests PCM24 input', $captured['payload']['session']['audio']['input']['format']['rate'] === 24000);
+assert_test('enables automatic tool choice', $captured['payload']['session']['tool_choice'] === 'auto');
+assert_test(
+    'declares all FAnn tools',
+    array_column($captured['payload']['session']['tools'], 'name') === [
+        'list_customer_profiles',
+        'search_products',
+        'get_product',
+    ],
+);
 assert_test('does not return server API key', !str_contains(json_encode($result), 'sk-test'));
 
 section('OpenAI Realtime failures');

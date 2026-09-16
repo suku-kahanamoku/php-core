@@ -20,8 +20,8 @@ use App\Utils\RateLimiter;
 final class OpenAiApi
 {
     private OpenAiRealtimeService $service;
+    private OpenAiCatalogService $catalog;
     private RateLimiter $rateLimiter;
-    private string $franchiseCode;
 
     /**
      * Pripravi API vrstvu pro aktualniho tenanta.
@@ -34,20 +34,24 @@ final class OpenAiApi
         Database $db,
         string $franchiseCode,
         ?OpenAiRealtimeService $service = null,
+        ?OpenAiCatalogService $catalog = null,
     ) {
         $this->service = $service ?? new OpenAiRealtimeService();
+        $this->catalog = $catalog ?? new OpenAiCatalogService(
+            new OpenAiCatalogRepository($db, $franchiseCode),
+        );
         $this->rateLimiter = new RateLimiter($db, $franchiseCode);
-        $this->franchiseCode = $franchiseCode;
     }
 
     /**
-     * Zaregistruje vytvoreni Realtime relace jako jediny verejny kontrakt modulu.
+     * Zaregistruje vytvoreni Realtime relace a katalogove AI nastroje.
      *
      * @param Router $router Router endpointu `/api/openai`.
      */
     public function registerRoutes(Router $router): void
     {
         $router->post('/realtime-session', [$this, 'createRealtimeSession']);
+        $router->post('/tool', [$this, 'executeTool']);
     }
 
     /**
@@ -57,7 +61,6 @@ final class OpenAiApi
      */
     public function createRealtimeSession(Request $request): void
     {
-        $this->requireAllowedFranchise();
         $this->rateLimiter->hit(
             'rokid-ai-session',
             (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown'),
@@ -77,13 +80,35 @@ final class OpenAiApi
         Response::success($session, 'Realtime session created.');
     }
 
-    /** Vyzaduje serverem povoleny tenant, aby endpoint nesdilely ostatni CRM. */
-    private function requireAllowedFranchise(): void
+    /**
+     * Overi Rokid klienta a provede jeden povoleny read-only katalogovy nastroj.
+     *
+     * @param Request $request JSON telo s `name` a objektovymi `arguments`.
+     */
+    public function executeTool(Request $request): void
     {
-        $allowed = trim((string) ($_ENV['ROKID_AI_FRANCHISE_CODE'] ?? ''));
-        if ($allowed === '' || !hash_equals($allowed, $this->franchiseCode)) {
-            Response::forbidden('AI service is not available for this tenant.');
+        $this->rateLimiter->hit(
+            'rokid-ai-tool',
+            (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown'),
+            60,
+            60,
+        );
+        $this->requireRokidKey($request);
+
+        $name = trim((string) $request->get('name', ''));
+        $arguments = $request->get('arguments', []);
+        if ($name === '' || !is_array($arguments)) {
+            Response::validationError([
+                'name' => $name === '' ? 'Tool name is required.' : null,
+                'arguments' => !is_array($arguments) ? 'Tool arguments must be an object.' : null,
+            ]);
         }
+        try {
+            $result = $this->catalog->execute($name, $arguments);
+        } catch (\InvalidArgumentException $error) {
+            Response::validationError(['tool' => $error->getMessage()]);
+        }
+        Response::success($result, 'AI tool completed.');
     }
 
     /**

@@ -87,6 +87,11 @@ mobile client uses the returned secret to connect directly to OpenAI Realtime.
 The endpoint requires `X-Rokid-Key`, is limited to the configured tenant and is
 rate-limited. See [`src/Modules/OpenAi/README.md`](src/Modules/OpenAi/README.md).
 
+The same scoped credential protects `POST /api/openai/tool`, an allowlisted
+read-only bridge for published FAnn profiles and products used by Realtime
+function calls. It does not expose the protected customer-profile list or any
+CRM write operation.
+
 This is intentionally an HTTPS session broker, not a PHP WebSocket daemon.
 CGI/FastCGI requests do not provide a reliable long-running WebSocket process.
 
