@@ -152,6 +152,7 @@ mysql -u php_core -p php_core < migrations/20260912_rename_customer_profile_rela
 mysql -u php_core -p php_core < migrations/20260913_user_customer_profile_position.sql
 mysql -u php_core -p php_core < migrations/20260913_zoo_product_categories.sql
 mysql -u php_core -p php_core < migrations/20260913_remove_product_profile_is_target.sql
+mysql -u php_core -p php_core < migrations/20260916_product_stock_availability.sql
 ```
 
 The administrator is `admin@zoo.local` with password `admin`.
@@ -173,6 +174,7 @@ mysql -u php_core -p php_core < migrations/20260913_user_customer_profile_positi
 mysql -u php_core -p php_core < migrations/20260913_fun_product_categories.sql
 mysql -u php_core -p php_core < migrations/20260913_remove_product_profile_is_target.sql
 mysql -u php_core -p php_core < migrations/20260913_product_alternatives.sql
+mysql -u php_core -p php_core < migrations/20260916_product_stock_availability.sql
 ```
 
 The administrator is `admin@fann.cz` with password `admin`.
@@ -197,7 +199,8 @@ php-core/
 │   ├── 20260913_fun_product_categories.sql             # FAnn product category conversion
 │   ├── 20260913_zoo_product_categories.sql             # Zoo product category conversion
 │   ├── 20260913_remove_product_profile_is_target.sql   # probability-only product/profile relation
-│   └── 20260913_product_alternatives.sql               # ordered FAnn product alternatives
+│   ├── 20260913_product_alternatives.sql               # ordered FAnn product alternatives
+│   └── 20260916_product_stock_availability.sql         # random stock for zero-quantity products
 ├── pages/
 │   ├── db-schema.html     # Mermaid ER diagram
 │   ├── db-table.html      # HTML schema viewer with FK table
