@@ -1801,7 +1801,9 @@ unavailable, `503` missing server configuration.
 names are `list_customer_profiles`, `search_products`, and `get_product`.
 Realtime sessions expose only `search_products` and `get_product`; the profile
 operation remains an authenticated backend capability for a possible separate
-future flow, not for passive primary selection.
+future flow, not for passive primary selection. The session also defines the
+client-local `continue_listening` function; it is not accepted by this HTTP
+endpoint and produces no UI output.
 `search_products` separates eligibility from ranking. `required_attributes`,
 `excluded_attributes`, `max_price`, `category`, and `rejected_product_ids` are
 hard conditions. `preferred_attributes` and `negative_preferences` only rank

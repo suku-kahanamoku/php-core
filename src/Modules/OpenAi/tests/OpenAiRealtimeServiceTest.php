@@ -40,13 +40,19 @@ assert_test('returns safe client secret', $result['client_secret'] === 'ek_test_
 assert_test('uses gpt-realtime', $captured['payload']['session']['model'] === 'gpt-realtime');
 assert_test('requests text output', $captured['payload']['session']['output_modalities'] === ['text']);
 assert_test('requests PCM24 input', $captured['payload']['session']['audio']['input']['format']['rate'] === 24000);
-assert_test('enables automatic tool choice', $captured['payload']['session']['tool_choice'] === 'auto');
+assert_test('requires every response to call a tool', $captured['payload']['session']['tool_choice'] === 'required');
+assert_test('allows enough output tokens for structured tool arguments', $captured['payload']['session']['max_output_tokens'] === 256);
 assert_test(
-    'declares only passive product selection tools',
+    'declares product selection and silent listening tools',
     array_column($captured['payload']['session']['tools'], 'name') === [
         'search_products',
         'get_product',
+        'continue_listening',
     ],
+);
+assert_test(
+    'requires a textual need for every catalog search',
+    $captured['payload']['session']['tools'][0]['parameters']['required'] === ['query'],
 );
 assert_test(
     'declares separate displayed and rejected product histories',
@@ -83,8 +89,9 @@ assert_test(
         && str_contains($captured['payload']['session']['instructions'], 'live Czech conversation'),
 );
 assert_test(
-    'waits silently until conversation evidence supports a search',
-    str_contains($captured['payload']['session']['instructions'], 'silently WAIT and keep listening'),
+    'searches immediately from the first usable purchase signal',
+    str_contains($captured['payload']['session']['instructions'], 'call search_products immediately')
+        && str_contains($captured['payload']['session']['instructions'], 'Do not wait for more detail.'),
 );
 assert_test(
     'keeps hard requirements separate from ranking preferences',

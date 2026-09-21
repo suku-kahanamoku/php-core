@@ -99,14 +99,16 @@ read-only bridge for published tenant profiles and products used by Realtime
 function calls. It does not expose the protected customer-profile list or any
 CRM write operation.
 
-The Realtime session silently analyzes the ongoing dialogue and may perform an
-exploratory catalog search once category and one useful requirement are known.
+The Realtime session silently analyzes the ongoing dialogue and performs a
+catalog search as soon as any usable purchase signal is known. Unknown product
+dimensions remain unconstrained rather than delaying the first recommendation.
 Mandatory requirements, explicit exclusions and rejected product IDs are hard
 eligibility rules; positive and negative preferences only rank eligible
 candidates. Already displayed products are deprioritized but remain available
 when the customer asks to return to one. The model never asks clarification
 questions and never generates sales, upsell or cross-sell arguments; when the
-dialogue lacks useful evidence, it silently keeps listening. Primary selection
+dialogue lacks useful evidence, the required `continue_listening` tool ends the
+turn without free text or a UI change. Primary selection
 never uses customer-profile probability. Before Android can display a card,
 `get_product` repeats the hard-condition and stock checks on the server. The
 idempotent migration

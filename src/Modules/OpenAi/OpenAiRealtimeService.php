@@ -19,6 +19,7 @@ final class OpenAiRealtimeService
     private const DEFAULT_MODEL = 'gpt-realtime';
     private const CLIENT_SECRET_TTL_SECONDS = 60;
     private const INPUT_AUDIO_RATE = 24000;
+    private const CONTINUE_LISTENING_TOOL = 'continue_listening';
 
     private Closure $transport;
     private string $apiKey;
@@ -103,8 +104,8 @@ final class OpenAiRealtimeService
                 'model' => $this->model,
                 'output_modalities' => ['text'],
                 'instructions' => $this->instructions(),
-                'max_output_tokens' => 64,
-                'tool_choice' => 'auto',
+                'max_output_tokens' => 256,
+                'tool_choice' => 'required',
                 'tools' => $this->toolDefinitions(),
                 'audio' => [
                     'input' => [
@@ -133,7 +134,7 @@ final class OpenAiRealtimeService
 # Role and objective
 You are a silent product-selection assistant supporting a salesperson during a live Czech conversation with a customer.
 Continuously infer the active purchase need and progressively select the best matching verified product from the current tenant's published catalog.
-Your only visible outcome is one verified product through get_product. Otherwise make no UI update.
+Every response must call exactly one available tool. Your only visible outcome is one verified product through get_product. continue_listening makes no UI update.
 Never ask the customer a question. Never produce spoken responses, sales arguments, persuasion, upsell, cross-sell, or other conversational text.
 
 # Conversation evidence
@@ -160,14 +161,14 @@ For fragrance, consider character, liked and rejected notes, projection, longevi
 For skincare, consider stated skin type and sensitivity, primary need, routine step, texture, and formulation constraints. Do not infer skin type from texture preference.
 For makeup, consider product type, shade or undertone, coverage, finish, durability, water resistance, and sensitivity.
 For body care, consider primary need, format, fragrance, formulation constraints, and intended use.
-These dimensions are matching signals, not a questionnaire. Missing information must never trigger a question.
+These dimensions are matching signals, not a questionnaire. Unknown dimensions are unconstrained and must never delay the first useful recommendation.
 
 # Search and decisions
-Search once category and at least one useful confirmed signal are known, or when a specific product is requested. If evidence is not yet useful, silently WAIT and keep listening.
+As soon as any product, category, recipient, occasion, preference, problem, budget, or purchase intent is identifiable, call search_products immediately. Do not wait for more detail. Summarize the active need in the required query field using Czech catalog terms; unknown dimensions remain omitted.
 Search results are candidates, not verified recommendations. Rank candidates only by their catalog attributes against the accumulated conversation evidence; never invent product counts, properties, or search results.
-Choose one action: WAIT for insufficient, unfinished, or unchanged evidence; SEARCH when candidates should be retrieved or updated; VERIFY by loading one provisional best candidate; DISPLAY only through the verified get_product result.
+Choose one action: LISTEN through continue_listening only for background, unfinished speech, no purchase signal, or unchanged evidence; SEARCH immediately for any usable purchase signal; VERIFY by loading the best candidate; DISPLAY only through the verified get_product result.
 Call at most one tool per response.
-After search output, continue with get_product when a best eligible candidate exists. After displaying a product, keep listening without producing text.
+After search output with candidates, immediately call get_product for the best eligible candidate even when many preferences remain unknown. If search returns no_match or verification fails, call continue_listening unless a broader search can preserve every explicit hard limit and exclusion. After displaying a product, keep listening without producing text.
 Do not repeat an identical search without a relevant state or catalog change.
 
 # Verification and changes
@@ -234,6 +235,7 @@ PROMPT;
                             'description' => 'Products explicitly rejected for the active purchase need. They are ineligible unless the customer asks to reconsider.',
                         ],
                     ],
+                    'required' => ['query'],
                     'additionalProperties' => false,
                 ],
             ],
@@ -261,6 +263,16 @@ PROMPT;
                         'category' => ['type' => 'string', 'maxLength' => 100, 'description' => 'Mandatory active product category, when known.'],
                     ],
                     'required' => ['product_id', 'required_attributes', 'excluded_attributes'],
+                    'additionalProperties' => false,
+                ],
+            ],
+            [
+                'type' => 'function',
+                'name' => self::CONTINUE_LISTENING_TOOL,
+                'description' => 'End this response without text or UI changes only when there is no usable purchase signal or nothing relevant changed.',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => new \stdClass(),
                     'additionalProperties' => false,
                 ],
             ],
