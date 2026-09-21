@@ -45,7 +45,8 @@ assert_test('allows enough output tokens for structured tool arguments', $captur
 assert_test(
     'stabilizes server VAD for continuous dialogue',
     $captured['payload']['session']['audio']['input']['turn_detection']['silence_duration_ms'] === 700
-        && $captured['payload']['session']['audio']['input']['turn_detection']['create_response'] === true,
+        && $captured['payload']['session']['audio']['input']['turn_detection']['create_response'] === false
+        && $captured['payload']['session']['audio']['input']['turn_detection']['interrupt_response'] === false,
 );
 assert_test(
     'declares product selection and silent listening tools',
@@ -107,6 +108,12 @@ assert_test(
     'requires a different product after explicit rejection',
     str_contains($captured['payload']['session']['instructions'], 'rejects the currently displayed product')
         && str_contains($captured['payload']['session']['instructions'], 'Never select an ID listed in displayed_product_ids'),
+);
+assert_test(
+    'preserves active need while replacing a rejected product',
+    str_contains($captured['payload']['session']['instructions'], 'Preserve every still-valid fact and constraint')
+        && str_contains($captured['payload']['session']['instructions'], 'better evidence-based match')
+        && str_contains($captured['payload']['session']['instructions'], 'další produkt'),
 );
 assert_test('does not return server API key', !str_contains(json_encode($result), 'sk-test'));
 

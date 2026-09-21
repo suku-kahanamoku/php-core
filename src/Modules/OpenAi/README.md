@@ -25,7 +25,10 @@ Uspech vraci standardni envelope a v `data`:
 ```
 
 Token plati 60 sekund pro vytvoreni relace. Relace pouziva server VAD s delsim
-700ms tichem pro stabilnejsi deleni souvisleho dialogu, textovy vystup a limit
+700ms tichem pro stabilnejsi deleni souvisleho dialogu. VAD má vypnuté
+automatické `create_response`; Android po další 1,5sekundové tiché prodlevě
+řízeně vyžádá jedinou analýzu nad nahromaděným kontextem. Nová řeč nepřeruší
+právě generované argumenty function callu. Relace používá textový výstup a limit
 512 output tokenu pro bezpečné dokončení strukturovaných argumentů.
 Povinné volání nástroje dovoluje pouze `search_products`, `get_product` a lokální
 `continue_listening`; model proto nemůže místo výběru produktu vrátit volný text.
@@ -77,8 +80,10 @@ prodejní argument, upsell ani cross-sell. Jakmile zachytí libovolný použitel
 nákupní signál, hledá ihned; neznámé vlastnosti ponechá bez omezení. Jen čisté
 pozadí, nedokončená řeč nebo nezměněný stav ukončí lokálním nástrojem
 `continue_listening`. Před zobrazením se načte detail jediného produktu a ověří
-varianta, cena, dostupnost a tvrdé podmínky. Výslovná žádost o jiný produkt
-odmítne současné ID a změna potřeby vždy spustí nové hledání. Zákaznické
+varianta, cena, dostupnost a tvrdé podmínky. Nespokojenost nebo žádost o jiný,
+další či lepší produkt odmítne současné ID, ale zachová stále platné požadavky
+aktivní potřeby. „Lepší“ znamená přesnější shodu s doloženými požadavky, nikoli
+vyšší cenu, popularitu nebo marži. Změna potřeby vždy spustí nové hledání. Zákaznické
 profily nejsou Realtime relaci zpřístupněné.
 
 Migrace `migrations/20260921_fun_product_catalog_enrichment.sql` idempotentně
