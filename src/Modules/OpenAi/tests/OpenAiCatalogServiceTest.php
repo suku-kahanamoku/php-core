@@ -45,12 +45,17 @@ $gateway = new class implements OpenAiCatalogGateway {
                 'price_with_vat' => 1400.0,
                 'stock_quantity' => 2,
                 'published' => 1,
-                'data' => ['character' => 'sladka'],
+                'data' => ['selection_attributes' => [
+                    'category' => ['vůně'],
+                    'product_type' => ['parfémová voda'],
+                    'fragrance_character' => ['sladká', 'kávová', 'výrazná'],
+                    'occasion' => ['večer'],
+                ]],
                 'categories' => [['name' => 'Parfemy']],
                 'alternatives' => [],
                 'profile_probabilities' => [[
                     'customer_profile_id' => 11,
-                    'probability_percent' => 85,
+                    'probability_percent' => 5,
                 ]],
             ],
             [
@@ -61,12 +66,16 @@ $gateway = new class implements OpenAiCatalogGateway {
                 'price_with_vat' => 900.0,
                 'stock_quantity' => 4,
                 'published' => 1,
-                'data' => [],
+                'data' => ['selection_attributes' => [
+                    'category' => ['péče o pleť'],
+                    'product_type' => ['denní krém'],
+                    'needs' => ['hydratace'],
+                ]],
                 'categories' => [['name' => 'Pece']],
                 'alternatives' => [],
                 'profile_probabilities' => [[
                     'customer_profile_id' => 11,
-                    'probability_percent' => 40,
+                    'probability_percent' => 100,
                 ]],
             ],
         ];
@@ -81,13 +90,22 @@ assert_test('lists one published profile', count($profiles['profiles']) === 1);
 assert_test('does not expose franchise code', !isset($profiles['profiles'][0]['franchise_code']));
 
 $search = $service->execute(OpenAiCatalogService::SEARCH_PRODUCTS, [
-    'profile_id' => 11,
     'query' => 'parfem',
+    'category' => 'vůně',
+    'attributes' => ['sladká', 'kávová', 'večer'],
     'max_price' => 1500,
     'limit' => 2,
 ]);
 assert_test('ranks matching product first', $search['products'][0]['id'] === 90);
-assert_test('returns selected profile probability', $search['products'][0]['profile_probability'] === 85);
+assert_test('reports all matched product attributes', $search['products'][0]['attribute_match_count'] === 3);
+assert_test('does not expose profile probability in primary search', !isset($search['products'][0]['profile_probability']));
+assert_test('returns description so model can compare candidates', $search['products'][0]['description'] === 'Vyrazna kavova vune.');
+
+$excludedByAttribute = $service->execute(OpenAiCatalogService::SEARCH_PRODUCTS, [
+    'query' => 'produkt',
+    'excluded_attributes' => ['kávová'],
+]);
+assert_test('hard excludes explicitly rejected attributes', array_column($excludedByAttribute['products'], 'id') === [91]);
 
 $streamingGateway = new class implements OpenAiCatalogGateway {
     public function publishedProfiles(): iterable
@@ -121,7 +139,7 @@ assert_test(
 );
 
 $alternative = $service->execute(OpenAiCatalogService::SEARCH_PRODUCTS, [
-    'profile_id' => 11,
+    'attributes' => ['hydratace'],
     'excluded_product_ids' => [90, 90],
 ]);
 assert_test('excludes all previously shown product IDs', $alternative['products'][0]['id'] === 91);
@@ -145,13 +163,23 @@ assert_test('rejects search without criteria', $invalidThrown);
 $invalidExclusionThrown = false;
 try {
     $service->execute(OpenAiCatalogService::SEARCH_PRODUCTS, [
-        'profile_id' => 11,
+        'attributes' => ['péče'],
         'excluded_product_ids' => [0],
     ]);
 } catch (InvalidArgumentException) {
     $invalidExclusionThrown = true;
 }
 assert_test('rejects invalid excluded product IDs', $invalidExclusionThrown);
+
+$invalidAttributesThrown = false;
+try {
+    $service->execute(OpenAiCatalogService::SEARCH_PRODUCTS, [
+        'attributes' => array_fill(0, OpenAiCatalogService::MAX_SEARCH_ATTRIBUTES + 1, 'atribut'),
+    ]);
+} catch (InvalidArgumentException) {
+    $invalidAttributesThrown = true;
+}
+assert_test('rejects too many product attributes', $invalidAttributesThrown);
 
 $emptyQuestionThrown = false;
 try {

@@ -55,8 +55,29 @@ assert_test(
     isset($captured['payload']['session']['tools'][1]['parameters']['properties']['excluded_product_ids']),
 );
 assert_test(
+    'declares attribute based product search',
+    isset($captured['payload']['session']['tools'][1]['parameters']['properties']['attributes']),
+);
+assert_test(
+    'declares hard exclusions for rejected product attributes',
+    isset($captured['payload']['session']['tools'][1]['parameters']['properties']['excluded_attributes']),
+);
+assert_test(
+    'does not offer profile probability as a primary search input',
+    !isset($captured['payload']['session']['tools'][1]['parameters']['properties']['profile_id']),
+);
+assert_test(
     'allows one validated customer question when context is insufficient',
     str_contains($captured['payload']['session']['instructions'], 'show_customer_question'),
+);
+assert_test(
+    'reserves customer profiles for later upsell',
+    str_contains($captured['payload']['session']['instructions'], 'future upsell'),
+);
+assert_test(
+    'uses structured English instructions but requires Czech customer questions',
+    str_contains($captured['payload']['session']['instructions'], '# Role and objective')
+        && str_contains($captured['payload']['session']['instructions'], 'written in Czech'),
 );
 assert_test('does not return server API key', !str_contains(json_encode($result), 'sk-test'));
 

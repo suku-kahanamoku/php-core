@@ -1803,9 +1803,15 @@ names are `list_customer_profiles`, `search_products`, `get_product`, and
 question of at most 160 characters; it does not access CRM data.
 `search_products` accepts `excluded_product_ids` (at most 50 positive IDs) so a
 continuous Realtime session can avoid products already shown to the customer.
-Search arguments may contain `profile_id`, `query`, `max_price`, `category`,
-and `limit` from 1 to 5. The endpoint returns only published tenant data and
-never permits CRM writes.
+Search arguments may contain `query`, `max_price`, `category`, `limit` from 1
+to 5, `attributes` with at most 12 confirmed product requirements and
+`excluded_attributes` with at most 12 explicitly rejected properties or
+ingredients. A rejected-attribute match removes the product. Primary
+ranking uses matched attributes, text relevance and attribute completeness; it
+does not accept or return a customer-profile probability. Stored probabilities
+remain available for a future, separate upsell flow. Search results include
+`matched_attributes` and `attribute_match_count`. The endpoint returns only
+published tenant data and never permits CRM writes.
 
 Catalog rows are consumed through paginated iterators, so search and detail are
 not limited to the first 100 published rows. Search retains only the requested

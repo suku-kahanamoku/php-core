@@ -64,7 +64,6 @@ final class OpenAiCatalogRepository implements OpenAiCatalogGateway
                 'variant',
                 'data',
                 'categories',
-                'profile_probabilities',
                 'alternatives',
             ]);
             $items = array_values($result['data'] ?? []);

@@ -91,6 +91,9 @@ host and is rate-limited. See
 The Realtime model is configured through `OPENAI_REALTIME_MODEL` (default
 `gpt-realtime`). The session prompt is tenant-neutral; tenant-specific catalog
 data is resolved from the trusted request host rather than hard-coded branding.
+The compact, sectioned system instructions and tool descriptions are in English,
+while the analyzed sales conversation and every customer-facing clarification
+question remain explicitly Czech.
 
 The same scoped credential protects `POST /api/openai/tool`, an allowlisted
 read-only bridge for published tenant profiles and products used by Realtime
@@ -101,6 +104,12 @@ The Realtime session silently analyzes the ongoing dialogue, selects a verified
 product only after enough context, and excludes already shown products after a
 customer objection. If one essential fact is missing, a validated function can
 show one short question in the glasses and then wait for the customer's speech.
+Primary selection ranks concrete product attributes extracted from the dialogue
+and never uses customer-profile probability. Profiles and stored probabilities
+are reserved for a later, separate upsell decision. The idempotent migration
+`migrations/20260921_fun_product_catalog_enrichment.sql` adds 30 current FAnn
+variants and enriches 23 matching seed products with structured selection
+attributes and their public source metadata.
 
 This is intentionally an HTTPS session broker, not a PHP WebSocket daemon.
 CGI/FastCGI requests do not provide a reliable long-running WebSocket process.

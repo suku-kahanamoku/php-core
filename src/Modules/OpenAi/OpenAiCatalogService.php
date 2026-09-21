@@ -20,6 +20,8 @@ final class OpenAiCatalogService
     public const MAX_QUESTION_LENGTH = 160;
     public const MAX_EXCLUDED_PRODUCTS = 50;
     public const MAX_SEARCH_RESULTS = 5;
+    public const MAX_SEARCH_ATTRIBUTES = 12;
+    public const MAX_SEARCH_ATTRIBUTE_LENGTH = 80;
 
     /** @param OpenAiCatalogGateway $catalog Tenantovy zdroj publikovanych dat. */
     public function __construct(private OpenAiCatalogGateway $catalog) {}
@@ -69,18 +71,29 @@ final class OpenAiCatalogService
     }
 
     /**
-     * Filtruje katalog podle pevnych omezeni a radi jej podle profilu a textove shody.
+     * Filtruje katalog podle pevných omezení a řadí jej podle atributů a textové shody.
      *
-     * @param array<string, mixed> $arguments Profil, omezeni, limit a vyloucena produktova ID.
+     * @param array<string, mixed> $arguments Potřeby, omezení, limit a vyloučená produktová ID.
      * @return array{products:list<array<string, mixed>>,count:int}
      */
     private function searchProducts(array $arguments): array
     {
-        $profileId = $this->optionalPositiveInt($arguments, 'profile_id');
         $query     = $this->limitedText($arguments, 'query', 200);
         $category  = $this->limitedText($arguments, 'category', 100);
         $maxPrice  = $this->optionalPositiveFloat($arguments, 'max_price');
         $limit     = $this->optionalPositiveInt($arguments, 'limit') ?? 3;
+        $attributes = $this->textList(
+            $arguments,
+            'attributes',
+            self::MAX_SEARCH_ATTRIBUTES,
+            self::MAX_SEARCH_ATTRIBUTE_LENGTH,
+        );
+        $excludedAttributes = $this->textList(
+            $arguments,
+            'excluded_attributes',
+            self::MAX_SEARCH_ATTRIBUTES,
+            self::MAX_SEARCH_ATTRIBUTE_LENGTH,
+        );
         $excludedProductIds = $this->positiveIntList(
             $arguments,
             'excluded_product_ids',
@@ -89,7 +102,7 @@ final class OpenAiCatalogService
         if ($limit > self::MAX_SEARCH_RESULTS) {
             throw new \InvalidArgumentException('Product result limit must not exceed 5.');
         }
-        if ($profileId === null && $query === '' && $category === '' && $maxPrice === null) {
+        if ($query === '' && $category === '' && $maxPrice === null && $attributes === [] && $excludedAttributes === []) {
             throw new \InvalidArgumentException('At least one product search criterion is required.');
         }
 
@@ -105,23 +118,30 @@ final class OpenAiCatalogService
             if ($category !== '' && !$this->contains($this->categoryText($product), $category)) {
                 continue;
             }
-            $probability = $this->profileProbability($product, $profileId);
-            $relevance   = $this->relevance($product, $query);
+            $searchableText = $this->searchableText($product);
+            if ($this->matchedAttributes($searchableText, $excludedAttributes) !== []) {
+                continue;
+            }
+            $matchedAttributes = $this->matchedAttributes($searchableText, $attributes);
+            $relevance = $this->relevance($searchableText, $query);
             $ranked[]    = [
-                'score'       => $probability + ($relevance * 25),
-                'probability' => $probability,
-                'relevance'   => $relevance,
-                'product'     => $product,
+                'attribute_matches' => count($matchedAttributes),
+                'matched_attributes' => $matchedAttributes,
+                'relevance' => $relevance,
+                'attribute_richness' => $this->attributeRichness($product),
+                'product' => $product,
             ];
             usort($ranked, self::compareRankedProducts(...));
             if (count($ranked) > $limit) {
                 array_pop($ranked);
             }
         }
-        $products = array_map(
-            fn(array $entry): array => $this->publicProduct($entry['product'], $profileId),
-            $ranked,
-        );
+        $products = array_map(function (array $entry): array {
+            $product = $this->publicProduct($entry['product']);
+            $product['matched_attributes'] = $entry['matched_attributes'];
+            $product['attribute_match_count'] = $entry['attribute_matches'];
+            return $product;
+        }, $ranked);
         return ['products' => $products, 'count' => count($products)];
     }
 
@@ -133,8 +153,17 @@ final class OpenAiCatalogService
      */
     private static function compareRankedProducts(array $left, array $right): int
     {
-        return [$right['score'], $right['probability'], $right['relevance'], -(int) ($right['product']['id'] ?? 0)]
-            <=> [$left['score'], $left['probability'], $left['relevance'], -(int) ($left['product']['id'] ?? 0)];
+        return [
+            $right['attribute_matches'],
+            $right['relevance'],
+            $right['attribute_richness'],
+            -(int) ($right['product']['id'] ?? 0),
+        ] <=> [
+            $left['attribute_matches'],
+            $left['relevance'],
+            $left['attribute_richness'],
+            -(int) ($left['product']['id'] ?? 0),
+        ];
     }
 
     /**
@@ -151,7 +180,7 @@ final class OpenAiCatalogService
         }
         foreach ($this->catalog->publishedProducts() as $product) {
             if ((int) ($product['id'] ?? 0) === $productId) {
-                return ['product' => $this->publicProduct($product, null, true)];
+                return ['product' => $this->publicProduct($product, true)];
             }
         }
         return ['product' => null];
@@ -181,7 +210,7 @@ final class OpenAiCatalogService
      * @param array<string, mixed> $product
      * @return array<string, mixed>
      */
-    private function publicProduct(array $product, ?int $profileId, bool $detail = false): array
+    private function publicProduct(array $product, bool $detail = false): array
     {
         $result = $this->pick($product, [
             'id',
@@ -196,13 +225,9 @@ final class OpenAiCatalogService
             'data',
             'categories',
             'alternatives',
-            'profile_probabilities',
         ]);
         if (!$detail) {
-            unset($result['description'], $result['alternatives'], $result['profile_probabilities']);
-        }
-        if ($profileId !== null) {
-            $result['profile_probability'] = $this->profileProbability($product, $profileId);
+            unset($result['alternatives']);
         }
         return $result;
     }
@@ -213,27 +238,19 @@ final class OpenAiCatalogService
         return array_intersect_key($source, array_fill_keys($keys, true));
     }
 
-    /** @param array<string, mixed> $product */
-    private function profileProbability(array $product, ?int $profileId): int
-    {
-        if ($profileId === null) {
-            return 0;
-        }
-        foreach (($product['profile_probabilities'] ?? []) as $probability) {
-            if (is_array($probability) && (int) ($probability['customer_profile_id'] ?? 0) === $profileId) {
-                return min(100, max(0, (int) ($probability['probability_percent'] ?? 0)));
-            }
-        }
-        return 0;
-    }
-
-    /** @param array<string, mixed> $product */
-    private function relevance(array $product, string $query): int
+    private function relevance(string $haystack, string $query): int
     {
         if ($query === '') {
             return 0;
         }
-        $haystack = $this->normalize(implode(' ', [
+        $tokens = preg_split('/\s+/u', $this->normalize($query), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        return count(array_filter($tokens, fn(string $token): bool => $this->textLength($token) >= 2 && str_contains($haystack, $token)));
+    }
+
+    /** @param array<string, mixed> $product */
+    private function searchableText(array $product): string
+    {
+        return $this->normalize(implode(' ', [
             (string) ($product['sku'] ?? ''),
             (string) ($product['name'] ?? ''),
             (string) ($product['description'] ?? ''),
@@ -243,16 +260,60 @@ final class OpenAiCatalogService
             $this->categoryText($product),
             json_encode($product['data'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
         ]));
-        $tokens = preg_split('/\s+/u', $this->normalize($query), -1, PREG_SPLIT_NO_EMPTY) ?: [];
-        return count(array_filter($tokens, fn(string $token): bool => $this->textLength($token) >= 2 && str_contains($haystack, $token)));
+    }
+
+    /** @param list<string> $attributes @return list<string> */
+    private function matchedAttributes(string $haystack, array $attributes): array
+    {
+        $matched = [];
+        foreach ($attributes as $attribute) {
+            $normalized = $this->normalize($attribute);
+            $tokens = preg_split('/\s+/u', $normalized, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+            $significantTokens = array_values(array_filter(
+                $tokens,
+                fn(string $token): bool => $this->textLength($token) >= 3,
+            ));
+            if (str_contains($haystack, $normalized) || ($significantTokens !== [] && count(array_filter(
+                $significantTokens,
+                static fn(string $token): bool => str_contains($haystack, $token),
+            )) === count($significantTokens))) {
+                $matched[] = $attribute;
+            }
+        }
+        return $matched;
+    }
+
+    /** @param array<string, mixed> $product */
+    private function attributeRichness(array $product): int
+    {
+        $attributes = $product['data']['selection_attributes'] ?? [];
+        if (!is_array($attributes)) {
+            return 0;
+        }
+        $count = 0;
+        array_walk_recursive($attributes, static function (mixed $value) use (&$count): void {
+            if (is_scalar($value) && trim((string) $value) !== '') {
+                $count++;
+            }
+        });
+        return $count;
     }
 
     /** @param array<string, mixed> $product */
     private function categoryText(array $product): string
     {
-        return implode(' ', array_map(
+        $categories = array_map(
             static fn(mixed $category): string => is_array($category) ? (string) ($category['name'] ?? '') : '',
             is_array($product['categories'] ?? null) ? $product['categories'] : [],
+        );
+        $selection = $product['data']['selection_attributes'] ?? [];
+        $declaredCategories = is_array($selection) && is_array($selection['category'] ?? null)
+            ? $selection['category']
+            : [];
+        return implode(' ', array_merge(
+            $categories,
+            [(string) ($product['kind'] ?? '')],
+            array_map(static fn(mixed $value): string => is_scalar($value) ? (string) $value : '', $declaredCategories),
         ));
     }
 
@@ -264,7 +325,14 @@ final class OpenAiCatalogService
     private function normalize(string $value): string
     {
         $normalized = trim(preg_replace('/\s+/u', ' ', $value) ?? $value);
-        return function_exists('mb_strtolower') ? mb_strtolower($normalized) : strtolower($normalized);
+        $normalized = function_exists('mb_strtolower') ? mb_strtolower($normalized) : strtolower($normalized);
+        if (function_exists('iconv')) {
+            $ascii = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $normalized);
+            if ($ascii !== false) {
+                return strtolower($ascii);
+            }
+        }
+        return $normalized;
     }
 
     /** @param array<string, mixed> $arguments */
@@ -321,6 +389,32 @@ final class OpenAiCatalogService
                 throw new \InvalidArgumentException("{$key} must contain positive integers.");
             }
             $result[$value] = $value;
+        }
+        return array_values($result);
+    }
+
+    /**
+     * Validuje krátké textové atributy od modelu a odstraní duplicity.
+     *
+     * @param array<string, mixed> $arguments Nedůvěryhodné argumenty modelu.
+     * @return list<string>
+     */
+    private function textList(array $arguments, string $key, int $maxItems, int $maxLength): array
+    {
+        $raw = $arguments[$key] ?? [];
+        if (!is_array($raw) || count($raw) > $maxItems) {
+            throw new \InvalidArgumentException("{$key} must be an array with at most {$maxItems} items.");
+        }
+        $result = [];
+        foreach ($raw as $item) {
+            if (!is_string($item)) {
+                throw new \InvalidArgumentException("{$key} must contain strings.");
+            }
+            $value = trim($item);
+            if ($value === '' || $this->textLength($value) > $maxLength) {
+                throw new \InvalidArgumentException("{$key} contains an invalid value.");
+            }
+            $result[$this->normalize($value)] = $value;
         }
         return array_values($result);
     }
