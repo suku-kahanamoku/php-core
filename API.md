@@ -1798,9 +1798,10 @@ Errors: `401` missing/invalid Rokid key, `429` rate limit, `502` OpenAI
 unavailable, `503` missing server configuration.
 
 `POST /openai/tool` accepts `{ "name": string, "arguments": object }`. Allowed
-names are `list_customer_profiles`, `search_products`, `get_product`, and
-`show_customer_question`. The last operation validates and returns one customer
-question of at most 160 characters; it does not access CRM data.
+names are `list_customer_profiles`, `search_products`, and `get_product`.
+Realtime sessions expose only `search_products` and `get_product`; the profile
+operation remains an authenticated backend capability for a possible separate
+future flow, not for passive primary selection.
 `search_products` separates eligibility from ranking. `required_attributes`,
 `excluded_attributes`, `max_price`, `category`, and `rejected_product_ids` are
 hard conditions. `preferred_attributes` and `negative_preferences` only rank

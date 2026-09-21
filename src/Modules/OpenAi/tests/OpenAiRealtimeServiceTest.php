@@ -42,54 +42,49 @@ assert_test('requests text output', $captured['payload']['session']['output_moda
 assert_test('requests PCM24 input', $captured['payload']['session']['audio']['input']['format']['rate'] === 24000);
 assert_test('enables automatic tool choice', $captured['payload']['session']['tool_choice'] === 'auto');
 assert_test(
-    'declares all catalog tools',
+    'declares only passive product selection tools',
     array_column($captured['payload']['session']['tools'], 'name') === [
-        'list_customer_profiles',
         'search_products',
         'get_product',
-        'show_customer_question',
     ],
 );
 assert_test(
     'declares separate displayed and rejected product histories',
-    isset($captured['payload']['session']['tools'][1]['parameters']['properties']['displayed_product_ids'])
-        && isset($captured['payload']['session']['tools'][1]['parameters']['properties']['rejected_product_ids']),
+    isset($captured['payload']['session']['tools'][0]['parameters']['properties']['displayed_product_ids'])
+        && isset($captured['payload']['session']['tools'][0]['parameters']['properties']['rejected_product_ids']),
 );
 assert_test(
     'separates mandatory and preferred product attributes',
-    isset($captured['payload']['session']['tools'][1]['parameters']['properties']['required_attributes'])
-        && isset($captured['payload']['session']['tools'][1]['parameters']['properties']['preferred_attributes'])
-        && isset($captured['payload']['session']['tools'][1]['parameters']['properties']['negative_preferences']),
+    isset($captured['payload']['session']['tools'][0]['parameters']['properties']['required_attributes'])
+        && isset($captured['payload']['session']['tools'][0]['parameters']['properties']['preferred_attributes'])
+        && isset($captured['payload']['session']['tools'][0]['parameters']['properties']['negative_preferences']),
 );
 assert_test(
     'declares hard exclusions for rejected product attributes',
-    isset($captured['payload']['session']['tools'][1]['parameters']['properties']['excluded_attributes']),
+    isset($captured['payload']['session']['tools'][0]['parameters']['properties']['excluded_attributes']),
 );
 assert_test(
     'requires hard constraints again during final product verification',
-    $captured['payload']['session']['tools'][2]['parameters']['required']
+    $captured['payload']['session']['tools'][1]['parameters']['required']
         === ['product_id', 'required_attributes', 'excluded_attributes'],
 );
 assert_test(
     'does not offer profile probability as a primary search input',
-    !isset($captured['payload']['session']['tools'][1]['parameters']['properties']['profile_id']),
+    !isset($captured['payload']['session']['tools'][0]['parameters']['properties']['profile_id']),
 );
 assert_test(
-    'allows one validated customer question when context is insufficient',
-    str_contains($captured['payload']['session']['instructions'], 'show_customer_question'),
+    'forbids customer questions and sales arguments',
+    str_contains($captured['payload']['session']['instructions'], 'Never ask the customer a question.')
+        && str_contains($captured['payload']['session']['instructions'], 'Never produce spoken responses, sales arguments'),
 );
 assert_test(
-    'reserves customer profiles for later upsell',
-    str_contains($captured['payload']['session']['instructions'], 'future upsell'),
-);
-assert_test(
-    'uses structured English instructions but requires Czech customer questions',
+    'uses structured English instructions for the Czech conversation',
     str_contains($captured['payload']['session']['instructions'], '# Role and objective')
-        && str_contains($captured['payload']['session']['instructions'], 'short Czech question'),
+        && str_contains($captured['payload']['session']['instructions'], 'live Czech conversation'),
 );
 assert_test(
-    'allows exploratory search before final selection',
-    str_contains($captured['payload']['session']['instructions'], 'perform exploratory search'),
+    'waits silently until conversation evidence supports a search',
+    str_contains($captured['payload']['session']['instructions'], 'silently WAIT and keep listening'),
 );
 assert_test(
     'keeps hard requirements separate from ranking preferences',

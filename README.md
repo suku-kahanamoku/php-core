@@ -92,8 +92,7 @@ The Realtime model is configured through `OPENAI_REALTIME_MODEL` (default
 `gpt-realtime`). The session prompt is tenant-neutral; tenant-specific catalog
 data is resolved from the trusted request host rather than hard-coded branding.
 The compact, sectioned system instructions and tool descriptions are in English,
-while the analyzed sales conversation and every customer-facing clarification
-question remain explicitly Czech.
+while the analyzed sales conversation remains Czech.
 
 The same scoped credential protects `POST /api/openai/tool`, an allowlisted
 read-only bridge for published tenant profiles and products used by Realtime
@@ -105,12 +104,12 @@ exploratory catalog search once category and one useful requirement are known.
 Mandatory requirements, explicit exclusions and rejected product IDs are hard
 eligibility rules; positive and negative preferences only rank eligible
 candidates. Already displayed products are deprioritized but remain available
-when the customer asks to return to one. A validated function can show one short
-high-impact question in the glasses and then wait for new speech. Primary
-selection never uses customer-profile probability. Before Android can display a
-card, `get_product` repeats the hard-condition and stock checks on the server.
-Profiles and stored probabilities are reserved for a later, separate upsell
-decision. The idempotent migration
+when the customer asks to return to one. The model never asks clarification
+questions and never generates sales, upsell or cross-sell arguments; when the
+dialogue lacks useful evidence, it silently keeps listening. Primary selection
+never uses customer-profile probability. Before Android can display a card,
+`get_product` repeats the hard-condition and stock checks on the server. The
+idempotent migration
 `migrations/20260921_fun_product_catalog_enrichment.sql` adds 30 current FAnn
 variants and enriches 23 matching seed products with structured selection
 attributes and their public source metadata.

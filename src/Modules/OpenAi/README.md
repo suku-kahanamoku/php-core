@@ -25,9 +25,9 @@ Uspech vraci standardni envelope a v `data`:
 ```
 
 Token plati 60 sekund pro vytvoreni relace. Relace pouziva server VAD, textovy
-vystup a limit 64 output tokenu. Deklaruje funkce `list_customer_profiles`,
-`search_products`, `get_product` a `show_customer_question`; model jejich
-provedeni pouze vyzada a mobil je vykona pres nasledujici backendovy endpoint.
+vystup a limit 64 output tokenu. Deklaruje pouze funkce `search_products` a
+`get_product`; model jejich provedeni pouze vyzada a mobil je vykona pres
+nasledujici backendovy endpoint.
 
 ```http
 POST /api/openai/tool
@@ -67,11 +67,13 @@ drží v paměti pouze nejlepší požadovaný počet kandidátů, nikoli celý 
 
 Realtime relace analyzuje celý rozhovor a neposílá volný text určený k
 zobrazení. Rozlišuje osobu a nákupní záměr, potvrzená fakta, jednoznačně
-vyjádřený význam, hypotézy a neznámé údaje. Průzkumné hledání je povoleno po
-určení kategorie a alespoň jednoho použitelného požadavku. Otázka se vybírá
-podle dopadu na způsobilost nebo rozlišení skutečných kandidátů. Před zobrazením
-se načte detail jediného produktu a ověří varianta, cena, dostupnost a tvrdé
-podmínky. Zákaznické profily jsou pro primární hledání zakázané.
+vyjádřený význam, hypotézy a neznámé údaje. Nikdy nepokládá otázku a negeneruje
+prodejní argument, upsell ani cross-sell. Při nedostatku podkladů tiše čeká na
+další řeč. Průzkumné hledání je povoleno po určení kategorie a alespoň jednoho
+použitelného signálu. Před zobrazením se načte detail jediného produktu a ověří
+varianta, cena, dostupnost a tvrdé podmínky. Nový produkt se zobrazí jen tehdy,
+když nové informace změní nejlepší shodu nebo zneplatní současnou. Zákaznické
+profily nejsou Realtime relaci zpřístupněné.
 
 Migrace `migrations/20260921_fun_product_catalog_enrichment.sql` idempotentně
 obohacuje 23 dohledaných existujících FAnn produktů a přidává 30 aktuálních variant. Ukládá
@@ -102,8 +104,7 @@ uzivatele nebo atestaci zarizeni; hlavni OpenAI klic zustava vzdy jen na serveru
 
 Realtime model lze bez změny kódu nastavit přes `OPENAI_REALTIME_MODEL`; výchozí
 hodnota je `gpt-realtime`. Systémové instrukce a popisy nástrojů jsou stručně
-strukturované v angličtině, ale analyzovaný rozhovor i všechny otázky zobrazené
-zákazníkovi zůstávají výslovně české. Jazyk instrukcí sám o sobě negarantuje
+strukturované v angličtině, analyzovaný rozhovor však zůstává český. Jazyk instrukcí sám o sobě negarantuje
 nižší cenu ani vyšší přesnost; rozhodující je jejich jednoznačnost, délka a
 ověření na reálných dialozích. Prompt je tenantově neutrální a konkrétní profily
 i produkty vždy pocházejí z hostem vybraného katalogu.

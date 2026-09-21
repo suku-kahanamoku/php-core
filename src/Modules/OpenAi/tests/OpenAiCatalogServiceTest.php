@@ -193,11 +193,6 @@ $excludedDetail = $service->execute(OpenAiCatalogService::GET_PRODUCT, [
 ]);
 assert_test('refuses to display a product matching an explicit exclusion', $excludedDetail['product'] === null);
 
-$question = $service->execute(OpenAiCatalogService::SHOW_QUESTION, [
-    'question' => 'Jaký máte cenový rozpočet?',
-]);
-assert_test('returns a validated customer question', $question['question'] === 'Jaký máte cenový rozpočet?');
-
 $invalidThrown = false;
 try {
     $service->execute(OpenAiCatalogService::SEARCH_PRODUCTS, []);
@@ -227,13 +222,13 @@ try {
 }
 assert_test('rejects too many product attributes', $invalidAttributesThrown);
 
-$emptyQuestionThrown = false;
+$unknownToolThrown = false;
 try {
-    $service->execute(OpenAiCatalogService::SHOW_QUESTION, ['question' => '  ']);
+    $service->execute('show_customer_question', ['question' => 'Jaký máte rozpočet?']);
 } catch (InvalidArgumentException) {
-    $emptyQuestionThrown = true;
+    $unknownToolThrown = true;
 }
-assert_test('rejects an empty customer question', $emptyQuestionThrown);
+assert_test('rejects the removed customer question tool', $unknownToolThrown);
 
 if (!isset($runnerMode)) {
     print_results();

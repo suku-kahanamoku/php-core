@@ -8,16 +8,14 @@ namespace App\Modules\OpenAi;
  * Validuje AI tool cally a vraci pouze omezeny read-only tenantovy katalog.
  *
  * Model nikdy nedostava pristup k obecným admin endpointum. Sluzba povoluje
- * pouze pojmenovane katalogove operace a validovanou UI otazku, filtruje
- * publikovane zaznamy a omezuje pocet produktu predanych zpet do kontextu.
+ * pouze pojmenovane katalogove operace, filtruje publikovane zaznamy a omezuje
+ * pocet produktu predanych zpet do kontextu.
  */
 final class OpenAiCatalogService
 {
     public const LIST_PROFILES   = 'list_customer_profiles';
     public const SEARCH_PRODUCTS = 'search_products';
     public const GET_PRODUCT     = 'get_product';
-    public const SHOW_QUESTION   = 'show_customer_question';
-    public const MAX_QUESTION_LENGTH = 160;
     public const MAX_EXCLUDED_PRODUCTS = 50;
     public const MAX_SEARCH_RESULTS = 5;
     public const MAX_SEARCH_ATTRIBUTES = 12;
@@ -40,24 +38,8 @@ final class OpenAiCatalogService
             self::LIST_PROFILES   => $this->listProfiles(),
             self::SEARCH_PRODUCTS => $this->searchProducts($arguments),
             self::GET_PRODUCT     => $this->getProduct($arguments),
-            self::SHOW_QUESTION   => $this->showCustomerQuestion($arguments),
             default               => throw new \InvalidArgumentException('Unknown AI catalog tool.'),
         };
-    }
-
-    /**
-     * Ověří jednu krátkou otázku určenou k přímému zobrazení zákazníkovi.
-     *
-     * @param array<string, mixed> $arguments Povinný český text otázky.
-     * @return array{question:string}
-     */
-    private function showCustomerQuestion(array $arguments): array
-    {
-        $question = $this->limitedText($arguments, 'question', self::MAX_QUESTION_LENGTH);
-        if ($question === '') {
-            throw new \InvalidArgumentException('question is required.');
-        }
-        return ['question' => $question];
     }
 
     /** @return array{profiles:list<array<string, mixed>>} Verejne profilove podklady. */
