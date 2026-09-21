@@ -41,7 +41,12 @@ assert_test('uses gpt-realtime', $captured['payload']['session']['model'] === 'g
 assert_test('requests text output', $captured['payload']['session']['output_modalities'] === ['text']);
 assert_test('requests PCM24 input', $captured['payload']['session']['audio']['input']['format']['rate'] === 24000);
 assert_test('requires every response to call a tool', $captured['payload']['session']['tool_choice'] === 'required');
-assert_test('allows enough output tokens for structured tool arguments', $captured['payload']['session']['max_output_tokens'] === 256);
+assert_test('allows enough output tokens for structured tool arguments', $captured['payload']['session']['max_output_tokens'] === 512);
+assert_test(
+    'stabilizes server VAD for continuous dialogue',
+    $captured['payload']['session']['audio']['input']['turn_detection']['silence_duration_ms'] === 700
+        && $captured['payload']['session']['audio']['input']['turn_detection']['create_response'] === true,
+);
 assert_test(
     'declares product selection and silent listening tools',
     array_column($captured['payload']['session']['tools'], 'name') === [
@@ -97,6 +102,11 @@ assert_test(
     'keeps hard requirements separate from ranking preferences',
     str_contains($captured['payload']['session']['instructions'], 'required_attributes')
         && str_contains($captured['payload']['session']['instructions'], 'preferred_attributes'),
+);
+assert_test(
+    'requires a different product after explicit rejection',
+    str_contains($captured['payload']['session']['instructions'], 'rejects the currently displayed product')
+        && str_contains($captured['payload']['session']['instructions'], 'Never select an ID listed in displayed_product_ids'),
 );
 assert_test('does not return server API key', !str_contains(json_encode($result), 'sk-test'));
 

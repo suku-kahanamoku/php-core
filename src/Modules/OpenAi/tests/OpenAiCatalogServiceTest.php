@@ -100,6 +100,8 @@ assert_test('ranks matching product first', $search['products'][0]['id'] === 90)
 assert_test('reports all matched product attributes', $search['products'][0]['attribute_match_count'] === 3);
 assert_test('does not expose profile probability in primary search', !isset($search['products'][0]['profile_probability']));
 assert_test('returns description so model can compare candidates', $search['products'][0]['description'] === 'Vyrazna kavova vune.');
+assert_test('returns compact selection attributes for comparison', isset($search['products'][0]['selection_attributes']['occasion']));
+assert_test('does not return unrelated product data in search', !isset($search['products'][0]['data']));
 
 $required = $service->execute(OpenAiCatalogService::SEARCH_PRODUCTS, [
     'category' => 'péče',

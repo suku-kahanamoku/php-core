@@ -24,8 +24,9 @@ Uspech vraci standardni envelope a v `data`:
 }
 ```
 
-Token plati 60 sekund pro vytvoreni relace. Relace pouziva server VAD, textovy
-vystup a limit 256 output tokenu pro bezpečné dokončení strukturovaných argumentů.
+Token plati 60 sekund pro vytvoreni relace. Relace pouziva server VAD s delsim
+700ms tichem pro stabilnejsi deleni souvisleho dialogu, textovy vystup a limit
+512 output tokenu pro bezpečné dokončení strukturovaných argumentů.
 Povinné volání nástroje dovoluje pouze `search_products`, `get_product` a lokální
 `continue_listening`; model proto nemůže místo výběru produktu vrátit volný text.
 Katalogové nástroje mobil vykoná přes následující backendový endpoint.
@@ -45,8 +46,9 @@ ID fungují jako tvrdé podmínky. Nejvýše pět způsobilých produktů se řa
 toho, zda ještě nebyly zobrazeny, podle kladných a záporných preferencí, textové
 shody a až nakonec podle úplnosti atributů. Profilová pravděpodobnost se
 do primárního výběru nezapočítává ani se v jeho výsledku nevrací; zůstává
-uložená pro případnou samostatnou upsell logiku. `displayed_product_ids` pouze
-sníží prioritu opakované nabídky; `rejected_product_ids` produkt tvrdě odstraní.
+uložená pro případnou samostatnou upsell logiku. `displayed_product_ids` označuje
+historii a Android ji při novém hledání sloučí do tvrdého
+`rejected_product_ids`; opakované zobrazení stejné karty proto není možné.
 Starší `attributes` a `excluded_product_ids` zůstávají kompatibilními aliasy.
 `get_product` znovu přijímá aktuální povinné atributy, zákazy, kategorii a
 cenový strop. Detail vrátí pouze publikované a dostupné položce, která všemi
@@ -58,7 +60,9 @@ hodnot v každém z polí `required_attributes`, `preferred_attributes`,
 `displayed_product_ids` a `rejected_product_ids`. Produkt bez všech povinných
 atributů nebo se shodou na výslovném zákazu je z výsledků vyřazen.
 Vyhledávání porovnává atributy s názvem, popisem, variantou, kategorií a JSON
-`data.selection_attributes`; ve výsledku vrací zvlášť splněné povinné a kladné
+`data.selection_attributes`; kandidátní odpověď obsahuje jen kompaktní základ,
+popis a `selection_attributes`, zatímco úplný objekt vrací až `get_product`.
+Ve výsledku vrací zvlášť splněné povinné a kladné
 atributy, rozpory s měkkými preferencemi, chybějící preference, celkový počet
 způsobilých kandidátů a stav `candidates` nebo `no_match`.
 
@@ -73,8 +77,8 @@ prodejní argument, upsell ani cross-sell. Jakmile zachytí libovolný použitel
 nákupní signál, hledá ihned; neznámé vlastnosti ponechá bez omezení. Jen čisté
 pozadí, nedokončená řeč nebo nezměněný stav ukončí lokálním nástrojem
 `continue_listening`. Před zobrazením se načte detail jediného produktu a ověří
-varianta, cena, dostupnost a tvrdé podmínky. Nový produkt se zobrazí jen tehdy,
-když nové informace změní nejlepší shodu nebo zneplatní současnou. Zákaznické
+varianta, cena, dostupnost a tvrdé podmínky. Výslovná žádost o jiný produkt
+odmítne současné ID a změna potřeby vždy spustí nové hledání. Zákaznické
 profily nejsou Realtime relaci zpřístupněné.
 
 Migrace `migrations/20260921_fun_product_catalog_enrichment.sql` idempotentně

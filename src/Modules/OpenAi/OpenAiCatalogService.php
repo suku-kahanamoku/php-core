@@ -173,7 +173,7 @@ final class OpenAiCatalogService
             }
         }
         $products = array_map(function (array $entry): array {
-            $product = $this->publicProduct($entry['product']);
+            $product = $this->publicSearchProduct($entry['product']);
             $product['was_displayed'] = $entry['was_displayed'];
             $product['matched_required_attributes'] = $entry['matched_required_attributes'];
             $product['matched_preferred_attributes'] = $entry['matched_preferred_attributes'];
@@ -337,6 +337,37 @@ final class OpenAiCatalogService
         ]);
         if (!$detail) {
             unset($result['alternatives']);
+        }
+        return $result;
+    }
+
+    /**
+     * Vrátí kompaktní kandidátní data potřebná pro rozhodnutí Realtime modelu.
+     *
+     * Detailní prodejní texty a alternativy se do každého hledání neposílají;
+     * model dostane popis a normalizované výběrové atributy. Úplný objekt načte
+     * až následným ověřovacím voláním `get_product`.
+     *
+     * @param array<string, mixed> $product Zdrojový produkt z tenantova katalogu.
+     * @return array<string, mixed> Omezená data kandidáta bez profilových vazeb.
+     */
+    private function publicSearchProduct(array $product): array
+    {
+        $result = $this->pick($product, [
+            'id',
+            'sku',
+            'name',
+            'description',
+            'price_with_vat',
+            'stock_quantity',
+            'kind',
+            'color',
+            'variant',
+            'categories',
+        ]);
+        $selectionAttributes = $product['data']['selection_attributes'] ?? null;
+        if (is_array($selectionAttributes) && $selectionAttributes !== []) {
+            $result['selection_attributes'] = $selectionAttributes;
         }
         return $result;
     }
