@@ -84,13 +84,23 @@ Tokens expire after 24 hours (configurable via `TOKEN_LIFETIME` in `.env`). Logo
 `POST /api/openai/realtime-session` creates a short-lived client secret for the
 Rokid Android application. The main `OPENAI_API_KEY` remains server-side; the
 mobile client uses the returned secret to connect directly to OpenAI Realtime.
-The endpoint requires `X-Rokid-Key`, is limited to the configured tenant and is
-rate-limited. See [`src/Modules/OpenAi/README.md`](src/Modules/OpenAi/README.md).
+The endpoint requires `X-Rokid-Key`, uses the tenant resolved from the request
+host and is rate-limited. See
+[`src/Modules/OpenAi/README.md`](src/Modules/OpenAi/README.md).
+
+The Realtime model is configured through `OPENAI_REALTIME_MODEL` (default
+`gpt-realtime`). The session prompt is tenant-neutral; tenant-specific catalog
+data is resolved from the trusted request host rather than hard-coded branding.
 
 The same scoped credential protects `POST /api/openai/tool`, an allowlisted
-read-only bridge for published FAnn profiles and products used by Realtime
+read-only bridge for published tenant profiles and products used by Realtime
 function calls. It does not expose the protected customer-profile list or any
 CRM write operation.
+
+The Realtime session silently analyzes the ongoing dialogue, selects a verified
+product only after enough context, and excludes already shown products after a
+customer objection. If one essential fact is missing, a validated function can
+show one short question in the glasses and then wait for the customer's speech.
 
 This is intentionally an HTTPS session broker, not a PHP WebSocket daemon.
 CGI/FastCGI requests do not provide a reliable long-running WebSocket process.

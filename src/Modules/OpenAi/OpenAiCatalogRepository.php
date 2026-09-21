@@ -9,9 +9,11 @@ use App\Modules\CustomerProfile\CustomerProfileRepository;
 use App\Modules\Database\Database;
 use App\Modules\Product\ProductService;
 
-/** Databazovy zdroj publikovanych FAnn profilu a produktu pro AI nastroje. */
+/** Strankovany databazovy zdroj publikovanych tenantovych dat pro AI nastroje. */
 final class OpenAiCatalogRepository implements OpenAiCatalogGateway
 {
+    private const PAGE_SIZE = 100;
+
     private CustomerProfileRepository $profiles;
     private ProductService $products;
 
@@ -28,36 +30,46 @@ final class OpenAiCatalogRepository implements OpenAiCatalogGateway
     }
 
     /** @inheritDoc */
-    public function publishedProfiles(): array
+    public function publishedProfiles(): iterable
     {
-        $result = $this->profiles->findAll(
-            1,
-            100,
-            json_encode([['position' => 1]], JSON_THROW_ON_ERROR),
-            json_encode(['published' => ['value' => 1]], JSON_THROW_ON_ERROR),
-        );
-        return array_values($result['data'] ?? []);
+        $page = 1;
+        do {
+            $result = $this->profiles->findAll(
+                $page,
+                self::PAGE_SIZE,
+                json_encode([['position' => 1]], JSON_THROW_ON_ERROR),
+                json_encode(['published' => ['value' => 1]], JSON_THROW_ON_ERROR),
+            );
+            $items = array_values($result['data'] ?? []);
+            yield from $items;
+            $page++;
+        } while (count($items) === self::PAGE_SIZE);
     }
 
     /** @inheritDoc */
-    public function publishedProducts(): array
+    public function publishedProducts(): iterable
     {
-        $result = $this->products->list(1, 100, '', '', [
-            'id',
-            'sku',
-            'name',
-            'description',
-            'price_with_vat',
-            'stock_quantity',
-            'published',
-            'kind',
-            'color',
-            'variant',
-            'data',
-            'categories',
-            'profile_probabilities',
-            'alternatives',
-        ]);
-        return array_values($result['data'] ?? []);
+        $page = 1;
+        do {
+            $result = $this->products->list($page, self::PAGE_SIZE, '', '', [
+                'id',
+                'sku',
+                'name',
+                'description',
+                'price_with_vat',
+                'stock_quantity',
+                'published',
+                'kind',
+                'color',
+                'variant',
+                'data',
+                'categories',
+                'profile_probabilities',
+                'alternatives',
+            ]);
+            $items = array_values($result['data'] ?? []);
+            yield from $items;
+            $page++;
+        } while (count($items) === self::PAGE_SIZE);
     }
 }

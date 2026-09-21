@@ -1763,7 +1763,7 @@ internal key does not grant access to this development/support endpoint.
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
 | POST | `/openai/realtime-session` | `X-Rokid-Key` | Create a short-lived Realtime client secret |
-| POST | `/openai/tool` | `X-Rokid-Key` | Execute an allowlisted read-only FAnn catalog tool |
+| POST | `/openai/tool` | `X-Rokid-Key` | Execute an allowlisted read-only tenant catalog tool |
 
 Both endpoints use the tenant resolved from the request host and never return
 the server-side `OPENAI_API_KEY`. Session creation accepts at most 10 attempts
@@ -1794,14 +1794,22 @@ Response `200`:
 }
 ```
 
-Errors: `401` missing/invalid Rokid key, `403` unavailable tenant, `429` rate
-limit, `502` OpenAI unavailable, `503` missing server configuration.
+Errors: `401` missing/invalid Rokid key, `429` rate limit, `502` OpenAI
+unavailable, `503` missing server configuration.
 
 `POST /openai/tool` accepts `{ "name": string, "arguments": object }`. Allowed
-names are `list_customer_profiles`, `search_products`, and `get_product`.
+names are `list_customer_profiles`, `search_products`, `get_product`, and
+`show_customer_question`. The last operation validates and returns one customer
+question of at most 160 characters; it does not access CRM data.
+`search_products` accepts `excluded_product_ids` (at most 50 positive IDs) so a
+continuous Realtime session can avoid products already shown to the customer.
 Search arguments may contain `profile_id`, `query`, `max_price`, `category`,
 and `limit` from 1 to 5. The endpoint returns only published tenant data and
 never permits CRM writes.
+
+Catalog rows are consumed through paginated iterators, so search and detail are
+not limited to the first 100 published rows. Search retains only the requested
+top candidates in memory.
 
 ---
 

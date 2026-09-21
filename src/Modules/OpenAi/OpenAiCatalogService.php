@@ -5,17 +5,21 @@ declare(strict_types=1);
 namespace App\Modules\OpenAi;
 
 /**
- * Validuje AI tool cally a vraci pouze omezeny read-only FAnn katalog.
+ * Validuje AI tool cally a vraci pouze omezeny read-only tenantovy katalog.
  *
  * Model nikdy nedostava pristup k obecným admin endpointum. Sluzba povoluje
- * pouze tri pojmenovane operace, filtruje publikovane zaznamy a omezuje pocet
- * produktu predanych zpet do Realtime kontextu.
+ * pouze pojmenovane katalogove operace a validovanou UI otazku, filtruje
+ * publikovane zaznamy a omezuje pocet produktu predanych zpet do kontextu.
  */
 final class OpenAiCatalogService
 {
     public const LIST_PROFILES   = 'list_customer_profiles';
     public const SEARCH_PRODUCTS = 'search_products';
     public const GET_PRODUCT     = 'get_product';
+    public const SHOW_QUESTION   = 'show_customer_question';
+    public const MAX_QUESTION_LENGTH = 160;
+    public const MAX_EXCLUDED_PRODUCTS = 50;
+    public const MAX_SEARCH_RESULTS = 5;
 
     /** @param OpenAiCatalogGateway $catalog Tenantovy zdroj publikovanych dat. */
     public function __construct(private OpenAiCatalogGateway $catalog) {}
@@ -34,21 +38,40 @@ final class OpenAiCatalogService
             self::LIST_PROFILES   => $this->listProfiles(),
             self::SEARCH_PRODUCTS => $this->searchProducts($arguments),
             self::GET_PRODUCT     => $this->getProduct($arguments),
+            self::SHOW_QUESTION   => $this->showCustomerQuestion($arguments),
             default               => throw new \InvalidArgumentException('Unknown AI catalog tool.'),
         };
+    }
+
+    /**
+     * Ověří jednu krátkou otázku určenou k přímému zobrazení zákazníkovi.
+     *
+     * @param array<string, mixed> $arguments Povinný český text otázky.
+     * @return array{question:string}
+     */
+    private function showCustomerQuestion(array $arguments): array
+    {
+        $question = $this->limitedText($arguments, 'question', self::MAX_QUESTION_LENGTH);
+        if ($question === '') {
+            throw new \InvalidArgumentException('question is required.');
+        }
+        return ['question' => $question];
     }
 
     /** @return array{profiles:list<array<string, mixed>>} Verejne profilove podklady. */
     private function listProfiles(): array
     {
-        $profiles = array_map(fn(array $profile): array => $this->publicProfile($profile), $this->catalog->publishedProfiles());
+        $profiles = [];
+        foreach ($this->catalog->publishedProfiles() as $profile) {
+            $profiles[] = $this->publicProfile($profile);
+        }
         return ['profiles' => $profiles];
     }
 
     /**
      * Filtruje katalog podle pevnych omezeni a radi jej podle profilu a textove shody.
      *
-     * @param array<string, mixed> $arguments profile_id, query, max_price, category a limit.
+     * @param array<string, mixed> $arguments Profil, omezeni, limit a vyloucena produktova ID.
      * @return array{products:list<array<string, mixed>>,count:int}
      */
     private function searchProducts(array $arguments): array
@@ -58,7 +81,12 @@ final class OpenAiCatalogService
         $category  = $this->limitedText($arguments, 'category', 100);
         $maxPrice  = $this->optionalPositiveFloat($arguments, 'max_price');
         $limit     = $this->optionalPositiveInt($arguments, 'limit') ?? 3;
-        if ($limit > 5) {
+        $excludedProductIds = $this->positiveIntList(
+            $arguments,
+            'excluded_product_ids',
+            self::MAX_EXCLUDED_PRODUCTS,
+        );
+        if ($limit > self::MAX_SEARCH_RESULTS) {
             throw new \InvalidArgumentException('Product result limit must not exceed 5.');
         }
         if ($profileId === null && $query === '' && $category === '' && $maxPrice === null) {
@@ -67,6 +95,9 @@ final class OpenAiCatalogService
 
         $ranked = [];
         foreach ($this->catalog->publishedProducts() as $product) {
+            if (in_array((int) ($product['id'] ?? 0), $excludedProductIds, true)) {
+                continue;
+            }
             $price = (float) ($product['price_with_vat'] ?? 0);
             if ($maxPrice !== null && $price > $maxPrice) {
                 continue;
@@ -82,17 +113,28 @@ final class OpenAiCatalogService
                 'relevance'   => $relevance,
                 'product'     => $product,
             ];
+            usort($ranked, self::compareRankedProducts(...));
+            if (count($ranked) > $limit) {
+                array_pop($ranked);
+            }
         }
-
-        usort($ranked, static function (array $left, array $right): int {
-            return [$right['score'], $right['probability'], $right['relevance'], -(int) ($right['product']['id'] ?? 0)]
-                <=> [$left['score'], $left['probability'], $left['relevance'], -(int) ($left['product']['id'] ?? 0)];
-        });
         $products = array_map(
             fn(array $entry): array => $this->publicProduct($entry['product'], $profileId),
-            array_slice($ranked, 0, $limit),
+            $ranked,
         );
         return ['products' => $products, 'count' => count($products)];
+    }
+
+    /**
+     * Radi kandidaty od nejvyssi shody a pri remize stabilne podle nizsiho ID.
+     *
+     * @param array<string, mixed> $left
+     * @param array<string, mixed> $right
+     */
+    private static function compareRankedProducts(array $left, array $right): int
+    {
+        return [$right['score'], $right['probability'], $right['relevance'], -(int) ($right['product']['id'] ?? 0)]
+            <=> [$left['score'], $left['probability'], $left['relevance'], -(int) ($left['product']['id'] ?? 0)];
     }
 
     /**
@@ -258,6 +300,29 @@ final class OpenAiCatalogService
             throw new \InvalidArgumentException("{$key} is too long.");
         }
         return $value;
+    }
+
+    /**
+     * Validuje omezeny seznam kladnych ID a odstrani duplicity.
+     *
+     * @param array<string, mixed> $arguments Nedůveryhodne argumenty modelu.
+     * @return list<int>
+     */
+    private function positiveIntList(array $arguments, string $key, int $maxItems): array
+    {
+        $raw = $arguments[$key] ?? [];
+        if (!is_array($raw) || count($raw) > $maxItems) {
+            throw new \InvalidArgumentException("{$key} must be an array with at most {$maxItems} items.");
+        }
+        $result = [];
+        foreach ($raw as $item) {
+            $value = filter_var($item, FILTER_VALIDATE_INT);
+            if ($value === false || $value < 1) {
+                throw new \InvalidArgumentException("{$key} must contain positive integers.");
+            }
+            $result[$value] = $value;
+        }
+        return array_values($result);
     }
 
     /** Vrati Unicode delku s bezpecnym fallbackem pro instalaci bez mbstring. */

@@ -42,14 +42,43 @@ assert_test('requests text output', $captured['payload']['session']['output_moda
 assert_test('requests PCM24 input', $captured['payload']['session']['audio']['input']['format']['rate'] === 24000);
 assert_test('enables automatic tool choice', $captured['payload']['session']['tool_choice'] === 'auto');
 assert_test(
-    'declares all FAnn tools',
+    'declares all catalog tools',
     array_column($captured['payload']['session']['tools'], 'name') === [
         'list_customer_profiles',
         'search_products',
         'get_product',
+        'show_customer_question',
     ],
 );
+assert_test(
+    'declares exclusions for continuous recommendations',
+    isset($captured['payload']['session']['tools'][1]['parameters']['properties']['excluded_product_ids']),
+);
+assert_test(
+    'allows one validated customer question when context is insufficient',
+    str_contains($captured['payload']['session']['instructions'], 'show_customer_question'),
+);
 assert_test('does not return server API key', !str_contains(json_encode($result), 'sk-test'));
+
+$customModelPayload = null;
+(new OpenAiRealtimeService(
+    static function (string $apiKey, array $payload) use (&$customModelPayload): array {
+        $customModelPayload = $payload;
+        return [
+            'status' => 200,
+            'body' => json_encode([
+                'value' => 'ek_custom_model',
+                'expires_at' => time() + 60,
+            ], JSON_THROW_ON_ERROR),
+        ];
+    },
+    'sk-test',
+    'gpt-realtime-custom',
+))->createClientSecret();
+assert_test(
+    'allows the Realtime model to be configured without code changes',
+    $customModelPayload['session']['model'] === 'gpt-realtime-custom',
+);
 
 section('OpenAI Realtime failures');
 $missingKeyThrown = false;

@@ -11,9 +11,9 @@ namespace App\Modules\OpenAi;
  */
 interface OpenAiCatalogGateway
 {
-    /** @return list<array<string, mixed>> Publikovane profily aktualniho tenanta. */
-    public function publishedProfiles(): array;
+    /** @return iterable<array<string, mixed>> Publikovane profily aktualniho tenanta. */
+    public function publishedProfiles(): iterable;
 
-    /** @return list<array<string, mixed>> Publikovane produkty aktualniho tenanta. */
-    public function publishedProducts(): array;
+    /** @return iterable<array<string, mixed>> Publikovane produkty aktualniho tenanta. */
+    public function publishedProducts(): iterable;
 }

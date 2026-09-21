@@ -25,10 +25,9 @@ Uspech vraci standardni envelope a v `data`:
 ```
 
 Token plati 60 sekund pro vytvoreni relace. Relace pouziva server VAD, textovy
-vystup, limit 128 output tokenu a instrukci pro kratke ceske odpovedi. Relace
-deklaruje read-only funkce `list_customer_profiles`, `search_products` a
-`get_product`; model jejich provedeni pouze vyzada a mobil je vykona pres
-nasledujici backendovy endpoint.
+vystup a limit 64 output tokenu. Deklaruje funkce `list_customer_profiles`,
+`search_products`, `get_product` a `show_customer_question`; model jejich
+provedeni pouze vyzada a mobil je vykona pres nasledujici backendovy endpoint.
 
 ```http
 POST /api/openai/tool
@@ -41,7 +40,19 @@ Content-Type: application/json
 Katalogovy endpoint je tenantove omezeny, rate-limitovany na 60 volani za
 minutu a nezpristupnuje obecne admin API. Vraci pouze publikovane profily a
 produkty; nejvyse pet produktu radi podle profilove pravdepodobnosti a textove
-shody. `get_product` vraci detail pouze publikovane polozky.
+shody. `excluded_product_ids` odstrani drive zobrazene polozky, aby prubezne
+doporucovani po namitce neopakovalo stejny produkt. `get_product` vraci detail
+pouze publikovane polozky.
+
+Repository čte profily a produkty po databázových stránkách a vystavuje je jako
+`iterable`, takže katalog není potichu omezený na prvních 100 záznamů. Vyhledání
+drží v paměti pouze nejlepší požadovaný počet kandidátů, nikoli celý katalog.
+
+Realtime relace analyzuje cely rozhovor a neposila volny text urceny k
+zobrazeni. Pokud chybi jedna podstatna informace, muze pres validovanou funkci
+zobrazit jednu kratkou otazku a pocka na dalsi promluvu. Po dostatku informaci
+nacte profily, vyhleda kandidaty a overi detail produktu. Nova namitka muze
+spustit dalsi hledani s vyloucenim drive zobrazenych produktu.
 
 ## Konfigurace
 
@@ -64,6 +75,10 @@ uzivatele nebo atestaci zarizeni; hlavni OpenAI klic zustava vzdy jen na serveru
 - `OpenAiRealtimeService` vola `POST /v1/realtime/client_secrets`.
 - `OpenAiCatalogGateway` oddeluje domenu od uloziste.
 - `OpenAiCatalogRepository` nacita publikovana tenantova data pres existujici moduly.
+
+Realtime model lze bez změny kódu nastavit přes `OPENAI_REALTIME_MODEL`; výchozí
+hodnota je `gpt-realtime`. Prompt je tenantově neutrální a konkrétní profily i
+produkty vždy pocházejí z hostem vybraného katalogu.
 - `OpenAiCatalogService` validuje povolene funkce, filtry a razeni vysledku.
 - Chyby upstreamu se mapuji na obecny stav 502 a nikdy nevraceji telo OpenAI
   odpovedi ani serverovy API klic.

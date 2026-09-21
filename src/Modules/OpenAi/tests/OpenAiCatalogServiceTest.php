@@ -89,8 +89,50 @@ $search = $service->execute(OpenAiCatalogService::SEARCH_PRODUCTS, [
 assert_test('ranks matching product first', $search['products'][0]['id'] === 90);
 assert_test('returns selected profile probability', $search['products'][0]['profile_probability'] === 85);
 
+$streamingGateway = new class implements OpenAiCatalogGateway {
+    public function publishedProfiles(): iterable
+    {
+        return [];
+    }
+
+    public function publishedProducts(): iterable
+    {
+        for ($id = 1; $id <= 120; $id++) {
+            yield [
+                'id' => $id,
+                'sku' => "SKU-{$id}",
+                'name' => "Produkt {$id}",
+                'description' => '',
+                'price_with_vat' => 100.0,
+                'stock_quantity' => 1,
+                'categories' => [['name' => 'Test']],
+                'profile_probabilities' => [],
+            ];
+        }
+    }
+};
+$streamed = (new OpenAiCatalogService($streamingGateway))->execute(
+    OpenAiCatalogService::SEARCH_PRODUCTS,
+    ['category' => 'Test', 'limit' => 3],
+);
+assert_test(
+    'streams catalogs larger than one database page and keeps only requested results',
+    array_column($streamed['products'], 'id') === [1, 2, 3],
+);
+
+$alternative = $service->execute(OpenAiCatalogService::SEARCH_PRODUCTS, [
+    'profile_id' => 11,
+    'excluded_product_ids' => [90, 90],
+]);
+assert_test('excludes all previously shown product IDs', $alternative['products'][0]['id'] === 91);
+
 $detail = $service->execute(OpenAiCatalogService::GET_PRODUCT, ['product_id' => 90]);
 assert_test('returns requested product detail', $detail['product']['sku'] === 'FUN-P016');
+
+$question = $service->execute(OpenAiCatalogService::SHOW_QUESTION, [
+    'question' => 'Jaký máte cenový rozpočet?',
+]);
+assert_test('returns a validated customer question', $question['question'] === 'Jaký máte cenový rozpočet?');
 
 $invalidThrown = false;
 try {
@@ -99,6 +141,25 @@ try {
     $invalidThrown = true;
 }
 assert_test('rejects search without criteria', $invalidThrown);
+
+$invalidExclusionThrown = false;
+try {
+    $service->execute(OpenAiCatalogService::SEARCH_PRODUCTS, [
+        'profile_id' => 11,
+        'excluded_product_ids' => [0],
+    ]);
+} catch (InvalidArgumentException) {
+    $invalidExclusionThrown = true;
+}
+assert_test('rejects invalid excluded product IDs', $invalidExclusionThrown);
+
+$emptyQuestionThrown = false;
+try {
+    $service->execute(OpenAiCatalogService::SHOW_QUESTION, ['question' => '  ']);
+} catch (InvalidArgumentException) {
+    $emptyQuestionThrown = true;
+}
+assert_test('rejects an empty customer question', $emptyQuestionThrown);
 
 if (!isset($runnerMode)) {
     print_results();
