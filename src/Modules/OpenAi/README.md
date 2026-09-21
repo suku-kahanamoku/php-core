@@ -34,38 +34,44 @@ POST /api/openai/tool
 X-Rokid-Key: <ROKID_AI_CLIENT_KEY>
 Content-Type: application/json
 
-{"name":"search_products","arguments":{"category":"Parfémy","attributes":["svěží","pro ženy","každodenní"],"max_price":2500,"limit":3}}
+{"name":"search_products","arguments":{"category":"Parfémy","required_attributes":["parfémová voda"],"preferred_attributes":["svěží","každodenní"],"max_price":2500,"limit":3}}
 ```
 
 Katalogovy endpoint je tenantove omezeny, rate-limitovany na 60 volani za
 minutu a nezpristupnuje obecne admin API. Vraci pouze publikovane profily a
-produkty; nejvýše pět produktů řadí podle počtu potvrzených atributů z dialogu,
-textové shody a až nakonec podle úplnosti atributů. Profilová pravděpodobnost se
+produkty. Povinné atributy, cenový strop, kategorie, výslovné zákazy a odmítnutá
+ID fungují jako tvrdé podmínky. Nejvýše pět způsobilých produktů se řadí podle
+toho, zda ještě nebyly zobrazeny, podle kladných a záporných preferencí, textové
+shody a až nakonec podle úplnosti atributů. Profilová pravděpodobnost se
 do primárního výběru nezapočítává ani se v jeho výsledku nevrací; zůstává
-uložená pro případnou samostatnou upsell logiku. `excluded_product_ids` odstraní dříve zobrazené položky, aby průběžné
-doporucovani po namitce neopakovalo stejny produkt. `get_product` vraci detail
-pouze publikovane polozky.
+uložená pro případnou samostatnou upsell logiku. `displayed_product_ids` pouze
+sníží prioritu opakované nabídky; `rejected_product_ids` produkt tvrdě odstraní.
+Starší `attributes` a `excluded_product_ids` zůstávají kompatibilními aliasy.
+`get_product` znovu přijímá aktuální povinné atributy, zákazy, kategorii a
+cenový strop. Detail vrátí pouze publikované a dostupné položce, která všemi
+tvrdými kontrolami projde; jinak vrátí `product: null` a seznam porušení.
 
 `search_products` přijímá `query`, `category`, `max_price`, `limit`, nejvýše 12
-krátkých hodnot v `attributes`, 12 výslovně odmítnutých hodnot v
-`excluded_attributes` a nejvýše 50 ID v `excluded_product_ids`. Produkt se
-shodou na odmítnutém atributu je z výsledků vyřazen.
+hodnot v každém z polí `required_attributes`, `preferred_attributes`,
+`negative_preferences` a `excluded_attributes` a nejvýše 50 ID v
+`displayed_product_ids` a `rejected_product_ids`. Produkt bez všech povinných
+atributů nebo se shodou na výslovném zákazu je z výsledků vyřazen.
 Vyhledávání porovnává atributy s názvem, popisem, variantou, kategorií a JSON
-`data.selection_attributes`; ve výsledku vrací také `matched_attributes` a
-`attribute_match_count`, aby model mohl ověřit důvod pořadí kandidátů.
+`data.selection_attributes`; ve výsledku vrací zvlášť splněné povinné a kladné
+atributy, rozpory s měkkými preferencemi, chybějící preference, celkový počet
+způsobilých kandidátů a stav `candidates` nebo `no_match`.
 
 Repository čte profily a produkty po databázových stránkách a vystavuje je jako
 `iterable`, takže katalog není potichu omezený na prvních 100 záznamů. Vyhledání
 drží v paměti pouze nejlepší požadovaný počet kandidátů, nikoli celý katalog.
 
 Realtime relace analyzuje celý rozhovor a neposílá volný text určený k
-zobrazení. Pokud chybí jedna podstatná informace, položí jednu rozlišovací
-otázku podle kategorie: u vůně na příjemce, charakter, intenzitu a příležitost;
-u péče na typ a citlivost pleti, potřebu, texturu a složky; u líčení na odstín,
-krytí, finish, výdrž a citlivost; u tělové péče na potřebu, formát, parfemaci a
-účel. Po dostatku informací vyhledá kandidáty podle potvrzených atributů a ověří
-detail produktu. Zákaznické profily jsou pro primární hledání zakázané. Nová námitka může
-spustit dalsi hledani s vyloucenim drive zobrazenych produktu.
+zobrazení. Rozlišuje osobu a nákupní záměr, potvrzená fakta, jednoznačně
+vyjádřený význam, hypotézy a neznámé údaje. Průzkumné hledání je povoleno po
+určení kategorie a alespoň jednoho použitelného požadavku. Otázka se vybírá
+podle dopadu na způsobilost nebo rozlišení skutečných kandidátů. Před zobrazením
+se načte detail jediného produktu a ověří varianta, cena, dostupnost a tvrdé
+podmínky. Zákaznické profily jsou pro primární hledání zakázané.
 
 Migrace `migrations/20260921_fun_product_catalog_enrichment.sql` idempotentně
 obohacuje 23 dohledaných existujících FAnn produktů a přidává 30 aktuálních variant. Ukládá

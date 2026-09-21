@@ -51,16 +51,24 @@ assert_test(
     ],
 );
 assert_test(
-    'declares exclusions for continuous recommendations',
-    isset($captured['payload']['session']['tools'][1]['parameters']['properties']['excluded_product_ids']),
+    'declares separate displayed and rejected product histories',
+    isset($captured['payload']['session']['tools'][1]['parameters']['properties']['displayed_product_ids'])
+        && isset($captured['payload']['session']['tools'][1]['parameters']['properties']['rejected_product_ids']),
 );
 assert_test(
-    'declares attribute based product search',
-    isset($captured['payload']['session']['tools'][1]['parameters']['properties']['attributes']),
+    'separates mandatory and preferred product attributes',
+    isset($captured['payload']['session']['tools'][1]['parameters']['properties']['required_attributes'])
+        && isset($captured['payload']['session']['tools'][1]['parameters']['properties']['preferred_attributes'])
+        && isset($captured['payload']['session']['tools'][1]['parameters']['properties']['negative_preferences']),
 );
 assert_test(
     'declares hard exclusions for rejected product attributes',
     isset($captured['payload']['session']['tools'][1]['parameters']['properties']['excluded_attributes']),
+);
+assert_test(
+    'requires hard constraints again during final product verification',
+    $captured['payload']['session']['tools'][2]['parameters']['required']
+        === ['product_id', 'required_attributes', 'excluded_attributes'],
 );
 assert_test(
     'does not offer profile probability as a primary search input',
@@ -77,7 +85,16 @@ assert_test(
 assert_test(
     'uses structured English instructions but requires Czech customer questions',
     str_contains($captured['payload']['session']['instructions'], '# Role and objective')
-        && str_contains($captured['payload']['session']['instructions'], 'written in Czech'),
+        && str_contains($captured['payload']['session']['instructions'], 'short Czech question'),
+);
+assert_test(
+    'allows exploratory search before final selection',
+    str_contains($captured['payload']['session']['instructions'], 'perform exploratory search'),
+);
+assert_test(
+    'keeps hard requirements separate from ranking preferences',
+    str_contains($captured['payload']['session']['instructions'], 'required_attributes')
+        && str_contains($captured['payload']['session']['instructions'], 'preferred_attributes'),
 );
 assert_test('does not return server API key', !str_contains(json_encode($result), 'sk-test'));
 

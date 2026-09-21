@@ -100,13 +100,17 @@ read-only bridge for published tenant profiles and products used by Realtime
 function calls. It does not expose the protected customer-profile list or any
 CRM write operation.
 
-The Realtime session silently analyzes the ongoing dialogue, selects a verified
-product only after enough context, and excludes already shown products after a
-customer objection. If one essential fact is missing, a validated function can
-show one short question in the glasses and then wait for the customer's speech.
-Primary selection ranks concrete product attributes extracted from the dialogue
-and never uses customer-profile probability. Profiles and stored probabilities
-are reserved for a later, separate upsell decision. The idempotent migration
+The Realtime session silently analyzes the ongoing dialogue and may perform an
+exploratory catalog search once category and one useful requirement are known.
+Mandatory requirements, explicit exclusions and rejected product IDs are hard
+eligibility rules; positive and negative preferences only rank eligible
+candidates. Already displayed products are deprioritized but remain available
+when the customer asks to return to one. A validated function can show one short
+high-impact question in the glasses and then wait for new speech. Primary
+selection never uses customer-profile probability. Before Android can display a
+card, `get_product` repeats the hard-condition and stock checks on the server.
+Profiles and stored probabilities are reserved for a later, separate upsell
+decision. The idempotent migration
 `migrations/20260921_fun_product_catalog_enrichment.sql` adds 30 current FAnn
 variants and enriches 23 matching seed products with structured selection
 attributes and their public source metadata.

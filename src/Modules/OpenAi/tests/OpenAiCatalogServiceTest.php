@@ -101,6 +101,34 @@ assert_test('reports all matched product attributes', $search['products'][0]['at
 assert_test('does not expose profile probability in primary search', !isset($search['products'][0]['profile_probability']));
 assert_test('returns description so model can compare candidates', $search['products'][0]['description'] === 'Vyrazna kavova vune.');
 
+$required = $service->execute(OpenAiCatalogService::SEARCH_PRODUCTS, [
+    'category' => 'péče',
+    'required_attributes' => ['hydratace'],
+    'preferred_attributes' => ['denní'],
+]);
+assert_test('uses mandatory attributes as eligibility filters', array_column($required['products'], 'id') === [91]);
+assert_test('reports matched mandatory evidence', $required['products'][0]['matched_required_attributes'] === ['hydratace']);
+assert_test('reports a complete successful catalog scan', $required['status'] === 'candidates' && $required['catalog_scan_complete'] === true);
+
+$noRequiredMatch = $service->execute(OpenAiCatalogService::SEARCH_PRODUCTS, [
+    'category' => 'vůně',
+    'required_attributes' => ['bez parfemace'],
+]);
+assert_test('returns explicit no-match state for unmet mandatory attributes', $noRequiredMatch['status'] === 'no_match');
+
+$displayed = $service->execute(OpenAiCatalogService::SEARCH_PRODUCTS, [
+    'query' => 'produkt',
+    'displayed_product_ids' => [90],
+]);
+assert_test('ranks a new candidate before an already displayed product', $displayed['products'][0]['id'] === 91);
+assert_test('keeps displayed products available for explicit reconsideration', in_array(90, array_column($displayed['products'], 'id'), true));
+
+$rejected = $service->execute(OpenAiCatalogService::SEARCH_PRODUCTS, [
+    'query' => 'produkt',
+    'rejected_product_ids' => [90],
+]);
+assert_test('hard excludes explicitly rejected products', array_column($rejected['products'], 'id') === [91]);
+
 $excludedByAttribute = $service->execute(OpenAiCatalogService::SEARCH_PRODUCTS, [
     'query' => 'produkt',
     'excluded_attributes' => ['kávová'],
@@ -146,6 +174,24 @@ assert_test('excludes all previously shown product IDs', $alternative['products'
 
 $detail = $service->execute(OpenAiCatalogService::GET_PRODUCT, ['product_id' => 90]);
 assert_test('returns requested product detail', $detail['product']['sku'] === 'FUN-P016');
+assert_test('marks an eligible detail as backend verified', $detail['verification']['status'] === 'verified');
+
+$overBudgetDetail = $service->execute(OpenAiCatalogService::GET_PRODUCT, [
+    'product_id' => 90,
+    'required_attributes' => ['parfémová voda'],
+    'excluded_attributes' => [],
+    'max_price' => 1000,
+    'category' => 'vůně',
+]);
+assert_test('refuses to display a product over the hard budget', $overBudgetDetail['product'] === null);
+assert_test('reports the hard-budget verification failure', in_array('max_price_exceeded', $overBudgetDetail['verification']['violations'], true));
+
+$excludedDetail = $service->execute(OpenAiCatalogService::GET_PRODUCT, [
+    'product_id' => 90,
+    'required_attributes' => [],
+    'excluded_attributes' => ['kávová'],
+]);
+assert_test('refuses to display a product matching an explicit exclusion', $excludedDetail['product'] === null);
 
 $question = $service->execute(OpenAiCatalogService::SHOW_QUESTION, [
     'question' => 'Jaký máte cenový rozpočet?',

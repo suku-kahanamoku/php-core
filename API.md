@@ -1801,17 +1801,25 @@ unavailable, `503` missing server configuration.
 names are `list_customer_profiles`, `search_products`, `get_product`, and
 `show_customer_question`. The last operation validates and returns one customer
 question of at most 160 characters; it does not access CRM data.
-`search_products` accepts `excluded_product_ids` (at most 50 positive IDs) so a
-continuous Realtime session can avoid products already shown to the customer.
-Search arguments may contain `query`, `max_price`, `category`, `limit` from 1
-to 5, `attributes` with at most 12 confirmed product requirements and
-`excluded_attributes` with at most 12 explicitly rejected properties or
-ingredients. A rejected-attribute match removes the product. Primary
-ranking uses matched attributes, text relevance and attribute completeness; it
-does not accept or return a customer-profile probability. Stored probabilities
-remain available for a future, separate upsell flow. Search results include
-`matched_attributes` and `attribute_match_count`. The endpoint returns only
-published tenant data and never permits CRM writes.
+`search_products` separates eligibility from ranking. `required_attributes`,
+`excluded_attributes`, `max_price`, `category`, and `rejected_product_ids` are
+hard conditions. `preferred_attributes` and `negative_preferences` only rank
+eligible products. `displayed_product_ids` lowers repeat priority but allows an
+explicit return to a previous product. Each attribute list accepts at most 12
+short values and each ID list at most 50 positive IDs. Legacy `attributes` and
+`excluded_product_ids` remain supported aliases for older sessions.
+
+Primary ranking does not accept or return customer-profile probability. Results
+include matched mandatory and preferred attributes, soft conflicts, unmatched
+preferences, `eligible_count`, `catalog_scan_complete`, and status `candidates`
+or `no_match`. The endpoint returns only published tenant data and never permits
+CRM writes.
+
+`get_product` accepts `product_id` plus required arrays
+`required_attributes` and `excluded_attributes`; `category` and `max_price` are
+optional. It returns the product only after a second server-side check of those
+constraints and stock availability. Failed verification returns `product: null`
+with `verification.status` and machine-readable `violations`.
 
 Catalog rows are consumed through paginated iterators, so search and detail are
 not limited to the first 100 published rows. Search retains only the requested

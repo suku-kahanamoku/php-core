@@ -74,7 +74,8 @@ final class OpenAiCatalogService
      * Filtruje katalog podle pevných omezení a řadí jej podle atributů a textové shody.
      *
      * @param array<string, mixed> $arguments Potřeby, omezení, limit a vyloučená produktová ID.
-     * @return array{products:list<array<string, mixed>>,count:int}
+     * @return array{status:string,products:list<array<string, mixed>>,count:int,
+     *     eligible_count:int,catalog_scan_complete:bool}
      */
     private function searchProducts(array $arguments): array
     {
@@ -82,9 +83,30 @@ final class OpenAiCatalogService
         $category  = $this->limitedText($arguments, 'category', 100);
         $maxPrice  = $this->optionalPositiveFloat($arguments, 'max_price');
         $limit     = $this->optionalPositiveInt($arguments, 'limit') ?? 3;
-        $attributes = $this->textList(
+        $legacyAttributes = $this->textList(
             $arguments,
             'attributes',
+            self::MAX_SEARCH_ATTRIBUTES,
+            self::MAX_SEARCH_ATTRIBUTE_LENGTH,
+        );
+        $requiredAttributes = $this->textList(
+            $arguments,
+            'required_attributes',
+            self::MAX_SEARCH_ATTRIBUTES,
+            self::MAX_SEARCH_ATTRIBUTE_LENGTH,
+        );
+        $preferredAttributes = $this->mergeTextLists(
+            $this->textList(
+                $arguments,
+                'preferred_attributes',
+                self::MAX_SEARCH_ATTRIBUTES,
+                self::MAX_SEARCH_ATTRIBUTE_LENGTH,
+            ),
+            $legacyAttributes,
+        );
+        $negativePreferences = $this->textList(
+            $arguments,
+            'negative_preferences',
             self::MAX_SEARCH_ATTRIBUTES,
             self::MAX_SEARCH_ATTRIBUTE_LENGTH,
         );
@@ -94,21 +116,39 @@ final class OpenAiCatalogService
             self::MAX_SEARCH_ATTRIBUTES,
             self::MAX_SEARCH_ATTRIBUTE_LENGTH,
         );
-        $excludedProductIds = $this->positiveIntList(
+        $rejectedProductIds = $this->mergePositiveIntLists(
+            $this->positiveIntList(
+                $arguments,
+                'rejected_product_ids',
+                self::MAX_EXCLUDED_PRODUCTS,
+            ),
+            $this->positiveIntList(
+                $arguments,
+                'excluded_product_ids',
+                self::MAX_EXCLUDED_PRODUCTS,
+            ),
+        );
+        $displayedProductIds = $this->positiveIntList(
             $arguments,
-            'excluded_product_ids',
+            'displayed_product_ids',
             self::MAX_EXCLUDED_PRODUCTS,
         );
         if ($limit > self::MAX_SEARCH_RESULTS) {
             throw new \InvalidArgumentException('Product result limit must not exceed 5.');
         }
-        if ($query === '' && $category === '' && $maxPrice === null && $attributes === [] && $excludedAttributes === []) {
+        if (
+            $query === '' && $category === '' && $maxPrice === null
+            && $requiredAttributes === [] && $preferredAttributes === []
+            && $negativePreferences === [] && $excludedAttributes === []
+        ) {
             throw new \InvalidArgumentException('At least one product search criterion is required.');
         }
 
         $ranked = [];
+        $eligibleCount = 0;
         foreach ($this->catalog->publishedProducts() as $product) {
-            if (in_array((int) ($product['id'] ?? 0), $excludedProductIds, true)) {
+            $productId = (int) ($product['id'] ?? 0);
+            if (in_array($productId, $rejectedProductIds, true)) {
                 continue;
             }
             $price = (float) ($product['price_with_vat'] ?? 0);
@@ -122,11 +162,25 @@ final class OpenAiCatalogService
             if ($this->matchedAttributes($searchableText, $excludedAttributes) !== []) {
                 continue;
             }
-            $matchedAttributes = $this->matchedAttributes($searchableText, $attributes);
+            $matchedRequiredAttributes = $this->matchedAttributes($searchableText, $requiredAttributes);
+            if (count($matchedRequiredAttributes) !== count($requiredAttributes)) {
+                continue;
+            }
+            $matchedPreferredAttributes = $this->matchedAttributes($searchableText, $preferredAttributes);
+            $negativePreferenceMatches = $this->matchedAttributes($searchableText, $negativePreferences);
             $relevance = $this->relevance($searchableText, $query);
+            $eligibleCount++;
             $ranked[]    = [
-                'attribute_matches' => count($matchedAttributes),
-                'matched_attributes' => $matchedAttributes,
+                'was_displayed' => in_array($productId, $displayedProductIds, true),
+                'preference_matches' => count($matchedPreferredAttributes),
+                'negative_preference_matches' => count($negativePreferenceMatches),
+                'matched_required_attributes' => $matchedRequiredAttributes,
+                'matched_preferred_attributes' => $matchedPreferredAttributes,
+                'negative_preference_conflicts' => $negativePreferenceMatches,
+                'unmatched_preferred_attributes' => array_values(array_diff(
+                    $preferredAttributes,
+                    $matchedPreferredAttributes,
+                )),
                 'relevance' => $relevance,
                 'attribute_richness' => $this->attributeRichness($product),
                 'product' => $product,
@@ -138,11 +192,23 @@ final class OpenAiCatalogService
         }
         $products = array_map(function (array $entry): array {
             $product = $this->publicProduct($entry['product']);
-            $product['matched_attributes'] = $entry['matched_attributes'];
-            $product['attribute_match_count'] = $entry['attribute_matches'];
+            $product['was_displayed'] = $entry['was_displayed'];
+            $product['matched_required_attributes'] = $entry['matched_required_attributes'];
+            $product['matched_preferred_attributes'] = $entry['matched_preferred_attributes'];
+            $product['negative_preference_conflicts'] = $entry['negative_preference_conflicts'];
+            $product['unmatched_preferred_attributes'] = $entry['unmatched_preferred_attributes'];
+            // Zachovává kompatibilitu se starší Android relací a dokumentací.
+            $product['matched_attributes'] = $entry['matched_preferred_attributes'];
+            $product['attribute_match_count'] = $entry['preference_matches'];
             return $product;
         }, $ranked);
-        return ['products' => $products, 'count' => count($products)];
+        return [
+            'status' => $eligibleCount > 0 ? 'candidates' : 'no_match',
+            'products' => $products,
+            'count' => count($products),
+            'eligible_count' => $eligibleCount,
+            'catalog_scan_complete' => true,
+        ];
     }
 
     /**
@@ -154,12 +220,16 @@ final class OpenAiCatalogService
     private static function compareRankedProducts(array $left, array $right): int
     {
         return [
-            $right['attribute_matches'],
+            !$right['was_displayed'],
+            $right['preference_matches'],
+            -$right['negative_preference_matches'],
             $right['relevance'],
             $right['attribute_richness'],
             -(int) ($right['product']['id'] ?? 0),
         ] <=> [
-            $left['attribute_matches'],
+            !$left['was_displayed'],
+            $left['preference_matches'],
+            -$left['negative_preference_matches'],
             $left['relevance'],
             $left['attribute_richness'],
             -(int) ($left['product']['id'] ?? 0),
@@ -178,12 +248,69 @@ final class OpenAiCatalogService
         if ($productId === null) {
             throw new \InvalidArgumentException('product_id is required.');
         }
+        $category = $this->limitedText($arguments, 'category', 100);
+        $maxPrice = $this->optionalPositiveFloat($arguments, 'max_price');
+        $requiredAttributes = $this->textList(
+            $arguments,
+            'required_attributes',
+            self::MAX_SEARCH_ATTRIBUTES,
+            self::MAX_SEARCH_ATTRIBUTE_LENGTH,
+        );
+        $excludedAttributes = $this->textList(
+            $arguments,
+            'excluded_attributes',
+            self::MAX_SEARCH_ATTRIBUTES,
+            self::MAX_SEARCH_ATTRIBUTE_LENGTH,
+        );
         foreach ($this->catalog->publishedProducts() as $product) {
             if ((int) ($product['id'] ?? 0) === $productId) {
-                return ['product' => $this->publicProduct($product, true)];
+                $searchableText = $this->searchableText($product);
+                $matchedRequired = $this->matchedAttributes($searchableText, $requiredAttributes);
+                $matchedExclusions = $this->matchedAttributes($searchableText, $excludedAttributes);
+                $violations = [];
+                if (count($matchedRequired) !== count($requiredAttributes)) {
+                    $violations[] = 'required_attributes_unverified';
+                }
+                if ($matchedExclusions !== []) {
+                    $violations[] = 'excluded_attribute_match';
+                }
+                if ($category !== '' && !$this->contains($this->categoryText($product), $category)) {
+                    $violations[] = 'category_mismatch';
+                }
+                if ($maxPrice !== null && (float) ($product['price_with_vat'] ?? 0) > $maxPrice) {
+                    $violations[] = 'max_price_exceeded';
+                }
+                if (!array_key_exists('stock_quantity', $product)) {
+                    $violations[] = 'availability_unknown';
+                } elseif ((int) $product['stock_quantity'] <= 0) {
+                    $violations[] = 'out_of_stock';
+                }
+                if ($violations !== []) {
+                    return [
+                        'product' => null,
+                        'verification' => [
+                            'status' => 'ineligible',
+                            'violations' => $violations,
+                            'matched_required_attributes' => $matchedRequired,
+                            'matched_excluded_attributes' => $matchedExclusions,
+                        ],
+                    ];
+                }
+                return [
+                    'product' => $this->publicProduct($product, true),
+                    'verification' => [
+                        'status' => 'verified',
+                        'violations' => [],
+                        'matched_required_attributes' => $matchedRequired,
+                        'matched_excluded_attributes' => [],
+                    ],
+                ];
             }
         }
-        return ['product' => null];
+        return [
+            'product' => null,
+            'verification' => ['status' => 'not_found', 'violations' => ['product_not_found']],
+        ];
     }
 
     /** @param array<string, mixed> $profile @return array<string, mixed> */
@@ -417,6 +544,41 @@ final class OpenAiCatalogService
             $result[$this->normalize($value)] = $value;
         }
         return array_values($result);
+    }
+
+    /**
+     * Sloučí dva validované seznamy textů bez překročení veřejného limitu.
+     *
+     * @param list<string> $first
+     * @param list<string> $second
+     * @return list<string>
+     */
+    private function mergeTextLists(array $first, array $second): array
+    {
+        $merged = [];
+        foreach (array_merge($first, $second) as $value) {
+            $merged[$this->normalize($value)] = $value;
+        }
+        if (count($merged) > self::MAX_SEARCH_ATTRIBUTES) {
+            throw new \InvalidArgumentException('Combined preferred attributes exceed the allowed limit.');
+        }
+        return array_values($merged);
+    }
+
+    /**
+     * Sloučí nová odmítnutá ID se starším kompatibilním polem bez duplicit.
+     *
+     * @param list<int> $first
+     * @param list<int> $second
+     * @return list<int>
+     */
+    private function mergePositiveIntLists(array $first, array $second): array
+    {
+        $merged = array_values(array_unique(array_merge($first, $second)));
+        if (count($merged) > self::MAX_EXCLUDED_PRODUCTS) {
+            throw new \InvalidArgumentException('Combined rejected product IDs exceed the allowed limit.');
+        }
+        return $merged;
     }
 
     /** Vrati Unicode delku s bezpecnym fallbackem pro instalaci bez mbstring. */
