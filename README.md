@@ -95,7 +95,7 @@ The compact, sectioned system instructions and tool descriptions are in English,
 while the analyzed sales conversation remains Czech.
 
 The same scoped credential protects `POST /api/openai/tool`, an allowlisted
-read-only bridge between Realtime, the tenant OpenAI Vector Store and current
+read-only bridge between Realtime, OpenAI Responses file search and current
 published product details. It does not expose CRM write operations.
 
 The Realtime session silently analyzes the ongoing dialogue and queries the
@@ -103,14 +103,15 @@ Vector Store only after a concrete product category and either confirmed price
 intent or a trusted normalized customer profile are known. A generic product
 request, cosmetics, or gift intent is not a category. The current session has
 no trusted profile input, so category plus price intent is the effective gate.
-The model receives raw product documents and itself evaluates requirements,
-preferences and budget. PHP neither filters nor ranks candidates and never
-chooses a recommended product. The model never asks clarification questions or
+Realtime passes the structured active need to an OpenAI Responses model. That
+model uses hosted `file_search`, evaluates requirements, preferences and budget,
+and returns one evidence-backed product ID. PHP neither filters nor ranks
+candidates and never chooses a recommended product. The model never asks clarification questions or
 generates sales, upsell or cross-sell arguments; while the gate is incomplete,
 the required `continue_listening` tool ends the turn without free text or a UI
 change. Previously displayed products are not permanently excluded and may be
-selected again when the customer returns to them. After choosing an ID from
-retrieval, the model calls `get_product`; PHP only loads its current published
+selected again when the customer returns to them. After Responses chooses an ID
+from file-search evidence, Realtime calls `get_product`; PHP only loads its current published
 catalog detail for Android. The idempotent migration
 `migrations/20260921_fun_product_catalog_enrichment.sql` adds 30 current FAnn
 variants and enriches 23 matching seed products with structured selection
@@ -127,9 +128,9 @@ It reads authoritative Product JSON-LD plus explicit detail attributes,
 deduplicates variants shared by categories, preserves unrelated product JSON,
 and never deletes catalogue rows. See `src/Modules/FannCatalog/README.md`.
 
-The OpenAI Vector Store provides the product knowledge used by the Realtime
-model. PHP only synchronizes published catalog documents and proxies retrieval;
-it contains no fallback recommendation algorithm. Install
+The OpenAI Vector Store provides product knowledge to the Responses model. PHP
+only synchronizes published catalog documents and securely proxies the Responses
+request; it contains no fallback recommendation algorithm. Install
 `migrations/20260923_openai_vector_store.sql`, synchronize the selected tenant,
 and only then enable the runtime lookup:
 
@@ -139,6 +140,7 @@ php8.2 scripts/sync_openai_vector_store.php --tenant=fun
 
 ```dotenv
 OPENAI_VECTOR_STORE_ENABLED=true
+OPENAI_RECOMMENDATION_MODEL=gpt-5.6-terra
 ```
 
 The sync is incremental and can follow every catalogue import or run hourly.

@@ -5,22 +5,21 @@ declare(strict_types=1);
 namespace App\Modules\OpenAi;
 
 /**
- * Vystavuje Realtime modelu pouze retrieval a čtení aktuálního katalogu.
+ * Vystavuje Realtime modelu OpenAI doporučení a čtení aktuálního katalogu.
  *
  * Služba neurčuje vhodnost produktu, nefiltruje podle rozhovoru a nesestavuje
- * vlastní pořadí kandidátů. Významový výběr provádí OpenAI nad dokumenty
- * vrácenými z tenantového Vector Store; PHP pouze zprostředkuje data.
+ * vlastní pořadí kandidátů. Celý významový výběr provádí Responses model s
+ * hostovaným file_search; PHP pouze ověří vstupní kontrakt a zprostředkuje data.
  */
 final class OpenAiKnowledgeCatalogService
 {
-    public const RETRIEVE_PRODUCTS = 'retrieve_products';
+    public const RECOMMEND_PRODUCT = 'recommend_product';
     public const GET_PRODUCT = 'get_product';
-    public const MAX_RETRIEVAL_RESULTS = 20;
-    public const MAX_RETRIEVAL_QUERY_LENGTH = 1000;
+    public const MAX_RECOMMENDATION_QUERY_LENGTH = 1000;
 
     public function __construct(
         private OpenAiCatalogGateway $catalog,
-        private ?OpenAiProductRetrieval $retrieval = null,
+        private ?OpenAiProductRecommender $recommender = null,
     ) {}
 
     /**
@@ -33,40 +32,43 @@ final class OpenAiKnowledgeCatalogService
     public function execute(string $name, array $arguments): array
     {
         return match ($name) {
-            self::RETRIEVE_PRODUCTS => $this->retrieveProducts($arguments),
+            self::RECOMMEND_PRODUCT => $this->recommendProduct($arguments),
             self::GET_PRODUCT => $this->getProduct($arguments),
             default => throw new \InvalidArgumentException('Unknown AI catalog tool.'),
         };
     }
 
     /**
-     * Předá přirozený dotaz beze změny tenantovému Vector Store.
+     * Předá potvrzený nákupní záměr OpenAI Responses modelu s file_search.
      *
-     * Vrácené pořadí i podobnost jsou výhradně výsledkem OpenAI Retrieval API.
-     * PHP dokumenty neporovnává s rozhovorem a nevybírá vítěze.
+     * PHP nenačítá produktový katalog, dokumenty neporovnává s rozhovorem a
+     * nevybírá vítěze. Vrací pouze ID zvolené a doložené OpenAI Vector Store.
      *
-     * @param array<string, mixed> $arguments Dotaz a volitelný počet výsledků.
-     * @return array{status:string,products:list<array<string, mixed>>,count:int}
+     * @param array<string, mixed> $arguments Dotaz, kategorie a cenový záměr.
+     * @return array{status:string,product_id:int|null}
      */
-    private function retrieveProducts(array $arguments): array
+    private function recommendProduct(array $arguments): array
     {
         $query = trim((string) ($arguments['query'] ?? ''));
-        if ($query === '' || mb_strlen($query) > self::MAX_RETRIEVAL_QUERY_LENGTH) {
-            throw new \InvalidArgumentException('Retrieval query is required and must not exceed 1000 characters.');
+        if ($query === '' || mb_strlen($query) > self::MAX_RECOMMENDATION_QUERY_LENGTH) {
+            throw new \InvalidArgumentException('Recommendation query is required and must not exceed 1000 characters.');
         }
-        $limit = filter_var($arguments['limit'] ?? 10, FILTER_VALIDATE_INT);
-        if ($limit === false || $limit < 1 || $limit > self::MAX_RETRIEVAL_RESULTS) {
-            throw new \InvalidArgumentException('Retrieval result limit must be between 1 and 20.');
+        $category = trim((string) ($arguments['category'] ?? ''));
+        $priceIntent = trim((string) ($arguments['price_intent'] ?? ''));
+        if ($category === '' || mb_strlen($category) > 120) {
+            throw new \InvalidArgumentException('Concrete product category is required.');
         }
-        if ($this->retrieval === null) {
-            return ['status' => 'unavailable', 'products' => [], 'count' => 0];
+        if ($priceIntent === '' || mb_strlen($priceIntent) > 240) {
+            throw new \InvalidArgumentException('Confirmed price intent is required.');
         }
-        $result = $this->retrieval->retrieve($query, $limit);
-        return [
-            'status' => $result['status'],
-            'products' => $result['products'],
-            'count' => count($result['products']),
-        ];
+        if ($this->recommender === null) {
+            return ['status' => 'unavailable', 'product_id' => null];
+        }
+        try {
+            return $this->recommender->recommend($query, $category, $priceIntent);
+        } catch (OpenAiConfigurationException | OpenAiUpstreamException) {
+            return ['status' => 'unavailable', 'product_id' => null];
+        }
     }
 
     /**

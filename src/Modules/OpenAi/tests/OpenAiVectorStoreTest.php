@@ -34,16 +34,6 @@ $client = new OpenAiVectorStoreClient(
         if ($method === 'GET' && str_contains($path, '/files/file_')) {
             return ['status' => 200, 'body' => '{"status":"completed"}'];
         }
-        if ($method === 'POST' && str_ends_with($path, '/search')) {
-            return ['status' => 200, 'body' => json_encode(['data' => [[
-                'score' => 0.91,
-                'attributes' => ['product_id' => 2, 'franchise_code' => 'fun'],
-                'content' => [[
-                    'type' => 'text',
-                    'text' => '{"product_id":2,"name":"Krém","selection_attributes":{"need":["hydratace"]}}',
-                ]],
-            ]]])];
-        }
         return ['status' => 200, 'body' => '{"id":"ok","deleted":true}'];
     },
     'sk-test',
@@ -103,12 +93,6 @@ assert_test('creates one tenant vector store', $first['vector_store_id'] === 'vs
 assert_test('indexes every published product', $first['created'] === 2 && count($gateway->mappings) === 2);
 $second = $sync->sync();
 assert_test('skips unchanged product documents', $second['unchanged'] === 2 && $second['created'] === 0);
-
-$documents = $client->searchProductDocuments('vs_test', 'fun', 'hydratační péče');
-assert_test('returns raw product documents for model selection', $documents[0]['document']['product_id'] === 2);
-assert_test('preserves retrieval similarity without PHP ranking', $documents[0]['similarity'] === 0.91);
-$searchCall = array_values(array_filter($calls, static fn(array $call): bool => str_ends_with($call[1], '/search')))[0];
-assert_test('tenant filter is sent to OpenAI search', $searchCall[2]['filters']['value'] === 'fun');
 
 $document = (new OpenAiProductDocumentBuilder())->build($catalog->products[1], 'fun');
 assert_test('product document contains verifiable ID and attributes', str_contains($document, '"product_id": 2') && str_contains($document, 'hydratace'));

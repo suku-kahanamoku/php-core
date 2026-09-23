@@ -70,54 +70,6 @@ final class OpenAiVectorStoreClient
         $this->request('DELETE', '/files/' . rawurlencode($fileId));
     }
 
-    /**
-     * Vrátí produktové dokumenty v pořadí určeném OpenAI Retrieval API.
-     *
-     * Klient dokumenty neboduje ani nepřerovnává. Pouze normalizuje obsah
-     * výsledku a odstraní případné duplicitní chunky stejného produktu.
-     *
-     * @return list<array{product_id:int,similarity:float,document:array<string,mixed>|string}>
-     */
-    public function searchProductDocuments(
-        string $vectorStoreId,
-        string $franchiseCode,
-        string $query,
-        int $limit = 10,
-    ): array
-    {
-        $response = $this->request('POST', '/vector_stores/' . rawurlencode($vectorStoreId) . '/search', [
-            'query' => $query,
-            'max_num_results' => max(1, min(20, $limit)),
-            'rewrite_query' => true,
-            'filters' => ['type' => 'eq', 'key' => 'franchise_code', 'value' => $franchiseCode],
-        ]);
-        $products = [];
-        $seenProductIds = [];
-        foreach ((array) ($response['data'] ?? []) as $result) {
-            if (!is_array($result) || !is_array($result['attributes'] ?? null)) {
-                continue;
-            }
-            $productId = filter_var($result['attributes']['product_id'] ?? null, FILTER_VALIDATE_INT);
-            if ($productId === false || $productId < 1 || isset($seenProductIds[$productId])) {
-                continue;
-            }
-            $text = '';
-            foreach ((array) ($result['content'] ?? []) as $content) {
-                if (is_array($content) && ($content['type'] ?? null) === 'text') {
-                    $text .= (string) ($content['text'] ?? '');
-                }
-            }
-            $decoded = json_decode($text, true);
-            $seenProductIds[$productId] = true;
-            $products[] = [
-                'product_id' => $productId,
-                'similarity' => max(0.0, min(1.0, (float) ($result['score'] ?? 0))),
-                'document' => is_array($decoded) ? $decoded : $text,
-            ];
-        }
-        return $products;
-    }
-
     /** @param array<string, mixed> $payload @return array<string, mixed> */
     private function request(string $method, string $path, array $payload = [], bool $multipart = false): array
     {

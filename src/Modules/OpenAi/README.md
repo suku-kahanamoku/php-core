@@ -30,7 +30,7 @@ automatické `create_response`; Android po další 1,5sekundové tiché prodlev�
 řízeně vyžádá jedinou analýzu nad nahromaděným kontextem. Nová řeč nepřeruší
 právě generované argumenty function callu. Relace používá textový výstup a limit
 512 output tokenu pro bezpečné dokončení strukturovaných argumentů.
-Povinné volání nástroje dovoluje pouze `retrieve_products`, `get_product` a lokální
+Povinné volání nástroje dovoluje pouze `recommend_product`, `get_product` a lokální
 `continue_listening`; model proto nemůže místo výběru produktu vrátit volný text.
 Katalogové nástroje mobil vykoná přes následující backendový endpoint.
 
@@ -39,23 +39,22 @@ POST /api/openai/tool
 X-Rokid-Key: <ROKID_AI_CLIENT_KEY>
 Content-Type: application/json
 
-{"name":"retrieve_products","arguments":{"query":"svěží parfémová voda na každý den do 2500 Kč","category":"parfém","price_intent":"maximálně 2500 Kč","limit":10}}
+{"name":"recommend_product","arguments":{"query":"svěží parfémová voda na každý den do 2500 Kč","category":"parfém","price_intent":"maximálně 2500 Kč"}}
 ```
 
 Katalogový endpoint je tenantově omezený, rate-limitovaný na 60 volání za
 minutu a nezpřístupňuje obecné admin API. PHP neposuzuje rozhovor, nefiltruje
 produkty podle požadavků a nevytváří vlastní pořadí kandidátů.
 
-Realtime definice `retrieve_products` vyžaduje český `query`, konkrétní
-`category`, potvrzený `price_intent` a volitelný `limit` 1 až 20. Android bránu
-ověří, pomocná pole odstraní a do PHP pošle pouze `query` a `limit`. PHP dotaz
-beze změny předá tenantovému OpenAI Vector Store a vrátí Realtime modelu
-produktové dokumenty v pořadí Retrieval API včetně podobnostního skóre. Model
-sám čte názvy, popisy, kategorie, varianty, cenu, dostupnost a
-`selection_attributes`, porovnává je s celým rozhovorem a vybírá konkrétní ID.
+`recommend_product` vyžaduje český `query`, konkrétní `category` a potvrzený
+`price_intent`. PHP je pouze validuje a předá OpenAI Responses modelu. Ten
+pomocí hostovaného `file_search` vyhledá dokumenty v tenantovém Vector Store,
+sám porovná názvy, popisy, kategorie, varianty, cenu, dostupnost a
+`selection_attributes` a vrátí pouze stav a konkrétní `product_id`. PHP
+nepřijímá ani nevrací pořadí kandidátů.
 
-`get_product` přijímá pouze `product_id`, které zvolil model z posledního
-retrieval výsledku. PHP vrátí aktuální publikovaný katalogový záznam, ale
+`get_product` přijímá pouze `product_id`, které zvolil Responses model z
+`file_search` evidence. PHP vrátí aktuální publikovaný katalogový záznam, ale
 neoznačuje jej za doporučený ani ověřený vůči rozhovoru. Pokud Vector Store
 není připravený nebo OpenAI Retrieval selže, vrací se stav `unavailable` bez
 databázového fallbacku; PHP tedy nikdy samo nevybere náhradní produkt.
@@ -67,12 +66,12 @@ měnou, dostupností a
 výběrovými atributy. Databáze zůstává katalogovým zdrojem a synchronizace
 udržuje index aktuální pomocí SHA-256 otisku finálního dokumentu.
 
-Realtime API nemá přímý nástroj `file_search` z Responses API. Realtime model
-proto volá úzký function nástroj `retrieve_products`. PHP v něm nečte produktový
-katalog ani cenu, pouze technicky provede OpenAI Retrieval API request a vrátí
-dokumenty z Vector Store; samotné rozhodnutí zůstává v Realtime modelu. Teprve
-po výběru přesného ID volá `get_product`, které načte právě jeden publikovaný
-produkt z databáze.
+Realtime API nemá přímý hostovaný nástroj `file_search` z Responses API.
+Realtime model proto volá úzký function nástroj `recommend_product`. PHP v něm
+nečte produktový katalog ani cenu a neobsahuje doporučovací algoritmus; pouze
+drží serverový API klíč a pošle požadavek do Responses API. OpenAI Responses
+provede `file_search`, rozhodne a vrátí jediné doložené ID. Teprve následné
+`get_product` načte právě jeden publikovaný produkt z databáze.
 
 Realtime relace analyzuje celý rozhovor a neposílá volný text určený k
 zobrazení. Rozlišuje osobu a nákupní záměr, potvrzená fakta, jednoznačně
@@ -82,7 +81,7 @@ konkrétní kategorie produktu a současně cenový záměr nebo důvěryhodný
 normalizovaný profil. Obecné „produkt“, „kosmetika“ ani účel „dárek“ nejsou
 kategorií. Profilový kontext zatím Realtime relaci není zpřístupněný, takže v
 aktuálním kontraktu musí být potvrzená kategorie i cena. Do té doby relace volá
-`continue_listening`. Model z retrieval dokumentů vybere jediný produkt a PHP
+`continue_listening`. Responses model z `file_search` dokumentů vybere jediný produkt a PHP
 pro něj pouze načte aktuální katalogový detail. Nespokojenost nebo žádost o jiný,
 další či lepší produkt vede bezprostředně k preferenci jiné vhodné varianty,
 ale žádné dříve zobrazené ID se trvale nevyloučí. Zákazník se k němu může později
@@ -99,6 +98,7 @@ normalizované výběrové atributy v `data`; historický seed nemění.
 ```dotenv
 OPENAI_API_KEY=sk-proj-...
 ROKID_AI_CLIENT_KEY=<nahodny retezec alespon 32 bytu>
+OPENAI_RECOMMENDATION_MODEL=gpt-5.6-terra
 OPENAI_VECTOR_STORE_ENABLED=false
 ```
 
@@ -119,18 +119,19 @@ uzivatele nebo atestaci zarizeni; hlavni OpenAI klic zustava vzdy jen na serveru
 - `OpenAiProductDocumentBuilder` vytváří stabilní produktové JSON dokumenty.
 - `OpenAiVectorStoreSyncService` inkrementálně nahrává změněné produkty a odstraňuje
   indexy produktů, které už nejsou publikované.
-- `OpenAiVectorProductRetrieval` vrací Realtime modelu syrové výsledky OpenAI
-  Retrieval API bez lokálního filtrování nebo řazení.
+- `OpenAiResponsesProductRecommender` volá OpenAI Responses s hostovaným
+  `file_search`, striktním JSON výstupem a kontrolou ID proti vyhledané evidenci.
 - `OpenAiVectorStoreRepository` drží tenantové ID indexu a vazbu produktu na
   OpenAI soubor; tajný OpenAI klíč ani obsah rozhovoru neukládá.
 
 Realtime model lze bez změny kódu nastavit přes `OPENAI_REALTIME_MODEL`; výchozí
-hodnota je `gpt-realtime`. Systémové instrukce a popisy nástrojů jsou stručně
+hodnota je `gpt-realtime`. Doporučovací Responses model nastavuje
+`OPENAI_RECOMMENDATION_MODEL`; výchozí je `gpt-5.6-terra`. Systémové instrukce a popisy nástrojů jsou stručně
 strukturované v angličtině, analyzovaný rozhovor však zůstává český. Jazyk instrukcí sám o sobě negarantuje
 nižší cenu ani vyšší přesnost; rozhodující je jejich jednoznačnost, délka a
 ověření na reálných dialozích. Prompt je tenantově neutrální a konkrétní profily
 i produkty vždy pocházejí z hostem vybraného katalogu.
-- `OpenAiKnowledgeCatalogService` validuje úzký retrieval/detail kontrakt, ale
+- `OpenAiKnowledgeCatalogService` validuje úzký recommendation/detail kontrakt, ale
   nerozhoduje o vhodnosti produktu.
 - Chyby upstreamu se mapuji na obecny stav 502 a nikdy nevraceji telo OpenAI
   odpovedi ani serverovy API klic.
@@ -142,6 +143,7 @@ Offline unit test nepouziva skutecny OpenAI ucet:
 ```bash
 php8.2 src/Modules/OpenAi/tests/OpenAiRealtimeServiceTest.php
 php8.2 src/Modules/OpenAi/tests/OpenAiKnowledgeCatalogServiceTest.php
+php8.2 src/Modules/OpenAi/tests/OpenAiResponsesProductRecommenderTest.php
 php8.2 src/Modules/OpenAi/tests/OpenAiVectorStoreTest.php
 ```
 

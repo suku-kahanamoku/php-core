@@ -51,7 +51,7 @@ assert_test(
 assert_test(
     'declares product selection and silent listening tools',
     array_column($captured['payload']['session']['tools'], 'name') === [
-        'retrieve_products',
+        'recommend_product',
         'get_product',
         'continue_listening',
     ],
@@ -70,15 +70,10 @@ assert_test(
         'query',
         'category',
         'price_intent',
-        'limit',
     ],
 );
 assert_test(
-    'lets OpenAI choose enough retrieved alternatives',
-    $captured['payload']['session']['tools'][0]['parameters']['properties']['limit']['maximum'] === 20,
-);
-assert_test(
-    'loads only the product ID selected by OpenAI',
+    'loads only the product ID selected by the Responses recommender',
     $captured['payload']['session']['tools'][1]['parameters']['required'] === ['product_id']
         && array_keys($captured['payload']['session']['tools'][1]['parameters']['properties']) === ['product_id'],
 );
@@ -97,15 +92,15 @@ assert_test(
         && str_contains($captured['payload']['session']['instructions'], 'live Czech conversation'),
 );
 assert_test(
-    'waits for category and price or trusted profile before retrieval',
+    'waits for category and price or trusted profile before recommendation',
     str_contains($captured['payload']['session']['instructions'], '# Mandatory recommendation gate')
         && str_contains($captured['payload']['session']['instructions'], 'both gate conditions are satisfied')
         && str_contains($captured['payload']['session']['instructions'], 'Gift is an intent or occasion')
         && str_contains($captured['payload']['session']['instructions'], 'can only be satisfied by confirmed price intent'),
 );
 assert_test(
-    'assigns eligibility and ranking exclusively to OpenAI',
-    str_contains($captured['payload']['session']['instructions'], 'You alone decide eligibility and ranking')
+    'assigns eligibility and ranking exclusively to OpenAI Responses',
+    str_contains($captured['payload']['session']['instructions'], 'Responses recommender decides eligibility and ranking')
         && str_contains($captured['payload']['session']['instructions'], 'PHP never evaluates conversation requirements'),
 );
 assert_test(

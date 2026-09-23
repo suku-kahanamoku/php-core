@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\OpenAi;
 
-/** Oddeluje Vector Store synchronizaci a hledani od databazoveho uloziste. */
+/** Oddeluje stav a synchronizaci Vector Store od databazoveho uloziste. */
 interface OpenAiVectorStoreGateway
 {
     /** @return array<string, mixed>|null */

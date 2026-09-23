@@ -3,11 +3,11 @@
 
 declare(strict_types=1);
 
-/** Offline test čistého katalogového mostu bez PHP rozhodování. */
+/** Offline test katalogového mostu bez PHP rozhodování. */
 
 use App\Modules\OpenAi\OpenAiCatalogGateway;
 use App\Modules\OpenAi\OpenAiKnowledgeCatalogService;
-use App\Modules\OpenAi\OpenAiProductRetrieval;
+use App\Modules\OpenAi\OpenAiProductRecommender;
 
 if (!function_exists('assert_test')) {
     require_once __DIR__ . '/../../../../tests/bootstrap.php';
@@ -47,38 +47,36 @@ $gateway = new class implements OpenAiCatalogGateway {
         return $productId === 90 ? $this->product : null;
     }
 };
-$receivedQuery = (object) ['value' => null];
-$retrieval = new class($receivedQuery) implements OpenAiProductRetrieval {
-    public function __construct(private object $receivedQuery) {}
-    public function retrieve(string $query, int $limit): array
+$receivedNeed = (object) ['value' => null];
+$recommender = new class($receivedNeed) implements OpenAiProductRecommender {
+    public function __construct(private object $receivedNeed) {}
+    public function recommend(string $query, string $category, string $priceIntent): array
     {
-        $this->receivedQuery->value = [$query, $limit];
-        return [
-            'status' => 'results',
-            'products' => [[
-                'product_id' => 90,
-                'similarity' => 0.82,
-                'document' => [
-                    'product_id' => 90,
-                    'name' => 'Večerní parfém',
-                    'selection_attributes' => ['occasion' => ['večer']],
-                ],
-            ]],
-        ];
+        $this->receivedNeed->value = [$query, $category, $priceIntent];
+        return ['status' => 'selected', 'product_id' => 90];
     }
 };
-$service = new OpenAiKnowledgeCatalogService($gateway, $retrieval);
+$service = new OpenAiKnowledgeCatalogService($gateway, $recommender);
 
-$results = $service->execute(OpenAiKnowledgeCatalogService::RETRIEVE_PRODUCTS, [
-    'query' => 'Výrazná vůně na večer',
-    'limit' => 8,
-    'rejected_product_ids' => [91],
+$recommendation = $service->execute(OpenAiKnowledgeCatalogService::RECOMMEND_PRODUCT, [
+    'query' => 'Výrazná vůně na večer do 2000 Kč',
+    'category' => 'parfém',
+    'price_intent' => 'maximálně 2000 Kč',
 ]);
-assert_test('passes the model query unchanged to Vector Store retrieval', $receivedQuery->value === ['Výrazná vůně na večer', 8]);
-assert_test('returns raw retrieval documents without PHP ranking', $results['products'][0]['document']['product_id'] === 90);
-assert_test('preserves OpenAI retrieval similarity as evidence', $results['products'][0]['similarity'] === 0.82);
 assert_test(
-    'retrieval does not query the PHP product catalog',
+    'passes complete evidence to the OpenAI Responses recommender',
+    $receivedNeed->value === [
+        'Výrazná vůně na večer do 2000 Kč',
+        'parfém',
+        'maximálně 2000 Kč',
+    ],
+);
+assert_test('returns only the OpenAI-selected product ID', $recommendation === [
+    'status' => 'selected',
+    'product_id' => 90,
+]);
+assert_test(
+    'recommendation does not query the PHP product catalog',
     $gateway->publishedProductsCalls === 0 && $gateway->publishedProductCalls === 0,
 );
 
@@ -89,26 +87,39 @@ assert_test('does not expose tenant internals in product detail', !isset($detail
 assert_test('does not claim PHP verification of the model decision', $detail['catalog_status'] === 'current' && !isset($detail['verification']));
 
 $unavailable = (new OpenAiKnowledgeCatalogService($gateway))->execute(
-    OpenAiKnowledgeCatalogService::RETRIEVE_PRODUCTS,
-    ['query' => 'hydratační péče'],
+    OpenAiKnowledgeCatalogService::RECOMMEND_PRODUCT,
+    [
+        'query' => 'hydratační péče do 1000 Kč',
+        'category' => 'pleťový krém',
+        'price_intent' => 'do 1000 Kč',
+    ],
 );
-assert_test('does not fall back to PHP product selection', $unavailable['status'] === 'unavailable' && $unavailable['products'] === []);
+assert_test('does not fall back to PHP product selection', $unavailable === [
+    'status' => 'unavailable',
+    'product_id' => null,
+]);
 
-$invalidQueryThrown = false;
-try {
-    $service->execute(OpenAiKnowledgeCatalogService::RETRIEVE_PRODUCTS, ['query' => '']);
-} catch (InvalidArgumentException) {
-    $invalidQueryThrown = true;
+foreach ([
+    ['query' => '', 'category' => 'parfém', 'price_intent' => 'do 2000 Kč'],
+    ['query' => 'vůně', 'category' => '', 'price_intent' => 'do 2000 Kč'],
+    ['query' => 'vůně', 'category' => 'parfém', 'price_intent' => ''],
+] as $invalidArguments) {
+    $thrown = false;
+    try {
+        $service->execute(OpenAiKnowledgeCatalogService::RECOMMEND_PRODUCT, $invalidArguments);
+    } catch (InvalidArgumentException) {
+        $thrown = true;
+    }
+    assert_test('rejects incomplete recommendation evidence', $thrown);
 }
-assert_test('rejects an empty retrieval query', $invalidQueryThrown);
 
 $unknownToolThrown = false;
 try {
-    $service->execute('search_products', ['query' => 'parfém']);
+    $service->execute('retrieve_products', ['query' => 'parfém']);
 } catch (InvalidArgumentException) {
     $unknownToolThrown = true;
 }
-assert_test('rejects the removed PHP decision tool', $unknownToolThrown);
+assert_test('rejects the removed legacy retrieval tool', $unknownToolThrown);
 
 if (!isset($runnerMode)) {
     print_results();

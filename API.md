@@ -1798,27 +1798,25 @@ Errors: `401` missing/invalid Rokid key, `429` rate limit, `502` OpenAI
 unavailable, `503` missing server configuration.
 
 `POST /openai/tool` accepts `{ "name": string, "arguments": object }`. Realtime
-sessions expose `retrieve_products` and `get_product`; the client-local
+sessions expose `recommend_product` and `get_product`; the client-local
 `continue_listening` function is not accepted by this HTTP endpoint and
 produces no UI output.
 
-`retrieve_products` accepts a required natural-language `query` of at most
-1000 characters and optional `limit` from 1 to 20. PHP forwards the query to
-the tenant OpenAI Vector Store and returns raw product documents, their IDs and
-Retrieval API similarity scores. PHP does not apply conversation constraints,
-rank products, infer a customer profile or choose a winner. When the index or
-OpenAI Retrieval is unavailable, the response status is `unavailable`; there
-is deliberately no database recommendation fallback.
+`recommend_product` accepts a required natural-language `query` of at most
+1000 characters, a concrete `category` and confirmed `price_intent`. PHP
+validates this narrow contract and calls OpenAI Responses with hosted
+`file_search` against the tenant Vector Store. The Responses model applies the
+conversation constraints and chooses one evidence-backed ID. PHP never ranks
+products, infers a profile or chooses a winner. The compact result is
+`{"status":"selected","product_id":123}`, `no_match`, or `unavailable`;
+there is deliberately no database recommendation fallback.
 
-The Realtime tool schema additionally requires `category` and `price_intent`
-as evidence that the recommendation gate is complete. The Android assistant
-validates these fields locally and strips them before this HTTP endpoint, so
-PHP still receives only `query` and `limit`. A generic product, cosmetics, or
-gift label is not a concrete category. A trusted normalized profile may replace
-price in a future contract; no such profile input is currently exposed.
+A generic product, cosmetics, or gift label is not a concrete category. A
+trusted normalized profile may replace price in a future contract; no such
+profile input is currently exposed.
 
-`get_product` accepts only `product_id` selected by the Realtime model from the
-latest retrieval results. Only this final step reads the product catalog and it
+`get_product` accepts only `product_id` selected by the Responses model from
+file-search evidence. Only this final step reads the product catalog and it
 loads exactly the selected ID. It returns the current published tenant catalog
 row
 or `product: null` with `catalog_status: not_found`. This operation loads data;

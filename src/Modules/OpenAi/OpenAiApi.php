@@ -40,17 +40,15 @@ final class OpenAiApi
         if ($catalog !== null) {
             $this->catalog = $catalog;
         } else {
-            $retrieval = null;
+            $recommender = null;
             if (filter_var($_ENV['OPENAI_VECTOR_STORE_ENABLED'] ?? false, FILTER_VALIDATE_BOOL)) {
-                $retrieval = new OpenAiVectorProductRetrieval(
-                    new OpenAiVectorStoreClient(),
+                $recommender = new OpenAiResponsesProductRecommender(
                     new OpenAiVectorStoreRepository($db, $franchiseCode),
-                    $franchiseCode,
                 );
             }
             $this->catalog = new OpenAiKnowledgeCatalogService(
                 new OpenAiCatalogRepository($db, $franchiseCode),
-                $retrieval,
+                $recommender,
             );
         }
         $this->rateLimiter = new RateLimiter($db, $franchiseCode);
