@@ -116,6 +116,17 @@ idempotent migration
 variants and enriches 23 matching seed products with structured selection
 attributes and their public source metadata.
 
+The repeatable FAnn catalogue importer stores the six current top-level shop
+categories and up to 50 public product variants per category in tenant `fun`:
+
+```bash
+php8.2 scripts/import_fann_catalog.php --limit=50 --concurrency=4
+```
+
+It reads authoritative Product JSON-LD plus explicit detail attributes,
+deduplicates variants shared by categories, preserves unrelated product JSON,
+and never deletes catalogue rows. See `src/Modules/FannCatalog/README.md`.
+
 This is intentionally an HTTPS session broker, not a PHP WebSocket daemon.
 CGI/FastCGI requests do not provide a reliable long-running WebSocket process.
 
