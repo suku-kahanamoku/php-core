@@ -20,22 +20,31 @@ require_once __DIR__ . '/../../../../vendor/autoload.php';
 
 section('OpenAI knowledge catalog tools');
 $gateway = new class implements OpenAiCatalogGateway {
+    public int $publishedProductsCalls = 0;
+    public int $publishedProductCalls = 0;
+    private array $product = [
+        'id' => 90,
+        'sku' => 'FUN-P016',
+        'name' => 'Večerní parfém',
+        'description' => 'Výrazná kávová vůně.',
+        'price_with_vat' => 1400.0,
+        'stock_quantity' => 2,
+        'published' => 1,
+        'franchise_code' => 'fun',
+        'data' => ['selection_attributes' => ['occasion' => ['večer']]],
+        'categories' => [['name' => 'Fragrances']],
+        'alternatives' => [],
+    ];
     public function publishedProfiles(): iterable { return []; }
     public function publishedProducts(): iterable
     {
-        yield [
-            'id' => 90,
-            'sku' => 'FUN-P016',
-            'name' => 'Večerní parfém',
-            'description' => 'Výrazná kávová vůně.',
-            'price_with_vat' => 1400.0,
-            'stock_quantity' => 2,
-            'published' => 1,
-            'franchise_code' => 'fun',
-            'data' => ['selection_attributes' => ['occasion' => ['večer']]],
-            'categories' => [['name' => 'Fragrances']],
-            'alternatives' => [],
-        ];
+        $this->publishedProductsCalls++;
+        yield $this->product;
+    }
+    public function publishedProduct(int $productId): ?array
+    {
+        $this->publishedProductCalls++;
+        return $productId === 90 ? $this->product : null;
     }
 };
 $receivedQuery = (object) ['value' => null];
@@ -68,9 +77,14 @@ $results = $service->execute(OpenAiKnowledgeCatalogService::RETRIEVE_PRODUCTS, [
 assert_test('passes the model query unchanged to Vector Store retrieval', $receivedQuery->value === ['Výrazná vůně na večer', 8]);
 assert_test('returns raw retrieval documents without PHP ranking', $results['products'][0]['document']['product_id'] === 90);
 assert_test('preserves OpenAI retrieval similarity as evidence', $results['products'][0]['similarity'] === 0.82);
+assert_test(
+    'retrieval does not query the PHP product catalog',
+    $gateway->publishedProductsCalls === 0 && $gateway->publishedProductCalls === 0,
+);
 
 $detail = $service->execute(OpenAiKnowledgeCatalogService::GET_PRODUCT, ['product_id' => 90]);
 assert_test('loads the current product selected by OpenAI', $detail['product']['sku'] === 'FUN-P016');
+assert_test('loads exactly one catalog product only after selection', $gateway->publishedProductCalls === 1);
 assert_test('does not expose tenant internals in product detail', !isset($detail['product']['franchise_code']));
 assert_test('does not claim PHP verification of the model decision', $detail['catalog_status'] === 'current' && !isset($detail['verification']));
 

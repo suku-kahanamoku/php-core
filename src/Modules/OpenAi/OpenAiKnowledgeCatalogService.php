@@ -84,10 +84,8 @@ final class OpenAiKnowledgeCatalogService
         if ($productId === false || $productId < 1) {
             throw new \InvalidArgumentException('product_id is required.');
         }
-        foreach ($this->catalog->publishedProducts() as $product) {
-            if ((int) ($product['id'] ?? 0) !== $productId) {
-                continue;
-            }
+        $product = $this->catalog->publishedProduct($productId);
+        if ($product !== null) {
             return [
                 'product' => array_intersect_key($product, array_fill_keys([
                     'id',

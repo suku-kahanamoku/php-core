@@ -1818,7 +1818,9 @@ gift label is not a concrete category. A trusted normalized profile may replace
 price in a future contract; no such profile input is currently exposed.
 
 `get_product` accepts only `product_id` selected by the Realtime model from the
-latest retrieval results. It returns the current published tenant catalog row
+latest retrieval results. Only this final step reads the product catalog and it
+loads exactly the selected ID. It returns the current published tenant catalog
+row
 or `product: null` with `catalog_status: not_found`. This operation loads data;
 it does not verify the model decision against the conversation.
 

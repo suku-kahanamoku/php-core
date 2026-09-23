@@ -53,16 +53,25 @@ $catalog = new class implements OpenAiCatalogGateway {
     public array $products = [[
         'id' => 1, 'sku' => 'A', 'name' => 'Vůně', 'description' => 'Svěží vůně',
         'price_with_vat' => 100.0, 'stock_quantity' => 1,
-        'data' => ['brand' => 'Test', 'selection_attributes' => ['character' => ['svěží']]],
+        'data' => ['brand' => 'Test', 'currency' => 'CZK', 'selection_attributes' => ['character' => ['svěží']]],
         'categories' => [['name' => 'Fragrances']],
     ], [
         'id' => 2, 'sku' => 'B', 'name' => 'Krém', 'description' => 'Hydratační krém',
         'price_with_vat' => 200.0, 'stock_quantity' => 1,
-        'data' => ['brand' => 'Test', 'selection_attributes' => ['need' => ['hydratace']]],
+        'data' => ['brand' => 'Test', 'currency' => 'CZK', 'selection_attributes' => ['need' => ['hydratace']]],
         'categories' => [['name' => 'Skin Care']],
     ]];
     public function publishedProfiles(): iterable { return []; }
     public function publishedProducts(): iterable { yield from $this->products; }
+    public function publishedProduct(int $productId): ?array
+    {
+        foreach ($this->products as $product) {
+            if ((int) $product['id'] === $productId) {
+                return $product;
+            }
+        }
+        return null;
+    }
 };
 $gateway = new class implements OpenAiVectorStoreGateway {
     public ?array $stored = null;
@@ -103,6 +112,7 @@ assert_test('tenant filter is sent to OpenAI search', $searchCall[2]['filters'][
 
 $document = (new OpenAiProductDocumentBuilder())->build($catalog->products[1], 'fun');
 assert_test('product document contains verifiable ID and attributes', str_contains($document, '"product_id": 2') && str_contains($document, 'hydratace'));
+assert_test('product document contains exact VAT price and currency', str_contains($document, '"amount_with_vat": 200') && str_contains($document, '"currency": "CZK"'));
 
 if (!isset($runnerMode)) {
     print_results();

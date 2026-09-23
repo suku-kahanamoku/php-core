@@ -62,14 +62,17 @@ databázového fallbacku; PHP tedy nikdy samo nevybere náhradní produkt.
 
 OpenAI Vector Store je vyhledávací znalostní index, nikoli zdroj pravdy ani
 fine-tuning modelu. Každý publikovaný produkt se ukládá do samostatného JSON
-souboru s ID, názvem, popisem, kategoriemi, variantou, cenou, dostupností a
+souboru s ID, názvem, popisem, kategoriemi, variantou, přesnou cenou s DPH,
+měnou, dostupností a
 výběrovými atributy. Databáze zůstává katalogovým zdrojem a synchronizace
 udržuje index aktuální pomocí SHA-256 otisku finálního dokumentu.
 
 Realtime API nemá přímý nástroj `file_search` z Responses API. Realtime model
-proto volá úzký function nástroj `retrieve_products`. PHP v něm pouze technicky
-provede Retrieval API request a vrátí dokumenty; samotné rozhodnutí zůstává
-v Realtime modelu.
+proto volá úzký function nástroj `retrieve_products`. PHP v něm nečte produktový
+katalog ani cenu, pouze technicky provede OpenAI Retrieval API request a vrátí
+dokumenty z Vector Store; samotné rozhodnutí zůstává v Realtime modelu. Teprve
+po výběru přesného ID volá `get_product`, které načte právě jeden publikovaný
+produkt z databáze.
 
 Realtime relace analyzuje celý rozhovor a neposílá volný text určený k
 zobrazení. Rozlišuje osobu a nákupní záměr, potvrzená fakta, jednoznačně

@@ -71,4 +71,27 @@ final class OpenAiCatalogRepository implements OpenAiCatalogGateway
             $page++;
         } while (count($items) === self::PAGE_SIZE);
     }
+
+    /** @inheritDoc */
+    public function publishedProduct(int $productId): ?array
+    {
+        $result = $this->products->list(1, 1, '', json_encode([
+            'id' => ['value' => $productId],
+        ], JSON_THROW_ON_ERROR), [
+            'id',
+            'sku',
+            'name',
+            'description',
+            'price_with_vat',
+            'stock_quantity',
+            'kind',
+            'color',
+            'variant',
+            'data',
+            'categories',
+            'alternatives',
+        ]);
+        $items = array_values($result['data'] ?? []);
+        return isset($items[0]) && is_array($items[0]) ? $items[0] : null;
+    }
 }

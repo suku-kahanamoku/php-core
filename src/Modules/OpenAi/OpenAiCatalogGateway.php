@@ -16,4 +16,7 @@ interface OpenAiCatalogGateway
 
     /** @return iterable<array<string, mixed>> Publikovane produkty aktualniho tenanta. */
     public function publishedProducts(): iterable;
+
+    /** @return array<string, mixed>|null Jeden publikovany produkt podle presneho ID. */
+    public function publishedProduct(int $productId): ?array;
 }
