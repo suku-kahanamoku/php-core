@@ -39,15 +39,17 @@ POST /api/openai/tool
 X-Rokid-Key: <ROKID_AI_CLIENT_KEY>
 Content-Type: application/json
 
-{"name":"retrieve_products","arguments":{"query":"svěží parfémová voda na každý den do 2500 Kč","limit":10}}
+{"name":"retrieve_products","arguments":{"query":"svěží parfémová voda na každý den do 2500 Kč","category":"parfém","price_intent":"maximálně 2500 Kč","limit":10}}
 ```
 
 Katalogový endpoint je tenantově omezený, rate-limitovaný na 60 volání za
 minutu a nezpřístupňuje obecné admin API. PHP neposuzuje rozhovor, nefiltruje
 produkty podle požadavků a nevytváří vlastní pořadí kandidátů.
 
-`retrieve_products` přijímá přirozený český `query` a `limit` 1 až 20. PHP
-dotaz beze změny předá tenantovému OpenAI Vector Store a vrátí Realtime modelu
+Realtime definice `retrieve_products` vyžaduje český `query`, konkrétní
+`category`, potvrzený `price_intent` a volitelný `limit` 1 až 20. Android bránu
+ověří, pomocná pole odstraní a do PHP pošle pouze `query` a `limit`. PHP dotaz
+beze změny předá tenantovému OpenAI Vector Store a vrátí Realtime modelu
 produktové dokumenty v pořadí Retrieval API včetně podobnostního skóre. Model
 sám čte názvy, popisy, kategorie, varianty, cenu, dostupnost a
 `selection_attributes`, porovnává je s celým rozhovorem a vybírá konkrétní ID.
@@ -72,15 +74,17 @@ v Realtime modelu.
 Realtime relace analyzuje celý rozhovor a neposílá volný text určený k
 zobrazení. Rozlišuje osobu a nákupní záměr, potvrzená fakta, jednoznačně
 vyjádřený význam, hypotézy a neznámé údaje. Nikdy nepokládá otázku a negeneruje
-prodejní argument, upsell ani cross-sell. Jakmile zachytí libovolný použitelný
-nákupní signál, hledá ihned; neznámé vlastnosti ponechá bez omezení. Jen čisté
-pozadí, nedokončená řeč nebo nezměněný stav ukončí lokálním nástrojem
+prodejní argument, upsell ani cross-sell. Hledání začne až tehdy, když je známá
+konkrétní kategorie produktu a současně cenový záměr nebo důvěryhodný
+normalizovaný profil. Obecné „produkt“, „kosmetika“ ani účel „dárek“ nejsou
+kategorií. Profilový kontext zatím Realtime relaci není zpřístupněný, takže v
+aktuálním kontraktu musí být potvrzená kategorie i cena. Do té doby relace volá
 `continue_listening`. Model z retrieval dokumentů vybere jediný produkt a PHP
 pro něj pouze načte aktuální katalogový detail. Nespokojenost nebo žádost o jiný,
-další či lepší produkt odmítne současné ID, ale zachová stále platné požadavky
-aktivní potřeby. „Lepší“ znamená přesnější shodu s doloženými požadavky, nikoli
-vyšší cenu, popularitu nebo marži. Změna potřeby vždy spustí nové hledání. Zákaznické
-profily nejsou Realtime relaci zpřístupněné.
+další či lepší produkt vede bezprostředně k preferenci jiné vhodné varianty,
+ale žádné dříve zobrazené ID se trvale nevyloučí. Zákazník se k němu může později
+vrátit. „Lepší“ znamená přesnější shodu s doloženými požadavky, nikoli vyšší
+cenu, popularitu nebo marži.
 
 Migrace `migrations/20260921_fun_product_catalog_enrichment.sql` idempotentně
 obohacuje 23 dohledaných existujících FAnn produktů a přidává 30 aktuálních variant. Ukládá

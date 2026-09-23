@@ -1810,6 +1810,13 @@ rank products, infer a customer profile or choose a winner. When the index or
 OpenAI Retrieval is unavailable, the response status is `unavailable`; there
 is deliberately no database recommendation fallback.
 
+The Realtime tool schema additionally requires `category` and `price_intent`
+as evidence that the recommendation gate is complete. The Android assistant
+validates these fields locally and strips them before this HTTP endpoint, so
+PHP still receives only `query` and `limit`. A generic product, cosmetics, or
+gift label is not a concrete category. A trusted normalized profile may replace
+price in a future contract; no such profile input is currently exposed.
+
 `get_product` accepts only `product_id` selected by the Realtime model from the
 latest retrieval results. It returns the current published tenant catalog row
 or `product: null` with `catalog_status: not_found`. This operation loads data;

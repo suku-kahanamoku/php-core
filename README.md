@@ -99,16 +99,19 @@ read-only bridge between Realtime, the tenant OpenAI Vector Store and current
 published product details. It does not expose CRM write operations.
 
 The Realtime session silently analyzes the ongoing dialogue and queries the
-Vector Store as soon as any usable purchase signal is known. The model receives
-raw product documents and itself evaluates requirements, exclusions,
-preferences, budget and rejected IDs. PHP neither filters nor ranks candidates
-and never chooses a recommended product. The model never asks clarification
-questions and never generates sales, upsell or cross-sell arguments; when the
-dialogue lacks useful evidence, the required `continue_listening` tool ends the
-turn without free text or a UI change. Primary selection
-never uses customer-profile probability. After choosing an ID from retrieval,
-the model calls `get_product`; PHP only loads its current published catalog
-detail for Android. The idempotent migration
+Vector Store only after a concrete product category and either confirmed price
+intent or a trusted normalized customer profile are known. A generic product
+request, cosmetics, or gift intent is not a category. The current session has
+no trusted profile input, so category plus price intent is the effective gate.
+The model receives raw product documents and itself evaluates requirements,
+preferences and budget. PHP neither filters nor ranks candidates and never
+chooses a recommended product. The model never asks clarification questions or
+generates sales, upsell or cross-sell arguments; while the gate is incomplete,
+the required `continue_listening` tool ends the turn without free text or a UI
+change. Previously displayed products are not permanently excluded and may be
+selected again when the customer returns to them. After choosing an ID from
+retrieval, the model calls `get_product`; PHP only loads its current published
+catalog detail for Android. The idempotent migration
 `migrations/20260921_fun_product_catalog_enrichment.sql` adds 30 current FAnn
 variants and enriches 23 matching seed products with structured selection
 attributes and their public source metadata.

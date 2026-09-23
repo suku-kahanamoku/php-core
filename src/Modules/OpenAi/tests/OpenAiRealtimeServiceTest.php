@@ -57,12 +57,21 @@ assert_test(
     ],
 );
 assert_test(
-    'requires a textual need for every catalog search',
-    $captured['payload']['session']['tools'][0]['parameters']['required'] === ['query'],
+    'requires category and price evidence for every catalog search',
+    $captured['payload']['session']['tools'][0]['parameters']['required'] === [
+        'query',
+        'category',
+        'price_intent',
+    ],
 );
 assert_test(
-    'keeps PHP retrieval free of conversation decision fields',
-    array_keys($captured['payload']['session']['tools'][0]['parameters']['properties']) === ['query', 'limit'],
+    'declares explicit recommendation gate evidence',
+    array_keys($captured['payload']['session']['tools'][0]['parameters']['properties']) === [
+        'query',
+        'category',
+        'price_intent',
+        'limit',
+    ],
 );
 assert_test(
     'lets OpenAI choose enough retrieved alternatives',
@@ -88,9 +97,11 @@ assert_test(
         && str_contains($captured['payload']['session']['instructions'], 'live Czech conversation'),
 );
 assert_test(
-    'retrieves immediately from the first usable purchase signal',
-    str_contains($captured['payload']['session']['instructions'], 'call retrieve_products immediately')
-        && str_contains($captured['payload']['session']['instructions'], 'Do not wait for more detail.'),
+    'waits for category and price or trusted profile before retrieval',
+    str_contains($captured['payload']['session']['instructions'], '# Mandatory recommendation gate')
+        && str_contains($captured['payload']['session']['instructions'], 'both gate conditions are satisfied')
+        && str_contains($captured['payload']['session']['instructions'], 'Gift is an intent or occasion')
+        && str_contains($captured['payload']['session']['instructions'], 'can only be satisfied by confirmed price intent'),
 );
 assert_test(
     'assigns eligibility and ranking exclusively to OpenAI',
@@ -98,9 +109,9 @@ assert_test(
         && str_contains($captured['payload']['session']['instructions'], 'PHP never evaluates conversation requirements'),
 );
 assert_test(
-    'requires a different product after explicit rejection',
-    str_contains($captured['payload']['session']['instructions'], 'rejects the currently displayed product')
-        && str_contains($captured['payload']['session']['instructions'], 'Never select a displayed or rejected ID'),
+    'allows a deliberate return to a previously displayed product',
+    str_contains($captured['payload']['session']['instructions'], 'never as a permanent exclusion list')
+        && str_contains($captured['payload']['session']['instructions'], 'permit a deliberate later return'),
 );
 assert_test(
     'preserves active need while replacing a rejected product',
