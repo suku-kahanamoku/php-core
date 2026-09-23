@@ -95,23 +95,20 @@ The compact, sectioned system instructions and tool descriptions are in English,
 while the analyzed sales conversation remains Czech.
 
 The same scoped credential protects `POST /api/openai/tool`, an allowlisted
-read-only bridge for published tenant profiles and products used by Realtime
-function calls. It does not expose the protected customer-profile list or any
-CRM write operation.
+read-only bridge between Realtime, the tenant OpenAI Vector Store and current
+published product details. It does not expose CRM write operations.
 
-The Realtime session silently analyzes the ongoing dialogue and performs a
-catalog search as soon as any usable purchase signal is known. Unknown product
-dimensions remain unconstrained rather than delaying the first recommendation.
-Mandatory requirements, explicit exclusions and rejected product IDs are hard
-eligibility rules; positive and negative preferences only rank eligible
-candidates. Already displayed products are deprioritized but remain available
-when the customer asks to return to one. The model never asks clarification
+The Realtime session silently analyzes the ongoing dialogue and queries the
+Vector Store as soon as any usable purchase signal is known. The model receives
+raw product documents and itself evaluates requirements, exclusions,
+preferences, budget and rejected IDs. PHP neither filters nor ranks candidates
+and never chooses a recommended product. The model never asks clarification
 questions and never generates sales, upsell or cross-sell arguments; when the
 dialogue lacks useful evidence, the required `continue_listening` tool ends the
 turn without free text or a UI change. Primary selection
-never uses customer-profile probability. Before Android can display a card,
-`get_product` repeats the hard-condition and stock checks on the server. The
-idempotent migration
+never uses customer-profile probability. After choosing an ID from retrieval,
+the model calls `get_product`; PHP only loads its current published catalog
+detail for Android. The idempotent migration
 `migrations/20260921_fun_product_catalog_enrichment.sql` adds 30 current FAnn
 variants and enriches 23 matching seed products with structured selection
 attributes and their public source metadata.
@@ -126,6 +123,23 @@ php8.2 scripts/import_fann_catalog.php --limit=50 --concurrency=4
 It reads authoritative Product JSON-LD plus explicit detail attributes,
 deduplicates variants shared by categories, preserves unrelated product JSON,
 and never deletes catalogue rows. See `src/Modules/FannCatalog/README.md`.
+
+The OpenAI Vector Store provides the product knowledge used by the Realtime
+model. PHP only synchronizes published catalog documents and proxies retrieval;
+it contains no fallback recommendation algorithm. Install
+`migrations/20260923_openai_vector_store.sql`, synchronize the selected tenant,
+and only then enable the runtime lookup:
+
+```bash
+php8.2 scripts/sync_openai_vector_store.php --tenant=fun
+```
+
+```dotenv
+OPENAI_VECTOR_STORE_ENABLED=true
+```
+
+The sync is incremental and can follow every catalogue import or run hourly.
+See `src/Modules/OpenAi/README.md` for operation and unavailable-index behavior.
 
 This is intentionally an HTTPS session broker, not a PHP WebSocket daemon.
 CGI/FastCGI requests do not provide a reliable long-running WebSocket process.

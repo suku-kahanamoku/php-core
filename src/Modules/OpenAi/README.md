@@ -30,7 +30,7 @@ automatické `create_response`; Android po další 1,5sekundové tiché prodlev�
 řízeně vyžádá jedinou analýzu nad nahromaděným kontextem. Nová řeč nepřeruší
 právě generované argumenty function callu. Relace používá textový výstup a limit
 512 output tokenu pro bezpečné dokončení strukturovaných argumentů.
-Povinné volání nástroje dovoluje pouze `search_products`, `get_product` a lokální
+Povinné volání nástroje dovoluje pouze `retrieve_products`, `get_product` a lokální
 `continue_listening`; model proto nemůže místo výběru produktu vrátit volný text.
 Katalogové nástroje mobil vykoná přes následující backendový endpoint.
 
@@ -39,39 +39,35 @@ POST /api/openai/tool
 X-Rokid-Key: <ROKID_AI_CLIENT_KEY>
 Content-Type: application/json
 
-{"name":"search_products","arguments":{"category":"Parfémy","required_attributes":["parfémová voda"],"preferred_attributes":["svěží","každodenní"],"max_price":2500,"limit":3}}
+{"name":"retrieve_products","arguments":{"query":"svěží parfémová voda na každý den do 2500 Kč","limit":10}}
 ```
 
-Katalogovy endpoint je tenantove omezeny, rate-limitovany na 60 volani za
-minutu a nezpristupnuje obecne admin API. Vraci pouze publikovane profily a
-produkty. Povinné atributy, cenový strop, kategorie, výslovné zákazy a odmítnutá
-ID fungují jako tvrdé podmínky. Nejvýše pět způsobilých produktů se řadí podle
-toho, zda ještě nebyly zobrazeny, podle kladných a záporných preferencí, textové
-shody a až nakonec podle úplnosti atributů. Profilová pravděpodobnost se
-do primárního výběru nezapočítává ani se v jeho výsledku nevrací; zůstává
-uložená pro případnou samostatnou upsell logiku. `displayed_product_ids` označuje
-historii a Android ji při novém hledání sloučí do tvrdého
-`rejected_product_ids`; opakované zobrazení stejné karty proto není možné.
-Starší `attributes` a `excluded_product_ids` zůstávají kompatibilními aliasy.
-`get_product` znovu přijímá aktuální povinné atributy, zákazy, kategorii a
-cenový strop. Detail vrátí pouze publikované a dostupné položce, která všemi
-tvrdými kontrolami projde; jinak vrátí `product: null` a seznam porušení.
+Katalogový endpoint je tenantově omezený, rate-limitovaný na 60 volání za
+minutu a nezpřístupňuje obecné admin API. PHP neposuzuje rozhovor, nefiltruje
+produkty podle požadavků a nevytváří vlastní pořadí kandidátů.
 
-`search_products` přijímá `query`, `category`, `max_price`, `limit`, nejvýše 12
-hodnot v každém z polí `required_attributes`, `preferred_attributes`,
-`negative_preferences` a `excluded_attributes` a nejvýše 50 ID v
-`displayed_product_ids` a `rejected_product_ids`. Produkt bez všech povinných
-atributů nebo se shodou na výslovném zákazu je z výsledků vyřazen.
-Vyhledávání porovnává atributy s názvem, popisem, variantou, kategorií a JSON
-`data.selection_attributes`; kandidátní odpověď obsahuje jen kompaktní základ,
-popis a `selection_attributes`, zatímco úplný objekt vrací až `get_product`.
-Ve výsledku vrací zvlášť splněné povinné a kladné
-atributy, rozpory s měkkými preferencemi, chybějící preference, celkový počet
-způsobilých kandidátů a stav `candidates` nebo `no_match`.
+`retrieve_products` přijímá přirozený český `query` a `limit` 1 až 20. PHP
+dotaz beze změny předá tenantovému OpenAI Vector Store a vrátí Realtime modelu
+produktové dokumenty v pořadí Retrieval API včetně podobnostního skóre. Model
+sám čte názvy, popisy, kategorie, varianty, cenu, dostupnost a
+`selection_attributes`, porovnává je s celým rozhovorem a vybírá konkrétní ID.
 
-Repository čte profily a produkty po databázových stránkách a vystavuje je jako
-`iterable`, takže katalog není potichu omezený na prvních 100 záznamů. Vyhledání
-drží v paměti pouze nejlepší požadovaný počet kandidátů, nikoli celý katalog.
+`get_product` přijímá pouze `product_id`, které zvolil model z posledního
+retrieval výsledku. PHP vrátí aktuální publikovaný katalogový záznam, ale
+neoznačuje jej za doporučený ani ověřený vůči rozhovoru. Pokud Vector Store
+není připravený nebo OpenAI Retrieval selže, vrací se stav `unavailable` bez
+databázového fallbacku; PHP tedy nikdy samo nevybere náhradní produkt.
+
+OpenAI Vector Store je vyhledávací znalostní index, nikoli zdroj pravdy ani
+fine-tuning modelu. Každý publikovaný produkt se ukládá do samostatného JSON
+souboru s ID, názvem, popisem, kategoriemi, variantou, cenou, dostupností a
+výběrovými atributy. Databáze zůstává katalogovým zdrojem a synchronizace
+udržuje index aktuální pomocí SHA-256 otisku finálního dokumentu.
+
+Realtime API nemá přímý nástroj `file_search` z Responses API. Realtime model
+proto volá úzký function nástroj `retrieve_products`. PHP v něm pouze technicky
+provede Retrieval API request a vrátí dokumenty; samotné rozhodnutí zůstává
+v Realtime modelu.
 
 Realtime relace analyzuje celý rozhovor a neposílá volný text určený k
 zobrazení. Rozlišuje osobu a nákupní záměr, potvrzená fakta, jednoznačně
@@ -79,8 +75,8 @@ vyjádřený význam, hypotézy a neznámé údaje. Nikdy nepokládá otázku a 
 prodejní argument, upsell ani cross-sell. Jakmile zachytí libovolný použitelný
 nákupní signál, hledá ihned; neznámé vlastnosti ponechá bez omezení. Jen čisté
 pozadí, nedokončená řeč nebo nezměněný stav ukončí lokálním nástrojem
-`continue_listening`. Před zobrazením se načte detail jediného produktu a ověří
-varianta, cena, dostupnost a tvrdé podmínky. Nespokojenost nebo žádost o jiný,
+`continue_listening`. Model z retrieval dokumentů vybere jediný produkt a PHP
+pro něj pouze načte aktuální katalogový detail. Nespokojenost nebo žádost o jiný,
 další či lepší produkt odmítne současné ID, ale zachová stále platné požadavky
 aktivní potřeby. „Lepší“ znamená přesnější shodu s doloženými požadavky, nikoli
 vyšší cenu, popularitu nebo marži. Změna potřeby vždy spustí nové hledání. Zákaznické
@@ -96,6 +92,7 @@ normalizované výběrové atributy v `data`; historický seed nemění.
 ```dotenv
 OPENAI_API_KEY=sk-proj-...
 ROKID_AI_CLIENT_KEY=<nahodny retezec alespon 32 bytu>
+OPENAI_VECTOR_STORE_ENABLED=false
 ```
 
 `OPENAI_API_KEY` ani `ROKID_AI_CLIENT_KEY` nepatri do Gitu. Tenant se vybere
@@ -112,6 +109,13 @@ uzivatele nebo atestaci zarizeni; hlavni OpenAI klic zustava vzdy jen na serveru
 - `OpenAiRealtimeService` vola `POST /v1/realtime/client_secrets`.
 - `OpenAiCatalogGateway` oddeluje domenu od uloziste.
 - `OpenAiCatalogRepository` nacita publikovana tenantova data pres existujici moduly.
+- `OpenAiProductDocumentBuilder` vytváří stabilní produktové JSON dokumenty.
+- `OpenAiVectorStoreSyncService` inkrementálně nahrává změněné produkty a odstraňuje
+  indexy produktů, které už nejsou publikované.
+- `OpenAiVectorProductRetrieval` vrací Realtime modelu syrové výsledky OpenAI
+  Retrieval API bez lokálního filtrování nebo řazení.
+- `OpenAiVectorStoreRepository` drží tenantové ID indexu a vazbu produktu na
+  OpenAI soubor; tajný OpenAI klíč ani obsah rozhovoru neukládá.
 
 Realtime model lze bez změny kódu nastavit přes `OPENAI_REALTIME_MODEL`; výchozí
 hodnota je `gpt-realtime`. Systémové instrukce a popisy nástrojů jsou stručně
@@ -119,7 +123,8 @@ strukturované v angličtině, analyzovaný rozhovor však zůstává český. J
 nižší cenu ani vyšší přesnost; rozhodující je jejich jednoznačnost, délka a
 ověření na reálných dialozích. Prompt je tenantově neutrální a konkrétní profily
 i produkty vždy pocházejí z hostem vybraného katalogu.
-- `OpenAiCatalogService` validuje povolene funkce, filtry a razeni vysledku.
+- `OpenAiKnowledgeCatalogService` validuje úzký retrieval/detail kontrakt, ale
+  nerozhoduje o vhodnosti produktu.
 - Chyby upstreamu se mapuji na obecny stav 502 a nikdy nevraceji telo OpenAI
   odpovedi ani serverovy API klic.
 
@@ -129,8 +134,33 @@ Offline unit test nepouziva skutecny OpenAI ucet:
 
 ```bash
 php8.2 src/Modules/OpenAi/tests/OpenAiRealtimeServiceTest.php
-php8.2 src/Modules/OpenAi/tests/OpenAiCatalogServiceTest.php
+php8.2 src/Modules/OpenAi/tests/OpenAiKnowledgeCatalogServiceTest.php
+php8.2 src/Modules/OpenAi/tests/OpenAiVectorStoreTest.php
 ```
+
+## První synchronizace a pravidelná aktualizace
+
+Na existující databázi se nejprve spustí aditivní migrace:
+
+```bash
+mysql -h "$DB_HOST" -u "$DB_USER" -p "$DB_NAME" \
+  < migrations/20260923_openai_vector_store.sql
+```
+
+Po nastavení serverového `OPENAI_API_KEY` vytvoří první příkaz tenantový Vector
+Store a nahraje publikované produkty. Další běhy jsou inkrementální podle
+SHA-256 otisku dokumentu:
+
+```bash
+php8.2 scripts/sync_openai_vector_store.php --tenant=fun
+```
+
+Teprve po úspěšné první synchronizaci se pro běžné API nastaví
+`OPENAI_VECTOR_STORE_ENABLED=true`. Synchronizaci lze spouštět po katalogovém
+importu nebo pravidelně z cronu, například jednou za hodinu. Souběžné běhy nad
+stejným tenantem se nesmějí plánovat. Při změně produktu vznikne nejprve nový
+hotový index a až poté se odpojí starý soubor, takže běžné vyhledávání nepřijde
+o poslední platnou verzi.
 
 Zivy smoke test vyzaduje produkcni env hodnoty a platny tenant host. Hodnoty
 tajnych hlavicek nevypisuj do logu ani je neukladej do shell historie.

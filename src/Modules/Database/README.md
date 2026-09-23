@@ -16,3 +16,9 @@ Notes:
 - Zoo databases run `20260913_zoo_product_categories.sql` to convert the tenant's product-kind classification while preserving existing animal-category links.
 - All existing databases then run `20260913_remove_product_profile_is_target.sql`; purchase probability becomes the only product/profile suitability value.
 - FAnn databases run `20260913_product_alternatives.sql` to create ordered product-to-product alternatives and convert 27 known legacy names; unmatched free text is preserved.
+- Installations using semantic product retrieval run the additive
+  `20260923_openai_vector_store.sql` migration. It stores only tenant Vector
+  Store IDs, product/file mappings and document hashes; the product tables
+  remain the authoritative catalogue. The mapping intentionally has no product
+  foreign key: after a hard delete it must survive until synchronization removes
+  the remote OpenAI file and then deletes the mapping.

@@ -294,6 +294,30 @@ CREATE TABLE `product_category` (
     CONSTRAINT `fk_pc_category` FOREIGN KEY (`category_id`) REFERENCES `category` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ── OpenAI vector-store catalogue index ───────────────────
+CREATE TABLE `openai_vector_store` (
+    `franchise_code` VARCHAR(64) NOT NULL,
+    `vector_store_id` VARCHAR(128) NOT NULL,
+    `name` VARCHAR(255) NOT NULL,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`franchise_code`),
+    UNIQUE KEY `uq_openai_vector_store_id` (`vector_store_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `openai_vector_store_product` (
+    `franchise_code` VARCHAR(64) NOT NULL,
+    `product_id` INT UNSIGNED NOT NULL,
+    `vector_store_id` VARCHAR(128) NOT NULL,
+    `openai_file_id` VARCHAR(128) NOT NULL,
+    `source_hash` CHAR(64) NOT NULL,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`franchise_code`, `product_id`),
+    UNIQUE KEY `uq_openai_vector_product_file` (`openai_file_id`),
+    KEY `idx_openai_vector_product_store` (`vector_store_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ── product_file (M:N pivot) ───────────────────────────────
 CREATE TABLE `product_file` (
     `product_id` INT UNSIGNED NOT NULL,

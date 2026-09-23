@@ -38,6 +38,17 @@ Příkaz načte databázové připojení z `.env`. Je opakovatelný a aktualizuj
 existující řádky podle tenantového SKU. Konkurence je záměrně omezena na 1–6
 požadavků. Importér přijímá pouze HTTPS URL hostu `www.fann.cz`.
 
+Pokud je zapnuté sémantické vyhledávání, po dokončeném importu se samostatně
+aktualizuje produktový Vector Store:
+
+```bash
+php8.2 scripts/sync_openai_vector_store.php --tenant=fun
+```
+
+Import záměrně nevolá OpenAI sám. Katalog tak lze obnovit i při výpadku OpenAI
+a synchronizaci bezpečně zopakovat později. Podrobnosti jsou v
+[`../OpenAi/README.md`](../OpenAi/README.md).
+
 ## Test parseru
 
 ```bash

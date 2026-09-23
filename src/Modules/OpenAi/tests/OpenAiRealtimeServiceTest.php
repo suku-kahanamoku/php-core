@@ -51,7 +51,7 @@ assert_test(
 assert_test(
     'declares product selection and silent listening tools',
     array_column($captured['payload']['session']['tools'], 'name') === [
-        'search_products',
+        'retrieve_products',
         'get_product',
         'continue_listening',
     ],
@@ -61,24 +61,17 @@ assert_test(
     $captured['payload']['session']['tools'][0]['parameters']['required'] === ['query'],
 );
 assert_test(
-    'declares separate displayed and rejected product histories',
-    isset($captured['payload']['session']['tools'][0]['parameters']['properties']['displayed_product_ids'])
-        && isset($captured['payload']['session']['tools'][0]['parameters']['properties']['rejected_product_ids']),
+    'keeps PHP retrieval free of conversation decision fields',
+    array_keys($captured['payload']['session']['tools'][0]['parameters']['properties']) === ['query', 'limit'],
 );
 assert_test(
-    'separates mandatory and preferred product attributes',
-    isset($captured['payload']['session']['tools'][0]['parameters']['properties']['required_attributes'])
-        && isset($captured['payload']['session']['tools'][0]['parameters']['properties']['preferred_attributes'])
-        && isset($captured['payload']['session']['tools'][0]['parameters']['properties']['negative_preferences']),
+    'lets OpenAI choose enough retrieved alternatives',
+    $captured['payload']['session']['tools'][0]['parameters']['properties']['limit']['maximum'] === 20,
 );
 assert_test(
-    'declares hard exclusions for rejected product attributes',
-    isset($captured['payload']['session']['tools'][0]['parameters']['properties']['excluded_attributes']),
-);
-assert_test(
-    'requires hard constraints again during final product verification',
-    $captured['payload']['session']['tools'][1]['parameters']['required']
-        === ['product_id', 'required_attributes', 'excluded_attributes'],
+    'loads only the product ID selected by OpenAI',
+    $captured['payload']['session']['tools'][1]['parameters']['required'] === ['product_id']
+        && array_keys($captured['payload']['session']['tools'][1]['parameters']['properties']) === ['product_id'],
 );
 assert_test(
     'does not offer profile probability as a primary search input',
@@ -95,19 +88,19 @@ assert_test(
         && str_contains($captured['payload']['session']['instructions'], 'live Czech conversation'),
 );
 assert_test(
-    'searches immediately from the first usable purchase signal',
-    str_contains($captured['payload']['session']['instructions'], 'call search_products immediately')
+    'retrieves immediately from the first usable purchase signal',
+    str_contains($captured['payload']['session']['instructions'], 'call retrieve_products immediately')
         && str_contains($captured['payload']['session']['instructions'], 'Do not wait for more detail.'),
 );
 assert_test(
-    'keeps hard requirements separate from ranking preferences',
-    str_contains($captured['payload']['session']['instructions'], 'required_attributes')
-        && str_contains($captured['payload']['session']['instructions'], 'preferred_attributes'),
+    'assigns eligibility and ranking exclusively to OpenAI',
+    str_contains($captured['payload']['session']['instructions'], 'You alone decide eligibility and ranking')
+        && str_contains($captured['payload']['session']['instructions'], 'PHP never evaluates conversation requirements'),
 );
 assert_test(
     'requires a different product after explicit rejection',
     str_contains($captured['payload']['session']['instructions'], 'rejects the currently displayed product')
-        && str_contains($captured['payload']['session']['instructions'], 'Never select an ID listed in displayed_product_ids'),
+        && str_contains($captured['payload']['session']['instructions'], 'Never select a displayed or rejected ID'),
 );
 assert_test(
     'preserves active need while replacing a rejected product',

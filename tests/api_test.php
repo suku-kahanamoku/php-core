@@ -91,7 +91,7 @@ $tests = [
     "{$modulesDir}/File/tests/FileApiTest.php",
     // OpenAI (offline transport; no live API call)
     "{$modulesDir}/OpenAi/tests/OpenAiRealtimeServiceTest.php",
-    "{$modulesDir}/OpenAi/tests/OpenAiCatalogServiceTest.php",
+    "{$modulesDir}/OpenAi/tests/OpenAiKnowledgeCatalogServiceTest.php",
 ];
 
 foreach ($tests as $file) {

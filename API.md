@@ -1797,36 +1797,27 @@ Response `200`:
 Errors: `401` missing/invalid Rokid key, `429` rate limit, `502` OpenAI
 unavailable, `503` missing server configuration.
 
-`POST /openai/tool` accepts `{ "name": string, "arguments": object }`. Allowed
-names are `list_customer_profiles`, `search_products`, and `get_product`.
-Realtime sessions expose only `search_products` and `get_product`; the profile
-operation remains an authenticated backend capability for a possible separate
-future flow, not for passive primary selection. The session also defines the
-client-local `continue_listening` function; it is not accepted by this HTTP
-endpoint and produces no UI output.
-`search_products` separates eligibility from ranking. `required_attributes`,
-`excluded_attributes`, `max_price`, `category`, and `rejected_product_ids` are
-hard conditions. `preferred_attributes` and `negative_preferences` only rank
-eligible products. `displayed_product_ids` lowers repeat priority but allows an
-explicit return to a previous product. Each attribute list accepts at most 12
-short values and each ID list at most 50 positive IDs. Legacy `attributes` and
-`excluded_product_ids` remain supported aliases for older sessions.
+`POST /openai/tool` accepts `{ "name": string, "arguments": object }`. Realtime
+sessions expose `retrieve_products` and `get_product`; the client-local
+`continue_listening` function is not accepted by this HTTP endpoint and
+produces no UI output.
 
-Primary ranking does not accept or return customer-profile probability. Results
-include matched mandatory and preferred attributes, soft conflicts, unmatched
-preferences, `eligible_count`, `catalog_scan_complete`, and status `candidates`
-or `no_match`. The endpoint returns only published tenant data and never permits
-CRM writes.
+`retrieve_products` accepts a required natural-language `query` of at most
+1000 characters and optional `limit` from 1 to 20. PHP forwards the query to
+the tenant OpenAI Vector Store and returns raw product documents, their IDs and
+Retrieval API similarity scores. PHP does not apply conversation constraints,
+rank products, infer a customer profile or choose a winner. When the index or
+OpenAI Retrieval is unavailable, the response status is `unavailable`; there
+is deliberately no database recommendation fallback.
 
-`get_product` accepts `product_id` plus required arrays
-`required_attributes` and `excluded_attributes`; `category` and `max_price` are
-optional. It returns the product only after a second server-side check of those
-constraints and stock availability. Failed verification returns `product: null`
-with `verification.status` and machine-readable `violations`.
+`get_product` accepts only `product_id` selected by the Realtime model from the
+latest retrieval results. It returns the current published tenant catalog row
+or `product: null` with `catalog_status: not_found`. This operation loads data;
+it does not verify the model decision against the conversation.
 
-Catalog rows are consumed through paginated iterators, so search and detail are
-not limited to the first 100 published rows. Search retains only the requested
-top candidates in memory.
+Catalog rows are consumed through paginated iterators, so detail lookup and
+Vector Store synchronization are not limited to the first 100 published rows.
+The endpoint is read-only and never permits CRM writes.
 
 ---
 

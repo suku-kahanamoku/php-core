@@ -20,7 +20,7 @@ use App\Utils\RateLimiter;
 final class OpenAiApi
 {
     private OpenAiRealtimeService $service;
-    private OpenAiCatalogService $catalog;
+    private OpenAiKnowledgeCatalogService $catalog;
     private RateLimiter $rateLimiter;
 
     /**
@@ -34,12 +34,25 @@ final class OpenAiApi
         Database $db,
         string $franchiseCode,
         ?OpenAiRealtimeService $service = null,
-        ?OpenAiCatalogService $catalog = null,
+        ?OpenAiKnowledgeCatalogService $catalog = null,
     ) {
         $this->service = $service ?? new OpenAiRealtimeService();
-        $this->catalog = $catalog ?? new OpenAiCatalogService(
-            new OpenAiCatalogRepository($db, $franchiseCode),
-        );
+        if ($catalog !== null) {
+            $this->catalog = $catalog;
+        } else {
+            $retrieval = null;
+            if (filter_var($_ENV['OPENAI_VECTOR_STORE_ENABLED'] ?? false, FILTER_VALIDATE_BOOL)) {
+                $retrieval = new OpenAiVectorProductRetrieval(
+                    new OpenAiVectorStoreClient(),
+                    new OpenAiVectorStoreRepository($db, $franchiseCode),
+                    $franchiseCode,
+                );
+            }
+            $this->catalog = new OpenAiKnowledgeCatalogService(
+                new OpenAiCatalogRepository($db, $franchiseCode),
+                $retrieval,
+            );
+        }
         $this->rateLimiter = new RateLimiter($db, $franchiseCode);
     }
 
