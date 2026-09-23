@@ -51,7 +51,6 @@ $catalog = new class implements OpenAiCatalogGateway {
         'data' => ['brand' => 'Test', 'currency' => 'CZK', 'selection_attributes' => ['need' => ['hydratace']]],
         'categories' => [['name' => 'Skin Care']],
     ]];
-    public function publishedProfiles(): iterable { return []; }
     public function publishedProducts(): iterable { yield from $this->products; }
     public function publishedProduct(int $productId): ?array
     {

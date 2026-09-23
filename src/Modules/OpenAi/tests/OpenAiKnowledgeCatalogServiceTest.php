@@ -35,7 +35,6 @@ $gateway = new class implements OpenAiCatalogGateway {
         'categories' => [['name' => 'Fragrances']],
         'alternatives' => [],
     ];
-    public function publishedProfiles(): iterable { return []; }
     public function publishedProducts(): iterable
     {
         $this->publishedProductsCalls++;

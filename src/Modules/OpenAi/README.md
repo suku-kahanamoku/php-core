@@ -114,7 +114,8 @@ uzivatele nebo atestaci zarizeni; hlavni OpenAI klic zustava vzdy jen na serveru
 
 - `OpenAiApi` kontroluje Rokid klic a rate limit; tenant dostava z routeru.
 - `OpenAiRealtimeService` vola `POST /v1/realtime/client_secrets`.
-- `OpenAiCatalogGateway` oddeluje domenu od uloziste.
+- `OpenAiCatalogGateway` vystavuje jen produktove operace potrebne pro synchronizaci
+  a nacteni jednoho vysledku; OpenAI modul neni zavisly na profilech zakazniku.
 - `OpenAiCatalogRepository` nacita publikovana tenantova data pres existujici moduly.
 - `OpenAiProductDocumentBuilder` vytváří stabilní produktové JSON dokumenty.
 - `OpenAiVectorStoreSyncService` inkrementálně nahrává změněné produkty a odstraňuje
