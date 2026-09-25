@@ -156,7 +156,7 @@ Note: `POST /api/auth/logout` requires the `Authorization: Bearer <token>` heade
 Every request is scoped to a `franchise_code` resolved from the frontend host. Allowed host-to-tenant mappings are defined in `.env` as a comma-separated list:
 
 ```
-FRANCHISE_CODES=zoo.localhost:zoo,zoo-crm.netlify.app:zoo,vinozezajeci.cz:zajeci
+FRANCHISE_CODES=zoo.localhost:zoo,zoo-crm.netlify.app:zoo,vinozezajeci.cz:zajeci,collegas.netlify.app:collegas,collegas.cz:collegas,www.collegas.cz:collegas
 ```
 
 Requests from unknown hosts return `403 Forbidden`. Do not map the generic PHP
