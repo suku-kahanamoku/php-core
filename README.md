@@ -43,6 +43,19 @@ Default admin credentials:
 php -S localhost:8000
 ```
 
+For local email testing with Mailpit, configure the tenant-specific values in
+the gitignored `.env` (shown here for `collegas`):
+
+```dotenv
+COLLEGAS_MAILER_SMTP_HOST=127.0.0.1
+COLLEGAS_MAILER_SMTP_PORT=1025
+COLLEGAS_MAILER_SMTP_AUTH=false
+COLLEGAS_MAILER_SMTP_SECURE=none
+```
+
+Mailpit then captures messages at `http://127.0.0.1:8025` without sending them
+to real recipients. Production must use authenticated SMTP with TLS.
+
 ## Authentication
 
 The API uses **Bearer token** authentication. Cookies and sessions are not used.

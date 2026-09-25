@@ -19,3 +19,10 @@ Notes:
 - This module is support-oriented and works with email templates under `emails/`.
 - It uses the franchise code to resolve template prefixes where needed.
 - Attachments are accepted only from the current tenant's permanent file directory.
+- SMTP uses `MAILER_SMTP_HOST`, `MAILER_SMTP_USER`, `MAILER_SMTP_PASS`,
+  `MAILER_SMTP_PORT`, `MAILER_SMTP_AUTH` and `MAILER_SMTP_SECURE`. Every value
+  can be overridden per tenant, for example with `COLLEGAS_`.
+- Production defaults to authenticated STARTTLS (`MAILER_SMTP_AUTH=true`,
+  `MAILER_SMTP_SECURE=tls`). For local Mailpit use host `127.0.0.1`, port
+  `1025`, auth `false` and secure `none`; never use this transport setting in
+  production.

@@ -15,6 +15,8 @@ class MailerService
     private string $_smtpUser;
     private string $_smtpPass;
     private int    $_smtpPort;
+    private bool   $_smtpAuth;
+    private string $_smtpSecure;
     private TemplaterService $_tpl;
 
     public function __construct(string $franchiseCode = '')
@@ -39,6 +41,17 @@ class MailerService
         $this->_smtpPort = (int) ($_ENV["{$prefix}MAILER_SMTP_PORT"]
             ?? $_ENV['MAILER_SMTP_PORT']
             ?? 587);
+        $smtpAuth = $_ENV["{$prefix}MAILER_SMTP_AUTH"]
+            ?? $_ENV['MAILER_SMTP_AUTH']
+            ?? null;
+        $this->_smtpAuth = $smtpAuth === null
+            ? $this->_smtpUser !== '' || $this->_smtpPass !== ''
+            : filter_var($smtpAuth, FILTER_VALIDATE_BOOL);
+        $this->_smtpSecure = strtolower(trim((string) (
+            $_ENV["{$prefix}MAILER_SMTP_SECURE"]
+            ?? $_ENV['MAILER_SMTP_SECURE']
+            ?? 'tls'
+        )));
         $this->_tpl = new TemplaterService($franchiseCode);
     }
 
@@ -120,10 +133,19 @@ class MailerService
             if ($smtpHost !== '') {
                 $mail->isSMTP();
                 $mail->Host       = $smtpHost;
-                $mail->SMTPAuth   = true;
-                $mail->Username   = $this->_smtpUser;
-                $mail->Password   = $this->_smtpPass;
-                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                $mail->SMTPAuth   = $this->_smtpAuth;
+                if ($this->_smtpAuth) {
+                    $mail->Username = $this->_smtpUser;
+                    $mail->Password = $this->_smtpPass;
+                }
+                if (in_array($this->_smtpSecure, ['ssl', 'smtps'], true)) {
+                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+                } elseif (in_array($this->_smtpSecure, ['tls', 'starttls'], true)) {
+                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                } else {
+                    $mail->SMTPSecure = '';
+                    $mail->SMTPAutoTLS = false;
+                }
                 $mail->Port       = $this->_smtpPort;
             } else {
                 $mail->isMail();
