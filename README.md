@@ -558,3 +558,20 @@ agreement when writing cross-table relationships.
 The profile-focused diagram with every related table column is in
 [`src/Modules/CustomerProfile/README.md`](src/Modules/CustomerProfile/README.md). The complete executable
 schema remains [`migrations/schema.sql`](migrations/schema.sql).
+
+### Prasentace – kontaktní formulář
+
+Astro Prasentace používá existující `POST /mailer/send` s interním klíčem a
+`X-Forwarded-Host` podle domény webu. Aktuální web běží na
+`https://prasentace.netlify.app`, produkční doména bude `https://www.prasentace.cz`.
+V `FRANCHISE_CODES` jsou `prasentace.netlify.app:prasentace`,
+`www.prasentace.cz:prasentace` a `prasentace.cz:prasentace`; všechny vybírají šablonu
+`emails/prasentace/contact-form-admin.php`. Příjemce a odesílatel je
+`info@prasentace.cz`, jméno odesílatele `Prasentace`. Nastavení SMTP lze oddělit
+pomocí `PRASENTACE_MAILER_*` stejným mechanismem jako `COLLEGAS_MAILER_*`; pro
+lokální vývoj jsou převzaty parametry transportu Collegas. Žádné další endpointy
+ani změny oprávnění nejsou potřeba. Produkční nasazení vyžaduje přenos šablony
+a odpovídající nastavení prostředí. V PHP `ALLOWED_ORIGINS` jsou povolené
+`https://prasentace.netlify.app`, `https://www.prasentace.cz` a `https://prasentace.cz`
+(bez koncového lomítka). Tato mapování i povolené originy je nutné přenést také
+do prostředí nasazeného PHP; lokální `.env` se do Gitu neukládá.
