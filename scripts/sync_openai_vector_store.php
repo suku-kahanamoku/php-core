@@ -15,7 +15,7 @@ require_once dirname(__DIR__) . '/vendor/autoload.php';
 Dotenv::createImmutable(dirname(__DIR__))->safeLoad();
 
 $options = getopt('', ['tenant::']);
-$tenant = trim((string) ($options['tenant'] ?? 'fun'));
+$tenant = trim((string) ($options['tenant'] ?? 'fann'));
 if (preg_match('/^[a-z0-9][a-z0-9_-]{0,63}$/', $tenant) !== 1) {
     fwrite(STDERR, "Neplatný tenant.\n");
     exit(2);

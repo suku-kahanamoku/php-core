@@ -25,7 +25,7 @@ final class FannCatalogRepository
 
     public function __construct(
         private readonly Database $database,
-        private readonly string $franchiseCode = 'fun',
+        private readonly string $franchiseCode = 'fann',
     ) {
     }
 

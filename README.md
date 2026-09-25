@@ -118,7 +118,7 @@ variants and enriches 23 matching seed products with structured selection
 attributes and their public source metadata.
 
 The repeatable FAnn catalogue importer stores the six current top-level shop
-categories and up to 50 public product variants per category in tenant `fun`:
+categories and up to 50 public product variants per category in tenant `fann`:
 
 ```bash
 php8.2 scripts/import_fann_catalog.php --limit=50 --concurrency=4
@@ -135,7 +135,7 @@ request; it contains no fallback recommendation algorithm. Install
 and only then enable the runtime lookup:
 
 ```bash
-php8.2 scripts/sync_openai_vector_store.php --tenant=fun
+php8.2 scripts/sync_openai_vector_store.php --tenant=fann
 ```
 
 ```dotenv
@@ -207,6 +207,7 @@ mysql -u php_core -p php_core < migrations/20260913_user_customer_profile_positi
 mysql -u php_core -p php_core < migrations/20260913_zoo_product_categories.sql
 mysql -u php_core -p php_core < migrations/20260913_remove_product_profile_is_target.sql
 mysql -u php_core -p php_core < migrations/20260916_product_stock_availability.sql
+mysql -u php_core -p php_core < migrations/20260925_rename_fun_tenant_to_fann.sql
 ```
 
 The administrator is `admin@zoo.local` with password `admin`.
@@ -216,7 +217,7 @@ diagram are documented in [`src/Modules/CustomerProfile/README.md`](src/Modules/
 
 ### FAnn CRM tenant
 
-The companion application in `nuxt/fan` uses the `fun` tenant. Seed its initial
+The companion application in `nuxt/fann` uses the `fann` tenant. Seed its initial
 catalogue and then convert the legacy FAnn product classification to category
 relations:
 
@@ -229,6 +230,7 @@ mysql -u php_core -p php_core < migrations/20260913_fun_product_categories.sql
 mysql -u php_core -p php_core < migrations/20260913_remove_product_profile_is_target.sql
 mysql -u php_core -p php_core < migrations/20260913_product_alternatives.sql
 mysql -u php_core -p php_core < migrations/20260916_product_stock_availability.sql
+mysql -u php_core -p php_core < migrations/20260925_rename_fun_tenant_to_fann.sql
 ```
 
 The administrator is `admin@fann.cz` with password `admin`.
@@ -255,6 +257,7 @@ php-core/
 │   ├── 20260913_remove_product_profile_is_target.sql   # probability-only product/profile relation
 │   ├── 20260913_product_alternatives.sql               # ordered FAnn product alternatives
 │   └── 20260916_product_stock_availability.sql         # random stock for zero-quantity products
+mysql -u php_core -p php_core < migrations/20260925_rename_fun_tenant_to_fann.sql
 ├── pages/
 │   ├── db-schema.html     # Mermaid ER diagram
 │   ├── db-table.html      # HTML schema viewer with FK table

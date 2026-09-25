@@ -21,7 +21,7 @@ try {
     $importer = new FannCatalogImporter(
         new FannCatalogHttpClient(),
         new FannCatalogParser(),
-        new FannCatalogRepository(Database::getInstance(), 'fun'),
+        new FannCatalogRepository(Database::getInstance(), 'fann'),
     );
     $summary = $importer->import(
         $limit,

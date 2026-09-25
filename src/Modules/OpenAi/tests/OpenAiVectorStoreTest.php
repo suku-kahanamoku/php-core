@@ -85,7 +85,7 @@ $sync = new OpenAiVectorStoreSyncService(
     $gateway,
     $client,
     new OpenAiProductDocumentBuilder(),
-    'fun',
+    'fann',
 );
 $first = $sync->sync();
 assert_test('creates one tenant vector store', $first['vector_store_id'] === 'vs_test');
@@ -93,7 +93,7 @@ assert_test('indexes every published product', $first['created'] === 2 && count(
 $second = $sync->sync();
 assert_test('skips unchanged product documents', $second['unchanged'] === 2 && $second['created'] === 0);
 
-$document = (new OpenAiProductDocumentBuilder())->build($catalog->products[1], 'fun');
+$document = (new OpenAiProductDocumentBuilder())->build($catalog->products[1], 'fann');
 assert_test('product document contains verifiable ID and attributes', str_contains($document, '"product_id": 2') && str_contains($document, 'hydratace'));
 assert_test('product document contains exact VAT price and currency', str_contains($document, '"amount_with_vat": 200') && str_contains($document, '"currency": "CZK"'));
 

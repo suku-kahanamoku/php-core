@@ -162,7 +162,7 @@ Store a nahraje publikované produkty. Další běhy jsou inkrementální podle
 SHA-256 otisku dokumentu:
 
 ```bash
-php8.2 scripts/sync_openai_vector_store.php --tenant=fun
+php8.2 scripts/sync_openai_vector_store.php --tenant=fann
 ```
 
 Teprve po úspěšné první synchronizaci se pro běžné API nastaví

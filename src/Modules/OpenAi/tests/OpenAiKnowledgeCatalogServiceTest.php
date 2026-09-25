@@ -24,13 +24,13 @@ $gateway = new class implements OpenAiCatalogGateway {
     public int $publishedProductCalls = 0;
     private array $product = [
         'id' => 90,
-        'sku' => 'FUN-P016',
+        'sku' => 'FANN-P016',
         'name' => 'Večerní parfém',
         'description' => 'Výrazná kávová vůně.',
         'price_with_vat' => 1400.0,
         'stock_quantity' => 2,
         'published' => 1,
-        'franchise_code' => 'fun',
+        'franchise_code' => 'fann',
         'data' => ['selection_attributes' => ['occasion' => ['večer']]],
         'categories' => [['name' => 'Fragrances']],
         'alternatives' => [],
@@ -80,7 +80,7 @@ assert_test(
 );
 
 $detail = $service->execute(OpenAiKnowledgeCatalogService::GET_PRODUCT, ['product_id' => 90]);
-assert_test('loads the current product selected by OpenAI', $detail['product']['sku'] === 'FUN-P016');
+assert_test('loads the current product selected by OpenAI', $detail['product']['sku'] === 'FANN-P016');
 assert_test('loads exactly one catalog product only after selection', $gateway->publishedProductCalls === 1);
 assert_test('does not expose tenant internals in product detail', !isset($detail['product']['franchise_code']));
 assert_test('does not claim PHP verification of the model decision', $detail['catalog_status'] === 'current' && !isset($detail['verification']));

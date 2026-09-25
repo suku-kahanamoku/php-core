@@ -39,7 +39,7 @@ $recommender = new OpenAiResponsesProductRecommender(
                     [
                         'type' => 'file_search_call',
                         'results' => [[
-                            'attributes' => ['product_id' => 90, 'franchise_code' => 'fun'],
+                            'attributes' => ['product_id' => 90, 'franchise_code' => 'fann'],
                         ]],
                     ],
                     [

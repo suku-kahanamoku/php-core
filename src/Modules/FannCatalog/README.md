@@ -42,7 +42,7 @@ Pokud je zapnuté sémantické vyhledávání, po dokončeném importu se samost
 aktualizuje produktový Vector Store:
 
 ```bash
-php8.2 scripts/sync_openai_vector_store.php --tenant=fun
+php8.2 scripts/sync_openai_vector_store.php --tenant=fann
 ```
 
 Import záměrně nevolá OpenAI sám. Katalog tak lze obnovit i při výpadku OpenAI
