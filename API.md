@@ -66,6 +66,11 @@ Every request is tenant-scoped. The request host (or trusted proxy's
 `403` even when the internal key is valid. The internal key is not a universal
 admin credential and must never be sent to browser code.
 
+CORS permits any origin (`Access-Control-Allow-Origin: *`), without credentialed
+cross-origin cookies. Browser clients use the `Authorization` header for Bearer
+tokens. Tenant resolution, public visibility rules and per-endpoint authorization
+apply independently of CORS; the internal key is not required by every endpoint.
+
 ### Obtaining a token
 
 ```http

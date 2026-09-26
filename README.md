@@ -186,6 +186,34 @@ it does not unlock orders, invoice reads, files, or template previews. Every
 request must still resolve a valid tenant. Never send the key to a browser or
 store it in a public frontend runtime variable.
 
+CORS accepts any origin with `Access-Control-Allow-Origin: *`. There is no
+origin allowlist. Browser requests use explicit Bearer tokens, not cross-origin
+cookies (`credentials: "include"` is not supported). CORS does not replace tenant
+resolution or endpoint authorization; internal keys remain server-only.
+
+### Tenant boundaries in database access
+
+`Request::resolveCode()` resolves a tenant before API modules initialize their
+repositories. `Database` itself is an unrestricted PDO wrapper: it does not
+inject or validate `franchise_code`. Primary entity repositories apply tenant
+filters explicitly; child tables such as order/invoice items, product links and
+profile questions are often accessed by a parent ID already checked by a service.
+
+Some helper writes also use IDs alone (`UserRepository::touchLastLogin`, token
+creation/revocation, password-reset bookkeeping and FAnn category migration).
+They rely on their caller having selected the user or parent in the correct
+tenant. Several joins (for example user-to-role and address/order-to-user) rely
+on valid stored relationships rather than checking both tenants in the join.
+These are not independent tenant guards and must not be reused with unchecked IDs.
+
+`FRANCHISE_CODES` selects a tenant; it does not authenticate the caller.
+Currently `X-Forwarded-Host` / `X-Original-Host` are accepted without checking
+`X-Internal-Key`, and public endpoints do not require that key. Private endpoints
+still enforce their own Bearer/role/internal-key rules. CLI imports use an
+explicit tenant instead of HTTP host resolution. Migration SQL and the test
+cleanup helper can operate across tenants; never run the test cleanup against
+production.
+
 ### Existing database / production migration
 
 Never run `migrations/schema.sql` on an existing database. It contains `DROP
@@ -571,7 +599,6 @@ V `FRANCHISE_CODES` jsou `prasentace.netlify.app:prasentace`,
 pomocí `PRASENTACE_MAILER_*` stejným mechanismem jako `COLLEGAS_MAILER_*`; pro
 lokální vývoj jsou převzaty parametry transportu Collegas. Žádné další endpointy
 ani změny oprávnění nejsou potřeba. Produkční nasazení vyžaduje přenos šablony
-a odpovídající nastavení prostředí. V PHP `ALLOWED_ORIGINS` jsou povolené
-`https://prasentace.netlify.app`, `https://www.prasentace.cz` a `https://prasentace.cz`
-(bez koncového lomítka). Tato mapování i povolené originy je nutné přenést také
-do prostředí nasazeného PHP; lokální `.env` se do Gitu neukládá.
+a odpovídající nastavení prostředí. Mapování domén v `FRANCHISE_CODES` je nutné
+přenést také do prostředí nasazeného PHP; lokální `.env` se do Gitu neukládá.
+CORS přijímá všechny originy a nevyžaduje samostatný seznam domén.
