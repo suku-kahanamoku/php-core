@@ -1,5 +1,9 @@
 # Address Module
 
+All HTTP routes require `X-Internal-Key` in the common API middleware, including
+routes described below as public (no user login). User role/ownership checks
+remain additional requirements.
+
 Purpose: manage user addresses for billing and shipping.
 
 Read first:
@@ -18,6 +22,6 @@ Routes:
 
 Notes:
 - A valid `X-Internal-Key` may read the global list, detail, or a user's addresses.
-- Without the internal key, the global list is admin-only and user-scoped reads are self-or-admin.
+- Missing or invalid application keys are rejected before API initialization.
 - Writes always require a Bearer token. A new address belongs to the caller; request `user_id` is not used to assign it to another user.
 - `is_default` should keep only one default address per type and user.

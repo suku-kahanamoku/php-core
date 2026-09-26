@@ -1,5 +1,9 @@
 # Enumeration Module
 
+All HTTP routes require `X-Internal-Key` in the common API middleware, including
+routes described below as public (no user login). User role/ownership checks
+remain additional requirements.
+
 Purpose: system codebook and lookup tables such as statuses, payment methods, currencies, and VAT rates.
 
 Read first:

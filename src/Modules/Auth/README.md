@@ -1,5 +1,9 @@
 # Auth Module
 
+All HTTP routes require `X-Internal-Key` in the common API middleware, including
+routes described below as public (no user login). User role/ownership checks
+remain additional requirements.
+
 Purpose: bearer token authentication, registration, logout, password management, reset flow, and OAuth login.
 
 Read first:

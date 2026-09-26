@@ -1,5 +1,9 @@
 # Text Module
 
+All HTTP routes require `X-Internal-Key` in the common API middleware, including
+routes described below as public (no user login). User role/ownership checks
+remain additional requirements.
+
 Purpose: multilingual CMS content blocks keyed by syscode and language.
 
 Read first:

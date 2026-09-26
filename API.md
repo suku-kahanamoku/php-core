@@ -58,8 +58,13 @@ All list endpoints support three universal query parameters:
 
 ## Authentication
 
-The API uses **Bearer token** authentication for users and a separate
-server-only `X-Internal-Key` for narrowly defined trusted operations.
+All endpoints require server-only `X-Internal-Key` application authentication
+in common middleware, before any API service/database is initialized. The only
+exceptions are POST `/openai/realtime-session` and POST `/openai/tool`, which
+require `X-Rokid-Key`. OPTIONS preflight exits after tenant validation without
+running an API handler. User **Bearer token** authentication and role/ownership
+checks still apply where documented. An admin Bearer token cannot replace the
+application key.
 
 Every request is tenant-scoped. The request host (or trusted proxy's
 `X-Forwarded-Host`) must be present in `FRANCHISE_CODES`; an unknown host returns
@@ -67,9 +72,10 @@ Every request is tenant-scoped. The request host (or trusted proxy's
 admin credential and must never be sent to browser code.
 
 CORS permits any origin (`Access-Control-Allow-Origin: *`), without credentialed
-cross-origin cookies. Browser clients use the `Authorization` header for Bearer
-tokens. Tenant resolution, public visibility rules and per-endpoint authorization
-apply independently of CORS; the internal key is not required by every endpoint.
+cross-origin cookies. Browser clients use their frontend server proxy; the proxy
+adds `X-Internal-Key` and the user's Bearer token when needed. Below, public means
+no user login is required, not that the application key may be omitted. Include
+`X-Internal-Key` on all non-Rokid requests, including the examples below.
 
 ### Obtaining a token
 

@@ -1,5 +1,9 @@
 # User Module
 
+All HTTP routes require `X-Internal-Key` in the common API middleware, including
+routes described below as public (no user login). User role/ownership checks
+remain additional requirements.
+
 Purpose: user CRUD, customer-profile assignments, role assignment, and address lookup.
 
 Read first:
@@ -18,7 +22,7 @@ Routes:
 
 Notes:
 - A valid `X-Internal-Key` may read list/detail and address lookup routes without a Bearer token.
-- Without the internal key, list is admin-only and detail/address lookup is self-or-admin.
+- Missing or invalid application keys are rejected before API initialization.
 - The internal key is read-only; create and delete require admin. Owners may update only their own permitted profile fields.
 - Only admins may change `email`, `status` and `role_id`; ordinary users may update their own name and phone.
 - `user` contains no customer-profile column. The M:N assignments live only in `user_customer_profile`.

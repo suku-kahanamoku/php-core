@@ -9,7 +9,6 @@ use App\Modules\Database\Database;
 use App\Modules\Router\Request;
 use App\Modules\Router\Response;
 use App\Modules\Router\Router;
-use App\Utils\InternalAuth;
 
 class InvoiceApi
 {
@@ -70,9 +69,6 @@ class InvoiceApi
      */
     public function create(Request $request): void
     {
-        if (!InternalAuth::check($request)) {
-            $this->_auth->requireRole('admin');
-        }
         $input = [
             'order_id' => (int) $request->get('order_id', 0),
         ];

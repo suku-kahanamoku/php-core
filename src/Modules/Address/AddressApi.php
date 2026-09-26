@@ -9,7 +9,6 @@ use App\Modules\Database\Database;
 use App\Modules\Router\Request;
 use App\Modules\Router\Response;
 use App\Modules\Router\Router;
-use App\Utils\InternalAuth;
 
 class AddressApi
 {
@@ -43,7 +42,7 @@ class AddressApi
             (string) $request->get('q', ''),
             $request->projection(),
             isset($params['userId']) ? (int) $params['userId'] : null,
-            InternalAuth::check($request),
+            $request->internalAuthenticated,
         );
         Response::successList($result, $request);
     }
@@ -60,7 +59,7 @@ class AddressApi
         $item = $this->_service->get(
             (int) $params['id'],
             $request->projection(),
-            InternalAuth::check($request),
+            $request->internalAuthenticated,
         );
         Response::successItem($item, $request);
     }

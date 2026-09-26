@@ -9,7 +9,6 @@ use App\Modules\Database\Database;
 use App\Modules\Router\Request;
 use App\Modules\Router\Response;
 use App\Modules\Router\Router;
-use App\Utils\InternalAuth;
 use App\Utils\RateLimiter;
 
 class MailerApi
@@ -39,7 +38,6 @@ class MailerApi
 
     private function send(Request $request): void
     {
-        $this->requirePrivileged($request);
         $requiredFields = [
             'to',
             'subject',
@@ -312,7 +310,6 @@ class MailerApi
 
     private function sendTest(Request $request): void
     {
-        $this->requirePrivileged($request);
         $email = trim((string) $request->get('email', ''));
 
         if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -333,7 +330,6 @@ class MailerApi
 
     private function listTemplates(Request $request): void
     {
-        $this->requirePrivileged($request);
         $dir       = dirname(__DIR__, 3) . '/emails/' . $this->_code;
         $templates = [];
 
@@ -347,10 +343,4 @@ class MailerApi
         Response::success($templates, 'Templates listed.');
     }
 
-    private function requirePrivileged(Request $request): void
-    {
-        if (!InternalAuth::check($request)) {
-            $this->_auth->requireRole('admin');
-        }
-    }
 }

@@ -66,7 +66,7 @@ final class OpenAiApi
     }
 
     /**
-     * Overi tenant a aplikacni klic, aplikuje limit a vrati docasny token.
+     * Po overeni middlewarem aplikuje limit a vrati docasny token.
      *
      * @param Request $request Pozadavek s hlavickou `X-Rokid-Key`.
      */
@@ -78,7 +78,6 @@ final class OpenAiApi
             10,
             60,
         );
-        $this->requireRokidKey($request);
 
         try {
             $session = $this->service->createClientSecret();
@@ -92,7 +91,7 @@ final class OpenAiApi
     }
 
     /**
-     * Overi Rokid klienta a provede jeden povoleny read-only katalogovy nastroj.
+     * Po overeni middlewarem provede jeden povoleny read-only katalogovy nastroj.
      *
      * @param Request $request JSON telo s `name` a objektovymi `arguments`.
      */
@@ -104,7 +103,6 @@ final class OpenAiApi
             60,
             60,
         );
-        $this->requireRokidKey($request);
 
         $name = trim((string) $request->get('name', ''));
         $arguments = $request->get('arguments', []);
@@ -122,21 +120,4 @@ final class OpenAiApi
         Response::success($result, 'AI tool completed.');
     }
 
-    /**
-     * Overi oddeleny rotovatelny klic Rokid aplikace konstantnim porovnanim.
-     *
-     * @param Request $request Pozadavek obsahujici `X-Rokid-Key`.
-     */
-    private function requireRokidKey(Request $request): void
-    {
-        $configured = trim((string) ($_ENV['ROKID_AI_CLIENT_KEY'] ?? ''));
-        $provided = trim((string) $request->header('X-Rokid-Key', ''));
-        if (
-            $configured === ''
-            || $provided === ''
-            || !hash_equals($configured, $provided)
-        ) {
-            Response::unauthorized('Rokid client authentication required.');
-        }
-    }
 }

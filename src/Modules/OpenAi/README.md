@@ -112,7 +112,7 @@ uzivatele nebo atestaci zarizeni; hlavni OpenAI klic zustava vzdy jen na serveru
 
 ## Odpovednosti
 
-- `OpenAiApi` kontroluje Rokid klic a rate limit; tenant dostava z routeru.
+- `InternalAuthMiddleware` ověřuje `X-Rokid-Key` před vytvořením API a DB; `OpenAiApi` pak kontroluje rate limit a používá vyřešeného tenanta.
 - `OpenAiRealtimeService` vola `POST /v1/realtime/client_secrets`.
 - `OpenAiCatalogGateway` vystavuje jen produktove operace potrebne pro synchronizaci
   a nacteni jednoho vysledku; OpenAI modul neni zavisly na profilech zakazniku.

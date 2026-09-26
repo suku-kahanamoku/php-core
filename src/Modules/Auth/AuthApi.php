@@ -8,7 +8,6 @@ use App\Modules\Database\Database;
 use App\Modules\Router\Request;
 use App\Modules\Router\Response;
 use App\Modules\Router\Router;
-use App\Utils\InternalAuth;
 use App\Utils\RateLimiter;
 
 class AuthApi
@@ -142,14 +141,13 @@ class AuthApi
     }
 
     /**
-     * POST /auth/oauth — OAuth login: najde nebo vytvori uzivatele dle emailu. Verejne dostupne.
+     * POST /auth/oauth — OAuth login: serverem overena identita; aplikacni klic overuje middleware.
      *
      * @param Request $request  body: email (required), first_name, last_name
      * @return void
      */
     public function oauth(Request $request): void
     {
-        InternalAuth::require($request);
         $provider  = strtolower(trim((string) $request->get('provider', '')));
         $subject   = trim((string) $request->get('subject', ''));
         $email     = trim((string) $request->get('email', ''));

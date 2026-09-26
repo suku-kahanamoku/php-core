@@ -1,5 +1,9 @@
 # Mailer Module
 
+All HTTP routes require `X-Internal-Key` in the common API middleware, including
+routes described below as public (no user login). User role/ownership checks
+remain additional requirements.
+
 Purpose: send transactional email and project-specific notification templates.
 
 Read first:
@@ -15,7 +19,7 @@ Routes:
 
 Notes:
 - `POST /mailer` (contact form) and `/mailer/newsletter` are public, purpose-specific, validated, and rate-limited.
-- Generic `/mailer/send`, `/mailer/test`, and `/mailer/list` require an admin Bearer token or valid `X-Internal-Key`; `GET /mailer` returns 405.
+- Generic `/mailer/send`, `/mailer/test`, and `/mailer/list` require the middleware-verified `X-Internal-Key`; `GET /mailer` returns 405.
 - This module is support-oriented and works with email templates under `emails/`.
 - It uses the franchise code to resolve template prefixes where needed.
 - Attachments are accepted only from the current tenant's permanent file directory.

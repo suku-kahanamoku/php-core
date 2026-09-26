@@ -1,5 +1,9 @@
 # File Module
 
+All HTTP routes require `X-Internal-Key` in the common API middleware, including
+routes described below as public (no user login). User role/ownership checks
+remain additional requirements.
+
 Purpose: two-phase file upload, commit, authorized content delivery, and deletion.
 
 Read first:

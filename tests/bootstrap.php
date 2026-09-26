@@ -75,6 +75,10 @@ function request(string $method, string $url, array $body = [], bool $withAuth =
     curl_setopt($ch, CURLOPT_TIMEOUT, 10);
 
     $headers = ['Content-Type: application/json', 'Accept: application/json'];
+    $internalKey = trim((string) ($_ENV['INTERNAL_API_KEY'] ?? ''));
+    if ($internalKey !== '') {
+        $headers[] = "X-Internal-Key: {$internalKey}";
+    }
     if ($withAuth && $token !== null) {
         $headers[] = "Authorization: Bearer {$token}";
     }

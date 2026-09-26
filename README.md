@@ -58,12 +58,13 @@ to real recipients. Production must use authenticated SMTP with TLS.
 
 ## Authentication
 
-The API uses **Bearer token** authentication. Cookies and sessions are not used.
+The API requires **X-Internal-Key** for application authentication (except the two Rokid POST endpoints described below). User authentication additionally uses a **Bearer token**. Cookies and sessions are not used.
 
 **Login and get a token:**
 ```bash
 curl -X POST http://localhost/php/php-core/api/auth/login \
   -H "Content-Type: application/json" \
+  -H "X-Internal-Key: $INTERNAL_API_KEY" \
   -d '{"email":"admin@example.com","password":"admin123"}'
 ```
 
@@ -87,6 +88,7 @@ Response:
 **Use the token in subsequent requests:**
 ```bash
 curl http://localhost/php/php-core/api/products \
+  -H "X-Internal-Key: $INTERNAL_API_KEY" \
   -H "Authorization: Bearer a3f9c2..."
 ```
 
@@ -176,9 +178,14 @@ Requests from unknown hosts return `403 Forbidden`. Do not map the generic PHP
 backend hostname to a tenant. Trusted Nuxt server proxies pass their configured
 frontend hostname in `X-Forwarded-Host`.
 
-Server-to-server operations (OAuth handoff, generic transactional mail and
-invoice creation) additionally require the same non-public `INTERNAL_API_KEY`
-in PHP and the corresponding Nuxt deployment.
+Every API request requires the same non-public `INTERNAL_API_KEY` in PHP and
+the calling server, sent as `X-Internal-Key`. `api/bootstrap.php` runs
+`InternalAuthMiddleware` after tenant resolution and before database/API
+initialization. A missing, empty or incorrect key returns 401, even with an admin
+Bearer token. The only application-key exceptions are POST
+`/api/openai/realtime-session` and `/api/openai/tool`, which require
+`X-Rokid-Key` instead. OPTIONS returns 204 after tenant validation without
+executing handlers or opening the database.
 
 The internal key is not a universal administrator credential. It also permits
 read-only access to users, roles, and addresses for trusted server proxies, but
@@ -186,10 +193,11 @@ it does not unlock orders, invoice reads, files, or template previews. Every
 request must still resolve a valid tenant. Never send the key to a browser or
 store it in a public frontend runtime variable.
 
-CORS accepts any origin with `Access-Control-Allow-Origin: *`. There is no
-origin allowlist. Browser requests use explicit Bearer tokens, not cross-origin
-cookies (`credentials: "include"` is not supported). CORS does not replace tenant
-resolution or endpoint authorization; internal keys remain server-only.
+CORS accepts any origin with `Access-Control-Allow-Origin: *`, without an
+origin allowlist or credentialed cookies. Browsers call their frontend server;
+that proxy adds the internal key and, where required, the user's Bearer token.
+CORS does not replace application authentication, tenant resolution or user
+permissions. Internal keys must never be embedded in browser or Android code.
 
 ### Tenant boundaries in database access
 
@@ -207,9 +215,11 @@ on valid stored relationships rather than checking both tenants in the join.
 These are not independent tenant guards and must not be reused with unchecked IDs.
 
 `FRANCHISE_CODES` selects a tenant; it does not authenticate the caller.
-Currently `X-Forwarded-Host` / `X-Original-Host` are accepted without checking
-`X-Internal-Key`, and public endpoints do not require that key. Private endpoints
-still enforce their own Bearer/role/internal-key rules. CLI imports use an
+`X-Forwarded-Host` / `X-Original-Host` select the tenant, then the common
+middleware authenticates the calling application before any database access.
+Endpoints described as public mean no user Bearer token is required; the
+application key remains mandatory. Private endpoints retain their user
+Bearer/role rules. CLI imports use an
 explicit tenant instead of HTTP host resolution. Migration SQL and the test
 cleanup helper can operate across tenants; never run the test cleanup against
 production.
@@ -602,3 +612,14 @@ ani změny oprávnění nejsou potřeba. Produkční nasazení vyžaduje přenos
 a odpovídající nastavení prostředí. Mapování domén v `FRANCHISE_CODES` je nutné
 přenést také do prostředí nasazeného PHP; lokální `.env` se do Gitu neukládá.
 CORS přijímá všechny originy a nevyžaduje samostatný seznam domén.
+
+### Authentication verification and rollout
+
+Run `php tests/test_internal_auth.php` for offline middleware and entrypoint
+regression tests (no database, email or external API calls). Deploy compatible
+frontend server proxies with their server-only key before enabling the new PHP
+middleware. JSON requests, login/session hydration, uploads and downloads all
+need that header. Zoo/FAnn private admin reads must require an admin session
+before forwarding the internal key. Published profile detail stays available
+through the FAnn server for Rokid glasses. Existing Prasentace mail transport
+already sends the internal key. No production deployment is performed by tests.

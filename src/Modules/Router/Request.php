@@ -6,6 +6,9 @@ namespace App\Modules\Router;
 
 class Request
 {
+    /** Set only after the application middleware verifies the internal key. */
+    public bool $internalAuthenticated = false;
+
     public readonly string $method;
     public readonly string $uri;
     public readonly string $franchiseCode;
