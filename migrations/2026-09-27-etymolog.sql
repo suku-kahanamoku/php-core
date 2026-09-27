@@ -1,0 +1,198 @@
+-- Etymolog: additive and idempotent; no changes to existing modules or tenants.
+SET NAMES utf8mb4;
+
+CREATE TABLE IF NOT EXISTS etymolog_name (
+ id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+ franchise_code VARCHAR(64) NOT NULL,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+ deleted TINYINT(1) NOT NULL DEFAULT 0,
+ created_by INT UNSIGNED NULL,
+ updated_by INT UNSIGNED NULL,
+  name VARCHAR(255) NOT NULL,
+ kind VARCHAR(16) NOT NULL,
+ language VARCHAR(35) NULL,
+ country_code CHAR(2) NULL,
+ summary TEXT NULL,
+ published TINYINT(1) NOT NULL DEFAULT 0,
+ import_key VARCHAR(100) NULL,
+ UNIQUE KEY uq_etymolog_name_import (franchise_code,import_key),
+ KEY idx_etymolog_name_search (franchise_code,name,kind),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_etymolog_name_tenant_id (franchise_code,id),
+  KEY idx_etymolog_name_active (franchise_code,deleted)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+CREATE TABLE IF NOT EXISTS etymolog_source (
+ id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+ franchise_code VARCHAR(64) NOT NULL,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+ deleted TINYINT(1) NOT NULL DEFAULT 0,
+ created_by INT UNSIGNED NULL,
+ updated_by INT UNSIGNED NULL,
+  title VARCHAR(255) NOT NULL,
+ author VARCHAR(255) NULL,
+ url VARCHAR(2048) NULL,
+ license VARCHAR(100) NULL,
+ license_url VARCHAR(2048) NULL,
+ attribution TEXT NULL,
+ notes TEXT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_etymolog_source_tenant_id (franchise_code,id),
+  KEY idx_etymolog_source_active (franchise_code,deleted)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+CREATE TABLE IF NOT EXISTS etymolog_entry (
+ id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+ franchise_code VARCHAR(64) NOT NULL,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+ deleted TINYINT(1) NOT NULL DEFAULT 0,
+ created_by INT UNSIGNED NULL,
+ updated_by INT UNSIGNED NULL,
+  name_id INT UNSIGNED NOT NULL,
+ type VARCHAR(32) NOT NULL,
+ title VARCHAR(255) NOT NULL,
+ body TEXT NOT NULL,
+ certainty VARCHAR(20) NOT NULL DEFAULT 'unverified',
+ language VARCHAR(35) NOT NULL DEFAULT 'cs',
+ region VARCHAR(255) NULL,
+ year_from SMALLINT NULL,
+ year_to SMALLINT NULL,
+ published TINYINT(1) NOT NULL DEFAULT 0,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_etymolog_entry_tenant_id (franchise_code,id),
+  KEY idx_etymolog_entry_active (franchise_code,deleted),
+  CONSTRAINT fk_ety_entry_name_id FOREIGN KEY (franchise_code,name_id) REFERENCES etymolog_name(franchise_code,id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+CREATE TABLE IF NOT EXISTS etymolog_variant (
+ id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+ franchise_code VARCHAR(64) NOT NULL,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+ deleted TINYINT(1) NOT NULL DEFAULT 0,
+ created_by INT UNSIGNED NULL,
+ updated_by INT UNSIGNED NULL,
+  name_id INT UNSIGNED NOT NULL,
+ target_name_id INT UNSIGNED NULL,
+ variant VARCHAR(255) NOT NULL,
+ relation VARCHAR(32) NOT NULL DEFAULT 'spelling',
+ language VARCHAR(35) NULL,
+ region VARCHAR(255) NULL,
+ year_from SMALLINT NULL,
+ year_to SMALLINT NULL,
+ source_id INT UNSIGNED NULL,
+ notes TEXT NULL,
+ KEY idx_etymolog_variant_search (franchise_code,variant),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_etymolog_variant_tenant_id (franchise_code,id),
+  KEY idx_etymolog_variant_active (franchise_code,deleted),
+  CONSTRAINT fk_ety_variant_name_id FOREIGN KEY (franchise_code,name_id) REFERENCES etymolog_name(franchise_code,id),
+  CONSTRAINT fk_ety_variant_target_name_id FOREIGN KEY (franchise_code,target_name_id) REFERENCES etymolog_name(franchise_code,id),
+  CONSTRAINT fk_ety_variant_source_id FOREIGN KEY (franchise_code,source_id) REFERENCES etymolog_source(franchise_code,id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+CREATE TABLE IF NOT EXISTS etymolog_occurrence (
+ id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+ franchise_code VARCHAR(64) NOT NULL,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+ deleted TINYINT(1) NOT NULL DEFAULT 0,
+ created_by INT UNSIGNED NULL,
+ updated_by INT UNSIGNED NULL,
+  name_id INT UNSIGNED NOT NULL,
+ source_id INT UNSIGNED NOT NULL,
+ country_code CHAR(2) NOT NULL,
+ region VARCHAR(255) NULL,
+ observed_year SMALLINT NOT NULL,
+ count INT UNSIGNED NULL,
+ original_spelling VARCHAR(255) NULL,
+ locator VARCHAR(1000) NULL,
+ notes TEXT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_etymolog_occurrence_tenant_id (franchise_code,id),
+  KEY idx_etymolog_occurrence_active (franchise_code,deleted),
+  CONSTRAINT fk_ety_occurrence_name_id FOREIGN KEY (franchise_code,name_id) REFERENCES etymolog_name(franchise_code,id),
+  CONSTRAINT fk_ety_occurrence_source_id FOREIGN KEY (franchise_code,source_id) REFERENCES etymolog_source(franchise_code,id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+CREATE TABLE IF NOT EXISTS etymolog_citation (
+ id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+ franchise_code VARCHAR(64) NOT NULL,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+ deleted TINYINT(1) NOT NULL DEFAULT 0,
+ created_by INT UNSIGNED NULL,
+ updated_by INT UNSIGNED NULL,
+  entry_id INT UNSIGNED NOT NULL,
+ source_id INT UNSIGNED NOT NULL,
+ url VARCHAR(2048) NULL,
+ locator VARCHAR(1000) NULL,
+ quotation TEXT NULL,
+ notes TEXT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_etymolog_citation_tenant_id (franchise_code,id),
+  KEY idx_etymolog_citation_active (franchise_code,deleted),
+  CONSTRAINT fk_ety_citation_entry_id FOREIGN KEY (franchise_code,entry_id) REFERENCES etymolog_entry(franchise_code,id),
+  CONSTRAINT fk_ety_citation_source_id FOREIGN KEY (franchise_code,source_id) REFERENCES etymolog_source(franchise_code,id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+CREATE TABLE IF NOT EXISTS etymolog_sync_job (
+ id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+ franchise_code VARCHAR(64) NOT NULL,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+ deleted TINYINT(1) NOT NULL DEFAULT 0,
+ created_by INT UNSIGNED NULL,
+ updated_by INT UNSIGNED NULL,
+  title VARCHAR(255) NOT NULL,
+ provider VARCHAR(32) NOT NULL DEFAULT 'wikidata',
+ language VARCHAR(35) NOT NULL DEFAULT 'cs',
+ kind VARCHAR(16) NOT NULL DEFAULT 'surname',
+ batch_size SMALLINT UNSIGNED NOT NULL DEFAULT 20,
+ interval_seconds INT UNSIGNED NOT NULL DEFAULT 3600,
+ enabled TINYINT(1) NOT NULL DEFAULT 1,
+ `cursor` VARCHAR(32) NULL,
+ next_run_at DATETIME NULL,
+ last_status VARCHAR(20) NULL,
+ last_error VARCHAR(100) NULL,
+ KEY idx_etymolog_job_due (franchise_code,deleted,enabled,next_run_at),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_etymolog_sync_job_tenant_id (franchise_code,id),
+  KEY idx_etymolog_sync_job_active (franchise_code,deleted)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+CREATE TABLE IF NOT EXISTS etymolog_import_record (
+ id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+ franchise_code VARCHAR(64) NOT NULL,
+ name_id INT UNSIGNED NOT NULL,
+ provider VARCHAR(32) NOT NULL,
+ external_id VARCHAR(32) NOT NULL,
+ source_url VARCHAR(2048) NOT NULL,
+ license VARCHAR(100) NOT NULL,
+ license_url VARCHAR(2048) NOT NULL,
+ attribution VARCHAR(255) NOT NULL,
+ revision VARCHAR(32) NOT NULL,
+ payload JSON NOT NULL,
+ content_hash CHAR(64) NOT NULL,
+ fetched_at DATETIME NOT NULL,
+ PRIMARY KEY (id),
+ UNIQUE KEY uq_etymolog_import (franchise_code,name_id,provider),
+ CONSTRAINT fk_ety_import_name FOREIGN KEY (franchise_code,name_id) REFERENCES etymolog_name(franchise_code,id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+CREATE TABLE IF NOT EXISTS etymolog_sync_run (
+ id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+ franchise_code VARCHAR(64) NOT NULL,
+ job_id INT UNSIGNED NOT NULL,
+ status VARCHAR(20) NOT NULL,
+ processed INT UNSIGNED NOT NULL DEFAULT 0,
+ error_code VARCHAR(100) NULL,
+ started_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ finished_at DATETIME NULL,
+ PRIMARY KEY (id),
+ KEY idx_etymolog_run_job (franchise_code,job_id,id),
+ CONSTRAINT fk_ety_run_job FOREIGN KEY (franchise_code,job_id) REFERENCES etymolog_sync_job(franchise_code,id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
