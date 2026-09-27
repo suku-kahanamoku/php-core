@@ -81,7 +81,9 @@ foreach (['realtime-session', 'tool'] as $route) {
 }
 foreach (glob($root . '/api/*/index.php') as $entry) {
     $module = basename(dirname($entry));
-    $run("$module entrypoint rejects before PDO", ['module' => $module, 'path' => '/api/' . $module, 'entrypoint' => true], 401);
+    // Sry is already a separate mobile entrypoint restricted to the sry tenant.
+    // The synthetic tenant.test must fail its tenant guard (403), not InternalAuth (401).
+    $run("$module entrypoint rejects before PDO", ['module' => $module, 'path' => '/api/' . $module, 'entrypoint' => true], $module === 'sry' ? 403 : 401);
     $run("$module entrypoint preflight before PDO", ['module' => $module, 'path' => '/api/' . $module, 'entrypoint' => true, 'method' => 'OPTIONS'], 204);
 }
 $run('root entrypoint rejects missing key', ['module' => '', 'path' => '/api', 'entrypoint' => true], 401);

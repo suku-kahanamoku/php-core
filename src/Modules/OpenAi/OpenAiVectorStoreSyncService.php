@@ -12,7 +12,7 @@ final class OpenAiVectorStoreSyncService
     public function __construct(
         private readonly OpenAiCatalogGateway $catalog,
         private readonly OpenAiVectorStoreGateway $repository,
-        private readonly OpenAiVectorStoreClient $client,
+        private readonly OpenAiVectorStoreProvider $client,
         private readonly OpenAiProductDocumentBuilder $documents,
         private readonly string $franchiseCode,
     ) {}

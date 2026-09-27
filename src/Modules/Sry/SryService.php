@@ -1,12 +1,40 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Modules\Sry;
+
 final class SryService
 {
+    private FamilyRepository $family;
+    private TaskRepository $tasks;
+    private MediaRepository $media;
+    private NotificationRepository $notifications;
+    private ChatRepository $chat;
+    private \App\Modules\Category\CategoryRepository $categories;
+    private \App\Modules\Enumeration\EnumerationRepository $enumerations;
+    private \App\Modules\User\UserRepository $users;
+    private \App\Modules\Role\RoleRepository $roles;
     public function __construct(
-        private SryStore $db,
+        \App\Modules\Database\Database $db,
         private CloudflareGateway $cloud,
-    ) {}
+    ) {
+        $this->family = new FamilyRepository($db, "sry");
+        $this->tasks = new TaskRepository($db, "sry");
+        $this->media = new MediaRepository($db, "sry");
+        $this->notifications = new NotificationRepository($db, "sry");
+        $this->chat = new ChatRepository($db, "sry");
+        $this->categories = new \App\Modules\Category\CategoryRepository(
+            $db,
+            "sry",
+        );
+        $this->enumerations = new \App\Modules\Enumeration\EnumerationRepository(
+            $db,
+            "sry",
+        );
+        $this->users = new \App\Modules\User\UserRepository($db, "sry");
+        $this->roles = new \App\Modules\Role\RoleRepository($db, "sry");
+    }
     private function admin(array $a): void
     {
         if ($a["role"] !== "admin") {
@@ -27,9 +55,7 @@ final class SryService
     }
     public function today(array $a): string
     {
-        $f = $this->db->one("SELECT timezone FROM sry_family WHERE id=?", [
-            $a["family_id"],
-        ]);
+        $f = $this->family->timezone($a["family_id"]);
         return (new \DateTimeImmutable(
             "now",
             new \DateTimeZone($f["timezone"]),
@@ -37,10 +63,7 @@ final class SryService
     }
     public function member(array $a, int $id): array
     {
-        $m = $this->db->one(
-            "SELECT id,family_id,name,role,daily_target,wifi_allowed,data_allowed FROM sry_member WHERE id=? AND family_id=? AND active=1",
-            [$id, $a["family_id"]],
-        );
+        $m = $this->family->findMember($id, $a["family_id"]);
         if (
             !$m ||
             ($a["role"] !== "admin" &&
@@ -53,10 +76,7 @@ final class SryService
     }
     public function family(array $a): array
     {
-        $members = $this->db->all(
-            "SELECT id,family_id,name,role,daily_target,wifi_allowed,data_allowed FROM sry_member WHERE family_id=? AND active=1 ORDER BY role,id",
-            [$a["family_id"]],
-        );
+        $members = $this->family->members($a["family_id"]);
         if ($a["role"] === "user") {
             $members = array_values(
                 array_filter(
@@ -67,10 +87,7 @@ final class SryService
             );
         }
         foreach ($members as &$m) {
-            $earned = $this->db->one(
-                "SELECT COALESCE(SUM(points),0) AS total FROM task_points WHERE member_id=? AND earned_on=?",
-                [$m["id"], $this->today($a)],
-            );
+            $earned = $this->tasks->earnedPoints($m["id"], $this->today($a));
             foreach (["id", "family_id", "daily_target"] as $key) {
                 $m[$key] = (int) $m[$key];
             }
@@ -88,10 +105,10 @@ final class SryService
     public function addChild(array $a, array $b): array
     {
         $this->admin($a);
-        $name = SryAuth::text($b, "name");
-        $email = empty($b["email"]) ? null : SryAuth::email($b);
-        $password = $email ? SryAuth::password($b) : null;
-        return $this->db->transaction(function () use (
+        $name = SryInput::text($b, "name");
+        $email = empty($b["email"]) ? null : SryInput::email($b);
+        $password = $email ? SryInput::password($b) : null;
+        return $this->family->transaction(function () use (
             $a,
             $name,
             $email,
@@ -99,33 +116,30 @@ final class SryService
         ) {
             $userId = null;
             if ($email) {
-                if (
-                    $this->db->one(
-                        "SELECT id FROM user WHERE franchise_code='sry' AND email=?",
-                        [$email],
-                    )
-                ) {
+                if ($this->users->emailExists($email)) {
                     throw new SryError("accountExists", 409);
                 }
-                $role = $this->db->one(
-                    "SELECT id FROM role WHERE franchise_code='sry' AND name='user' AND deleted=0",
-                );
+                $role = $this->roles->findIdByName("user");
                 if (!$role) {
                     throw new SryError("notConfigured", 503);
                 }
-                $userId = $this->db->insert("user", [
-                    "franchise_code" => "sry",
-                    "first_name" => $name,
-                    "last_name" => "",
-                    "email" => $email,
-                    "password" => password_hash($password, PASSWORD_BCRYPT, [
-                        "cost" => 12,
-                    ]),
-                    "role_id" => $role["id"],
-                    "status" => "active",
-                ]);
+                $userId = (int) $this->users->create(
+                    [
+                        "first_name" => $name,
+                        "last_name" => "",
+                        "email" => $email,
+                        "password" => password_hash(
+                            $password,
+                            PASSWORD_BCRYPT,
+                            ["cost" => 12],
+                        ),
+                        "role_id" => $role,
+                        "status" => "active",
+                    ],
+                    ["id"],
+                )["id"];
             }
-            $id = $this->db->insert("sry_member", [
+            $id = $this->family->createMember([
                 "family_id" => $a["family_id"],
                 "name" => $name,
                 "role" => "user",
@@ -149,16 +163,18 @@ final class SryService
         ) {
             throw new SryError("invalidInput");
         }
-        return $this->db->transaction(function () use ($a, $id, $b, $target) {
-            $this->db->execute(
-                "UPDATE sry_member SET daily_target=?,wifi_allowed=?,data_allowed=? WHERE id=? AND family_id=?",
-                [
-                    $target,
-                    (int) $b["wifi_allowed"],
-                    (int) $b["data_allowed"],
-                    $id,
-                    $a["family_id"],
-                ],
+        return $this->family->transaction(function () use (
+            $a,
+            $id,
+            $b,
+            $target,
+        ) {
+            $this->family->updatePolicy(
+                $target,
+                (int) $b["wifi_allowed"],
+                (int) $b["data_allowed"],
+                $id,
+                $a["family_id"],
             );
             $this->event($a, "family", $id, "policy_changed", [$id, $a["id"]]);
             return $this->member($a, $id);
@@ -167,34 +183,35 @@ final class SryService
     public function catalog(): array
     {
         return [
-            "categories" => $this->db->all(
-                "SELECT id,syscode,name FROM category WHERE franchise_code='sry' AND deleted=0 AND published=1 ORDER BY position,id",
-            ),
-            "enumerations" => $this->db->all(
-                "SELECT id,type,syscode,label,value FROM enumeration WHERE franchise_code='sry' AND deleted=0 AND published=1 ORDER BY position,id",
-            ),
+            "categories" => $this->published($this->categories),
+            "enumerations" => $this->published($this->enumerations),
         ];
+    }
+    private function published(object $repository): array
+    {
+        $items = [];
+        $page = 1;
+        do {
+            $result = $repository->findAll(
+                $page++,
+                100,
+                "",
+                json_encode(["published" => 1]),
+            );
+            array_push($items, ...$result["items"]);
+        } while ($page <= $result["totalPages"]);
+        return $items;
     }
     public function tasks(array $a): array
     {
-        $args = [$a["family_id"]];
-        $scope = "";
-        if ($a["role"] === "user") {
-            $scope = " AND a.member_id=?";
-            $args[] = $a["id"];
-        }
-        return $this->db->all(
-            "SELECT a.id,a.task_id,a.member_id,a.due_date,a.points,a.status,a.revision,a.current_submission_id,t.title,t.description,t.category_id,t.enumeration_id,m.name AS member_name FROM task_assignment a JOIN tasks t ON t.id=a.task_id JOIN sry_member m ON m.id=a.member_id WHERE a.family_id=?$scope ORDER BY a.due_date DESC,a.id DESC LIMIT 200",
-            $args,
+        return $this->tasks->forFamily(
+            $a["family_id"],
+            $a["role"] === "user" ? $a["id"] : null,
         );
     }
     public function assignment(array $a, int $id, bool $lock = false): array
     {
-        $row = $this->db->one(
-            "SELECT a.*,t.title,t.description,m.name AS member_name FROM task_assignment a JOIN tasks t ON t.id=a.task_id JOIN sry_member m ON m.id=a.member_id WHERE a.id=? AND a.family_id=?" .
-                ($lock ? $this->db->lock() : ""),
-            [$id, $a["family_id"]],
-        );
+        $row = $this->tasks->findAssignment($id, $a["family_id"], $lock);
         if (
             !$row ||
             ($a["role"] === "user" && (int) $row["member_id"] !== $a["id"])
@@ -206,15 +223,9 @@ final class SryService
     public function detail(array $a, int $id): array
     {
         $row = $this->assignment($a, $id);
-        $row["submissions"] = $this->db->all(
-            "SELECT s.id,s.media_id,s.note,s.created_at,r.decision,r.note AS review_note FROM task_submission s LEFT JOIN task_review r ON r.submission_id=s.id WHERE s.assignment_id=? AND s.family_id=? ORDER BY s.id DESC",
-            [$id, $a["family_id"]],
-        );
+        $row["submissions"] = $this->tasks->submissions($id, $a["family_id"]);
         $row["media_ids"] = array_column(
-            $this->db->all(
-                "SELECT media_id FROM task_media WHERE task_id=? AND family_id=?",
-                [$row["task_id"], $a["family_id"]],
-            ),
+            $this->tasks->media($row["task_id"], $a["family_id"]),
             "media_id",
         );
         return $row;
@@ -226,10 +237,10 @@ final class SryService
         if ($member["role"] !== "user") {
             throw new SryError("invalidInput");
         }
-        $title = SryAuth::text($b, "title", 160);
-        $description = SryAuth::text($b, "description", 4000, false);
+        $title = SryInput::text($b, "title", 160);
+        $description = SryInput::text($b, "description", 4000, false);
         $points = $this->integer($b, "points", 1, 1000);
-        $date = SryAuth::text($b, "due_date", 10);
+        $date = SryInput::text($b, "due_date", 10);
         $d = \DateTimeImmutable::createFromFormat("!Y-m-d", $date);
         if (!$d || $d->format("Y-m-d") !== $date) {
             throw new SryError("invalidInput");
@@ -238,18 +249,20 @@ final class SryService
         $enum = $b["enumeration_id"] ?? null;
         if (
             $category !== null &&
-            !$this->db->one(
-                "SELECT id FROM category WHERE id=? AND franchise_code='sry' AND deleted=0 AND published=1",
-                [$category],
+            !(
+                $this->categories->findById((int) $category, ["published"])[
+                    "published"
+                ] ?? false
             )
         ) {
             throw new SryError("invalidInput");
         }
         if (
             $enum !== null &&
-            !$this->db->one(
-                "SELECT id FROM enumeration WHERE id=? AND franchise_code='sry' AND deleted=0 AND published=1",
-                [$enum],
+            !(
+                $this->enumerations->findById((int) $enum, ["published"])[
+                    "published"
+                ] ?? false
             )
         ) {
             throw new SryError("invalidInput");
@@ -261,7 +274,7 @@ final class SryService
         foreach ($media as $mid) {
             $this->ownedMedia($a, (int) $mid);
         }
-        return $this->db->transaction(function () use (
+        return $this->family->transaction(function () use (
             $a,
             $b,
             $member,
@@ -273,7 +286,7 @@ final class SryService
             $enum,
             $media,
         ) {
-            $task = $this->db->insert("tasks", [
+            $task = $this->tasks->createTask([
                 "family_id" => $a["family_id"],
                 "created_by" => $a["id"],
                 "title" => $title,
@@ -283,13 +296,13 @@ final class SryService
                 "enumeration_id" => $enum,
             ]);
             foreach (array_unique($media) as $mid) {
-                $this->db->insert("task_media", [
+                $this->tasks->attachMedia([
                     "task_id" => $task,
                     "media_id" => $mid,
                     "family_id" => $a["family_id"],
                 ]);
             }
-            $id = $this->db->insert("task_assignment", [
+            $id = $this->tasks->assign([
                 "family_id" => $a["family_id"],
                 "task_id" => $task,
                 "member_id" => $member["id"],
@@ -309,12 +322,12 @@ final class SryService
             throw new SryError("forbidden", 403);
         }
         $media = $this->ownedMedia($a, $this->integer($b, "media_id"));
-        $note = SryAuth::text($b, "note", 2000, false);
+        $note = SryInput::text($b, "note", 2000, false);
         if (!str_starts_with($media["mime"], "image/")) {
             throw new SryError("imageRequired");
         }
         $revision = $this->integer($b, "revision");
-        return $this->db->transaction(function () use (
+        return $this->family->transaction(function () use (
             $a,
             $id,
             $b,
@@ -332,17 +345,14 @@ final class SryService
             if ($task["due_date"] > $this->today($a)) {
                 throw new SryError("notDue", 409);
             }
-            $sid = $this->db->insert("task_submission", [
+            $sid = $this->tasks->createSubmission([
                 "assignment_id" => $id,
                 "family_id" => $a["family_id"],
                 "member_id" => $a["id"],
                 "media_id" => $media["id"],
                 "note" => $note,
             ]);
-            $this->db->execute(
-                "UPDATE task_assignment SET status='submitted',current_submission_id=?,revision=revision+1 WHERE id=?",
-                [$sid, $id],
-            );
+            $this->tasks->markSubmitted($sid, $id);
             $this->event($a, "tasks", $id, "task_submitted", [
                 $a["id"],
                 ...$this->parents($a),
@@ -358,8 +368,8 @@ final class SryService
         if (!in_array($decision, ["approved", "returned"], true)) {
             throw new SryError("invalidInput");
         }
-        $note = SryAuth::text($b, "note", 2000, $decision === "returned");
-        return $this->db->transaction(function () use (
+        $note = SryInput::text($b, "note", 2000, $decision === "returned");
+        return $this->family->transaction(function () use (
             $a,
             $id,
             $revision,
@@ -373,18 +383,15 @@ final class SryService
             ) {
                 throw new SryError("conflict", 409);
             }
-            $this->db->insert("task_review", [
+            $this->tasks->createReview([
                 "submission_id" => $task["current_submission_id"],
                 "reviewer_id" => $a["id"],
                 "decision" => $decision,
                 "note" => $note,
             ]);
-            $this->db->execute(
-                "UPDATE task_assignment SET status=?,revision=revision+1 WHERE id=?",
-                [$decision, $id],
-            );
+            $this->tasks->markReviewed($decision, $id);
             if ($decision === "approved") {
-                $this->db->insert("task_points", [
+                $this->tasks->awardPoints([
                     "assignment_id" => $id,
                     "member_id" => $task["member_id"],
                     "points" => $task["points"],
@@ -410,21 +417,12 @@ final class SryService
     {
         return array_map(
             "intval",
-            array_column(
-                $this->db->all(
-                    "SELECT id FROM sry_member WHERE family_id=? AND role='admin' AND active=1",
-                    [$a["family_id"]],
-                ),
-                "id",
-            ),
+            array_column($this->family->parents($a["family_id"]), "id"),
         );
     }
     private function ownedMedia(array $a, int $id): array
     {
-        $m = $this->db->one(
-            "SELECT * FROM sry_media WHERE id=? AND family_id=? AND member_id=? AND state='ready'",
-            [$id, $a["family_id"], $a["id"]],
-        );
+        $m = $this->media->ownedReady($id, $a["family_id"], $a["id"]);
         if (!$m) {
             throw new SryError("notFound", 404);
         }
@@ -464,7 +462,7 @@ final class SryService
             "mime" => $mime,
             "size" => $size,
         ]);
-        $id = $this->db->insert("sry_media", [
+        $id = $this->media->create([
             "family_id" => $a["family_id"],
             "member_id" => $a["id"],
             "object_key" => $key,
@@ -475,10 +473,7 @@ final class SryService
     }
     public function completeMedia(array $a, int $id): array
     {
-        $m = $this->db->one(
-            "SELECT * FROM sry_media WHERE id=? AND family_id=? AND member_id=?",
-            [$id, $a["family_id"], $a["id"]],
-        );
+        $m = $this->media->owned($id, $a["family_id"], $a["id"]);
         if (!$m) {
             throw new SryError("notFound", 404);
         }
@@ -492,26 +487,18 @@ final class SryService
         ) {
             throw new SryError("uploadFailed", 409);
         }
-        $this->db->execute("UPDATE sry_media SET state='ready' WHERE id=?", [
-            $id,
-        ]);
+        $this->media->markReady($id);
         return ["id" => $id];
     }
     public function mediaUrl(array $a, int $id): array
     {
-        $m = $this->db->one(
-            "SELECT * FROM sry_media WHERE id=? AND family_id=? AND state='ready'",
-            [$id, $a["family_id"]],
-        );
+        $m = $this->media->ready($id, $a["family_id"]);
         if (!$m) {
             throw new SryError("notFound", 404);
         }
         if ($a["role"] === "user" && (int) $m["member_id"] !== $a["id"]) {
             if (
-                !$this->db->one(
-                    "SELECT tm.task_id FROM task_media tm JOIN task_assignment a ON a.task_id=tm.task_id AND a.family_id=tm.family_id WHERE tm.media_id=? AND a.member_id=? AND a.family_id=?",
-                    [$id, $a["id"], $a["family_id"]],
-                )
+                !$this->media->assignedReference($id, $a["id"], $a["family_id"])
             ) {
                 throw new SryError("notFound", 404);
             }
@@ -533,13 +520,13 @@ final class SryService
     ): void {
         foreach (array_unique($recipients) as $member) {
             if ($notify) {
-                $this->db->insert("sry_notification", [
+                $this->notifications->create([
                     "member_id" => $member,
                     "event" => $event,
                     "entity_id" => $id,
                 ]);
             }
-            $this->db->insert("sry_outbox", [
+            $this->notifications->enqueue([
                 "member_id" => $member,
                 "topic" => $topic,
                 "entity_id" => $id,
@@ -549,22 +536,16 @@ final class SryService
     }
     public function notifications(array $a): array
     {
-        return $this->db->all(
-            "SELECT id,event,entity_id,read_at,created_at FROM sry_notification WHERE member_id=? ORDER BY id DESC LIMIT 100",
-            [$a["id"]],
-        );
+        return $this->notifications->forMember($a["id"]);
     }
     public function markRead(array $a, int $id): array
     {
-        $this->db->execute(
-            "UPDATE sry_notification SET read_at=? WHERE id=? AND member_id=?",
-            [gmdate("Y-m-d H:i:s"), $id, $a["id"]],
-        );
+        $this->notifications->markRead(gmdate("Y-m-d H:i:s"), $id, $a["id"]);
         return ["updated" => true];
     }
     public function push(array $a, array $b): array
     {
-        $token = SryAuth::text($b, "token", 255);
+        $token = SryInput::text($b, "token", 255);
         if (
             !preg_match(
                 '/^(ExponentPushToken|ExpoPushToken)\[[A-Za-z0-9_-]+\]$/',
@@ -574,17 +555,14 @@ final class SryService
             throw new SryError("invalidInput");
         }
         $language = ($b["language"] ?? "cs") === "en" ? "en" : "cs";
-        $this->db->execute(
-            "INSERT INTO sry_push_device(token,member_id,language) VALUES(?,?,?) ON DUPLICATE KEY UPDATE member_id=VALUES(member_id),language=VALUES(language)",
-            [$token, $a["id"], $language],
-        );
+        $this->notifications->registerDevice($token, $a["id"], $language);
         return ["updated" => true];
     }
     public function removePush(array $a, array $b): array
     {
-        $this->db->execute(
-            "DELETE FROM sry_push_device WHERE token=? AND member_id=?",
-            [SryAuth::text($b, "token", 255), $a["id"]],
+        $this->notifications->removeDevice(
+            SryInput::text($b, "token", 255),
+            $a["id"],
         );
         return ["updated" => true];
     }
@@ -604,10 +582,7 @@ final class SryService
     }
     public function messages(array $a): array
     {
-        return $this->db->all(
-            "SELECT id,sender_id,recipient_id,body,created_at FROM sry_chat WHERE family_id=? AND (sender_id=? OR recipient_id=?) ORDER BY id DESC LIMIT 100",
-            [$a["family_id"], $a["id"], $a["id"]],
-        );
+        return $this->chat->forMember($a["family_id"], $a["id"], $a["id"]);
     }
     public function sendMessage(array $a, array $b): array
     {
@@ -615,9 +590,9 @@ final class SryService
         if ((int) $to["id"] === $a["id"]) {
             throw new SryError("invalidInput");
         }
-        $text = SryAuth::text($b, "body", 2000);
-        return $this->db->transaction(function () use ($a, $to, $text) {
-            $id = $this->db->insert("sry_chat", [
+        $text = SryInput::text($b, "body", 2000);
+        return $this->family->transaction(function () use ($a, $to, $text) {
+            $id = $this->chat->create([
                 "family_id" => $a["family_id"],
                 "sender_id" => $a["id"],
                 "recipient_id" => $to["id"],

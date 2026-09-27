@@ -4,7 +4,7 @@
 declare(strict_types=1);
 
 use App\Modules\Database\Database;
-use App\Modules\FannCatalog\FannCatalogHttpClient;
+use App\Modules\FannCatalog\FannCatalogProvider;
 use App\Modules\FannCatalog\FannCatalogImporter;
 use App\Modules\FannCatalog\FannCatalogParser;
 use App\Modules\FannCatalog\FannCatalogRepository;
@@ -19,7 +19,7 @@ $concurrency = isset($options['concurrency']) ? (int) $options['concurrency'] : 
 
 try {
     $importer = new FannCatalogImporter(
-        new FannCatalogHttpClient(),
+        new FannCatalogProvider(),
         new FannCatalogParser(),
         new FannCatalogRepository(Database::getInstance(), 'fann'),
     );

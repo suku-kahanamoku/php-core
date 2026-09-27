@@ -2052,3 +2052,13 @@ async function apiFetch(method, path, body = null) {
 ---
 
 *Last updated: 2026-05-09*
+
+
+## Transport / TRAM
+
+Tenant-scoped transport API under `/api/transport/v1`, using the same server-only
+`X-Internal-Key` boundary as existing modules. Includes journey search, stop lookup,
+departure boards, dated trip details, provider coverage and GeoJSON geometry.
+See [Transport module](src/Modules/Transport/README.md) for the request contract,
+source/fallback semantics, GTFS import, OTP deployment and tests. No ticket sales
+or public mobile credentials are introduced.

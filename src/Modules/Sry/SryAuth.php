@@ -3,7 +3,7 @@ declare(strict_types=1);
 namespace App\Modules\Sry;
 final class SryAuth
 {
-    public function __construct(private SryStore $db) {}
+    public function __construct(private SrySqlRepository $db) {}
     public static function text(
         array $body,
         string $key,

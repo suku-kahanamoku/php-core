@@ -6,8 +6,9 @@ if (PHP_SAPI !== "cli") {
 }
 
 require __DIR__ . "/../../../../vendor/autoload.php";
+require __DIR__ . "/database.php";
 use App\Modules\Sry\{
-    SryStore,
+    SrySqlRepository,
     SryAuth,
     SryService,
     SryError,
@@ -30,7 +31,7 @@ $pdo = new PDO(
         PDO::ATTR_EMULATE_PREPARES => false,
     ],
 );
-$db = new SryStore($pdo);
+$db = new SrySqlRepository($pdo);
 $auth = new SryAuth($db);
 $cloud = new class ("https://media.example", str_repeat("a", 32)) extends
     CloudflareGateway
@@ -43,7 +44,7 @@ $cloud = new class ("https://media.example", str_repeat("a", 32)) extends
         return ["size" => 12, "mime" => "image/jpeg"];
     }
 };
-$s = new SryService($db, $cloud);
+$s = new SryService(testDatabase($pdo), $cloud);
 $passed = 0;
 function check(bool $condition, string $label): void
 {

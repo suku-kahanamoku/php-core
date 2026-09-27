@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__.'/../vendor/autoload.php';
+
 /**
  * Shared test helpers.
  * Included by every test_*.php and by the api_test.php runner.
@@ -69,36 +71,48 @@ function request(string $method, string $url, array $body = [], bool $withAuth =
 {
     global $token;
 
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    $headers = test_http_headers($withAuth);
+    $response = \App\Modules\Http\HttpModule::client()->send(new \App\Modules\Http\HttpRequest(
+        $url, $method, $headers, $body === [] ? null : $body, timeoutMs: 10000,
+    ));
+    return test_http_result($response);
+}
 
-    $headers = ['Content-Type: application/json', 'Accept: application/json'];
-    $internalKey = trim((string) ($_ENV['INTERNAL_API_KEY'] ?? ''));
+function test_http_headers(bool $withAuth = true): array
+{
+    global $token;
+    $headers = ['Accept' => 'application/json'];
+    $internalKey = trim((string)($_ENV['INTERNAL_API_KEY'] ?? ''));
     if ($internalKey !== '') {
-        $headers[] = "X-Internal-Key: {$internalKey}";
+        $headers['X-Internal-Key'] = $internalKey;
     }
     if ($withAuth && $token !== null) {
-        $headers[] = "Authorization: Bearer {$token}";
+        $headers['Authorization'] = 'Bearer '.$token;
     }
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    return $headers;
+}
 
-    if (!empty($body)) {
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
+function test_http_result(\App\Modules\Http\HttpResponse $response): array
+{
+    if ($response->error !== null) {
+        return ['status' => 0, 'data' => [], 'raw' => $response->error];
     }
+    return ['status' => $response->status, 'data' => json_decode($response->body, true) ?? [], 'raw' => $response->body];
+}
 
-    $raw    = curl_exec($ch);
-    $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $error  = curl_error($ch);
-    curl_close($ch);
-
-    if ($error) {
-        return ['status' => 0, 'data' => [], 'raw' => $error];
+function test_upload_file(string $base, string $path, string $mime, string $filename, bool $withAuth = true): array
+{
+    $file = fopen($path, 'rb');
+    try {
+        return test_http_result(\App\Modules\Http\HttpModule::client()->send(new \App\Modules\Http\HttpRequest(
+            $base.'/files/upload', 'POST', test_http_headers($withAuth), timeoutMs: 10000,
+            multipart: [['name' => 'file', 'contents' => $file, 'filename' => $filename, 'headers' => ['Content-Type' => $mime]]],
+        )));
+    } finally {
+        if (is_resource($file)) {
+            fclose($file);
+        }
     }
-
-    $data = json_decode($raw, true) ?? [];
-    return ['status' => $status, 'data' => $data, 'raw' => $raw];
 }
 
 function assert_test(string $name, bool $condition, string $detail = ''): void

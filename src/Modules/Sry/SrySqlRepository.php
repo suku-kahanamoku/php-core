@@ -1,9 +1,13 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Modules\Sry;
+
 use PDO;
+
 /** SQL is parameterized; services must include family/member scope on every resource lookup. */
-class SryStore
+class SrySqlRepository
 {
     public function __construct(public readonly PDO $pdo) {}
     public function all(string $sql, array $args = []): array

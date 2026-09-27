@@ -6,7 +6,7 @@ declare(strict_types=1);
 use App\Modules\Database\Database;
 use App\Modules\OpenAi\OpenAiCatalogRepository;
 use App\Modules\OpenAi\OpenAiProductDocumentBuilder;
-use App\Modules\OpenAi\OpenAiVectorStoreClient;
+use App\Modules\OpenAi\OpenAiVectorStoreProvider;
 use App\Modules\OpenAi\OpenAiVectorStoreRepository;
 use App\Modules\OpenAi\OpenAiVectorStoreSyncService;
 use Dotenv\Dotenv;
@@ -26,7 +26,7 @@ try {
     $sync = new OpenAiVectorStoreSyncService(
         new OpenAiCatalogRepository($database, $tenant),
         new OpenAiVectorStoreRepository($database, $tenant),
-        new OpenAiVectorStoreClient(),
+        new OpenAiVectorStoreProvider(),
         new OpenAiProductDocumentBuilder(),
         $tenant,
     );

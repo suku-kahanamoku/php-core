@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\OpenAi;
 
 use Closure;
+use App\Modules\Http\{HttpModule, HttpRequest};
+use App\Modules\Http\Contracts\HttpClient;
 
 /**
  * Vytvari kratkodobe klientské tokeny pro OpenAI Realtime API.
@@ -26,7 +28,7 @@ final class OpenAiRealtimeService
     private string $model;
 
     /**
-     * Pripravi sluzbu s produkcnim cURL transportem nebo testovacim callbackem.
+     * Připraví službu se společným HTTP transportem nebo testovacím callbackem.
      *
      * @param Closure|null $transport Testovaci transport se signaturou
      *        `(string $apiKey, array $payload): array{status:int, body:string}`.
@@ -35,7 +37,7 @@ final class OpenAiRealtimeService
      * @param string|null $model Volitelny model; jinak `OPENAI_REALTIME_MODEL`
      *        nebo bezpecna vychozi hodnota.
      */
-    public function __construct(?Closure $transport = null, ?string $apiKey = null, ?string $model = null)
+    public function __construct(?Closure $transport = null, ?string $apiKey = null, ?string $model = null, private readonly ?HttpClient $http = null)
     {
         $this->apiKey = trim($apiKey ?? (string) ($_ENV['OPENAI_API_KEY'] ?? ''));
         $this->model = trim($model ?? (string) ($_ENV['OPENAI_REALTIME_MODEL'] ?? '')) ?: self::DEFAULT_MODEL;
@@ -271,42 +273,17 @@ PROMPT;
      * @param string $apiKey Tajny serverovy OpenAI API klic.
      * @param array<string, mixed> $payload Session konfigurace.
      * @return array{status:int, body:string}
-     * @throws OpenAiUpstreamException Pokud cURL nelze inicializovat nebo selze spojeni.
+     * @throws OpenAiUpstreamException Pokud selže HTTP spojení.
      */
     private function sendRequest(string $apiKey, array $payload): array
     {
-        $curl = curl_init(self::ENDPOINT);
-        if ($curl === false) {
-            throw new OpenAiUpstreamException('OpenAI connection could not be initialized.');
+        $response = ($this->http ?? HttpModule::client())->send(new HttpRequest(
+            self::ENDPOINT, 'POST', ['Authorization' => 'Bearer '.$apiKey, 'Accept' => 'application/json'],
+            $payload, timeoutMs: 15000, connectTimeoutMs: 5000,
+        ));
+        if ($response->error !== null) {
+            throw new OpenAiUpstreamException('OpenAI connection failed.');
         }
-
-        curl_setopt_array($curl, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST => true,
-            CURLOPT_CONNECTTIMEOUT => 5,
-            CURLOPT_TIMEOUT => 15,
-            CURLOPT_HTTPHEADER => [
-                'Authorization: Bearer ' . $apiKey,
-                'Content-Type: application/json',
-                'Accept: application/json',
-            ],
-            CURLOPT_POSTFIELDS => json_encode(
-                $payload,
-                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
-            ),
-        ]);
-
-        $body = curl_exec($curl);
-        $status = (int) curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        $error = curl_error($curl);
-        curl_close($curl);
-
-        if ($body === false) {
-            throw new OpenAiUpstreamException(
-                $error !== '' ? 'OpenAI connection failed.' : 'OpenAI returned no response.',
-            );
-        }
-
-        return ['status' => $status, 'body' => $body];
+        return ['status' => $response->status, 'body' => $response->body];
     }
 }

@@ -1,6 +1,9 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Modules\Sry;
+
 final class SryError extends \RuntimeException
 {
     public function __construct(

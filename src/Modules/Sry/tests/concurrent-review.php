@@ -6,7 +6,8 @@ if (PHP_SAPI !== "cli") {
 }
 
 require __DIR__ . "/../../../../vendor/autoload.php";
-use App\Modules\Sry\{SryStore, SryService, CloudflareGateway, SryError};
+require __DIR__ . "/database.php";
+use App\Modules\Sry\{SrySqlRepository, SryService, CloudflareGateway, SryError};
 $dsn = getenv("SRY_TEST_DSN");
 if (!$dsn || !str_contains($dsn, "dbname=sry_test")) {
     throw new RuntimeException("Disposable test database required");
@@ -21,7 +22,7 @@ $pdo = new PDO($dsn, "root", "", [
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_EMULATE_PREPARES => false,
 ]);
-$service = new SryService(new SryStore($pdo), new CloudflareGateway("", ""));
+$service = new SryService(testDatabase($pdo), new CloudflareGateway("", ""));
 $delay = max(0, (int) (($input["start"] - microtime(true)) * 1000000));
 if ($delay) {
     usleep($delay);

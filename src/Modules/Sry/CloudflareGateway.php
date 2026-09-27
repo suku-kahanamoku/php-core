@@ -1,10 +1,16 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Modules\Sry;
+
+use App\Modules\Http\{HttpModule, HttpRequest};
+use App\Modules\Http\Contracts\HttpClient;
+
 /** R2 and realtime secrets never leave this server. All tickets are scoped and short-lived. */
 class CloudflareGateway
 {
-    public function __construct(private string $url, private string $secret) {}
+    public function __construct(private string $url, private string $secret, private readonly ?HttpClient $http = null) {}
     public function ticket(array $claims): string
     {
         if (
@@ -48,25 +54,13 @@ class CloudflareGateway
         array $claims,
         ?array $body = null,
     ): array {
-        $ch = curl_init($this->url($path, $claims));
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 20,
-            CURLOPT_FOLLOWLOCATION => false,
-            CURLOPT_HTTPHEADER => ["Content-Type: application/json"],
-        ]);
-        if ($body !== null) {
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt(
-                $ch,
-                CURLOPT_POSTFIELDS,
-                json_encode($body, JSON_THROW_ON_ERROR),
-            );
-        }
-        $raw = curl_exec($ch);
-        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        if ($raw === false || $status < 200 || $status >= 300) {
+        $response = ($this->http ?? HttpModule::client())->send(new HttpRequest(
+            $this->url($path, $claims), $body === null ? 'GET' : 'POST',
+            ['Content-Type' => 'application/json'], $body, timeoutMs: 20000,
+        ));
+        $raw = $response->body;
+        $status = $response->status;
+        if ($response->error !== null || $status < 200 || $status >= 300) {
             throw new SryError("cloudUnavailable", 503);
         }
         return json_decode($raw, true, 512, JSON_THROW_ON_ERROR);

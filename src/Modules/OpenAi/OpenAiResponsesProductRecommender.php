@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\OpenAi;
 
 use Closure;
+use App\Modules\Http\{HttpModule, HttpRequest};
+use App\Modules\Http\Contracts\HttpClient;
 
 /** Vybírá jeden produkt pomocí OpenAI Responses API a hostovaného file_search. */
 final class OpenAiResponsesProductRecommender implements OpenAiProductRecommender
@@ -26,6 +28,7 @@ final class OpenAiResponsesProductRecommender implements OpenAiProductRecommende
         ?Closure $transport = null,
         ?string $apiKey = null,
         ?string $model = null,
+        private readonly ?HttpClient $http = null,
     ) {
         $this->apiKey = trim($apiKey ?? (string) ($_ENV['OPENAI_API_KEY'] ?? ''));
         $this->model = trim($model ?? (string) ($_ENV['OPENAI_RECOMMENDATION_MODEL'] ?? ''))
@@ -183,28 +186,13 @@ PROMPT,
      */
     private function sendRequest(string $apiKey, array $payload): array
     {
-        $handle = curl_init(self::ENDPOINT);
-        if ($handle === false) {
-            throw new OpenAiUpstreamException('OpenAI connection could not be initialized.');
+        $response = ($this->http ?? HttpModule::client())->send(new HttpRequest(
+            self::ENDPOINT, 'POST', ['Authorization' => 'Bearer '.$apiKey, 'Accept' => 'application/json'],
+            $payload, timeoutMs: 60000, connectTimeoutMs: 10000,
+        ));
+        if ($response->error !== null) {
+            throw new OpenAiUpstreamException('OpenAI connection failed.');
         }
-        curl_setopt_array($handle, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST => true,
-            CURLOPT_CONNECTTIMEOUT => 10,
-            CURLOPT_TIMEOUT => 60,
-            CURLOPT_HTTPHEADER => [
-                'Authorization: Bearer ' . $apiKey,
-                'Content-Type: application/json',
-                'Accept: application/json',
-            ],
-            CURLOPT_POSTFIELDS => json_encode(
-                $payload,
-                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
-            ),
-        ]);
-        $body = curl_exec($handle);
-        $status = (int) curl_getinfo($handle, CURLINFO_HTTP_CODE);
-        curl_close($handle);
-        return ['status' => $status, 'body' => is_string($body) ? $body : ''];
+        return ['status' => $response->status, 'body' => $response->body];
     }
 }

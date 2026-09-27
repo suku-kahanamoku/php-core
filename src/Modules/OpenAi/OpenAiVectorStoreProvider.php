@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\OpenAi;
 
 use Closure;
+use App\Modules\Http\{HttpModule, HttpRequest};
+use App\Modules\Http\Contracts\HttpClient;
 
 /** Minimalni serverovy klient oficialniho OpenAI Vector Store API. */
-final class OpenAiVectorStoreClient
+final class OpenAiVectorStoreProvider
 {
     private const BASE_URL = 'https://api.openai.com/v1';
 
@@ -17,7 +19,7 @@ final class OpenAiVectorStoreClient
     /**
      * @param Closure|null $transport Testovaci transport `(method, path, payload, multipart): array`.
      */
-    public function __construct(?Closure $transport = null, ?string $apiKey = null)
+    public function __construct(?Closure $transport = null, ?string $apiKey = null, private readonly ?HttpClient $http = null)
     {
         $this->apiKey = trim($apiKey ?? (string) ($_ENV['OPENAI_API_KEY'] ?? ''));
         $this->transport = $transport ?? Closure::fromCallable([$this, 'sendRequest']);
@@ -90,7 +92,7 @@ final class OpenAiVectorStoreClient
     }
 
     /**
-     * Produkcni cURL transport. Telo upstream chyby se zamerne nepropaguje.
+     * Společný HTTP transport. Telo upstream chyby se zamerne nepropaguje.
      * @param array<string, mixed> $payload
      * @return array{status:int, body:string}
      */
@@ -101,38 +103,22 @@ final class OpenAiVectorStoreClient
         bool $multipart,
         string $apiKey,
     ): array {
-        $handle = curl_init(self::BASE_URL . $path);
-        $headers = ['Authorization: Bearer ' . $apiKey, 'Accept: application/json'];
-        $options = [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_CUSTOMREQUEST => $method,
-            CURLOPT_CONNECTTIMEOUT => 10,
-            CURLOPT_TIMEOUT => 60,
-            CURLOPT_HTTPHEADER => $headers,
-        ];
-        if ($payload !== []) {
-            if ($multipart) {
-                $options[CURLOPT_POSTFIELDS] = [
-                    'purpose' => (string) $payload['purpose'],
-                    'file' => new \CURLStringFile(
-                        (string) $payload['content'],
-                        (string) $payload['filename'],
-                        'application/json',
-                    ),
-                ];
-            } else {
-                $headers[] = 'Content-Type: application/json';
-                $options[CURLOPT_HTTPHEADER] = $headers;
-                $options[CURLOPT_POSTFIELDS] = json_encode($payload, JSON_THROW_ON_ERROR);
-            }
+        $parts = $multipart ? [
+            ['name' => 'purpose', 'contents' => (string)$payload['purpose']],
+            ['name' => 'file', 'contents' => (string)$payload['content'], 'filename' => (string)$payload['filename'], 'headers' => ['Content-Type' => 'application/json']],
+        ] : null;
+        $response = ($this->http ?? HttpModule::client())->send(new HttpRequest(
+            self::BASE_URL.$path,
+            $method,
+            ['Authorization' => 'Bearer '.$apiKey, 'Accept' => 'application/json'],
+            body: !$multipart && $payload !== [] ? $payload : null,
+            timeoutMs: 60000,
+            connectTimeoutMs: 10000,
+            multipart: $parts,
+        ));
+        if ($response->error !== null) {
+            throw new OpenAiUpstreamException('OpenAI Vector Store connection failed.');
         }
-        curl_setopt_array($handle, $options);
-        $body = curl_exec($handle);
-        $status = (int) curl_getinfo($handle, CURLINFO_HTTP_CODE);
-        if (!is_string($body)) {
-            $body = '';
-        }
-        curl_close($handle);
-        return ['status' => $status, 'body' => $body];
+        return ['status' => $response->status, 'body' => $response->body];
     }
 }

@@ -623,3 +623,17 @@ need that header. Zoo/FAnn private admin reads must require an admin session
 before forwarding the internal key. Published profile detail stays available
 through the FAnn server for Rokid glasses. Existing Prasentace mail transport
 already sends the internal key. No production deployment is performed by tests.
+
+
+## TRAM transport backend
+
+The [Transport module](src/Modules/Transport/README.md) provides modular Entur,
+PID/Golemio and OpenTripPlanner integrations, versioned GTFS imports and a unified
+journey API. Setup uses the additive `migrations/2026-09-27-transport.sql` migration
+and tenant-scoped CLI configuration. Existing API authentication remains required.
+
+### Sdílená odchozí komunikace
+
+Všechny HTTP integrace a SMTP používají [HttpModule](src/Modules/Http/README.md).
+Nové integrace injektují `Http\Contracts\HttpClient`; přímé cURL/network volání
+se do doménových modulů nepřidává. Testy: `bash scripts/test-http.sh`.

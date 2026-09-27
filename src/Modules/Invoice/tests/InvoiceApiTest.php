@@ -127,16 +127,9 @@ $token = $r['data']['data']['token'] ?? null;
 $invFileTmp = tempnam(sys_get_temp_dir(), 'phpcore_inv_file_') . '.txt';
 file_put_contents($invFileTmp, 'invoice file projection test content');
 
-$ch = curl_init("{$base}/files/upload");
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, ['file' => new CURLFile($invFileTmp, 'text/plain', 'inv_proj_test.txt')]);
-curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer {$token}"]);
-$raw = curl_exec($ch);
-$invUploadStatus = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-curl_close($ch);
-$invUploadData = json_decode($raw, true) ?? [];
+$upload = test_upload_file($base, $invFileTmp, 'text/plain', 'inv_proj_test.txt');
+$invUploadStatus = $upload['status'];
+$invUploadData = $upload['data'];
 assert_test('inv files projection: upload → 201', $invUploadStatus === 201, json_encode($invUploadData));
 $invFileTempPath = $invUploadData['data']['path'] ?? null;
 

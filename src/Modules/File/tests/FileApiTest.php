@@ -22,29 +22,11 @@ if (!isset($runnerMode)) {
     $failed = 0;
 }
 
-// ── Helper: multipart upload via cURL ────────────────────────────────────────
+// ── Helper: multipart upload via HttpModule ────────────────────────────────────────
 
 function upload_file(string $base, string $tmpFile, string $mime, bool $withAuth = true): array
 {
-    global $token;
-
-    $ch = curl_init("{$base}/files/upload");
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, ['file' => new CURLFile($tmpFile, $mime, 'test_upload.txt')]);
-
-    $headers = [];
-    if ($withAuth && $token !== null) {
-        $headers[] = "Authorization: Bearer {$token}";
-    }
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-
-    $raw    = curl_exec($ch);
-    $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-
-    return ['status' => $status, 'data' => json_decode($raw, true) ?? [], 'raw' => $raw];
+    return test_upload_file($base, $tmpFile, $mime, 'test_upload.txt', $withAuth);
 }
 
 // ── Auth setup ───────────────────────────────────────────────────────────────

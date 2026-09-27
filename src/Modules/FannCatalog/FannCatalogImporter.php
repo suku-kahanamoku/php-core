@@ -10,7 +10,7 @@ final class FannCatalogImporter
     public const CATALOG_URL = 'https://www.fann.cz/produkty';
 
     public function __construct(
-        private readonly FannCatalogHttpClient $http,
+        private readonly FannCatalogProvider $http,
         private readonly FannCatalogParser $parser,
         private readonly FannCatalogRepository $repository,
     ) {

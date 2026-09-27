@@ -238,16 +238,9 @@ $token = $r['data']['data']['token'] ?? null;
 $prodFileTmp = tempnam(sys_get_temp_dir(), 'phpcore_prod_file_') . '.txt';
 file_put_contents($prodFileTmp, 'product file projection test content');
 
-$ch = curl_init("{$base}/files/upload");
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, ['file' => new CURLFile($prodFileTmp, 'text/plain', 'prod_proj_test.txt')]);
-curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer {$token}"]);
-$raw = curl_exec($ch);
-$uploadStatus = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-curl_close($ch);
-$uploadData = json_decode($raw, true) ?? [];
+$upload = test_upload_file($base, $prodFileTmp, 'text/plain', 'prod_proj_test.txt');
+$uploadStatus = $upload['status'];
+$uploadData = $upload['data'];
 assert_test('files projection: upload → 201', $uploadStatus === 201, json_encode($uploadData));
 $prodFileTempPath = $uploadData['data']['path'] ?? null;
 

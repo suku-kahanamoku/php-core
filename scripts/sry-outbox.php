@@ -6,8 +6,8 @@ if (PHP_SAPI !== "cli") {
 }
 require __DIR__ . "/../bootstrap.php";
 use App\Modules\Database\Database;
-use App\Modules\Sry\{SryStore, CloudflareGateway};
-$db = new SryStore(Database::getInstance()->getPdo());
+use App\Modules\Sry\{SrySqlRepository, CloudflareGateway};
+$db = new SrySqlRepository(Database::getInstance()->getPdo());
 $cloud = new CloudflareGateway(
     $_ENV["SRY_CLOUDFLARE_URL"] ?? "",
     $_ENV["SRY_CLOUDFLARE_SECRET"] ?? "",
@@ -80,20 +80,14 @@ try {
                                 "Authorization: Bearer " .
                                 $_ENV["SRY_EXPO_ACCESS_TOKEN"];
                         }
-                        $ch = curl_init("https://exp.host/--/api/v2/push/send");
-                        curl_setopt_array($ch, [
-                            CURLOPT_POST => true,
-                            CURLOPT_POSTFIELDS => json_encode(
-                                $body,
-                                JSON_THROW_ON_ERROR,
-                            ),
-                            CURLOPT_HTTPHEADER => $headers,
-                            CURLOPT_RETURNTRANSFER => true,
-                            CURLOPT_TIMEOUT => 15,
-                        ]);
-                        $raw = curl_exec($ch);
-                        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                        curl_close($ch);
+                        $response = \App\Modules\Http\HttpModule::client()->send(new \App\Modules\Http\HttpRequest(
+                            'https://exp.host/--/api/v2/push/send', 'POST', $headers, $body, timeoutMs: 15000,
+                        ));
+                        if ($response->error !== null) {
+                            throw new RuntimeException('Push gateway connection failed');
+                        }
+                        $raw = $response->body;
+                        $status = $response->status;
                         $result = json_decode($raw ?: "{}", true);
                         $ticket = $result["data"] ?? [];
                         if (

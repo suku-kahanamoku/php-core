@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 use App\Modules\OpenAi\OpenAiCatalogGateway;
 use App\Modules\OpenAi\OpenAiProductDocumentBuilder;
-use App\Modules\OpenAi\OpenAiVectorStoreClient;
+use App\Modules\OpenAi\OpenAiVectorStoreProvider;
 use App\Modules\OpenAi\OpenAiVectorStoreGateway;
 use App\Modules\OpenAi\OpenAiVectorStoreSyncService;
 
@@ -21,7 +21,7 @@ require_once __DIR__ . '/../../../../vendor/autoload.php';
 section('OpenAI Vector Store');
 $calls = [];
 $fileNumber = 0;
-$client = new OpenAiVectorStoreClient(
+$client = new OpenAiVectorStoreProvider(
     static function (string $method, string $path, array $payload, bool $multipart) use (&$calls, &$fileNumber): array {
         $calls[] = [$method, $path, $payload, $multipart];
         if ($method === 'POST' && $path === '/vector_stores') {

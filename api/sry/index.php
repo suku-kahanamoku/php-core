@@ -6,7 +6,7 @@ use App\Modules\Database\Database;
 use App\Modules\Router\Request;
 use App\Modules\Router\Response;
 use App\Modules\Sry\{
-    SryStore,
+    SrySqlRepository,
     SryAuth,
     SryService,
     SryError,
@@ -34,10 +34,10 @@ try {
         throw new SryError("invalidInput", 413);
     }
     $db = Database::getInstance();
-    $store = new SryStore($db->getPdo());
+    $store = new SrySqlRepository($db->getPdo());
     $auth = new SryAuth($store);
     $service = new SryService(
-        $store,
+        $db,
         new CloudflareGateway(
             $_ENV["SRY_CLOUDFLARE_URL"] ?? "",
             $_ENV["SRY_CLOUDFLARE_SECRET"] ?? "",
@@ -114,15 +114,15 @@ try {
         $result = match (true) {
             $method === "GET" && $path === "/auth/me" => $actor,
             $method === "POST" && $path === "/auth/logout" => (function () use (
-                $store,
+                $db,
                 $auth,
                 $actor,
                 $token,
             ) {
-                $store->execute(
-                    "DELETE FROM sry_push_device WHERE member_id=?",
-                    [$actor["id"]],
-                );
+                (new \App\Modules\Sry\NotificationRepository(
+                    $db,
+                    "sry",
+                ))->removeMemberDevices($actor["id"]);
                 $auth->logout($token);
                 return ["logged_out" => true];
             })(),

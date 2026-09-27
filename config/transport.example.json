@@ -1,0 +1,93 @@
+{
+  "providers": [
+    {
+      "code": "entur",
+      "adapter": "entur",
+      "published": true,
+      "role": "primary",
+      "coverage": [
+        {
+          "country": "NO",
+          "bbox": [
+            4.0,
+            57.9,
+            31.5,
+            71.5
+          ]
+        }
+      ],
+      "config": {
+        "url": "https://api.entur.io/journey-planner/v3/graphql",
+        "geocoder_url": "https://api.entur.io/geocoder/v1/autocomplete",
+        "client_name": "collega-tram",
+        "timezone": "Europe/Oslo",
+        "min_interval_ms": 100,
+        "attribution": "Entur / Norwegian Licence for Open Government Data",
+        "geocoder_country": "NOR"
+      }
+    },
+    {
+      "code": "pid",
+      "adapter": "pid",
+      "published": true,
+      "coverage": [
+        {
+          "country": "CZ",
+          "bbox": [
+            12.8,
+            49.3,
+            16.2,
+            51.1
+          ]
+        }
+      ],
+      "config": {
+        "url": "https://api.golemio.cz",
+        "token_env": "TRANSPORT_PID_TOKEN",
+        "min_interval_ms": 100,
+        "realtime_max_age": 90,
+        "attribution": "PID / Golemio",
+        "schedule_provider": "pid-otp",
+        "otp_feed_id": "pid"
+      }
+    },
+    {
+      "code": "pid-otp",
+      "adapter": "otp_transmodel",
+      "published": true,
+      "role": "primary",
+      "coverage": [
+        {
+          "country": "CZ",
+          "bbox": [
+            12.8,
+            49.3,
+            16.2,
+            51.1
+          ]
+        }
+      ],
+      "config": {
+        "url": "http://127.0.0.1:8080/otp/transmodel/v3",
+        "feed_code": "pid",
+        "timezone": "Europe/Prague",
+        "attribution": "PID (CC BY), OpenStreetMap contributors",
+        "source_provider": "pid",
+        "otp_feed_id": "pid"
+      }
+    }
+  ],
+  "feeds": [
+    {
+      "code": "pid",
+      "provider": "pid",
+      "url": "https://data.pid.cz/PID_GTFS.zip",
+      "timezone": "Europe/Prague",
+      "config": {
+        "storage_allowed": true,
+        "license_url": "https://pid.cz/o-systemu/opendata/",
+        "otp_feed_id": "pid"
+      }
+    }
+  ]
+}
