@@ -10,7 +10,7 @@ final class EtymologExternalRepository extends BaseRepository
 {
     public function import(string $provider, array $item): void
     {
-        if (!in_array($provider, ['wiktionary', 'poland-pesel', 'csu-baby-names'], true)) { throw new SyncException('unsupported_external_provider'); }
+        if (!in_array($provider, ['wiktionary', 'wiktionary-cs', 'wiktionary-fr', 'wikipedia-names', 'poland-pesel', 'csu-baby-names'], true)) { throw new SyncException('unsupported_external_provider'); }
         $existing = $this->_db->fetchOne('SELECT * FROM etymolog_external_record WHERE franchise_code=? AND provider=? AND external_id=?', [$this->_code, $provider, $item['external_id']]);
         $payload = json_encode($item['payload'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $snapshot = ['revision' => $item['revision'], 'source_url' => $item['source_url'], 'license' => $item['license'],
@@ -41,10 +41,10 @@ final class EtymologExternalRepository extends BaseRepository
             'attribution' => $item['attribution'], 'notes' => $item['notes'],
         ]);
         $entryId = null; $occurrenceId = null;
-        if ($provider === 'wiktionary') {
+        if (in_array($provider, ['wiktionary', 'wiktionary-cs', 'wiktionary-fr', 'wikipedia-names'], true)) {
             $entryId = $this->_db->insert('etymolog_entry', $item['entry'] + ['franchise_code' => $this->_code, 'name_id' => $nameId]);
             $this->_db->insert('etymolog_citation', ['franchise_code' => $this->_code, 'entry_id' => $entryId, 'source_id' => $sourceId,
-                'url' => $item['source_url'], 'locator' => 'Wiktionary revision '.$item['revision'], 'notes' => $item['notes']]);
+                'url' => $item['source_url'], 'locator' => $item['locator'] ?? 'Wiktionary revision '.$item['revision'], 'quotation' => $provider === 'wikipedia-names' ? $item['entry']['body'] : null, 'notes' => $item['notes']]);
         } else {
             $occurrenceId = $this->_db->insert('etymolog_occurrence', $item['occurrence'] + ['franchise_code' => $this->_code, 'name_id' => $nameId, 'source_id' => $sourceId]);
         }

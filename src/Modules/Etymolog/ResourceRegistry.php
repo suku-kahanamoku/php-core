@@ -108,9 +108,9 @@ final class ResourceRegistry
             'sync-jobs' => [
                 'table' => 'etymolog_sync_job', 'required' => ['title'], 'admin' => true,
                 'fields' => [
-                    'title' => ['text:255', ''], 'provider' => ['enum:wikidata,wikisource,wiktionary,poland-pesel,csu-baby-names,erben-folklore,czech-namedays', 'wikidata'],
+                    'title' => ['text:255', ''], 'provider' => ['enum:wikidata,wikisource,wiktionary,wiktionary-cs,wiktionary-fr,wikipedia-names,poland-pesel,csu-baby-names,erben-folklore,czech-namedays', 'wikidata'],
                     'language' => ['enum:cs,sk,pl,uk,de,en', 'cs'],
-                    'kind' => ['enum:given,surname,stories,surname_male,surname_female,births_2025,folklore,calendar', 'surname'],
+                    'kind' => ['enum:given,surname,given_priority,surname_priority,stories,surname_male,surname_female,births_2025,folklore,calendar,etymologies,culture', 'surname'],
                     'batch_size' => ['batch', 20], 'interval_seconds' => ['interval', 3600],
                     'enabled' => ['bool', 1],
                 ], 'system' => ['cursor', 'next_run_at', 'last_status', 'last_error'],

@@ -2094,3 +2094,21 @@ Calendar dates preserve calendar edition/system, country, source, fixed month/da
 or an explicit unevaluated movable-date rule. Name-day provenance is available at
 `GET /calendar-days/:id/imports`. The optional culture tenant seed adds Erben
 folklore and the community Czech name-day calendar synchronizers.
+
+### Etymolog: veřejné hledání a detail
+
+`GET /etymolog/public/names?q=Novak&kind=surname&page=1` a `GET /etymolog/public/names/:id` jsou read-only endpointy pro frontend Etymolog. Nevyžadují uživatelský bearer, ale stále vyžadují `X-Internal-Key` a známý tenant. Vyhledávání vrací v `data` objekt `items,total,page,limit` (20 na stránku, q 2–100 znaků). Detail vrací `name,entries,citations,variants,occurrences,calendar_days,sources`. Vrací pouze publikovaná aktivní hesla/texty/dny a ověřené sdílené vazby; projekce je pevná bez redakčních/importních/auditních metadat. Soukromé CRUD a synchronizační endpointy si zachovávají dosavadní autentizaci. Podrobnosti v `src/Modules/Etymolog/README.md`.
+
+### Etymolog: background synchronization
+
+`POST /etymolog/sync/start` (admin, `{}` only) returns 202 with the queued/current tenant batch. Repeated requests reuse an active batch. `GET /etymolog/sync/status` (admin) returns its status and counters or null. Internal key, resolved tenant and user bearer remain mandatory. The detached PHP worker and CLI cron share one runner, processing one batch per due enabled job and respecting retry intervals. Apply `2026-09-28-etymolog-background.sql` and `2026-09-28-etymolog-dictionaries-tenant.sql` before use; neither starts synchronization. See the Etymolog README for providers and worker requirements.
+
+Etymolog public name dossiers group the same case-insensitive, accent-sensitive spelling across all sources and name kinds. Public `kind` may be `both`; a `kind=given|surname` search filter selects matching dossiers without changing their canonical ID. Detail includes all published interpretations and citations; CRUD records retain their original kind.
+
+`wikipedia-names` adds `language=cs`, `kind=etymologies|culture`, `batch_size=1..3`.
+Apply `2026-09-28-etymolog-wikipedia-tenant.sql` to seed two due tasks without
+running them. Fixed reviewed article sections are imported as unpublished entries
+with CC BY-SA 4.0, revision-pinned URLs, author history and verbatim citations.
+The existing worker and `/entries/:id/imports` provenance endpoint handle them;
+there is no new public write endpoint or automatic publication. Refreshes preserve
+editorial content and deletion tombstones. See the Etymolog README for the catalog.

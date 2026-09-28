@@ -182,7 +182,7 @@ vyhledávacího indexu se přeskočí. Popisek preferuje vybraný jazyk, potom `
 a `en`. Země původu zůstává nevyplněná.
 
 Jedna úloha zpracuje 1–50 výsledků na běh (výchozí 20), interval 300–2592000 s
-(výchozí 3600). Jedno spuštění CLI zpracuje jednu nejstarší splatnou úlohu.
+(výchozí 3600). Jedno spuštění CLI bez `--job` projde všechny splatné zapnuté úlohy, u každé jednu dávku. `--job` zpracuje pouze vybranou splatnou úlohu.
 Ukončený průchod resetuje kurzor, takže další průchod aktualizuje starší záznamy.
 Kurzor je neprůhledný systémový řetězec, v aktuálním provideru offset vyhledávání.
 Index není neměnný snapshot; opakované průchody kompenzují posuny výsledků.
@@ -479,3 +479,126 @@ ani právní kalendář a neobsahuje všechny možné varianty jmenin.
 Obě synchronizace vytvářejí koncepty, opakování aktualizuje jen snapshot;
 ruční úpravy a archivované záznamy zachovává. Zmizí-li položka v nové verzi
 zdroje, starý redakční záznam se automaticky nemaže; vyžaduje revizi redaktorem.
+
+## Veřejné čtení pro astro-etymolog
+
+Frontend `astro/astro-etymolog` používá oddělený read-only kontrakt:
+
+- `GET /api/etymolog/public/names?q=Novak&kind=surname&page=1` — hledání, `kind` může být prázdné, `given` nebo `surname`; 2–100 znaků, doslovné LIKE s escapovanými `%`/`_`, 20 výsledků na stránku. Data obsahují `items,total,page,limit`.
+- `GET /api/etymolog/public/names/:id` — `name,entries,citations,variants,occurrences,calendar_days,sources`.
+
+Tyto dvě přesně vymezené GET trasy nepotřebují uživatelský bearer. Stále procházejí bootstrapem s interním API klíčem a známým tenantem. CRUD, importní payloady a synchronizace zůstávají za stávajícím Auth. Ostatní metody v `/public` nepovolují anonymní zápis.
+
+`EtymologPublicRepository` obsahuje veškeré SQL, `EtymologPublicService` validaci a `EtymologPublicApi` HTTP kontrakt. Projekce je pevná a ignoruje klientské `projection`/`factory`. Nevrací poznámky redakce, importní metadata, auditní aktéry ani tenant. Vyhledávání i detail vyžadují `published=1 AND deleted=0`. Sdílené texty vyžadují aktivní `reviewed=1` vazbu; samotné texty a kalendářní dny musejí být publikované. Zdroje a rodičovské kalendáře musejí být aktivní. Varianty neodkazují na neveřejná cílová hesla. Veřejný detail nepublikovaného, smazaného nebo cizího hesla je 404.
+
+Bez nové migrace. Rozšíření testů `tests/public.php` běží pouze na jednorázové integrační MySQL; kontroluje tenanty, publikaci, ověřené vazby, bezpečné projekce, zdroje, nulové četnosti a zachování soukromých API. Celá Etymolog suite po rozšíření: 340 kontrol.
+
+
+## Další slovníkové zdroje a spuštění z administrace (28. 9. 2026)
+
+Migrace `migrations/2026-09-28-etymolog-background.sql` přidává
+`etymolog_sync_batch`: poslední společný běh pro každého tenanta, neprůhledné
+`request_id`, stav, zadavatel, počty úloh/položek/chyb a časové značky.
+Historie jednotlivých úloh zůstává v `etymolog_sync_run`.
+Migrace `migrations/2026-09-28-etymolog-dictionaries-tenant.sql` připravuje
+10 nových úloh idempotentně; neimportuje obsah, nepřepisuje nastavení starých úloh.
+
+| Provider | Zdroj | Jazyk textu | Pravidla |
+| --- | --- | --- | --- |
+| `wiktionary-cs` | [Český Wikislovník](https://cs.wiktionary.org/wiki/Novotn%C3%BD) | cs | České příjmení / rodné jméno, běžný i přednostní průchod |
+| `wiktionary-fr` | [Francouzský Wiktionnaire](https://fr.wiktionary.org/wiki/Novotn%C3%BD) | fr | Stejné druhy českých jmen; originální francouzské výklady |
+| `wiktionary` | [Anglický Wiktionary](https://en.wiktionary.org/wiki/Nov%C3%A1k) | en | Nově i přednostní česká příjmení / rodná jména |
+
+Nové edice podporují `language=cs`, `kind=given|surname|given_priority|surname_priority`.
+Anglická edice ponechává stávající jazykové pokrytí; prioritní průchod je pouze český.
+`*_priority` má pevný seznam 15 titulů na druh jména (Novák, Novotný atd.),
+nebere libovolnou URL ani text od klienta. Není to statistický žebříček.
+Běžný průchod navazuje přes MediaWiki continuation. Česká rodná jména se hledají
+v kategorii `Česká propria`, protože samostatné kategorie rodných jmen nejsou
+spolehlivě vyplněné; parser vyžaduje odpovídající význam a etymologii.
+U každého textu se ověřuje aktuální CC BY-SA 4.0, ukládá revize, historie autorů,
+licence a původní jazyk. Výklad musí být skutečně přítomen ve správné jazykové
+sekci a skupině významů. Žádné generování ani automatický překlad.
+Stejná stránka z přednostního a abecedního průchodu má totožnou importní identitu;
+každá edice je samostatný citovaný pramen. Nové texty i jména jsou koncepty.
+
+### API a společný worker
+
+- `POST /api/etymolog/sync/start`, prázdné JSON `{}`: admin, HTTP 202;
+  založí požadavek a spustí oddělený PHP CLI proces. Opakovaný klik vrátí
+  tentýž aktivní běh (`accepted=false`), nevytvoří druhý proces.
+- `GET /api/etymolog/sync/status`: admin, poslední běh nebo `null`.
+  Stavy: `queued`, `running`, `complete`, `partial`, `failed`;
+  počty `total`, `completed`, `failed`, `processed`. Časy jsou UTC.
+- BFF kontroluje origin, přihlášení, roli a prázdný obsah. Tenant pochází
+  výhradně z backendové konfigurace. Endpointy nejsou veřejné.
+- Cron `php scripts/etymolog-sync.php --tenant=etymolog` používá stejný
+  `EtymologBackgroundService::work()`. Interní `--request=<id>` slouží workeru.
+- Jeden průchod zpracuje jednu dávku každé zapnuté úlohy splatné při zahájení.
+  Neresetuje kurzory, neobchází interval ani Retry-After, nepublikuje koncepty.
+  Chyba jednoho zdroje se zaznamená a další zdroje pokračují.
+- Samostatný MySQL advisory lock serializuje celé průchody; dosavadní tenantový
+  zámek chrání jednotlivé dávky a CRUD. Ukončení procesu uvolní zámek automaticky.
+  Opuštěný požadavek bez workeru je po 120 sekundách označen jako neúspěšný;
+  běžící worker je chráněn zámkem i během dlouhého HTTP požadavku.
+- PHP server potřebuje povolené `exec`, `/usr/bin/nohup`, CLI `PHP_BINDIR/php`,
+  přístup ke stejnému projektu, `.env` a DB. Na serverech zakazujících procesy
+  spuštění vrací 503; cron lze používat dál. Pád při bootu je zjistitelný stavem
+  `worker_interrupted`. Nevzniká nový Node backend ani nová proměnná URL.
+- Instalace nezakládá cron a nespouští import. Integrační testy používají
+  samostatnou dočasnou DB, falešné poskytovatele a nahrazený launcher.
+
+
+### Jedno veřejné heslo pro více importních zdrojů
+
+Veřejné `search`/`detail` sdružují zveřejněné záznamy stejného `BINARY LOWER(TRIM(name))` (i napříč `given` a `surname`) napříč zdroji, zeměmi a jazyky. Nezaměňují varianty s odlišnou diakritikou; accent-insensitive LIKE je pouze vyhledávací pravidlo. Reprezentantem je nejstarší zveřejněný zápis, který není celý velkými písmeny, případně nejstarší zveřejněné ID. Počty i stránkování vycházejí ze skupin. Detail vrací kanonické `name.id` a sdružuje výklady, prověřené vazby, varianty, statistiky, kalendáře a citace všech veřejných členů. Skryté jméno není možné otevřít ani jako alias veřejné skupiny. Rozporné země/jazyky nevytvářejí jeden globální atribut; jednotlivé podklady zachovávají své údaje. CRUD a importní identity se nemění a nic se automaticky nepublikuje.
+
+Filtr druhu jména vybírá společná hesla obsahující daný druh, ale nemění jejich ID ani neomezuje podklady v detailu. Veřejné `name.kind` může být `both` (křestní jméno i příjmení); CRUD zůstává `given|surname`. Různé etymologické výklady a mytologické texty se zobrazují samostatně uvnitř jednoho hesla se svými citacemi.
+
+### Vybrané etymologie a kulturní texty z Wikipedie
+
+`WikipediaNamesProvider` (`wikipedia-names`, `language=cs`) přidává 15 konkrétních
+oddílů šesti jmen. Používá pouze API `https://cs.wikipedia.org/w/api.php`, pevný
+seznam článků a přesné názvy ověřených oddílů. Neprovádí plošný scraping ani
+negeneruje příběhy.
+
+| Jméno | Pramen a vybrané oddíly | Zařazení |
+| --- | --- | --- |
+| Anna | [Svatá Anna](https://cs.wikipedia.org/wiki/Svat%C3%A1_Anna): Etymologie, Život, Patronka, Svátek; [Anna](https://cs.wikipedia.org/wiki/Anna): Pranostiky | Etymologie, legenda, tradice, pranostiky |
+| Jiří | [Svatý Jiří](https://cs.wikipedia.org/wiki/Svat%C3%BD_Ji%C5%99%C3%AD): Etymologie jména, Svatý Jiří a drak | Etymologie, legenda |
+| Martin | [Martin z Tours](https://cs.wikipedia.org/wiki/Martin_z_Tours): Legenda o plášti | Legenda |
+| Mikuláš | [Svatý Mikuláš](https://cs.wikipedia.org/wiki/Svat%C3%BD_Mikul%C3%A1%C5%A1): Legenda o šlechtici a jeho třech dcerách, Legenda o třech dětech, Česko a Slovensko | Legendy, tradice |
+| Barbora | [Barbora z Nikomédie](https://cs.wikipedia.org/wiki/Barbora_z_Nikom%C3%A9die): Život, Zajímavosti | Legenda, tradice |
+| Diana | [Diana (mytologie)](https://cs.wikipedia.org/wiki/Diana_(mytologie)): Jméno, Funkce | Etymologie, mytologie |
+
+Náboženské legendy nejsou vydávány za doloženou historii ani automaticky
+přejmenovány na mytologii. Oddíl Svátek je převzatý text o tradici; nezakládá
+moderní kalendář ani neodvozuje datum z volného textu. Kalendáře nadále spravuje
+existující kalendářní import.
+
+Migrace `migrations/2026-09-28-etymolog-wikipedia-tenant.sql` idempotentně přidá
+dvě zapnuté úlohy: `kind=etymologies` (3 oddíly) a `kind=culture` (12 oddílů),
+obě s dávkou 3 a intervalem 300 sekund. Neimportuje obsah, nepublikuje data,
+neobnovuje smazané úlohy ani nemění jejich existující nastavení. Nové úlohy
+zpracuje stávající tlačítko **Spustit synchronizaci** i stejný cron worker.
+První úspěšný průchod nových úloh načte etymologii Anny, Jiřího a Diany a
+pro Annu legendu, patronát a pranostiky; další splatné dávky pokračují ostatními
+kulturními oddíly. Jeden klik nevyčerpá celý kulturní katalog.
+
+API kontroluje CC BY-SA 4.0, shodu článku a oddílu. Číslo oddílu se vyhledá
+v konkrétní revizi a tělo se čte přes stejné `oldid`; při změně licence,
+chybějícím oddílu nebo nesouhlasící revizi celá dávka selže bez posunu kurzoru.
+Ukládá se trvalý odkaz na oddíl, revize, historie autorů, licence, popis
+převodu do prostého textu a doslovná citace těla. Žádný automatický překlad.
+
+Nové texty jsou **nepublikované koncepty** s `certainty=unverified`. Redaktor je
+zkontroluje a zveřejní v administraci; nově založené jméno je rovněž koncept.
+Citace splňuje existující kontrolu publikace kulturního obsahu.
+`EtymologExternalRepository` opakovaně aktualizuje pouze zdrojový snapshot,
+zachovává ruční úpravy, publikaci a původní citace, respektuje tombstones.
+Importní identita je pevný klíč oddílu nezávislý na revizi. Pořadí katalogů
+se nemění, nové oddíly se pouze připojují na konec.
+
+Ověření: metadata a ukázkový oddíl byly načteny pro kontrolu pramene bez importu;
+integrační testy v `tests/wikipedia.php` používají pouze falešné HTTP a
+jednorázovou DB. Celá sada po rozšíření: 426 kontrol.

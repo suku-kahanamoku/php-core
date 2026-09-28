@@ -11,6 +11,8 @@ final class EtymologApi
 
     public function registerRoutes(Router $router): void
     {
+        $router->post('/sync/start', fn (Request $r) => $this->respond(fn () => Response::success($this->service->startSync($r->body), 'Accepted', 202)));
+        $router->get('/sync/status', fn (Request $r) => $this->respond(fn () => Response::success($this->service->syncStatus())));
         foreach (array_keys(ResourceRegistry::all()) as $resource) {
             $path = '/'.$resource;
             $router->get($path, fn (Request $r) => $this->respond(function () use ($r, $resource) {

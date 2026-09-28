@@ -25,7 +25,7 @@ final class EtymologSyncService
                             if ($job['provider'] === 'erben-folklore' && $story !== null) {($this->calendar ?? throw new SyncException('calendar_repository_missing'))->attachFolklore($item, $story);}
                         } elseif ($job['provider'] === 'czech-namedays') {
                             ($this->calendar ?? throw new SyncException('calendar_repository_missing'))->import($item);
-                        } elseif (in_array($job['provider'], ['wiktionary', 'poland-pesel', 'csu-baby-names'], true)) {
+                        } elseif (in_array($job['provider'], ['wiktionary', 'wiktionary-cs', 'wiktionary-fr', 'wikipedia-names', 'poland-pesel', 'csu-baby-names'], true)) {
                             ($this->external ?? throw new SyncException('external_repository_missing'))->import($job['provider'], $item);
                         } else {
                             $this->sync->import($job, $item);

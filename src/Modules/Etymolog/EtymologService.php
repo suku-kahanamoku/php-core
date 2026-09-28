@@ -9,8 +9,21 @@ use App\Modules\Auth\Auth;
 final class EtymologService
 {
     /** @param array<string,EtymologRepository> $repositories */
-    public function __construct(private readonly array $repositories, private readonly Auth $auth, private readonly EtymologSyncRepository $sync, private readonly EtymologStoryRepository $stories, private readonly EtymologExternalRepository $external)
+    public function __construct(private readonly array $repositories, private readonly Auth $auth, private readonly EtymologSyncRepository $sync, private readonly EtymologStoryRepository $stories, private readonly EtymologExternalRepository $external, private readonly ?EtymologBackgroundService $background = null)
     {
+    }
+
+    public function startSync(array $input): array
+    {
+        $this->auth->requireRole('admin');
+        if ($input !== []) { throw new EtymologException('Synchronization accepts no parameters'); }
+        return ($this->background ?? throw new EtymologException('Worker unavailable', 503))->start($this->auth->id());
+    }
+
+    public function syncStatus(): ?array
+    {
+        $this->auth->requireRole('admin');
+        return ($this->background ?? throw new EtymologException('Worker unavailable', 503))->status();
     }
 
     public function imports(int $nameId): array
@@ -167,11 +180,12 @@ final class EtymologService
         }
         if ($resource === 'sync-jobs') {
             $valid = match ($data['provider']) {
+                'wikipedia-names' => in_array($data['kind'], ['etymologies', 'culture'], true) && $data['language'] === 'cs' && $data['batch_size'] <= 3,
                 'erben-folklore' => $data['kind'] === 'folklore' && $data['language'] === 'cs' && $data['batch_size'] <= 4,
                 'czech-namedays' => $data['kind'] === 'calendar' && $data['language'] === 'cs',
                 'wikidata' => in_array($data['kind'], ['given', 'surname'], true) && $data['batch_size'] <= 50,
                 'wikisource' => $data['kind'] === 'stories' && $data['language'] === 'cs' && $data['batch_size'] <= 4,
-                'wiktionary' => in_array($data['kind'], ['given', 'surname'], true) && $data['batch_size'] <= 3,
+                'wiktionary', 'wiktionary-cs', 'wiktionary-fr' => in_array($data['kind'], ['given', 'surname', 'given_priority', 'surname_priority'], true) && $data['batch_size'] <= 3 && ($data['provider'] === 'wiktionary' || $data['language'] === 'cs') && (!str_ends_with($data['kind'], '_priority') || $data['language'] === 'cs'),
                 'csu-baby-names' => $data['kind'] === 'births_2025' && $data['language'] === 'cs',
                 'poland-pesel' => in_array($data['kind'], ['surname_male', 'surname_female'], true) && $data['language'] === 'pl',
             };
