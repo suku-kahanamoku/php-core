@@ -602,3 +602,91 @@ se nemění, nové oddíly se pouze připojují na konec.
 Ověření: metadata a ukázkový oddíl byly načteny pro kontrolu pramene bez importu;
 integrační testy v `tests/wikipedia.php` používají pouze falešné HTTP a
 jednorázovou DB. Celá sada po rozšíření: 426 kontrol.
+
+### Hosting se zakázaným spouštěním procesů
+
+`worker_process_disabled` znamená, že webové PHP nemá povolený `exec`.
+Funkční PHP přes SSH to nevyvrací: web a SSH mohou používat odlišné PHP a
+konfiguraci. Chyba nastává ještě před prvním importem. Přímý režim `process`
+zůstává výchozí a při omezení vrací 503 s přesným chybovým kódem.
+
+Pro takový hosting je připraven explicitní režim `ETYMOLOG_SYNC_DISPATCH=cron`.
+Zapněte jej **až po zřízení externího plánovače**, který každou minutu spouští
+ze správného projektu:
+
+```sh
+php scripts/etymolog-sync.php --tenant=etymolog --queued-only
+```
+
+Tlačítko pak pouze uloží autorizovaný požadavek do stávající fronty. Příkaz s
+`--queued-only` nikdy nezakládá nový průchod: bez čekajícího požadavku vrátí
+`idle`, i když jsou některé úlohy splatné. Dokončené a neúspěšné požadavky
+neopakuje. Parametr nelze kombinovat s `--job` ani `--request`. Běžný cron bez
+`--queued-only` si zachovává původní automatické zpracování splatných úloh.
+
+V cronovém režimu čekající požadavek toleruje až 15 minut na převzetí. Pak se
+bez aktivního workeru označí jako přerušený; běžící worker stále chrání databázový
+zámek. Režim `process` zachovává dvouminutový limit pro nevyzvednutý požadavek.
+Konfigurace sama žádný cron neinstaluje. Není-li na hostingu plánovač dostupný,
+je potřeba jeho zřízení poskytovatelem nebo samostatný CLI worker; samotné
+přepnutí proměnné nezajistí běh. Není implementován veřejný URL spouštěč.
+
+Kontrola produkce `charteragency` 28. 9. 2026: webové PHP zakazuje `exec`,
+`proc_open` a `shell_exec`; v SSH prostředí není příkaz `crontab`. Proto se zde
+cronový režim zatím neaktivuje. Diagnostický soubor chráněný jednorázovým tokenem
+byl po kontrole odstraněn. Nebyl spuštěn import ani přepsán stav neúspěšného běhu.
+
+### Cloudflare: denně ve 03:00 Europe/Prague a ruční tlačítko
+
+Cloudflare projekt je `cloudflare/etymolog`, profil Wrangler `prasentace`, Worker
+`etymolog-sync`. Obsahuje Cron Triggers `0 1 * * *` a `0 2 * * *` v UTC;
+filtr `Europe/Prague` propustí pouze místní 03:00. Dvojice řeší letní/zimní čas,
+nikoliv dva importy. Fronta `etymolog-sync` pokračuje pouze po dobu aktivního
+běhu. Neexistuje minutové dotazování backendu v nečinnosti.
+
+Před aktivací aplikujte `2026-09-28-etymolog-http-worker.sql`: přidává snapshot
+ID úloh `etymolog_sync_batch.pending_jobs` a denní deduplikaci
+`etymolog_sync_schedule` (tenant + české datum). Neimportuje ani nepublikuje data.
+
+Produkční nastavení PHP (tajné hodnoty pouze v `.env`):
+
+- `ETYMOLOG_SYNC_DISPATCH=cloudflare`
+- `ETYMOLOG_SYNC_WORKER_URL=https://etymolog-sync.sukusovi.workers.dev/dispatch`
+- `ETYMOLOG_SYNC_SECRET`: nový samostatný dlouhý klíč; ve Worker secrets `SYNC_SECRET`.
+- Worker secret `INTERNAL_API_KEY`: stávající interní API klíč PHP.
+
+Ruční tlačítko zůstává za Auth/admin a odešle pevné ID požadavku do Workeru přes
+sdílený HttpClient. Automatický cron zařadí denní požadavek. Worker volá pouze
+`POST /api/etymolog/sync/worker`, kde jsou současně povinné interní API klíč,
+`X-Etymolog-Worker-Key` a tenant Etymolog. Strojový endpoint není veřejným
+spouštěčem; nezpřístupňuje CRUD. Akce `health` pouze ověří připravenost,
+`nightly` přijímá dnešní pražské datum jen mezi 03:00–03:59 a `step` zpracuje
+jednu dávku jedné úlohy. Ostatní API zůstává za uživatelským přihlášením.
+
+První krok zmrazí seznam splatných zapnutých úloh. Každý krok nese request ID a
+pořadí; opakované doručení již dokončeného kroku neimportuje nic znovu. Zápis
+obsahu, posun kurzoru, historie úlohy a postup celého běhu se potvrdí ve stejné
+transakci. Při chybě zdroje se dávka vrátí zpět a pokračují ostatní úlohy.
+Při síťové chybě spojení Cloudflare → PHP se tentýž krok opakuje maximálně
+pětkrát s odstupem minuty. Mezi kroky platí 15minutová detekce přerušeného běhu.
+
+Jedno HTTP volání má celkový rozpočet 20 sekund na čekání na zdrojové HTTP
+požadavky; parser a databáze mají navíc vlastní čas běhu. Nepřenášíme celou
+synchronizaci do jednoho požadavku. Worker má timeout 45 sekund. Chyby a limity
+jsou viditelné v běhu úloh, data se automaticky nepublikují. Noční průchod
+zpracuje jednu nastavenou dávku každé splatné úlohy; celé rozsáhlé katalogy se
+postupně doplňují další noci. Ruční spuštění nadále respektuje intervaly úloh.
+
+Worker `/health` a `/probe` vyžadují samostatný tajný klíč. První ověřuje
+spojení s PHP, druhý pouze průchod frontou a autentizované `health`; ani jeden
+nevytváří synchronizační běh a nestahuje zdrojová data. `/dispatch` přijímá jen
+ID již vytvořeného požadavku. Tajemství ani těla odpovědí se nezapisují do logů.
+
+Ověření této verze: 460 PHP integračních kontrol s jednorázovou DB a falešnými
+providery; šest testů Workeru včetně obou změn času, autentizace, fronty a retry.
+
+Živě ověřeno 28. 9. 2026: Cloudflare → PHP health 200/ready, chybějící klíče
+401/403, fronta potvrdila `etymolog_probe_ok` a PHP → Cloudflare přijalo neexistující
+request ID bez založení importu. Produkční počet běhů úloh zůstal 0. Starý
+neúspěšný požadavek v administraci se nemaže; nahradí jej další ruční nebo noční
+běh. Produkční importy nebyly součástí testovacího nasazení.

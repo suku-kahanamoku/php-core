@@ -9,6 +9,9 @@ use App\Modules\Etymolog\{EtymologApi, EtymologRepository, EtymologService, Etym
 use App\Modules\Router\Router;
 
 $db = Database::getInstance();
+if ($request->method === 'POST' && $request->uri === '/sync/worker') {
+    (new \App\Modules\Etymolog\EtymologWorkerApi(\App\Modules\Etymolog\EtymologModule::httpWorker($db, $request->franchiseCode)))->handle($request);
+}
 // Only these GET routes omit user authentication; bootstrap still requires the internal key and a known tenant.
 if ($request->method === 'GET' && preg_match('~^/public/names(?:/[1-9][0-9]*)?$~D', $request->uri)) {
     $public = new \App\Modules\Etymolog\EtymologPublicApi(new \App\Modules\Etymolog\EtymologPublicService(new \App\Modules\Etymolog\EtymologPublicRepository($db, $request->franchiseCode)));

@@ -88,3 +88,33 @@ check($batches->status()['error_code'] === 'worker_interrupted', 'lost queued pr
 $pending = $batches->enqueue(null);
 $batches->update($pending['request_id'], ['status' => 'running']);
 check($background->work()['status'] === 'complete', 'cron recovers interrupted worker after connection lock was released');
+
+// A cron consumer must never turn an idle poll into an import.
+$cronTenant = 'queued-worker-fixture';
+$cronBatches = new EtymologBatchRepository($db, $cronTenant, 900);
+$cronJobs = new EtymologRepository($db, $cronTenant, 'sync-jobs');
+$cronJobId = $db->insert('etymolog_sync_job', ['franchise_code' => $cronTenant, 'title' => 'Queued only', 'provider' => 'ok']);
+$cronSync = new EtymologSyncService($cronJobs, new EtymologSyncRepository($db, $cronTenant), new ProviderRegistry(['ok' => $okProvider]));
+$cronLauncher = new App\Modules\Etymolog\EtymologWorkerLauncher($cronTenant, 'cron');
+$cronService = new EtymologBackgroundService($cronBatches, $cronSync, $cronLauncher->launch(...));
+$callsBefore = $okProvider->calls;
+check($cronService->workQueued()['status'] === 'idle' && $cronBatches->status() === null && $okProvider->calls === $callsBefore, 'queue consumer without a request creates no batch and never imports');
+$queued = $cronService->start(null);
+check($queued['status'] === 'queued' && $okProvider->calls === $callsBefore, 'cron dispatch queues without spawning a process or importing');
+check(!$cronService->start(null)['accepted'], 'cron mode repeated click reuses queued request');
+$db->query('UPDATE etymolog_sync_batch SET heartbeat_at=? WHERE franchise_code=?', [gmdate('Y-m-d H:i:s', time() - 180), $cronTenant]);
+check($cronBatches->status()['status'] === 'queued', 'external scheduler queue survives more than two minutes');
+$consumed = $cronService->workQueued();
+check($consumed['status'] === 'complete' && $consumed['request_id'] === $queued['request_id'] && $okProvider->calls === $callsBefore + 1, 'queue consumer processes exactly the explicit admin request');
+$db->query('UPDATE etymolog_sync_job SET next_run_at=NULL WHERE id=?', [$cronJobId]);
+check($cronService->workQueued()['status'] === 'idle' && $okProvider->calls === $callsBefore + 1, 'subsequent poll does not start a new pass even with due jobs');
+$cronService->start(null);
+$db->query('UPDATE etymolog_sync_batch SET heartbeat_at=? WHERE franchise_code=?', [gmdate('Y-m-d H:i:s', time() - 901), $cronTenant]);
+check($cronBatches->status()['status'] === 'failed' && $cronService->workQueued()['status'] === 'idle', 'unattended cron queue expires and is not silently replayed');
+$unavailable = new EtymologBackgroundService($cronBatches, $cronSync, static function () { throw new SyncException('worker_process_disabled'); });
+try { $unavailable->start(null); throw new LogicException('Expected disabled process failure'); }
+catch (EtymologException $e) { check($e->status === 503 && $cronBatches->status()['error_code'] === 'worker_process_disabled', 'hosting process restriction retained as a specific error code'); }
+try { (new App\Modules\Etymolog\EtymologWorkerLauncher($cronTenant, 'invalid'))->launch(str_repeat('a', 32)); throw new LogicException('Expected invalid dispatch'); }
+catch (SyncException $e) { check($e->reason === 'worker_configuration_invalid', 'invalid dispatch fails before executing any command'); }
+try { $cronLauncher->launch('invalid'); throw new LogicException('Expected invalid request'); }
+catch (SyncException $e) { check($e->reason === 'worker_unavailable', 'cron dispatch also rejects invalid request IDs'); }

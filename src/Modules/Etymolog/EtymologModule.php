@@ -9,9 +9,10 @@ use App\Modules\Etymolog\Providers\{WikidataProvider, WikisourceProvider, Wikipe
 
 final class EtymologModule
 {
-    public static function sync(Database $db, string $tenant): EtymologSyncService
+    public static function sync(Database $db, string $tenant, bool $httpStep = false): EtymologSyncService
     {
         $http = HttpModule::client();
+        if ($httpStep) { $http = new Providers\SyncBudgetProvider($http); }
         $registry = new ProviderRegistry([
             'wikipedia-names' => new WikipediaNamesProvider($http),
             'erben-folklore' => new ErbenFolkloreProvider($http),
@@ -27,8 +28,17 @@ final class EtymologModule
         return new EtymologSyncService(new EtymologRepository($db, $tenant, 'sync-jobs'), new EtymologSyncRepository($db, $tenant), $registry, new EtymologStoryRepository($db, $tenant), new EtymologExternalRepository($db, $tenant), new EtymologCalendarRepository($db, $tenant));
     }
 
+    public static function httpWorker(Database $db, string $tenant): EtymologHttpWorkerService
+    {
+        return new EtymologHttpWorkerService(new EtymologBatchRepository($db, $tenant, 900, 900), self::sync($db, $tenant, true));
+    }
+
     public static function background(Database $db, string $tenant): EtymologBackgroundService
     {
-        return new EtymologBackgroundService(new EtymologBatchRepository($db, $tenant), self::sync($db, $tenant), (new EtymologWorkerLauncher($tenant))->launch(...));
+        $dispatch = $_ENV['ETYMOLOG_SYNC_DISPATCH'] ?? 'process';
+        $launcher = $dispatch === 'cloudflare'
+            ? new Providers\CloudflareDispatchProvider(HttpModule::client(), $_ENV['ETYMOLOG_SYNC_WORKER_URL'] ?? '', $_ENV['ETYMOLOG_SYNC_SECRET'] ?? '')
+            : new EtymologWorkerLauncher($tenant, $dispatch);
+        return new EtymologBackgroundService(new EtymologBatchRepository($db, $tenant, in_array($dispatch, ['cron','cloudflare'], true) ? 900 : 120, $dispatch === 'cloudflare' ? 900 : 120), self::sync($db, $tenant), $launcher->launch(...));
     }
 }

@@ -2112,3 +2112,24 @@ with CC BY-SA 4.0, revision-pinned URLs, author history and verbatim citations.
 The existing worker and `/entries/:id/imports` provenance endpoint handle them;
 there is no new public write endpoint or automatic publication. Refreshes preserve
 editorial content and deletion tombstones. See the Etymolog README for the catalog.
+
+On hosts that disable web PHP process execution, synchronization start returns
+503 and records `worker_process_disabled`. After provisioning an external CLI
+scheduler, set `ETYMOLOG_SYNC_DISPATCH=cron` to queue admin requests without
+spawning processes. The scheduler must call `scripts/etymolog-sync.php
+--tenant=etymolog --queued-only`; this option consumes existing queued requests
+only and never creates an autonomous synchronization pass. Queued requests expire
+after 15 minutes in cron mode. No endpoint permissions change and no public worker
+URL is added. See the Etymolog README for setup; configuration alone is insufficient.
+
+Cloudflare HTTP execution uses `POST /etymolog/sync/worker` with **both** the
+existing internal key and `X-Etymolog-Worker-Key`, restricted to the Etymolog
+tenant and `ETYMOLOG_SYNC_DISPATCH=cloudflare`. Bodies are exact objects:
+`{"action":"health"}`, `{"action":"nightly","date":"YYYY-MM-DD"}`, or
+`{"action":"step","request_id":"32 lowercase hex","step":0}`. No user bearer is
+required for this narrowly scoped machine route; ordinary CRUD still requires it.
+Nightly dispatch is limited to today's Europe/Prague date and hour 03, deduplicated
+by tenant/date. A step commits its progress with the job transaction and returns
+`status,request_id,next_step,total`; stale IDs return `status=idle`. Apply
+`2026-09-28-etymolog-http-worker.sql` first. Health is read-only. See the module
+README for the daily schedule, queue and deployment secrets.

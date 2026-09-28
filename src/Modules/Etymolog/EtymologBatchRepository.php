@@ -4,10 +4,22 @@ declare(strict_types=1);
 namespace App\Modules\Etymolog;
 
 use App\Modules\BaseRepository;
+use App\Modules\Database\Database;
 
 /** A short request lock and a separate worker lock keep HTTP requests nonblocking. */
 final class EtymologBatchRepository extends BaseRepository
 {
+    public function __construct(Database $db, string $tenant, private readonly int $queuedTimeout = 120, private readonly int $runningTimeout = 120)
+    {
+        parent::__construct($db, $tenant);
+    }
+
+    private function expired(array $row): bool
+    {
+        $timeout = $row['status'] === 'queued' ? $this->queuedTimeout : $this->runningTimeout;
+        return strtotime($row['heartbeat_at'].' UTC') < time() - $timeout;
+    }
+
     public function lock(string $kind, callable $action): mixed
     {
         $key = 'ety-'.$kind.':'.substr(hash('sha256', $this->_code), 0, 48);
@@ -22,11 +34,11 @@ final class EtymologBatchRepository extends BaseRepository
     {
         $row = $this->_db->fetchOne('SELECT * FROM etymolog_sync_batch WHERE franchise_code=?', [$this->_code]) ?: null;
         if ($row && in_array($row['status'], ['queued', 'running'], true)) {
-            if (strtotime($row['heartbeat_at'].' UTC') < time() - 120 && (int)($this->_db->fetchOne('SELECT IS_FREE_LOCK(?) available', ['ety-worker:'.substr(hash('sha256', $this->_code), 0, 48)])['available'] ?? 0) === 1) {
+            if ($this->expired($row) && (int)($this->_db->fetchOne('SELECT IS_FREE_LOCK(?) available', ['ety-worker:'.substr(hash('sha256', $this->_code), 0, 48)])['available'] ?? 0) === 1) {
                 try {
                     $this->lock('worker', function () use (&$row) {
                         $fresh = $this->_db->fetchOne('SELECT * FROM etymolog_sync_batch WHERE franchise_code=?', [$this->_code]);
-                        if ($fresh && $fresh['request_id'] === $row['request_id'] && in_array($fresh['status'], ['queued', 'running'], true) && strtotime($fresh['heartbeat_at'].' UTC') < time() - 120) {
+                        if ($fresh && $fresh['request_id'] === $row['request_id'] && in_array($fresh['status'], ['queued', 'running'], true) && $this->expired($fresh)) {
                             $this->update($fresh['request_id'], ['status' => 'failed', 'error_code' => 'worker_interrupted', 'finished_at' => gmdate('Y-m-d H:i:s')]);
                             $row['status'] = 'failed'; $row['error_code'] = 'worker_interrupted';
                         }
@@ -49,9 +61,47 @@ final class EtymologBatchRepository extends BaseRepository
             $current = $this->status();
             if ($current && in_array($current['status'], ['queued', 'running'], true)) { return $current + ['accepted' => false]; }
             $id = bin2hex(random_bytes(16));
-            $this->_db->query("INSERT INTO etymolog_sync_batch (franchise_code,request_id,status,requested_by,created_at,heartbeat_at) VALUES (?,?,'queued',?,UTC_TIMESTAMP(),UTC_TIMESTAMP()) ON DUPLICATE KEY UPDATE request_id=VALUES(request_id),status='queued',requested_by=VALUES(requested_by),total=0,completed=0,failed=0,processed=0,error_code=NULL,created_at=UTC_TIMESTAMP(),heartbeat_at=UTC_TIMESTAMP(),finished_at=NULL", [$this->_code, $id, $actor]);
+            $this->_db->query("INSERT INTO etymolog_sync_batch (franchise_code,request_id,status,requested_by,created_at,heartbeat_at) VALUES (?,?,'queued',?,UTC_TIMESTAMP(),UTC_TIMESTAMP()) ON DUPLICATE KEY UPDATE request_id=VALUES(request_id),status='queued',requested_by=VALUES(requested_by),total=0,completed=0,failed=0,processed=0,error_code=NULL,pending_jobs=NULL,created_at=UTC_TIMESTAMP(),heartbeat_at=UTC_TIMESTAMP(),finished_at=NULL", [$this->_code, $id, $actor]);
             return $this->status() + ['accepted' => true];
         });
+    }
+
+    public function failQueuedLaunch(string $id, string $reason): bool
+    {
+        $stmt = $this->_db->query("UPDATE etymolog_sync_batch SET status='failed',error_code=?,finished_at=UTC_TIMESTAMP(),heartbeat_at=UTC_TIMESTAMP() WHERE franchise_code=? AND request_id=? AND status='queued'", [$reason, $this->_code, $id]);
+        return $stmt->rowCount() > 0;
+    }
+
+    public function nightly(string $date): array
+    {
+        $existing = $this->_db->fetchOne('SELECT request_id FROM etymolog_sync_schedule WHERE franchise_code=? AND scheduled_date=?', [$this->_code, $date]);
+        if ($existing) { return ['request_id' => $existing['request_id'], 'next_step' => 0]; }
+        $pdo = $this->_db->getPdo(); $pdo->beginTransaction();
+        try {
+            $request = $this->enqueue(null);
+            $this->_db->insert('etymolog_sync_schedule', ['franchise_code' => $this->_code, 'scheduled_date' => $date, 'request_id' => $request['request_id']]);
+            $pdo->commit();
+            return ['request_id' => $request['request_id'], 'next_step' => $request['completed']];
+        } catch (\Throwable $e) { if ($pdo->inTransaction()) { $pdo->rollBack(); } throw $e; }
+    }
+
+    public function prepareSteps(string $id): array
+    {
+        $ids = $this->dueIds();
+        $this->update($id, ['pending_jobs' => json_encode($ids, JSON_THROW_ON_ERROR), 'total' => count($ids), 'status' => $ids ? 'running' : 'complete', 'finished_at' => $ids ? null : gmdate('Y-m-d H:i:s')]);
+        return $this->status();
+    }
+
+    /** Called inside the same transaction as imported content, job cursor and audit. */
+    public function finishStep(array $batch, array $result): void
+    {
+        $completed = (int)$batch['completed'] + 1;
+        $failed = (int)$batch['failed'] + ($result['status'] === 'failed' ? 1 : 0);
+        $done = $completed >= (int)$batch['total'];
+        $this->update($batch['request_id'], ['completed' => $completed, 'failed' => $failed,
+            'processed' => (int)$batch['processed'] + $result['processed'],
+            'status' => $done ? ($failed ? 'partial' : 'complete') : 'running',
+            'finished_at' => $done ? gmdate('Y-m-d H:i:s') : null]);
     }
 
     public function dueIds(): array

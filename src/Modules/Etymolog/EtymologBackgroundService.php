@@ -15,12 +15,22 @@ final class EtymologBackgroundService
         $request = $this->batches->enqueue($actor);
         if ($request['accepted']) {
             try { ($this->launch)($request['request_id']); }
-            catch (\Throwable) {
-                $this->batches->update($request['request_id'], ['status' => 'failed', 'error_code' => 'worker_launch_failed', 'finished_at' => gmdate('Y-m-d H:i:s')]);
-                throw new EtymologException('Background worker could not be started', 503);
+            catch (\Throwable $e) {
+                $reason = $e instanceof SyncException && in_array($e->reason, ['worker_process_disabled', 'worker_unavailable', 'worker_configuration_invalid'], true) ? $e->reason : 'worker_launch_failed';
+                // Queue acceptance may succeed even when the HTTP acknowledgement is lost.
+                if (!$this->batches->failQueuedLaunch($request['request_id'], $reason)) { return $this->batches->status() + ['accepted' => true]; }
+                throw new EtymologException('Background worker could not be started: '.$reason, 503);
             }
         }
         return $request;
+    }
+
+    /** Only requests created by the admin button; never start an autonomous pass. */
+    public function workQueued(): array
+    {
+        $current = $this->batches->status();
+        if (!$current || $current['status'] !== 'queued') { return ['status' => 'idle']; }
+        return $this->work($current['request_id']);
     }
 
     /** Cron and the detached CLI use exactly this pass: one batch per due enabled job. */
@@ -29,6 +39,7 @@ final class EtymologBackgroundService
         return $this->batches->lock('worker', function () use ($requestId) {
             if ($requestId === null) {
                 $previous = $this->batches->status();
+                if ($previous && $previous['status'] === 'running' && ($previous['pending_jobs'] ?? null) !== null) { return ['status' => 'idle']; }
                 if ($previous && $previous['status'] === 'running') {
                     $this->batches->update($previous['request_id'], ['status' => 'failed', 'error_code' => 'worker_interrupted', 'finished_at' => gmdate('Y-m-d H:i:s')]);
                 }

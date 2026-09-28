@@ -6,14 +6,18 @@ namespace App\Modules\Etymolog;
 /** Fixed CLI entry point; tenant and opaque request ID are shell-escaped server values. */
 final class EtymologWorkerLauncher
 {
-    public function __construct(private readonly string $tenant) {}
+    public function __construct(private readonly string $tenant, private readonly string $dispatch = 'process') {}
 
     public function launch(string $requestId): void
     {
+        if (!preg_match('/^[a-f0-9]{32}$/D', $requestId)) { throw new SyncException('worker_unavailable'); }
+        if ($this->dispatch === 'cron') { return; } // Explicitly configured external queue consumer.
+        if ($this->dispatch !== 'process') { throw new SyncException('worker_configuration_invalid'); }
+        if (!is_callable('exec')) { throw new SyncException('worker_process_disabled'); }
         $php = PHP_BINDIR.'/php';
         $script = dirname(__DIR__, 3).'/scripts/etymolog-sync.php';
-        if (!preg_match('/^[a-f0-9]{32}$/D', $requestId) || !is_executable($php) || !is_file($script) || !is_executable('/usr/bin/nohup') || !is_callable('exec')) {
-            throw new \RuntimeException('worker_unavailable');
+        if (!is_executable($php) || !is_file($script) || !is_executable('/usr/bin/nohup')) {
+            throw new SyncException('worker_unavailable');
         }
         $command = '/usr/bin/nohup '.escapeshellarg($php).' '.escapeshellarg($script).' '.escapeshellarg('--tenant='.$this->tenant).' '.escapeshellarg('--request='.$requestId).' </dev/null >/dev/null 2>&1 & echo $!';
         exec($command, $output, $code);

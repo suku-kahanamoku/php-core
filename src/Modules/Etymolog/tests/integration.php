@@ -49,6 +49,8 @@ $db->getPdo()->exec($cultureMigration);$db->getPdo()->exec($cultureMigration);
 check(true, 'culture calendar migration applies twice');
 $backgroundMigration = file_get_contents($root.'/migrations/2026-09-28-etymolog-background.sql');
 $db->getPdo()->exec($backgroundMigration); $db->getPdo()->exec($backgroundMigration);
+$httpWorkerMigration = file_get_contents($root.'/migrations/2026-09-28-etymolog-http-worker.sql');
+$db->getPdo()->exec($httpWorkerMigration); $db->getPdo()->exec($httpWorkerMigration);
 foreach (['etymolog', 'other'] as $tenant) {
     foreach (['admin', 'user'] as $role) {
         $roleId = $db->insert('role', ['franchise_code' => $tenant, 'name' => $role, 'label' => $role]);
@@ -258,6 +260,7 @@ try {
     require __DIR__.'/public.php';
     require __DIR__.'/background.php';
     require __DIR__.'/wikipedia.php';
+    require __DIR__.'/http-worker.php';
     echo "Checks: $checks passed\n";
 } finally {
     proc_terminate($process); fclose($pipes[0]); proc_close($process);
