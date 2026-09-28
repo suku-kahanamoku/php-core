@@ -13,6 +13,39 @@ final class EtymologService
     {
     }
 
+    /** Explicit admin action; normal publication/evidence rules apply to every draft. */
+    public function publishAll(array $input): array
+    {
+        $this->auth->requireRole('admin');
+        if ($input !== []) { throw new EtymologException('Bulk publication accepts no parameters'); }
+        $lock = $this->repositories['names'];
+        return $lock->exclusive(fn () => $lock->transaction(function () {
+            $result = ['published' => 0, 'skipped' => 0, 'resources' => [], 'skipped_records' => []];
+            foreach (['names', 'entries', 'calendar-days'] as $resource) {
+                $repo = $this->repositories[$resource];
+                $after = 0; $counts = ['published' => 0, 'skipped' => 0];
+                while ($rows = $repo->draftsAfter($after)) {
+                    $ids = [];
+                    foreach ($rows as $row) {
+                        $after = (int)$row['id'];
+                        try { $this->validate($resource, ['published' => 1], $row, false); }
+                        catch (EtymologException $e) {
+                            if ($e->status !== 422) { throw $e; }
+                            ++$counts['skipped'];
+                            if (count($result['skipped_records']) < 100) { $result['skipped_records'][] = ['resource' => $resource, 'id' => $after, 'reason' => $e->getMessage()]; }
+                            continue;
+                        }
+                        $ids[] = $after;
+                    }
+                    $counts['published'] += $repo->publishIds($ids, $this->auth->id());
+                }
+                $result['resources'][$resource] = $counts;
+                $result['published'] += $counts['published']; $result['skipped'] += $counts['skipped'];
+            }
+            return $result;
+        }));
+    }
+
     public function startSync(array $input): array
     {
         $this->auth->requireRole('admin');

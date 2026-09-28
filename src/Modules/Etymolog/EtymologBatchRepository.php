@@ -17,7 +17,7 @@ final class EtymologBatchRepository extends BaseRepository
     private function expired(array $row): bool
     {
         $timeout = $row['status'] === 'queued' ? $this->queuedTimeout : $this->runningTimeout;
-        return strtotime($row['heartbeat_at'].' UTC') < time() - $timeout;
+        return max(strtotime($row['heartbeat_at'].' UTC'), $row['retry_at'] ? strtotime($row['retry_at'].' UTC') : 0) < time() - $timeout;
     }
 
     public function lock(string $kind, callable $action): mixed
@@ -61,7 +61,7 @@ final class EtymologBatchRepository extends BaseRepository
             $current = $this->status();
             if ($current && in_array($current['status'], ['queued', 'running'], true)) { return $current + ['accepted' => false]; }
             $id = bin2hex(random_bytes(16));
-            $this->_db->query("INSERT INTO etymolog_sync_batch (franchise_code,request_id,status,requested_by,created_at,heartbeat_at) VALUES (?,?,'queued',?,UTC_TIMESTAMP(),UTC_TIMESTAMP()) ON DUPLICATE KEY UPDATE request_id=VALUES(request_id),status='queued',requested_by=VALUES(requested_by),total=0,completed=0,failed=0,processed=0,error_code=NULL,pending_jobs=NULL,created_at=UTC_TIMESTAMP(),heartbeat_at=UTC_TIMESTAMP(),finished_at=NULL", [$this->_code, $id, $actor]);
+            $this->_db->query("INSERT INTO etymolog_sync_batch (franchise_code,request_id,status,requested_by,created_at,heartbeat_at) VALUES (?,?,'queued',?,UTC_TIMESTAMP(),UTC_TIMESTAMP()) ON DUPLICATE KEY UPDATE request_id=VALUES(request_id),status='queued',requested_by=VALUES(requested_by),total=0,completed=0,failed=0,processed=0,error_code=NULL,pending_jobs=NULL,retry_at=NULL,retry_count=0,created_at=UTC_TIMESTAMP(),heartbeat_at=UTC_TIMESTAMP(),finished_at=NULL", [$this->_code, $id, $actor]);
             return $this->status() + ['accepted' => true];
         });
     }
@@ -95,13 +95,25 @@ final class EtymologBatchRepository extends BaseRepository
     /** Called inside the same transaction as imported content, job cursor and audit. */
     public function finishStep(array $batch, array $result): void
     {
+        $limited = ($result['error_code'] ?? null) === 'upstream_rate_limited';
+        $retryAt = $limited ? gmdate('Y-m-d H:i:s', time() + max(300, min(604800, (int)($result['retry_after'] ?? 300)))) : null;
+        if ($limited && (int)$batch['retry_count'] < 2) {
+            // Audit/cursor and this deferral commit in one transaction. No completed/failed count yet.
+            $this->update($batch['request_id'], ['retry_at' => $retryAt, 'retry_count' => (int)$batch['retry_count'] + 1]);
+            return;
+        }
         $completed = (int)$batch['completed'] + 1;
         $failed = (int)$batch['failed'] + ($result['status'] === 'failed' ? 1 : 0);
         $done = $completed >= (int)$batch['total'];
-        $this->update($batch['request_id'], ['completed' => $completed, 'failed' => $failed,
+        $this->update($batch['request_id'], ['completed' => $completed, 'failed' => $failed, 'retry_count' => 0, 'retry_at' => $done ? null : $retryAt,
             'processed' => (int)$batch['processed'] + $result['processed'],
             'status' => $done ? ($failed ? 'partial' : 'complete') : 'running',
             'finished_at' => $done ? gmdate('Y-m-d H:i:s') : null]);
+    }
+
+    public function retryAfter(array $batch): int
+    {
+        return $batch['retry_at'] ? max(0, strtotime($batch['retry_at'].' UTC') - time()) : 0;
     }
 
     public function dueIds(): array

@@ -2131,5 +2131,20 @@ required for this narrowly scoped machine route; ordinary CRUD still requires it
 Nightly dispatch is limited to today's Europe/Prague date and hour 03, deduplicated
 by tenant/date. A step commits its progress with the job transaction and returns
 `status,request_id,next_step,total`; stale IDs return `status=idle`. Apply
-`2026-09-28-etymolog-http-worker.sql` first. Health is read-only. See the module
+`2026-09-28-etymolog-http-worker.sql` and `2026-09-28-etymolog-rate-limit.sql` first.
+Running steps also return `retry_after` (seconds); a positive value permits the
+same `next_step` to be retried after the cooldown. Admin batch status includes
+`retry_at` (UTC) and `retry_count`. Health is read-only. See the module
 README for the daily schedule, queue and deployment secrets.
+
+### Etymolog: hromadné publikování
+
+`POST /api/etymolog/publish-all` s prázdným tělem `{}` vyžaduje přihlášeného
+administrátora a interní API autentizaci. Publikuje všechny aktivní koncepty
+aktuálního tenanta v `names`, `entries` a `calendar-days`, nejen aktuální stránku.
+Používá stejnou validaci a požadavky na prameny jako jednotlivé PATCH operace;
+nevyhovující koncepty přeskočí. Vrací `published`, `skipped`, počty po zdrojích
+v `resources` a nejvýše 100 položek `skipped_records` (`resource`, `id`, `reason`).
+Operace se serializuje se synchronizací a CRUD, zapisuje `updated_by`, nemění
+smazaná data ani cizího tenanta. Opakování již publikované položky nemění.
+Nevytváří synchronizační běh ani nezapíná automatickou publikaci budoucích importů.

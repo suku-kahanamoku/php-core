@@ -13,11 +13,12 @@ final class EtymologModule
     {
         $http = HttpModule::client();
         if ($httpStep) { $http = new Providers\SyncBudgetProvider($http); }
+        $http = new Providers\WikimediaHttpProvider($http); // Includes pacing time in the HTTP-step budget.
         $registry = new ProviderRegistry([
             'wikipedia-names' => new WikipediaNamesProvider($http),
             'erben-folklore' => new ErbenFolkloreProvider($http),
             'czech-namedays' => new CzechNamedaysProvider($http),
-            'wikidata' => new WikidataProvider($http, $_ENV['ETYMOLOG_WIKIDATA_USER_AGENT'] ?? 'Etymolog/1.0 (php-core; Wikidata name catalog)'),
+            'wikidata' => new WikidataProvider($http, $_ENV['ETYMOLOG_WIKIDATA_USER_AGENT'] ?? 'Etymolog/1.0 (https://etymolog.prasentace.cz; name history research)'),
             'wikisource' => new WikisourceProvider($http),
             'wiktionary-fr' => new WiktionaryProvider($http, 'fr'),
             'wiktionary-cs' => new WiktionaryProvider($http, 'cs'),

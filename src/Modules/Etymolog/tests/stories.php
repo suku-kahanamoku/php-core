@@ -61,7 +61,7 @@ try { $storyProvider->batch('cs', 'stories', null, 1); throw new LogicException(
 catch (App\Modules\Etymolog\SyncException $e) { check($e->reason === 'upstream_rate_limited' && $e->retryAfter === 9000, 'story provider respects rate limit'); }
 $fake->responses = [$jsonResponse(['error' => ['code' => 'maxlag']])];
 try { $storyProvider->batch('cs', 'stories', null, 1); throw new LogicException('Expected maxlag'); }
-catch (App\Modules\Etymolog\SyncException $e) { check($e->reason === 'upstream_api_error', 'story provider handles API error'); }
+catch (App\Modules\Etymolog\SyncException $e) { check($e->reason === 'upstream_rate_limited', 'story provider handles API error'); }
 $badMarkup = $storyFixture();
 $badMarkup['parse']['text']['*'] = str_replace('forma proza', 'unknown', $badMarkup['parse']['text']['*']);
 $fake->responses = [$jsonResponse($badMarkup)];

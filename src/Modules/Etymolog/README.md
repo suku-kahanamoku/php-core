@@ -690,3 +690,29 @@ providery; šest testů Workeru včetně obou změn času, autentizace, fronty a
 request ID bez založení importu. Produkční počet běhů úloh zůstal 0. Starý
 neúspěšný požadavek v administraci se nemaže; nahradí jej další ruční nebo noční
 běh. Produkční importy nebyly součástí testovacího nasazení.
+
+
+### Omezení Wikimedia a odložené opakování
+
+Před nasazením aktuálního HTTP workeru aplikujte také idempotentní migraci
+`2026-09-28-etymolog-rate-limit.sql` (`retry_at`, `retry_count` v tabulce běhu).
+Požadavky používají identifikaci Etymolog s kontaktní URL a mezi požadavky na
+Wikimedia drží odstup alespoň jedné sekundy; mezi kroky fronty jsou dvě sekundy.
+HTTP 429 a API `ratelimited`/`maxlag` zachovají kurzor, uloží chybu do historie a
+odloží tentýž krok podle `Retry-After` (nejméně 300 s). U HTTP workeru proběhnou
+nejvýše dva další pokusy. Teprve po jejich vyčerpání se úloha započítá jako
+chybná; další krok respektuje zbývající cooldown. Úmyslné čekání se nepovažuje
+za havárii workeru. Týdenní interval úlohy nepřebíjí čekání po omezení zdroje.
+Zpráva ve frontě čeká bez otevřeného HTTP spojení; prodlevy nad 12 hodin se
+rozdělí na části. Nevzniká minutový cron ani dotazování v nečinnosti.
+
+Podklad: https://www.mediawiki.org/wiki/Wikimedia_APIs/Rate_limits
+
+### Publikovat vše
+
+Administrátorská akce `POST /api/etymolog/publish-all` (`{}`) publikuje aktivní
+koncepty hesel, textů a kalendářních údajů v aktuálním tenantovi. Service kontroluje
+stejná pravidla publikace jako ruční editor, repository čte koncepty po 200 pomocí
+ID a zapisuje změny v dávkách v jedné transakci pod zámkem tenanta. Nevyhovující
+záznamy zůstanou koncepty a jsou uvedeny ve výsledku (detail prvních 100).
+Není nutná nová migrace; příznak `published` i audit `updated_by` už existují.

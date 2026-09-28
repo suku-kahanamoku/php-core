@@ -46,7 +46,7 @@ final class EtymologSyncService
                 $delay = $e instanceof SyncException ? $e->retryAfter : 300;
                 $this->jobs->transaction(function () use ($job, $runId, $reason, $delay, $onFinished) {
                     $this->sync->finish($job, $runId, 'failed', 0, $job['cursor'], $reason, $delay);
-                    if ($onFinished) { $onFinished(['status' => 'failed', 'processed' => 0]); }
+                    if ($onFinished) { $onFinished(['status' => 'failed', 'processed' => 0, 'error_code' => $reason, 'retry_after' => $delay]); }
                 });
                 throw new SyncException($reason, $delay);
             }

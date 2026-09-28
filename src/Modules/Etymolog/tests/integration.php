@@ -51,6 +51,8 @@ $backgroundMigration = file_get_contents($root.'/migrations/2026-09-28-etymolog-
 $db->getPdo()->exec($backgroundMigration); $db->getPdo()->exec($backgroundMigration);
 $httpWorkerMigration = file_get_contents($root.'/migrations/2026-09-28-etymolog-http-worker.sql');
 $db->getPdo()->exec($httpWorkerMigration); $db->getPdo()->exec($httpWorkerMigration);
+$rateMigration = file_get_contents($root.'/migrations/2026-09-28-etymolog-rate-limit.sql');
+$db->getPdo()->exec($rateMigration); $db->getPdo()->exec($rateMigration);
 foreach (['etymolog', 'other'] as $tenant) {
     foreach (['admin', 'user'] as $role) {
         $roleId = $db->insert('role', ['franchise_code' => $tenant, 'name' => $role, 'label' => $role]);
@@ -235,7 +237,7 @@ try {
     status(api('PATCH', 'etymolog/citations/'.$citation['id'], ['entry_id' => (int)$secondEntry['id']], $editor), 409, 'cannot move published evidence');
     $fake->responses = [new HttpResponse(200, '{"error":{"code":"maxlag"}}')];
     try { $provider->batch('cs', 'surname', null, 1); throw new LogicException('Expected maxlag'); }
-    catch (SyncException $e) { check($e->reason === 'upstream_api_error', 'HTTP 200 API error is not empty success'); }
+    catch (SyncException $e) { check($e->reason === 'upstream_rate_limited', 'HTTP 200 API error is not empty success'); }
     $fake->responses = [$discovery, $jsonResponse(['entities' => ['Q123' => array_replace($entity, ['claims' => []])]])];
     $stale = $provider->batch('cs', 'surname', null, 1);
     check($stale['items'] === [] && $stale['cursor'] === '1', 'stale search result is not imported as a name');
@@ -261,6 +263,7 @@ try {
     require __DIR__.'/background.php';
     require __DIR__.'/wikipedia.php';
     require __DIR__.'/http-worker.php';
+    require __DIR__.'/publication.php';
     echo "Checks: $checks passed\n";
 } finally {
     proc_terminate($process); fclose($pipes[0]); proc_close($process);

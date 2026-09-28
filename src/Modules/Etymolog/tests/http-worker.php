@@ -55,3 +55,40 @@ try{(new SyncBudgetProvider($fake,0))->send(new App\Modules\Http\HttpRequest('ht
 $raceRepo=new EtymologBatchRepository($db,'dispatch-race-fixture');
 $raceService=new App\Modules\Etymolog\EtymologBackgroundService($raceRepo,$atomicSync,static function($id)use($raceRepo){$raceRepo->update($id,['status'=>'running']);throw new RuntimeException('Lost queue acknowledgement');});
 check($raceService->start(null)['status']==='running'&&$raceRepo->status()['error_code']===null,'lost dispatch acknowledgement cannot fail a worker already running');
+
+// Durable cooldown, bounded retries and unchanged cursor on a throttled source.
+$rateTenant='http-rate-fixture';$rateRepo=new EtymologBatchRepository($db,$rateTenant,900,900);
+$rateId=$db->insert('etymolog_sync_job',['franchise_code'=>$rateTenant,'title'=>'Limited weekly job','provider'=>'limited','interval_seconds'=>604800,'cursor'=>'kept']);
+$rateProvider=new class implements App\Modules\Etymolog\Contracts\BatchProvider {
+    public int $calls=0;public bool $limited=true;
+    public function batch(string $language,string $kind,?string $cursor,int $limit):array {
+        ++$this->calls;if($cursor!=='kept')throw new LogicException('Cursor lost');
+        if($this->limited)throw new SyncException('upstream_rate_limited',1800);
+        return ['items'=>[],'complete'=>false,'cursor'=>'advanced'];
+    }
+};
+$rateService=new EtymologHttpWorkerService($rateRepo,new EtymologSyncService(new EtymologRepository($db,$rateTenant,'sync-jobs'),new EtymologSyncRepository($db,$rateTenant),new ProviderRegistry(['limited'=>$rateProvider])));
+$id=$rateRepo->enqueue(null)['request_id'];$r=$rateService->step($id,0);$state=$rateRepo->status();
+check($r['status']==='running'&&$r['next_step']===0&&$r['retry_after']>=1798&&$state['failed']===0&&$state['retry_count']==1,'429 defers same step without counting a failed job');
+$rateJob=$db->fetchOne('SELECT * FROM etymolog_sync_job WHERE id=?',[$rateId]);
+check($rateJob['cursor']==='kept'&&strtotime($rateJob['next_run_at'].' UTC')<=time()+1800,'429 retains cursor and uses cooldown instead of weekly interval');
+$rateService->step($id,0);check($rateProvider->calls===1,'premature delivery makes no upstream calls during cooldown');
+$db->update('etymolog_sync_batch',['heartbeat_at'=>gmdate('Y-m-d H:i:s',time()-3600)],'franchise_code=?',[$rateTenant]);
+check($rateRepo->status()['status']==='running','intentional cooldown is not mistaken for a crashed worker');
+$due=static function()use($db,$rateTenant,$rateId){$db->update('etymolog_sync_batch',['retry_at'=>'2000-01-01 00:00:00','heartbeat_at'=>gmdate('Y-m-d H:i:s')],'franchise_code=?',[$rateTenant]);$db->update('etymolog_sync_job',['next_run_at'=>null],'id=?',[$rateId]);};
+$due();$rateProvider->limited=false;$r=$rateService->step($id,0);
+check($r['status']==='complete'&&$rateRepo->status()['failed']===0&&$rateRepo->status()['retry_at']===null,'successful retry finishes one step and clears cooldown');
+check($db->fetchOne('SELECT `cursor` FROM etymolog_sync_job WHERE id=?',[$rateId])['cursor']==='advanced','successful retry commits new cursor');
+$rateProvider->limited=true;$db->update('etymolog_sync_job',['cursor'=>'kept','next_run_at'=>null],'id=?',[$rateId]);$id=$rateRepo->enqueue(null)['request_id'];
+for($attempt=0;$attempt<3;$attempt++){$due();$r=$rateService->step($id,0);}
+check($r['status']==='partial'&&$rateRepo->status()['completed']===1&&$rateRepo->status()['failed']===1,'persistent 429 stops after initial attempt plus two retries');
+
+$clockMs=0.0;$sleeps=[];$timedFake=new class implements App\Modules\Http\Contracts\HttpClient {
+    public function send(App\Modules\Http\HttpRequest $r):App\Modules\Http\HttpResponse{return new App\Modules\Http\HttpResponse(200,'{}');}
+    public function sendAll(array $requests,int $budgetMs=6000,int $concurrency=4):array{return [];}
+};
+$paced=new App\Modules\Etymolog\Providers\WikimediaHttpProvider($timedFake,static function()use(&$clockMs){return $clockMs;},static function($microseconds)use(&$clockMs,&$sleeps){$sleeps[]=$microseconds;$clockMs+=$microseconds/1000;});
+foreach(['https://cs.wikipedia.org/w/api.php','https://en.wiktionary.org/w/api.php','https://cs.wikisource.org/w/api.php','https://csu.gov.cz/'] as $u)$paced->send(new App\Modules\Http\HttpRequest($u));
+check($sleeps===[1000000,1000000],'Wikimedia editions share one request per second, other sources are not paced');
+$fake->responses=[new App\Modules\Http\HttpResponse(200,'{"error":{"code":"maxlag"}}',retryAfter:600)];
+try{App\Modules\Etymolog\Providers\ProviderHttp::json($fake,'https://cs.wikipedia.org/w/api.php');throw new LogicException('Expected maxlag');}catch(SyncException $e){check($e->reason==='upstream_rate_limited'&&$e->retryAfter===600,'MediaWiki maxlag respects Retry-After even on HTTP 200');}

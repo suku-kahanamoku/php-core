@@ -37,7 +37,7 @@ final class WikisourceProvider implements BatchProvider
             $page = self::BOOK.$record['title'];
             $response = $this->http->send(new HttpRequest('https://cs.wikisource.org/w/api.php?'.http_build_query([
                 'action' => 'parse', 'page' => $page, 'prop' => 'text|revid|categories', 'format' => 'json', 'maxlag' => 5,
-            ]), headers: ['Accept' => 'application/json', 'User-Agent' => 'Etymolog/1.0 (php-core; public domain folklore catalog)'],
+            ]), headers: ['Accept' => 'application/json', 'User-Agent' => 'Etymolog/1.0 (https://etymolog.prasentace.cz; name history research)'],
                 timeoutMs: 25000, connectTimeoutMs: 5000, maxBytes: 2000000));
             $delay = max(300, min(604800, $response->retryAfter ?? 300));
             if (!$response->successful()) {
@@ -45,6 +45,9 @@ final class WikisourceProvider implements BatchProvider
             }
             try { $data = $response->json(); }
             catch (HttpException) { throw new SyncException('invalid_upstream_json'); }
+            if (in_array($data['error']['code'] ?? '', ['ratelimited', 'maxlag'], true)) {
+                throw new SyncException('upstream_rate_limited', $delay);
+            }
             if (isset($data['error']) || isset($data['errors'])) {
                 throw new SyncException('upstream_api_error', $delay);
             }

@@ -44,6 +44,26 @@ final class EtymologRepository extends BaseRepository
         return $this->_db->fetchOne("SELECT {$select} FROM {$this->_table} e WHERE e.id=? AND e.franchise_code=?", [$id, $this->_code]) ?: null;
     }
 
+    /** Keyset batches remain stable while drafts are published or rejected by validation. */
+    public function draftsAfter(int $after): array
+    {
+        $this->requirePublicationResource();
+        return $this->_db->fetchAll("SELECT * FROM {$this->_table} WHERE franchise_code=? AND deleted=0 AND published=0 AND id>? ORDER BY id LIMIT 200", [$this->_code, $after]);
+    }
+
+    public function publishIds(array $ids, int $actor): int
+    {
+        $this->requirePublicationResource();
+        if ($ids === []) { return 0; }
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        return $this->_db->query("UPDATE {$this->_table} SET published=1,updated_by=? WHERE franchise_code=? AND deleted=0 AND published=0 AND id IN ({$placeholders})", [$actor, $this->_code, ...$ids])->rowCount();
+    }
+
+    private function requirePublicationResource(): void
+    {
+        if (!in_array($this->resource, ['names', 'entries', 'calendar-days'], true)) { throw new \LogicException('Resource has no publication state'); }
+    }
+
     public function create(array $data): array
     {
         $id = $this->_db->insert($this->_table, array_merge($data, ['franchise_code' => $this->_code]));

@@ -16,7 +16,7 @@ final class WikidataProvider implements NameProvider
     public const LICENSE_URL = 'https://creativecommons.org/publicdomain/zero/1.0/';
     public const ATTRIBUTION = 'Wikidata contributors';
 
-    public function __construct(private readonly HttpClient $http, private readonly string $userAgent = 'Etymolog/1.0 (php-core; Wikidata name catalog)')
+    public function __construct(private readonly HttpClient $http, private readonly string $userAgent = 'Etymolog/1.0 (https://etymolog.prasentace.cz; name history research)')
     {
         if (preg_match('/[\r\n]/', $userAgent) || strlen($userAgent) > 512 || trim($userAgent) === '') {
             throw new \InvalidArgumentException('Invalid Wikidata User-Agent');
@@ -120,6 +120,9 @@ final class WikidataProvider implements NameProvider
             $data = $response->json();
         } catch (HttpException) {
             throw new SyncException('invalid_upstream_json');
+        }
+        if (in_array($data['error']['code'] ?? '', ['ratelimited', 'maxlag'], true)) {
+            throw new SyncException('upstream_rate_limited', max(300, min(604800, $response->retryAfter ?? 300)));
         }
         if (isset($data['error']) || isset($data['errors'])) {
             throw new SyncException('upstream_api_error', max(300, min(604800, $response->retryAfter ?? 300)));
