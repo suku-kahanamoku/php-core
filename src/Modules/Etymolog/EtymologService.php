@@ -9,7 +9,7 @@ use App\Modules\Auth\Auth;
 final class EtymologService
 {
     /** @param array<string,EtymologRepository> $repositories */
-    public function __construct(private readonly array $repositories, private readonly Auth $auth, private readonly EtymologSyncRepository $sync)
+    public function __construct(private readonly array $repositories, private readonly Auth $auth, private readonly EtymologSyncRepository $sync, private readonly EtymologStoryRepository $stories, private readonly EtymologExternalRepository $external)
     {
     }
 
@@ -17,6 +17,27 @@ final class EtymologService
     {
         $this->get('names', $nameId);
         return $this->sync->imports($nameId);
+    }
+
+    public function storyImports(int $entryId): array
+    {
+        $this->get('entries', $entryId);
+        return [...$this->stories->imports($entryId), ...$this->external->imports('entries', $entryId)];
+    }
+
+    public function externalImports(string $resource, int $id): array
+    {
+        $this->get($resource, $id);
+        return $this->external->imports($resource, $id);
+    }
+
+    public function resetJob(int $id): array
+    {
+        $repo = $this->repository('sync-jobs');
+        return $repo->exclusive(fn () => $repo->transaction(function () use ($repo, $id) {
+            $this->get('sync-jobs', $id);
+            return $repo->update($id, ['cursor' => null, 'next_run_at' => null, 'last_error' => null, 'last_status' => 'reset', 'updated_by' => $this->auth->id()]);
+        }));
     }
 
     public function runs(int $jobId, int $page, int $limit): array
@@ -86,7 +107,10 @@ final class EtymologService
         return $repo->exclusive(fn () => $repo->transaction(function () use ($repo, $resource, $id, $input, $replace) {
             $existing = $id === null ? [] : $this->get($resource, $id);
             $data = $this->validate($resource, $input, $existing, $id === null || $replace);
-            if ($resource === 'citations' && $id !== null && $data['entry_id'] !== (int)$existing['entry_id']) {
+            if ($resource === 'sources' && $id !== null && $repo->hasPublishedEvidenceUse($id)) {
+                throw new EtymologException('Unpublish dependent cultural entries or calendar dates before editing their source', 409);
+            }
+            if ($resource === 'citations' && $id !== null && ($data['entry_id'] !== (int)$existing['entry_id'] || $this->repositories['entries']->isPublishedCultural((int)$existing['entry_id']))) {
                 $this->guardCitation($resource, $existing);
             }
             $actor = $this->auth->id();
@@ -96,7 +120,7 @@ final class EtymologService
                 return $repo->create($data);
             }
             // A different discovery query must start from the beginning.
-            if ($resource === 'sync-jobs' && ($data['kind'] !== $existing['kind'] || $data['language'] !== $existing['language'])) {
+            if ($resource === 'sync-jobs' && ($data['kind'] !== $existing['kind'] || $data['language'] !== $existing['language'] || $data['provider'] !== $existing['provider'])) {
                 $data['cursor'] = null;
                 $data['next_run_at'] = null;
             }
@@ -141,7 +165,48 @@ final class EtymologService
         if ($resource === 'variants' && $data['target_name_id'] === $data['name_id']) {
             throw new EtymologException('A variant cannot link a name to itself');
         }
+        if ($resource === 'sync-jobs') {
+            $valid = match ($data['provider']) {
+                'erben-folklore' => $data['kind'] === 'folklore' && $data['language'] === 'cs' && $data['batch_size'] <= 4,
+                'czech-namedays' => $data['kind'] === 'calendar' && $data['language'] === 'cs',
+                'wikidata' => in_array($data['kind'], ['given', 'surname'], true) && $data['batch_size'] <= 50,
+                'wikisource' => $data['kind'] === 'stories' && $data['language'] === 'cs' && $data['batch_size'] <= 4,
+                'wiktionary' => in_array($data['kind'], ['given', 'surname'], true) && $data['batch_size'] <= 3,
+                'csu-baby-names' => $data['kind'] === 'births_2025' && $data['language'] === 'cs',
+                'poland-pesel' => in_array($data['kind'], ['surname_male', 'surname_female'], true) && $data['language'] === 'pl',
+            };
+            if (!$valid) { throw new EtymologException('Invalid provider language/kind/batch_size combination'); }
+        }
+        if ($resource === 'entry-names' && $this->repositories['entry-names']->hasActiveLink($data['entry_id'], $data['name_id'], isset($existing['id']) ? (int)$existing['id'] : null)) {
+            throw new EtymologException('This entry is already linked to the name', 409);
+        }
+        if ($resource === 'occurrences' && $data['observed_on'] !== null && (int)substr($data['observed_on'], 0, 4) !== $data['observed_year']) {
+            throw new EtymologException('observed_on must match observed_year');
+        }
+        if ($resource === 'calendar-days') {
+            if ($data['date_kind'] === 'fixed') {
+                if ($data['month'] === null || $data['day'] === null || !checkdate($data['month'], $data['day'], 2000) || $data['date_rule'] !== null) {
+                    throw new EtymologException('Fixed dates require valid month/day and no date_rule');
+                }
+            } elseif ($data['month'] !== null || $data['day'] !== null || !$data['date_rule']) {
+                throw new EtymologException('Movable dates require date_rule and no fixed month/day');
+            }
+            if ($data['kind'] === 'name_day' && ($data['name_id'] === null || $this->repositories['names']->findById($data['name_id'])['kind'] !== 'given')) {
+                throw new EtymologException('Name days require a given name');
+            }
+            if ($data['kind'] === 'folklore' && $data['entry_id'] === null) { throw new EtymologException('Folklore date requires an entry'); }
+            $source = $this->repositories['sources']->findById($data['source_id']);
+            if ($data['published'] && (!$source['license'] || (!$source['attribution'] && !$source['author']))) {
+                throw new EtymologException('Published calendar dates require source licence and attribution');
+            }
+        }
         if ($resource === 'entries') {
+            if (in_array($data['type'], ResourceRegistry::CULTURAL_TYPES, true)) {
+                if (!$data['source_url']) { throw new EtymologException('Cultural content requires its original web source_url; AI invention is not allowed'); }
+                if ($data['published'] && (!isset($existing['id']) || !$this->repositories['entries']->hasWebQuotation((int)$existing['id'], $data['source_url'], $data['body']))) {
+                    throw new EtymologException('Publishing cultural content requires a licensed web citation and verbatim source quotation matching the body');
+                }
+            }
             if (($data['type'] === 'fiction') !== ($data['certainty'] === 'fiction')) {
                 throw new EtymologException('Fiction requires both type and certainty = fiction');
             }
@@ -162,7 +227,7 @@ final class EtymologService
         if (str_starts_with($type, 'enum:')) {
             return is_string($value) && in_array($value, explode(',', substr($type, 5)), true) ? $value : $fail();
         }
-        if (in_array($type, ['id', 'year', 'count', 'batch', 'interval', 'bool'], true)) {
+        if (in_array($type, ['id', 'year', 'count', 'batch', 'interval', 'bool', 'month', 'day'], true)) {
             if ($type === 'bool' && is_bool($value)) {
                 return (int)$value;
             }
@@ -171,8 +236,8 @@ final class EtymologService
             }
             $number = (int)$value;
             [$min, $max] = match ($type) {
-                'id' => [1, 2147483647], 'year' => [-10000, 3000], 'count' => [0, 2147483647],
-                'batch' => [1, 50], 'interval' => [300, 2592000], 'bool' => [0, 1],
+                'month' => [1, 12], 'day' => [1, 31], 'id' => [1, 2147483647], 'year' => [-10000, 3000], 'count' => [0, 2147483647],
+                'batch' => [1, 500], 'interval' => [300, 2592000], 'bool' => [0, 1],
             };
             return $number >= $min && $number <= $max ? $number : $fail();
         }
@@ -180,6 +245,10 @@ final class EtymologService
             return $fail();
         }
         $value = trim($value);
+        if ($type === 'date') {
+            $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $value);
+            return $date && $date->format('Y-m-d') === $value ? $value : $fail();
+        }
         if ($type === 'language') {
             return preg_match('/^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/D', $value) && strlen($value) <= 35 ? $value : $fail();
         }
@@ -202,7 +271,9 @@ final class EtymologService
             $this->auth->requireRole('admin');
         }
         $repo->exclusive(fn () => $repo->transaction(function () use ($repo, $resource, $id, $force) {
-            $item = $this->get($resource, $id);
+            $item = $force
+                ? ($repo->findIncludingDeleted($id) ?? throw new EtymologException('Record not found', 404))
+                : $this->get($resource, $id);
             if ($repo->hasDependants($id, $force)) {
                 throw new EtymologException('Record is in use; remove dependent records first', 409);
             }
@@ -220,7 +291,7 @@ final class EtymologService
     {
         if ($resource === 'citations') {
             $entry = $this->repositories['entries']->findById((int)$item['entry_id']);
-            if ($entry && $entry['published'] && $entry['certainty'] === 'documented') {
+            if ($entry && $entry['published'] && ($entry['certainty'] === 'documented' || in_array($entry['type'], ResourceRegistry::CULTURAL_TYPES, true))) {
                 throw new EtymologException('Unpublish the documented entry before removing its citation', 409);
             }
         }

@@ -31,7 +31,7 @@ final class EtymologSyncRepository extends BaseRepository
         }
         $id = $name ? (int)$name['id'] : $this->_db->insert('etymolog_name', [
             'franchise_code' => $this->_code, 'name' => $item['name'], 'kind' => $job['kind'], 'import_key' => $key,
-            'published' => 0,
+            'published' => 0, 'language' => $job['language'],
         ]);
         // Editorial fields (including name, language, country and summary) are never updated by sync.
         $payload = json_encode($item['payload'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

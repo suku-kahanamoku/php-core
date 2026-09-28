@@ -637,3 +637,30 @@ and tenant-scoped CLI configuration. Existing API authentication remains require
 Všechny HTTP integrace a SMTP používají [HttpModule](src/Modules/Http/README.md).
 Nové integrace injektují `Http\Contracts\HttpClient`; přímé cURL/network volání
 se do doménových modulů nepřidává. Testy: `bash scripts/test-http.sh`.
+
+### Etymolog
+
+The [Etymolog module](src/Modules/Etymolog/README.md) adds a tenant-scoped editorial
+name/etymology catalog with existing Bearer authentication, complete domain CRUD,
+citations and historical variants. Install `migrations/2026-09-27-etymolog.sql`
+and optionally `migrations/2026-09-27-etymolog-tenant.sql` for the initial
+`etymolog` roles and Czech import jobs. The CLI `scripts/etymolog-sync.php`
+imports CC0 Wikidata records in bounded, resumable batches while preserving
+editorial changes. Tests use an isolated MySQL: `bash scripts/test-etymolog.sh`.
+
+The additive `migrations/2026-09-28-etymolog-stories.sql` extension adds shared
+stories, reviewed name associations and Wikisource provenance. Apply the optional
+`2026-09-28-etymolog-stories-tenant.sql` seed for a Czech folklore sync job.
+Imported narratives remain drafts and source updates preserve editorial changes.
+
+Further licensed sources and synchronizers (Wiktionary, Poland PESEL and ČSÚ)
+are documented in [Etymolog source research](docs/etymolog-sources.md). Apply
+`2026-09-28-etymolog-sources.sql` and optionally its tenant seed after the story
+extension. All sync providers preserve editorial changes and record provenance.
+
+
+Etymolog cultural content must originate from a cited website; there is no AI
+story generation. Apply the additive `2026-09-28-etymolog-culture.sql` migration
+and optional culture tenant seed for traditions, weather lore, and calendar days.
+See the [module contract](src/Modules/Etymolog/README.md) for verbatim-publication
+validation and the Erben / Czech name-day calendar synchronizers.

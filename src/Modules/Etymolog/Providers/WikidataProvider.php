@@ -11,6 +11,8 @@ use App\Modules\Http\{HttpRequest, HttpException};
 final class WikidataProvider implements NameProvider
 {
     public const LICENSE = 'CC0-1.0';
+    private const LANGUAGE_ITEMS = ['cs' => 'Q9056', 'sk' => 'Q9058', 'pl' => 'Q809', 'uk' => 'Q8798', 'de' => 'Q188', 'en' => 'Q1860'];
+    private const TYPES = ['surname' => ['Q101352'], 'given' => ['Q202444', 'Q12308941', 'Q11879590', 'Q3409032']];
     public const LICENSE_URL = 'https://creativecommons.org/publicdomain/zero/1.0/';
     public const ATTRIBUTION = 'Wikidata contributors';
 
@@ -24,36 +26,42 @@ final class WikidataProvider implements NameProvider
     public function batch(string $language, string $kind, ?string $cursor, int $limit): array
     {
         if (!in_array($language, ResourceRegistry::LANGUAGES, true) || !in_array($kind, ['given', 'surname'], true) || $limit < 1 || $limit > 50 ||
-            ($cursor !== null && !preg_match('/^Q[1-9][0-9]{0,18}$/D', $cursor))) {
+            ($cursor !== null && !preg_match('/^(0|[1-9][0-9]{0,8})$/D', $cursor))) {
             throw new SyncException('invalid_provider_configuration');
         }
-        $class = $kind === 'given' ? 'Q202444' : 'Q101352';
-        $after = $cursor === null ? '' : 'FILTER(STR(?item) > "http://www.wikidata.org/entity/'.$cursor.'")';
-        // A label in Czech does NOT establish Czech nationality or Czech name origin.
-        $query = 'SELECT DISTINCT ?item WHERE { ?item <http://www.wikidata.org/prop/direct/P31>/<http://www.wikidata.org/prop/direct/P279>* <http://www.wikidata.org/entity/'.$class.'> . '
-            .'?item <http://www.w3.org/2000/01/rdf-schema#label> ?label . FILTER(LANG(?label) = "'.$language.'") '.$after.' } ORDER BY STR(?item) LIMIT '.$limit;
-        $discovery = $this->json('https://query.wikidata.org/sparql?'.http_build_query(['query' => $query, 'format' => 'json']), 'application/sparql-results+json');
-        $bindings = $discovery['results']['bindings'] ?? null;
-        if (!is_array($bindings) || !array_is_list($bindings) || count($bindings) > $limit) {
+        $offset = (int)($cursor ?? '0');
+        // CirrusSearch has a finite result window; never report a truncated pass as complete.
+        if ($offset >= 10000) {
+            throw new SyncException('search_window_exceeded', 86400);
+        }
+        $limit = min($limit, 10000 - $offset);
+        $types = self::TYPES[$kind];
+        $query = 'haswbstatement:'.implode('|', array_map(static fn ($type) => 'P31='.$type, $types)).' haswbstatement:P407='.self::LANGUAGE_ITEMS[$language];
+        $discovery = $this->json('https://www.wikidata.org/w/api.php?'.http_build_query([
+            'action' => 'query', 'list' => 'search', 'srsearch' => $query, 'srnamespace' => 0,
+            'srprop' => '', 'srsort' => 'create_timestamp_asc', 'sroffset' => $offset,
+            'srlimit' => $limit, 'format' => 'json', 'maxlag' => 5,
+        ]));
+        $results = $discovery['query']['search'] ?? null;
+        if (!is_array($results) || !array_is_list($results) || count($results) > $limit) {
             throw new SyncException('invalid_discovery_response');
         }
+        $next = $discovery['continue']['sroffset'] ?? null;
+        if ($next !== null && (!is_int($next) || $next <= $offset || $next > $offset + $limit)) {
+            throw new SyncException('invalid_discovery_cursor');
+        }
         $ids = [];
-        foreach ($bindings as $binding) {
-            $uri = $binding['item']['value'] ?? null;
-            if (!is_string($uri) || !preg_match('~^https?://www\.wikidata\.org/entity/(Q[1-9][0-9]{0,18})$~D', $uri, $m)) {
+        foreach ($results as $result) {
+            $id = $result['title'] ?? null;
+            if (!is_string($id) || !preg_match('/^Q[1-9][0-9]{0,18}$/D', $id) || in_array($id, $ids, true)) {
                 throw new SyncException('invalid_discovery_response');
             }
-            if (($cursor !== null && strcmp($m[1], $cursor) <= 0) || in_array($m[1], $ids, true)) {
-                throw new SyncException('invalid_discovery_cursor');
-            }
-            $ids[] = $m[1];
-        }
-        $sorted = $ids;
-        sort($sorted, SORT_STRING);
-        if ($ids !== $sorted) {
-            throw new SyncException('invalid_discovery_order');
+            $ids[] = $id;
         }
         if ($ids === []) {
+            if ($next !== null) {
+                throw new SyncException('invalid_discovery_cursor');
+            }
             return ['items' => [], 'cursor' => null, 'complete' => true];
         }
         $response = $this->json('https://www.wikidata.org/w/api.php?'.http_build_query([
@@ -66,7 +74,13 @@ final class WikidataProvider implements NameProvider
             if (!is_array($entity) || isset($entity['missing']) || ($entity['id'] ?? null) !== $id || !isset($entity['lastrevid'])) {
                 throw new SyncException('invalid_entity_response');
             }
-            $name = $entity['labels'][$language]['value'] ?? null;
+            // Validate the current entity as the search index can lag behind edits.
+            $classes = $this->itemClaims($entity, 'P31');
+            $languages = $this->itemClaims($entity, 'P407');
+            if (array_intersect($classes, $types) === [] || !in_array(self::LANGUAGE_ITEMS[$language], $languages, true)) {
+                continue;
+            }
+            $name = $entity['labels'][$language]['value'] ?? $entity['labels']['mul']['value'] ?? $entity['labels']['en']['value'] ?? null;
             if (!is_string($name) || trim($name) === '' || strlen($name) > 255) {
                 throw new SyncException('invalid_entity_label');
             }
@@ -75,7 +89,23 @@ final class WikidataProvider implements NameProvider
                 'source_url' => 'https://www.wikidata.org/wiki/'.$id,
                 'payload' => array_intersect_key($entity, array_flip(['id', 'lastrevid', 'modified', 'labels', 'descriptions', 'aliases', 'claims']))];
         }
-        return ['items' => $items, 'cursor' => end($ids), 'complete' => count($ids) < $limit];
+        return ['items' => $items, 'cursor' => $next === null ? null : (string)$next, 'complete' => $next === null];
+    }
+
+    /** Non-deprecated, concrete entity-valued statements only. */
+    private function itemClaims(array $entity, string $property): array
+    {
+        $ids = [];
+        foreach ($entity['claims'][$property] ?? [] as $claim) {
+            if (($claim['rank'] ?? '') === 'deprecated' || ($claim['mainsnak']['snaktype'] ?? '') !== 'value') {
+                continue;
+            }
+            $id = $claim['mainsnak']['datavalue']['value']['id'] ?? null;
+            if (is_string($id)) {
+                $ids[] = $id;
+            }
+        }
+        return $ids;
     }
 
     private function json(string $url, string $accept = 'application/json'): array

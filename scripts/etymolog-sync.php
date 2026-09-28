@@ -8,8 +8,8 @@ if (PHP_SAPI !== 'cli') {
 require dirname(__DIR__).'/vendor/autoload.php';
 
 use App\Modules\Database\Database;
-use App\Modules\Etymolog\{EtymologRepository, EtymologSyncRepository, EtymologSyncService, ProviderRegistry, SyncException, EtymologException};
-use App\Modules\Etymolog\Providers\WikidataProvider;
+use App\Modules\Etymolog\{EtymologRepository, EtymologSyncRepository, EtymologSyncService, ProviderRegistry, EtymologStoryRepository, EtymologExternalRepository, EtymologCalendarRepository, SyncException, EtymologException};
+use App\Modules\Etymolog\Providers\{WikidataProvider, WikisourceProvider, WiktionaryProvider, PolandPeselProvider, CsuBabyNamesProvider, ErbenFolkloreProvider, CzechNamedaysProvider};
 use App\Modules\Http\HttpModule;
 
 Dotenv\Dotenv::createImmutable(dirname(__DIR__))->safeLoad();
@@ -35,6 +35,15 @@ if ($job !== null && (filter_var($job, FILTER_VALIDATE_INT) === false || (int)$j
     exit(2);
 }
 $db = Database::getInstance();
-$registry = new ProviderRegistry(['wikidata' => new WikidataProvider(HttpModule::client(), $_ENV['ETYMOLOG_WIKIDATA_USER_AGENT'] ?? 'Etymolog/1.0 (php-core; Wikidata name catalog)')]);
-$service = new EtymologSyncService(new EtymologRepository($db, $tenant, 'sync-jobs'), new EtymologSyncRepository($db, $tenant), $registry);
+$http = HttpModule::client();
+$registry = new ProviderRegistry([
+    'erben-folklore' => new ErbenFolkloreProvider($http),
+    'czech-namedays' => new CzechNamedaysProvider($http),
+    'wikidata' => new WikidataProvider($http, $_ENV['ETYMOLOG_WIKIDATA_USER_AGENT'] ?? 'Etymolog/1.0 (php-core; Wikidata name catalog)'),
+    'wikisource' => new WikisourceProvider($http),
+    'wiktionary' => new WiktionaryProvider($http),
+    'csu-baby-names' => new CsuBabyNamesProvider($http),
+    'poland-pesel' => new PolandPeselProvider($http),
+]);
+$service = new EtymologSyncService(new EtymologRepository($db, $tenant, 'sync-jobs'), new EtymologSyncRepository($db, $tenant), $registry, new EtymologStoryRepository($db, $tenant), new EtymologExternalRepository($db, $tenant), new EtymologCalendarRepository($db, $tenant));
 echo json_encode($service->run($job === null ? null : (int)$job), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES).PHP_EOL;

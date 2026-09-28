@@ -3,8 +3,5 @@
 declare(strict_types=1);
 namespace App\Modules\Etymolog\Contracts;
 
-interface NameProvider
-{
-    /** @return array{items:array,cursor:?string,complete:bool} */
-    public function batch(string $language, string $kind, ?string $cursor, int $limit): array;
-}
+/** Name catalog providers share the bounded sync contract with story providers. */
+interface NameProvider extends BatchProvider {}

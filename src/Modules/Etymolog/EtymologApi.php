@@ -30,6 +30,11 @@ final class EtymologApi
                 Response::success(null, 'Deleted');
             }));
         }
+        $router->post('/sync-jobs/:id/reset', fn (Request $r, array $p) => $this->respond(fn () => Response::success($this->service->resetJob($this->number($p['id'])))));
+        $router->get('/names/:id/external-records', fn (Request $r, array $p) => $this->respond(fn () => Response::success($this->service->externalImports('names', $this->number($p['id'])))));
+        $router->get('/calendar-days/:id/imports', fn (Request $r, array $p) => $this->respond(fn () => Response::success($this->service->externalImports('calendar-days', $this->number($p['id'])))));
+        $router->get('/occurrences/:id/imports', fn (Request $r, array $p) => $this->respond(fn () => Response::success($this->service->externalImports('occurrences', $this->number($p['id'])))));
+        $router->get('/entries/:id/imports', fn (Request $r, array $p) => $this->respond(fn () => Response::success($this->service->storyImports($this->number($p['id'])))));
         $router->get('/names/:id/imports', fn (Request $r, array $p) => $this->respond(function () use ($p) {
             $id = $this->number($p['id']);
             Response::success($this->service->imports($id));

@@ -5,7 +5,7 @@ require_once __DIR__.'/../bootstrap.php';
 
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
-use App\Modules\Etymolog\{EtymologApi, EtymologRepository, EtymologService, EtymologSyncRepository, ResourceRegistry};
+use App\Modules\Etymolog\{EtymologApi, EtymologRepository, EtymologService, EtymologSyncRepository, EtymologStoryRepository, EtymologExternalRepository, ResourceRegistry};
 use App\Modules\Router\Router;
 
 $db = Database::getInstance();
@@ -15,7 +15,7 @@ $repositories = [];
 foreach (array_keys(ResourceRegistry::all()) as $resource) {
     $repositories[$resource] = new EtymologRepository($db, $request->franchiseCode, $resource);
 }
-$api = new EtymologApi(new EtymologService($repositories, $auth, new EtymologSyncRepository($db, $request->franchiseCode)));
+$api = new EtymologApi(new EtymologService($repositories, $auth, new EtymologSyncRepository($db, $request->franchiseCode), new EtymologStoryRepository($db, $request->franchiseCode), new EtymologExternalRepository($db, $request->franchiseCode)));
 $router = new Router();
 $api->registerRoutes($router);
 $router->dispatch($request);

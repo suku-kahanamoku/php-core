@@ -2062,3 +2062,35 @@ departure boards, dated trip details, provider coverage and GeoJSON geometry.
 See [Transport module](src/Modules/Transport/README.md) for the request contract,
 source/fallback semantics, GTFS import, OTP deployment and tests. No ticket sales
 or public mobile credentials are introduced.
+
+## Etymolog
+
+`/api/etymolog` provides tenant-scoped CRUD for `names`, `sources`, `entries`,
+`variants`, `occurrences`, `citations`, `entry-names`, `calendars`, `calendar-days`,
+and admin-only `sync-jobs`.
+Every endpoint requires the existing internal-key middleware and Bearer auth.
+Each resource supports GET list/detail, POST, PATCH, PUT and soft DELETE;
+`?force=true` requires admin. Read-only import provenance and run history are
+available at `/names/:id/imports`, `/entries/:id/imports` and `/sync-jobs/:id/runs`.
+Entries support `legend`, `mythology` and explicit `fiction`; shared stories have
+nullable `name_id` and many-to-many `entry-names` with an editorial `reviewed` flag.
+See [Etymolog module](src/Modules/Etymolog/README.md) for fields, validation,
+licensing, additive migrations, and the resumable Wikidata / Wikisource importers.
+
+Etymolog source extension adds Wiktionary etymologies, Poland PESEL surname
+counts, and Czech Statistical Office newborn TOP 100 (2025). Apply
+`2026-09-28-etymolog-sources.sql` before using this version. New provenance:
+`GET /names/:id/external-records`, `GET /occurrences/:id/imports`; entry provenance
+includes both stories and dictionary imports. Admins can restart a changed source
+snapshot with `POST /sync-jobs/:id/reset`. See [source research](docs/etymolog-sources.md).
+
+
+Etymolog culture extension (`2026-09-28-etymolog-culture.sql`) adds sourced
+`tradition` / `proverb` entries and calendar CRUD. All cultural types now require
+`source_url` on creation; publication requires a licensed web citation with a
+verbatim quotation containing the published text. AI invention is not supported.
+`fiction` means an existing literary work taken from a web source.
+Calendar dates preserve calendar edition/system, country, source, fixed month/day
+or an explicit unevaluated movable-date rule. Name-day provenance is available at
+`GET /calendar-days/:id/imports`. The optional culture tenant seed adds Erben
+folklore and the community Czech name-day calendar synchronizers.
