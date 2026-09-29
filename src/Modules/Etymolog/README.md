@@ -50,27 +50,19 @@ flowchart LR
 
 ## Instalace
 
-Na existující databázi spustit jen aditivní SQL v tomto pořadí (lze i v Admineru):
+Na nové i existující databázi aplikovat postupně (lze i v Admineru):
 
-1. `migrations/2026-09-27-etymolog.sql` – devět tabulek, opakovatelné `CREATE TABLE IF NOT EXISTS`.
-2. `migrations/2026-09-27-etymolog-tenant.sql` – volitelný seed pro tenant `etymolog`:
-   standardní role `user`/`admin` a dvě české synchronizační úlohy.
-3. `migrations/2026-09-28-etymolog-stories.sql` – dvě další tabulky a nullable
-   `entries.name_id`; existující primární vazby zůstávají zachované.
-4. `migrations/2026-09-28-etymolog-stories-tenant.sql` – volitelná úloha
-   `wikisource/cs/stories`, až čtyři kapitoly denně.
-5. `migrations/2026-09-28-etymolog-sources.sql` – externí etymologie/statistiky,
-   delší neprůhledný kurzor, importní identita zdroje a datum/populace výskytu.
-6. `migrations/2026-09-28-etymolog-sources-tenant.sql` – volitelné nové úlohy.
-7. `migrations/2026-09-28-etymolog-culture.sql` – webový původ textů, kalendáře a dny.
-8. `migrations/2026-09-28-etymolog-culture-tenant.sql` – Erben a český jmenný kalendář.
+1. `migrations/schema.sql` – společné tabulky včetně auth, bez výchozích dat.
+2. `migrations/etymolog_schema.sql` – všech 16 tabulek modulu, chybějící sloupce,
+   indexy a vazby; zahrnuje příběhy, externí zdroje, kalendáře i HTTP worker/retry.
+3. `migrations/etymolog_seed.sql` – dvě role a 30 synchronizačních úloh. Spuštění
+   seedu samo nespouští žádnou synchronizaci.
 
-Celkem má modul 14 tabulek. Rozšiřující migraci aplikovat před použitím nového
-API. Vyžaduje PHP DOM (v tomto projektu již požadované závislostí dompdf);
-ČSÚ XLSX import navíc vyžaduje PHP zip.
+Všechny soubory jsou opakovatelné. Schémata nemažou tabulky ani data.
+Další informace jsou v
+[`migrations/README.md`](../../../../migrations/README.md).
+Vyžaduje PHP DOM; ČSÚ XLSX import navíc vyžaduje PHP zip.
 
-Předpokládá se již existující core schéma pro auth. `migrations/schema.sql` je
-určeno jen pro prázdnou databázi a nesmí se spouštět na existující instalaci.
 Seed neupravuje již existující role ani úlohy, neobnovuje smazané záznamy,
 nevytváří uživatelské účty, hesla nebo tokeny. Běžná registrace pak používá
 existující `/api/auth/register`; první administrátor se provisionuje postupem
@@ -206,10 +198,23 @@ Tyto záznamy spravuje synchronizace; nejsou to ručně editovatelná fakta. Čt
 - `GET /names/{id}/imports` – podklady konkrétního hesla, přihlášený uživatel.
 - `GET /sync-jobs/{id}/runs?page=1&limit=20` – historie úlohy, admin.
 
-Importované heslo má stabilní `import_key=wikidata:{kind}:{QID}`. Při prvním
-importu vznikne draft; opakování mění pouze zdrojový snapshot. **Cron nepřepisuje
-ruční název, jazyk, shrnutí, výklad ani publikaci.** Ručně vytvořená stejně znějící
-hesla se automaticky neslučují. Soft-smazané importy se neobnovují.
+Importy používají společný `EtymologNameRepository`: identita je tenant, druh
+(`given` nebo `surname`) a zápis bez rozdílu velikosti písmen a krajních mezer.
+Diakritika zůstává významná. Jazyk, země ani provider nevytvářejí další jméno.
+Název se zapisuje s prvním velkým písmenem a ostatními malými (`ANNA` → `Anna`).
+Existující stejně znějící heslo stejného druhu se použije i pro další zdroje;
+nové výklady, statistiky a kalendářní podklady se na něj navážou.
+
+Při založení z Wikidat zůstává `import_key=wikidata:{kind}:{QID}` pomocným klíčem;
+párování opakovaných QID vede přes `etymolog_import_record`. Několik QID může
+odkazovat na stejné jméno a každé zachovává samostatný snapshot.
+Před nasazením aplikovat `migrations/etymolog_schema.sql`: rozšíří unikátní index
+`uq_etymolog_import` o `external_id`, se zachováním všech existujících řádků.
+
+Opakování aktualizuje zdrojový snapshot. Zachová ruční přejmenování (sjednotí
+pouze velikost písmen), jazyk, shrnutí, výklady i publikaci. Archivovaná hesla
+neobnovuje. Již existující duplicitní řádky hromadně nemaže; nové importy vyberou
+stávající záznam a veřejný detail sdružuje staré publikované členy stejného druhu.
 
 Importované popisky ani popisy nejsou vydávány za etymologický výklad. Výklady a
 příběhy vznikají přes redakční CRUD; odkazy ze snapshotů slouží jako podklady.
@@ -313,10 +318,11 @@ Frontend jej musí zobrazovat jako text, nikoli jako důvěryhodné HTML.
 
 Při prvním importu vzniká draft `legend/unverified`, zdroj s bibliografií,
 citace s trvalým odkazem na revizi a návrhy vazeb na jména. Existující jméno se
-použije jen při jednoznačné shodě přesného zápisu, jazyka `cs` a druhu `given`.
-Chybějící jméno vznikne jako draft; neobsahuje tvrzení o původu či současném
-užívání. Při více shodách nebo archivovaném heslu zůstane návrh jen ve snapshotu
-pro ruční přiřazení. Stabilní importní klíč zachová i ručně přejmenovaná hesla.
+použije podle společné identity zápisu a druhu, bez rozlišení velikosti písmen,
+země nebo jazyka. Chybějící jméno vznikne jako draft; vazby z pověsti zůstávají
+neověřené do redakční kontroly. Opakované návrhy `Anna`/`ANNA` v jedné pověsti
+nevytvoří dvě vazby, ale stejné jméno a příjmení jsou dvě samostatné vazby.
+Archivované heslo se neobnoví. Stabilní importní klíč zachová ruční přejmenování.
 
 `etymolog_story_import` uchovává poslední snapshot a odkazuje tenantovými FK
 na `entry` i `source`. Unikátní `(franchise_code,provider,external_id)` brání
@@ -324,8 +330,9 @@ duplikátům. Obsahuje revizi, licenci, autora/atribuci, původní extrahovaný 
 navrhovaná jména, bibliografii, hash a čas načtení. Nejde o historii všech revizí.
 Čtení přes `GET /entries/{id}/imports` vyžaduje přihlášení a aktivní heslo výkladu.
 
-Další průchod mění **pouze snapshot**. Nepřepisuje text, citaci, zdroj, publikaci
-ani schválené/odmítnuté vazby. Novou revizi může redaktor zkontrolovat a přenést
+Další průchod aktualizuje snapshot a sjednotí názvy i aktivní vazby na stejné
+jméno stejného druhu. Nepřepisuje text, citaci, zdroj, publikaci ani stav
+schválení/odmítnutí vazeb. Novou revizi může redaktor zkontrolovat a přenést
 přes běžný PATCH; stará citace nadále správně ukazuje na původní převzatou revizi.
 Archivované příběhy se neobnovují. Hard delete příběhu/zdroje blokuje snapshot;
 soft delete nadále respektuje aktivní doménové závislosti.
@@ -378,13 +385,15 @@ Nové čtecí endpointy (stávající auth + internal key):
 `observed_year`. `sex=male|female|all`, `measure=living_persons|births|historical_attestation`
 jsou nullable pro kompatibilitu starších údajů. Roční statistika narození má
 pouze rok, nikoli uměle doplněné datum. Import celostátní statistiky neodvozuje
-jazyk či národnost. Původní velká písmena jmen se zachovávají; neslučují se
-automaticky s podobně znějícími jmény jiného zápisu nebo jazykového zařazení.
-Při nejednoznačné přesné shodě import ohlásí `ambiguous_name_match`; redaktor
-musí vyřešit duplicitu, pak administrátor obnoví průchod.
+jazyk či národnost. Původní zápis se zachovává ve snapshotu a v
+`original_spelling`; vlastní název hesla se normalizuje (`ANNA` → `Anna`).
+Všechny importní repository používají společnou identitu názvu a druhu.
+Shoda `Anna` a `ANNA` proto nezakládá další jméno, ani když pochází z jiné země
+či jazykové edice. `Anna/given` a `Anna/surname` zůstávají dvě identity.
 
 Etymologie jsou koncepty `unverified` se zdrojem a citací. Při opakovaném importu
-se mění pouze snapshot: nepřepisují se ruční texty, statistické hodnoty,
+se aktualizuje snapshot a případně vazba na stejné normalizované jméno:
+nepřepisují se ruční texty, statistické hodnoty,
 zdroje ani citace. Pokud poskytovatel opraví číslo ve stejném vydání, je nové
 číslo ve snapshotu; redaktor jej přenese přes PATCH. Nové roční vydání PESEL má
 vlastní výskyty. ČSÚ je nyní výslovně omezeno na ověřené vydání 2025.
@@ -496,12 +505,12 @@ Bez nové migrace. Rozšíření testů `tests/public.php` běží pouze na jedn
 
 ## Další slovníkové zdroje a spuštění z administrace (28. 9. 2026)
 
-Migrace `migrations/2026-09-28-etymolog-background.sql` přidává
+Migrace `migrations/etymolog_schema.sql` přidává
 `etymolog_sync_batch`: poslední společný běh pro každého tenanta, neprůhledné
 `request_id`, stav, zadavatel, počty úloh/položek/chyb a časové značky.
 Historie jednotlivých úloh zůstává v `etymolog_sync_run`.
-Migrace `migrations/2026-09-28-etymolog-dictionaries-tenant.sql` připravuje
-10 nových úloh idempotentně; neimportuje obsah, nepřepisuje nastavení starých úloh.
+Migrace `migrations/etymolog_seed.sql` připravuje
+všech 30 úloh včetně 10 nových slovníkových idempotentně; neimportuje obsah, nepřepisuje nastavení starých úloh.
 
 | Provider | Zdroj | Jazyk textu | Pravidla |
 | --- | --- | --- | --- |
@@ -551,9 +560,20 @@ každá edice je samostatný citovaný pramen. Nové texty i jména jsou koncept
 
 ### Jedno veřejné heslo pro více importních zdrojů
 
-Veřejné `search`/`detail` sdružují zveřejněné záznamy stejného `BINARY LOWER(TRIM(name))` (i napříč `given` a `surname`) napříč zdroji, zeměmi a jazyky. Nezaměňují varianty s odlišnou diakritikou; accent-insensitive LIKE je pouze vyhledávací pravidlo. Reprezentantem je nejstarší zveřejněný zápis, který není celý velkými písmeny, případně nejstarší zveřejněné ID. Počty i stránkování vycházejí ze skupin. Detail vrací kanonické `name.id` a sdružuje výklady, prověřené vazby, varianty, statistiky, kalendáře a citace všech veřejných členů. Skryté jméno není možné otevřít ani jako alias veřejné skupiny. Rozporné země/jazyky nevytvářejí jeden globální atribut; jednotlivé podklady zachovávají své údaje. CRUD a importní identity se nemění a nic se automaticky nepublikuje.
+Veřejné `search`/`detail` sdružují zveřejněné záznamy podle dvojice
+`kind, BINARY LOWER(TRIM(name))` napříč zdroji, zeměmi a jazyky. Diakritika
+zůstává významná; accent-insensitive LIKE slouží pouze k vyhledávání.
+`Anna/given` a `Anna/surname` jsou dva výsledky s vlastními ID a podklady.
+Reprezentantem každé skupiny je nejstarší zveřejněný zápis, který není celý
+velkými písmeny, případně nejstarší zveřejněné ID. Počty i stránkování vycházejí
+ze skupin. Staré ID se přesměruje pouze na detail stejného druhu.
 
-Filtr druhu jména vybírá společná hesla obsahující daný druh, ale nemění jejich ID ani neomezuje podklady v detailu. Veřejné `name.kind` může být `both` (křestní jméno i příjmení); CRUD zůstává `given|surname`. Různé etymologické výklady a mytologické texty se zobrazují samostatně uvnitř jednoho hesla se svými citacemi.
+Detail sdružuje různé publikované etymologie, mytologii, citace a statistiky
+všech veřejných členů stejné skupiny. Nezahrnuje druhý druh ani skryté záznamy.
+`kind=given|surname` filtruje daný druh; hodnota `both` se již nevrací.
+Frontend při `total=1` a jediném výsledku rovnou otevře lokalizovaný detail
+(přes JavaScript i serverové HTTP 302). Při více výsledcích zobrazí výběr pod
+formulářem. Jedna položka na poslední stránce většího hledání nepřesměrovává.
 
 ### Vybrané etymologie a kulturní texty z Wikipedie
 
@@ -576,8 +596,7 @@ přejmenovány na mytologii. Oddíl Svátek je převzatý text o tradici; nezakl
 moderní kalendář ani neodvozuje datum z volného textu. Kalendáře nadále spravuje
 existující kalendářní import.
 
-Migrace `migrations/2026-09-28-etymolog-wikipedia-tenant.sql` idempotentně přidá
-dvě zapnuté úlohy: `kind=etymologies` (3 oddíly) a `kind=culture` (12 oddílů),
+Seed `migrations/etymolog_seed.sql` obsahuje také dvě zapnuté úlohy: `kind=etymologies` (3 oddíly) a `kind=culture` (12 oddílů),
 obě s dávkou 3 a intervalem 300 sekund. Neimportuje obsah, nepublikuje data,
 neobnovuje smazané úlohy ani nemění jejich existující nastavení. Nové úlohy
 zpracuje stávající tlačítko **Spustit synchronizaci** i stejný cron worker.
@@ -644,7 +663,7 @@ filtr `Europe/Prague` propustí pouze místní 03:00. Dvojice řeší letní/zim
 nikoliv dva importy. Fronta `etymolog-sync` pokračuje pouze po dobu aktivního
 běhu. Neexistuje minutové dotazování backendu v nečinnosti.
 
-Před aktivací aplikujte `2026-09-28-etymolog-http-worker.sql`: přidává snapshot
+Před aktivací aplikujte `etymolog_schema.sql`: přidává snapshot
 ID úloh `etymolog_sync_batch.pending_jobs` a denní deduplikaci
 `etymolog_sync_schedule` (tenant + české datum). Neimportuje ani nepublikuje data.
 
@@ -695,7 +714,7 @@ běh. Produkční importy nebyly součástí testovacího nasazení.
 ### Omezení Wikimedia a odložené opakování
 
 Před nasazením aktuálního HTTP workeru aplikujte také idempotentní migraci
-`2026-09-28-etymolog-rate-limit.sql` (`retry_at`, `retry_count` v tabulce běhu).
+`etymolog_schema.sql` (`retry_at`, `retry_count` v tabulce běhu).
 Požadavky používají identifikaci Etymolog s kontaktní URL a mezi požadavky na
 Wikimedia drží odstup alespoň jedné sekundy; mezi kroky fronty jsou dvě sekundy.
 HTTP 429 a API `ratelimited`/`maxlag` zachovají kurzor, uloží chybu do historie a
@@ -716,3 +735,11 @@ stejná pravidla publikace jako ruční editor, repository čte koncepty po 200 
 ID a zapisuje změny v dávkách v jedné transakci pod zámkem tenanta. Nevyhovující
 záznamy zůstanou koncepty a jsou uvedeny ve výsledku (detail prvních 100).
 Není nutná nová migrace; příznak `published` i audit `updated_by` už existují.
+
+## Úplné vyčištění obsahu před novým importem
+
+Samostatný [etymolog_reset_content.sql](../../../migrations/etymolog_reset_content.sql)
+smaže obsah tenantu `etymolog` včetně importních snapshotů a vynuluje postup úloh.
+Zachová účty, role, prameny s licencemi a definice synchronizací. Nespouští import.
+Podrobnosti, rozsah mazání a význam výsledků `RESET` / `SKIPPED_BUSY` jsou
+v [návodu k SQL](../../../migrations/README.md#úplné-vyčištění-obsahu-etymologu).

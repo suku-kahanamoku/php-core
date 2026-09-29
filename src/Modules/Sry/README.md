@@ -12,7 +12,7 @@ Veřejný mobilní vstup je izolovaný v `api/sry/index.php`. Používá mapovan
 - `sry_media`: neveřejný immutable R2 objekt; `category` a `enumeration` se používají pouze z tenantového katalogu sry.
 - `sry_notification` + `sry_outbox`: transakční události pro členské WebSocket místnosti a push. `sry_chat`: jen účastníci rodič/dítě.
 
-SQL: `migrations/2026-09-27-sry-tasks.sql`. Přidává vlastní tabulky, tenantovou roli a čtyři výchozí kategorie. Nesahá na produkty a ostatní tenanty. Endpoint ani klient nepřijímají rodinné ID jako důkaz oprávnění.
+SQL: nejprve `migrations/schema.sql`, poté `migrations/sry_schema.sql` (16 tabulek) a volitelně `migrations/sry_seed.sql` (tenantová role a čtyři výchozí kategorie). Nesahá na produkty a ostatní tenanty. Endpoint ani klient nepřijímají rodinné ID jako důkaz oprávnění.
 
 ## Endpointy (prefix /api/sry)
 

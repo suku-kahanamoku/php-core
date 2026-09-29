@@ -42,6 +42,12 @@ final class EtymologCalendarRepository extends BaseRepository
             }
             $day = $this->_db->fetchOne('SELECT c.deleted FROM etymolog_calendar_day d JOIN etymolog_calendar c ON c.franchise_code=d.franchise_code AND c.id=d.calendar_id WHERE d.franchise_code=? AND d.id=?', [$this->_code, $existing['calendar_day_id']]);
             if (!$day || (int)$day['deleted'] === 1) {return;}
+            if ($existing['name_id'] !== null) {
+                $nameId = (new EtymologNameRepository($this->_db, $this->_code))->existing((int)$existing['name_id']);
+                if ($nameId === null) { return; }
+                $this->_db->update('etymolog_calendar_day', ['name_id' => $nameId], 'franchise_code=? AND id=? AND name_id=?', [$this->_code, $existing['calendar_day_id'], $existing['name_id']]);
+                $snapshot['name_id'] = $nameId;
+            }
             $this->_db->update('etymolog_external_record', $snapshot, 'id=? AND franchise_code=?', [$existing['id'], $this->_code]);
             return;
         }
@@ -53,11 +59,8 @@ final class EtymologCalendarRepository extends BaseRepository
         $nameId = null;
         if ($item['name'] !== null) {
             $nameKey = 'czech-namedays:'.hash('sha256', $item['name']);
-            $stable = $this->_db->fetchOne('SELECT id,deleted FROM etymolog_name WHERE franchise_code=? AND import_key=?', [$this->_code, $nameKey]);
-            $matches = $stable ? [$stable] : $this->_db->fetchAll("SELECT id,deleted FROM etymolog_name WHERE franchise_code=? AND BINARY name=BINARY ? AND kind='given' AND language='cs'", [$this->_code, $item['name']]);
-            if (count($matches)>1) {throw new SyncException('ambiguous_name_match');}
-            if ($matches && (int)$matches[0]['deleted']===1) {return;}
-            $nameId = $matches ? (int)$matches[0]['id'] : $this->_db->insert('etymolog_name', ['franchise_code' => $this->_code, 'import_key' => $nameKey, 'name' => $item['name'], 'kind' => 'given', 'language' => 'cs', 'published' => 0]);
+            $nameId = (new EtymologNameRepository($this->_db, $this->_code))->resolve($item['name'], 'given', 'cs', null, $nameKey);
+            if ($nameId === null) { return; }
         }
         $sourceId = $source ? (int)$source['id'] : $this->_db->insert('etymolog_source', ['franchise_code' => $this->_code, 'import_key' => 'czech-namedays:cs',
             'title' => 'segeda/svatky-api-nodejs – český kalendář', 'url' => $item['source_url'], 'license' => $item['license'], 'license_url' => $item['license_url'], 'attribution' => $item['attribution']]);

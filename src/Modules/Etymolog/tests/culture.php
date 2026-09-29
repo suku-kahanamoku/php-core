@@ -103,15 +103,6 @@ status(api('DELETE','etymolog/calendar-days/'.$ny['id'].'?force=true',token:$adm
 $db->query('UPDATE etymolog_sync_job SET next_run_at=NULL WHERE id=?',[$calendarJob['id']]);
 $fake->responses=$calendarResponses();$calendarService->run((int)$calendarJob['id']);
 check((int)$db->fetchOne('SELECT deleted FROM etymolog_calendar_day WHERE id=?',[$ny['id']])['deleted']===1,'calendar tombstone survives refresh');
-$cultureSeed=file_get_contents($root.'/migrations/2026-09-28-etymolog-culture-tenant.sql');
+$cultureSeed=file_get_contents($root.'/migrations/etymolog_seed.sql');
 $db->getPdo()->exec($cultureSeed);$db->getPdo()->exec($cultureSeed);
-check((int)$db->fetchOne("SELECT COUNT(*) n FROM etymolog_sync_job WHERE franchise_code='etymolog' AND provider IN ('czech-namedays','erben-folklore')")['n']===2,'cultural job seed idempotent');
-
-// Legacy migration copies original source text, never the editor's rewritten body.
-$legacyEntry=$db->insert('etymolog_entry',['franchise_code'=>'etymolog','type'=>'legend','title'=>'Legacy story','body'=>'Edited text is not original']);
-$legacyCitation=$db->insert('etymolog_citation',['franchise_code'=>'etymolog','entry_id'=>$legacyEntry,'source_id'=>$webSource['id'],'url'=>'https://example.org/old']);
-$db->insert('etymolog_story_import',['franchise_code'=>'etymolog','entry_id'=>$legacyEntry,'source_id'=>$webSource['id'],'provider'=>'wikisource','external_id'=>'legacy-migration','revision'=>'1','source_url'=>'https://example.org/old','license'=>'PD-old-70','license_url'=>'https://example.org/licence','attribution'=>'Original author','payload'=>json_encode(['body'=>'Original recorded web text']),'content_hash'=>str_repeat('a',64),'fetched_at'=>gmdate('Y-m-d H:i:s')]);
-$db->getPdo()->exec($cultureMigration);$db->getPdo()->exec($cultureMigration);
-check($db->fetchOne('SELECT quotation FROM etymolog_citation WHERE id=?',[$legacyCitation])['quotation']==='Original recorded web text','legacy backfill uses source snapshot rather than edited entry');
-$legacy=$db->fetchOne('SELECT body,source_url FROM etymolog_entry WHERE id=?',[$legacyEntry]);
-check($legacy['body']==='Edited text is not original' && $legacy['source_url']==='https://example.org/old','legacy migration preserves editorial body while adding known web provenance');
+check((int)$db->fetchOne("SELECT COUNT(*) n FROM etymolog_sync_job WHERE franchise_code='etymolog' AND provider IN ('czech-namedays','erben-folklore')")['n']===4,'cultural seeds stay unique alongside two explicit fixture jobs');

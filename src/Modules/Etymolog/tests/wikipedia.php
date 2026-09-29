@@ -94,9 +94,9 @@ status(api('POST', 'etymolog/sync-jobs', ['title' => 'Bad Wikipedia', 'provider'
 status(api('POST', 'etymolog/sync-jobs', ['title' => 'Bad Wikipedia', 'provider' => 'wikipedia-names', 'kind' => 'culture', 'batch_size' => 4], $admin), 422, 'Wikipedia CRUD bounds batch');
 status(api('POST', 'etymolog/sync-jobs', ['title' => 'Forbidden Wikipedia', 'provider' => 'wikipedia-names', 'kind' => 'culture', 'batch_size' => 1], $editor), 403, 'editor cannot create Wikipedia tasks');
 // Seed must also respect deleted configurations. Test clean insertion under a separate tenant.
-$wikiSeed = file_get_contents($root.'/migrations/2026-09-28-etymolog-wikipedia-tenant.sql');
+$wikiSeed = file_get_contents($root.'/migrations/etymolog_seed.sql');
 $db->getPdo()->exec($wikiSeed); $db->getPdo()->exec($wikiSeed);
-check((int)$db->fetchOne("SELECT COUNT(*) n FROM etymolog_sync_job WHERE franchise_code='etymolog' AND provider='wikipedia-names'")['n'] === 2 && (int)$db->fetchOne("SELECT COUNT(*) n FROM etymolog_sync_job WHERE franchise_code='etymolog' AND provider='wikipedia-names' AND deleted=0")['n'] === 0, 'Wikipedia seed respects deleted tasks and does not duplicate');
+check((int)$db->fetchOne("SELECT COUNT(*) n FROM etymolog_sync_job WHERE franchise_code='etymolog' AND provider='wikipedia-names'")['n'] === 4 && (int)$db->fetchOne("SELECT COUNT(*) n FROM etymolog_sync_job WHERE franchise_code='etymolog' AND provider='wikipedia-names' AND deleted=0")['n'] === 2, 'Wikipedia seed respects deleted tasks and does not duplicate');
 $wikiCleanSeed = str_replace("'etymolog'", "'wikipedia-seed-fixture'", $wikiSeed);
 $db->getPdo()->exec($wikiCleanSeed); $db->getPdo()->exec($wikiCleanSeed);
 check((int)$db->fetchOne("SELECT COUNT(*) n FROM etymolog_sync_job WHERE franchise_code='wikipedia-seed-fixture' AND provider='wikipedia-names' AND enabled=1 AND next_run_at IS NULL AND last_status IS NULL")['n'] === 2, 'Wikipedia seed creates exactly two due tasks without running them');

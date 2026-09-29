@@ -409,7 +409,7 @@ classDiagram
       <div class="text-xs font-bold text-blue-700 mb-2">&#128161; Jak přidat nový modul (např. Tag)</div>
       <ol class="text-xs text-slate-600 space-y-1 list-decimal list-inside">
         <li>Vytvořte adresář <code class="bg-white px-1 rounded border border-slate-200">src/Modules/Tag/</code></li>
-        <li>Přidejte tabulku do <code class="bg-white px-1 rounded border border-slate-200">migrations/schema.sql</code> se sloupcem <code class="bg-white px-1 rounded border border-slate-200">franchise_code</code></li>
+        <li>Přidejte tabulku do <code class="bg-white px-1 rounded border border-slate-200">migrations/&lt;projekt&gt;_schema.sql</code> (sdílené tabulky do <code>schema.sql</code>, data do <code>&lt;projekt&gt;_seed.sql</code>) se sloupcem <code class="bg-white px-1 rounded border border-slate-200">franchise_code</code></li>
         <li>Vytvořte <code class="bg-white px-1 rounded border border-slate-200">TagRepository.php</code> – SQL operace</li>
         <li>Vytvořte <code class="bg-white px-1 rounded border border-slate-200">TagService.php</code> – business logika + auth kontroly</li>
         <li>Vytvořte <code class="bg-white px-1 rounded border border-slate-200">TagApi.php</code> – registrace rout přes <code class="bg-white px-1 rounded border border-slate-200">registerRoutes()</code></li>

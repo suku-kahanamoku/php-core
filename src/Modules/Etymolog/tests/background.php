@@ -71,7 +71,7 @@ check($again['status'] === 'complete' && $again['total'] === 0 && $okProvider->c
 $broken = new EtymologBackgroundService($batches, $batchSync, static function () { throw new RuntimeException('fixture'); });
 try { $broken->start(null); throw new LogicException('Expected launch failure'); }
 catch (EtymologException $e) { check($e->status === 503 && $batches->status()['error_code'] === 'worker_launch_failed', 'failed launcher remains visible and retryable'); }
-$newSeed = file_get_contents($root.'/migrations/2026-09-28-etymolog-dictionaries-tenant.sql');
+$newSeed = file_get_contents($root.'/migrations/etymolog_seed.sql');
 $db->getPdo()->exec($newSeed); $db->getPdo()->exec($newSeed);
 check((int)$db->fetchOne("SELECT COUNT(*) n FROM etymolog_sync_job WHERE franchise_code='etymolog' AND provider IN ('wiktionary-cs','wiktionary-fr')")['n'] === 8, 'new dictionary rules seed idempotently');
 

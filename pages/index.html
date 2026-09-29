@@ -417,7 +417,9 @@ $api  = new ProductApi($db, $code, $auth);</code></pre>
 ├── bin/
 │   └── migrate.php             # Spuštění migrace DB
 ├── migrations/
-│   └── schema.sql              # Celé schéma + seed data
+│   ├── schema.sql              # Společné opakovatelné schéma
+│   ├── schema_seed.sql         # Volitelná výchozí data
+│   └── &lt;projekt&gt;_schema.sql / &lt;projekt&gt;_seed.sql
 │
 ├── <span class="text-amber-600 font-bold">api/</span>                    # HTTP entry pointy (jeden na modul)
 │   ├── .htaccess               # RewriteRule → api/module/index.php

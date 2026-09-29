@@ -14,15 +14,15 @@ final class EtymologPublicRepository
     {
         $where = 'franchise_code=? AND deleted=0 AND published=1 AND name LIKE ? ESCAPE \'!\'';
         $params = [$this->tenant, '%'.strtr($query, ['!' => '!!', '%' => '!%', '_' => '!_']).'%'];
-        $having = '';
-        if ($kind !== '') { $having = ' HAVING SUM(kind=?)>0'; $params[] = $kind; }
-        // Public dossiers group spelling, independently of the importing source/country.
+
+        if ($kind !== '') { $where .= ' AND kind=?'; $params[] = $kind; }
+        // Group spelling within each name kind, independently of source/country.
         // Binary LOWER keeps diacritics significant for identity; LIKE still permits unaccented search.
         $grouped = 'SELECT COALESCE(MIN(CASE WHEN BINARY name <> BINARY UPPER(name) THEN id END),MIN(id)) id,
-            CASE WHEN COUNT(DISTINCT kind)>1 THEN \'both\' ELSE MIN(kind) END kind,
+            kind,
             CASE WHEN COUNT(DISTINCT language)=1 THEN MAX(language) END language,
             CASE WHEN COUNT(DISTINCT country_code)=1 THEN MAX(country_code) END country_code
-            FROM etymolog_name WHERE '.$where.' GROUP BY BINARY LOWER(TRIM(name))'.$having;
+            FROM etymolog_name WHERE '.$where.' GROUP BY kind,BINARY LOWER(TRIM(name))';
         $total = (int)$this->db->fetchOne('SELECT COUNT(*) n FROM ('.$grouped.') grouped_names', $params)['n'];
         $offset = ($page - 1) * 20;
         $items = $this->db->fetchAll('SELECT n.id,n.name,g.kind,g.language,g.country_code,n.summary FROM ('.$grouped.') g JOIN etymolog_name n ON n.id=g.id ORDER BY n.name,n.id LIMIT 20 OFFSET '.$offset, $params);
@@ -33,9 +33,8 @@ final class EtymologPublicRepository
     {
         $name = $this->db->fetchOne('SELECT id,name,kind,language,country_code,summary FROM etymolog_name WHERE id=? AND franchise_code=? AND deleted=0 AND published=1', [$id, $this->tenant]);
         if (!$name) { return null; }
-        $members = $this->db->fetchAll('SELECT id,name,kind,language,country_code,summary FROM etymolog_name WHERE franchise_code=? AND deleted=0 AND published=1 AND BINARY LOWER(TRIM(name))=BINARY LOWER(TRIM(?)) ORDER BY (BINARY name=BINARY UPPER(name)),id', [$this->tenant, $name['name']]);
+        $members = $this->db->fetchAll('SELECT id,name,kind,language,country_code,summary FROM etymolog_name WHERE franchise_code=? AND deleted=0 AND published=1 AND kind=? AND BINARY LOWER(TRIM(name))=BINARY LOWER(TRIM(?)) ORDER BY (BINARY name=BINARY UPPER(name)),id', [$this->tenant, $name['kind'], $name['name']]);
         $name = $members[0];
-        if (count(array_unique(array_column($members, 'kind'))) > 1) { $name['kind'] = 'both'; }
         foreach (['language', 'country_code'] as $field) {
             $values = array_values(array_unique(array_filter(array_column($members, $field), static fn ($value) => $value !== null)));
             $name[$field] = count($values) === 1 ? $values[0] : null;

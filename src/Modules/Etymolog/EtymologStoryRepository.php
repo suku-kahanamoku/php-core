@@ -22,7 +22,16 @@ final class EtymologStoryRepository extends BaseRepository
             'attribution' => $author.'; Wikizdroje', 'payload' => $payload,
             'content_hash' => hash('sha256', $payload), 'fetched_at' => gmdate('Y-m-d H:i:s')];
         if ($existing) {
-            // Preserve all editorial content, citations, reviewed/rejected links and publication state.
+            // Reuse the same identity on refresh without recreating rejected links or changing review.
+            foreach ($this->_db->fetchAll('SELECT id,name_id FROM etymolog_entry_name WHERE franchise_code=? AND entry_id=? AND deleted=0', [$this->_code, $existing['entry_id']]) as $link) {
+                $nameId = (new EtymologNameRepository($this->_db, $this->_code))->existing((int)$link['name_id']);
+                if ($nameId === null || $nameId === (int)$link['name_id']) { continue; }
+                // Do not overwrite an existing canonical link, including a rejected one.
+                if (!$this->_db->fetchOne('SELECT id FROM etymolog_entry_name WHERE franchise_code=? AND entry_id=? AND name_id=?', [$this->_code, $existing['entry_id'], $nameId])) {
+                    $this->_db->update('etymolog_entry_name', ['name_id' => $nameId], 'franchise_code=? AND id=?', [$this->_code, $link['id']]);
+                }
+            }
+            // Preserve all editorial content, citations, reviewed/rejected states and publication.
             $this->_db->update('etymolog_story_import', $snapshot, 'id=? AND franchise_code=?', [(int)$existing['id'], $this->_code]);
             return ['entry_id' => (int)$existing['entry_id'], 'source_id' => (int)$existing['source_id']];
         }
@@ -38,18 +47,15 @@ final class EtymologStoryRepository extends BaseRepository
         $this->_db->insert('etymolog_citation', ['franchise_code' => $this->_code, 'entry_id' => $entryId,
             'source_id' => $sourceId, 'url' => $item['source_url'], 'quotation' => $item['body'], 'locator' => $item['bibliography'],
             'notes' => 'Převzatý kulturní text. Citace dokládá znění pramene, nikoli pravdivost děje, předpovědi nebo původ jména.']);
+        $linked = [];
         foreach ($item['names'] as $suggestion) {
             $name = is_array($suggestion) ? $suggestion['name'] : $suggestion;
             $kind = is_array($suggestion) ? $suggestion['kind'] : 'given';
-            // Exact spelling, language and kind only. Ambiguous matches remain suggestions in the snapshot.
+            // Shared case-insensitive name identity; suggested story links still require review.
             $key = $kind === 'given' ? 'wikisource:name:cs:'.hash('sha256', $name) : 'wikisource:surname:cs:'.hash('sha256', $name);
-            $stable = $this->_db->fetchOne('SELECT id,deleted FROM etymolog_name WHERE franchise_code=? AND import_key=?', [$this->_code, $key]);
-            $matches = $stable ? [$stable] : $this->_db->fetchAll("SELECT id,deleted FROM etymolog_name WHERE franchise_code=? AND BINARY name=BINARY ? AND kind=? AND language='cs'", [$this->_code, $name, $kind]);
-            if (count($matches) > 1 || ($matches && (int)$matches[0]['deleted'] === 1)) { continue; }
-            $nameId = $matches ? (int)$matches[0]['id'] : $this->_db->insert('etymolog_name', [
-                'franchise_code' => $this->_code, 'name' => $name, 'kind' => $kind, 'language' => 'cs',
-                'published' => 0, 'import_key' => $key,
-            ]);
+            $nameId = (new EtymologNameRepository($this->_db, $this->_code))->resolve($name, $kind, 'cs', null, $key);
+            if ($nameId === null || isset($linked[$nameId])) { continue; }
+            $linked[$nameId] = true;
             $this->_db->insert('etymolog_entry_name', ['franchise_code' => $this->_code, 'entry_id' => $entryId,
                 'name_id' => $nameId, 'relation' => 'mentioned', 'reviewed' => 0,
                 'notes' => 'Návrh z kurátorovaného seznamu postav; vyžaduje redakční kontrolu.']);

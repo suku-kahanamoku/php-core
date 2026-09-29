@@ -29,8 +29,10 @@ mysql -u root -p -e "
   FLUSH PRIVILEGES;
 "
 
-# Fresh/development database only (destructive: drops and recreates tables)
+# Shared repeatable schema (no data deletion or implicit seed)
 mysql -u php_core -p php_core < migrations/schema.sql
+# Optional original default dataset:
+mysql -u php_core -p php_core < migrations/schema_seed.sql
 ```
 
 Default admin credentials:
@@ -127,10 +129,9 @@ the required `continue_listening` tool ends the turn without free text or a UI
 change. Previously displayed products are not permanently excluded and may be
 selected again when the customer returns to them. After Responses chooses an ID
 from file-search evidence, Realtime calls `get_product`; PHP only loads its current published
-catalog detail for Android. The idempotent migration
-`migrations/20260921_fun_product_catalog_enrichment.sql` adds 30 current FAnn
-variants and enriches 23 matching seed products with structured selection
-attributes and their public source metadata.
+catalog detail for Android. `migrations/fann_seed.sql` contains the consolidated
+FAnn demo catalogue and structured source metadata. Reapplying it preserves
+existing edited products.
 
 The repeatable FAnn catalogue importer stores the six current top-level shop
 categories and up to 50 public product variants per category in tenant `fann`:
@@ -146,7 +147,7 @@ and never deletes catalogue rows. See `src/Modules/FannCatalog/README.md`.
 The OpenAI Vector Store provides product knowledge to the Responses model. PHP
 only synchronizes published catalog documents and securely proxies the Responses
 request; it contains no fallback recommendation algorithm. Install
-`migrations/20260923_openai_vector_store.sql`, synchronize the selected tenant,
+`migrations/schema.sql`, synchronize the selected tenant,
 and only then enable the runtime lookup:
 
 ```bash
@@ -226,23 +227,20 @@ production.
 
 ### Existing database / production migration
 
-Never run `migrations/schema.sql` on an existing database. It contains `DROP
-TABLE` statements and is intended only for a new local installation.
+`migrations/schema.sql` now contains only repeatable shared DDL. It creates
+missing tables, columns, indexes and constraints without deleting existing data.
+Apply it before the selected `<project>_schema.sql`. Bootstrap data are optional
+and live in `<project>_seed.sql`; `schema_seed.sql` retains the historical default
+Zaječí dataset. Never run every product seed indiscriminately on a live database.
 
-The additive security migration is idempotent and preserves current business
-rows:
+Installation order and available product schemas are documented in
+[`migrations/README.md`](migrations/README.md).
 
 ```bash
-mysqldump --single-transaction --quick --skip-lock-tables --no-tablespaces \
-  -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p "$DB_NAME" \
-  > "../${DB_NAME}-before-security-$(date +%Y%m%d-%H%M%S).sql"
-
-mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p "$DB_NAME" \
-  < migrations/20260906_security_hardening.sql
+mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p "$DB_NAME" < migrations/schema.sql
+# Example product:
+mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p "$DB_NAME" < migrations/etymolog_schema.sql
 ```
-
-Run the migration locally first, verify its final row reports `1, 1, 1, 3`,
-then run the same committed file in production before deploying the PHP code.
 
 ### Zoo CRM tenant
 
@@ -251,14 +249,9 @@ installation, keep `zoo.localhost:zoo` in `FRANCHISE_CODES`, then seed its roles
 administrator and animal categories:
 
 ```bash
+mysql -u php_core -p php_core < migrations/schema.sql
+mysql -u php_core -p php_core < migrations/zoo_schema.sql
 mysql -u php_core -p php_core < migrations/zoo_seed.sql
-mysql -u php_core -p php_core < migrations/20260912_customer_profiles.sql
-mysql -u php_core -p php_core < migrations/20260912_rename_customer_profile_relations.sql
-mysql -u php_core -p php_core < migrations/20260913_user_customer_profile_position.sql
-mysql -u php_core -p php_core < migrations/20260913_zoo_product_categories.sql
-mysql -u php_core -p php_core < migrations/20260913_remove_product_profile_is_target.sql
-mysql -u php_core -p php_core < migrations/20260916_product_stock_availability.sql
-mysql -u php_core -p php_core < migrations/20260925_rename_fun_tenant_to_fann.sql
 ```
 
 The administrator is `admin@zoo.local` with password `admin`.
@@ -269,19 +262,12 @@ diagram are documented in [`src/Modules/CustomerProfile/README.md`](src/Modules/
 ### FAnn CRM tenant
 
 The companion application in `nuxt/fann` uses the `fann` tenant. Seed its initial
-catalogue and then convert the legacy FAnn product classification to category
-relations:
+catalogue with final category and profile relations:
 
 ```bash
-mysql -u php_core -p php_core < migrations/20260912_fun_seed.sql
-mysql -u php_core -p php_core < migrations/20260912_customer_profiles.sql
-mysql -u php_core -p php_core < migrations/20260912_rename_customer_profile_relations.sql
-mysql -u php_core -p php_core < migrations/20260913_user_customer_profile_position.sql
-mysql -u php_core -p php_core < migrations/20260913_fun_product_categories.sql
-mysql -u php_core -p php_core < migrations/20260913_remove_product_profile_is_target.sql
-mysql -u php_core -p php_core < migrations/20260913_product_alternatives.sql
-mysql -u php_core -p php_core < migrations/20260916_product_stock_availability.sql
-mysql -u php_core -p php_core < migrations/20260925_rename_fun_tenant_to_fann.sql
+mysql -u php_core -p php_core < migrations/schema.sql
+mysql -u php_core -p php_core < migrations/fann_schema.sql
+mysql -u php_core -p php_core < migrations/fann_seed.sql
 ```
 
 The administrator is `admin@fann.cz` with password `admin`.
@@ -298,17 +284,11 @@ php-core/
 │       └── CustomerProfile/
 │           └── README.md                 # module guide + ER/UML diagram + columns
 ├── migrations/
-│   ├── schema.sql                                      # destructive fresh schema + seed
-│   ├── 20260906_security_hardening.sql                # additive security migration
-│   ├── 20260912_customer_profiles.sql                  # normalized profile model
-│   ├── 20260912_rename_customer_profile_relations.sql  # final relation-table names
-│   ├── 20260913_user_customer_profile_position.sql     # final assignment ordering column
-│   ├── 20260913_fun_product_categories.sql             # FAnn product category conversion
-│   ├── 20260913_zoo_product_categories.sql             # Zoo product category conversion
-│   ├── 20260913_remove_product_profile_is_target.sql   # probability-only product/profile relation
-│   ├── 20260913_product_alternatives.sql               # ordered FAnn product alternatives
-│   └── 20260916_product_stock_availability.sql         # random stock for zero-quantity products
-mysql -u php_core -p php_core < migrations/20260925_rename_fun_tenant_to_fann.sql
+│   ├── README.md                 # installation order and product schemas
+│   ├── schema.sql                # repeatable shared DDL, no seed data
+│   ├── schema_seed.sql           # optional default Zaječí data
+│   ├── <project>_schema.sql      # Etymolog, SRY, TRAM, Zoo, FAnn, Zaječí
+│   └── <project>_seed.sql        # insert missing bootstrap/reference data
 ├── pages/
 │   ├── db-schema.html     # Mermaid ER diagram
 │   ├── db-table.html      # HTML schema viewer with FK table
@@ -629,7 +609,7 @@ already sends the internal key. No production deployment is performed by tests.
 
 The [Transport module](src/Modules/Transport/README.md) provides modular Entur,
 PID/Golemio and OpenTripPlanner integrations, versioned GTFS imports and a unified
-journey API. Setup uses the additive `migrations/2026-09-27-transport.sql` migration
+journey API. Setup uses the additive `migrations/tram_schema.sql` migration
 and tenant-scoped CLI configuration. Existing API authentication remains required.
 
 ### Sdílená odchozí komunikace
@@ -642,25 +622,25 @@ se do doménových modulů nepřidává. Testy: `bash scripts/test-http.sh`.
 
 The [Etymolog module](src/Modules/Etymolog/README.md) adds a tenant-scoped editorial
 name/etymology catalog with existing Bearer authentication, complete domain CRUD,
-citations and historical variants. Install `migrations/2026-09-27-etymolog.sql`
-and optionally `migrations/2026-09-27-etymolog-tenant.sql` for the initial
+citations and historical variants. Install `migrations/etymolog_schema.sql`
+and optionally `migrations/etymolog_seed.sql` for the initial
 `etymolog` roles and Czech import jobs. The CLI `scripts/etymolog-sync.php`
 imports CC0 Wikidata records in bounded, resumable batches while preserving
 editorial changes. Tests use an isolated MySQL: `bash scripts/test-etymolog.sh`.
 
-The additive `migrations/2026-09-28-etymolog-stories.sql` extension adds shared
+The additive `migrations/etymolog_schema.sql` extension adds shared
 stories, reviewed name associations and Wikisource provenance. Apply the optional
-`2026-09-28-etymolog-stories-tenant.sql` seed for a Czech folklore sync job.
+`etymolog_seed.sql` seed for a Czech folklore sync job.
 Imported narratives remain drafts and source updates preserve editorial changes.
 
 Further licensed sources and synchronizers (Wiktionary, Poland PESEL and ČSÚ)
 are documented in [Etymolog source research](docs/etymolog-sources.md). Apply
-`2026-09-28-etymolog-sources.sql` and optionally its tenant seed after the story
-extension. All sync providers preserve editorial changes and record provenance.
+`etymolog_schema.sql` contains the complete model; `etymolog_seed.sql` contains
+all provider rules. All sync providers preserve editorial changes and record provenance.
 
 
 Etymolog cultural content must originate from a cited website; there is no AI
-story generation. Apply the additive `2026-09-28-etymolog-culture.sql` migration
-and optional culture tenant seed for traditions, weather lore, and calendar days.
+story generation. Apply the additive `etymolog_schema.sql` migration
+and optional `etymolog_seed.sql` for traditions, weather lore, and calendar days.
 See the [module contract](src/Modules/Etymolog/README.md) for verbatim-publication
 validation and the Erben / Czech name-day calendar synchronizers.

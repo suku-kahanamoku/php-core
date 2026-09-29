@@ -37,13 +37,10 @@ Notes:
 ## Datový model zákaznických profilů
 
 Tento dokument popisuje aktuální databázový model profilů zákazníků společný
-pro tenanty Zoo a FAnn. Zdroj pravdy pro nové databáze je
-[`migrations/schema.sql`](../../../migrations/schema.sql); existující databáze převádí
-[`migrations/20260912_customer_profiles.sql`](../../../migrations/20260912_customer_profiles.sql)
-a následné přejmenování vazeb provádí
-[`migrations/20260912_rename_customer_profile_relations.sql`](../../../migrations/20260912_rename_customer_profile_relations.sql).
-Sloupec pořadí vazby sjednocuje
-[`migrations/20260913_user_customer_profile_position.sql`](../../../migrations/20260913_user_customer_profile_position.sql).
+pro tenanty Zoo a FAnn. Aktuální opakovatelné definice obsahuje
+[`migrations/schema.sql`](../../../../migrations/schema.sql), data jsou oddělená
+v `zoo_seed.sql` a `fann_seed.sql`. Postup instalace popisuje
+[`migrations/README.md`](../../../../migrations/README.md).
 
 ### Diagram tabulek a vazeb
 

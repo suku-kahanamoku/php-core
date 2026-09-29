@@ -2079,13 +2079,13 @@ licensing, additive migrations, and the resumable Wikidata / Wikisource importer
 
 Etymolog source extension adds Wiktionary etymologies, Poland PESEL surname
 counts, and Czech Statistical Office newborn TOP 100 (2025). Apply
-`2026-09-28-etymolog-sources.sql` before using this version. New provenance:
+`etymolog_schema.sql` before using this version. New provenance:
 `GET /names/:id/external-records`, `GET /occurrences/:id/imports`; entry provenance
 includes both stories and dictionary imports. Admins can restart a changed source
 snapshot with `POST /sync-jobs/:id/reset`. See [source research](docs/etymolog-sources.md).
 
 
-Etymolog culture extension (`2026-09-28-etymolog-culture.sql`) adds sourced
+Etymolog culture extension (`etymolog_schema.sql`) adds sourced
 `tradition` / `proverb` entries and calendar CRUD. All cultural types now require
 `source_url` on creation; publication requires a licensed web citation with a
 verbatim quotation containing the published text. AI invention is not supported.
@@ -2101,12 +2101,12 @@ folklore and the community Czech name-day calendar synchronizers.
 
 ### Etymolog: background synchronization
 
-`POST /etymolog/sync/start` (admin, `{}` only) returns 202 with the queued/current tenant batch. Repeated requests reuse an active batch. `GET /etymolog/sync/status` (admin) returns its status and counters or null. Internal key, resolved tenant and user bearer remain mandatory. The detached PHP worker and CLI cron share one runner, processing one batch per due enabled job and respecting retry intervals. Apply `2026-09-28-etymolog-background.sql` and `2026-09-28-etymolog-dictionaries-tenant.sql` before use; neither starts synchronization. See the Etymolog README for providers and worker requirements.
+`POST /etymolog/sync/start` (admin, `{}` only) returns 202 with the queued/current tenant batch. Repeated requests reuse an active batch. `GET /etymolog/sync/status` (admin) returns its status and counters or null. Internal key, resolved tenant and user bearer remain mandatory. The detached PHP worker and CLI cron share one runner, processing one batch per due enabled job and respecting retry intervals. Apply `etymolog_schema.sql` and `etymolog_seed.sql` before use; neither starts synchronization. See the Etymolog README for providers and worker requirements.
 
-Etymolog public name dossiers group the same case-insensitive, accent-sensitive spelling across all sources and name kinds. Public `kind` may be `both`; a `kind=given|surname` search filter selects matching dossiers without changing their canonical ID. Detail includes all published interpretations and citations; CRUD records retain their original kind.
+Etymolog public dossiers group the same case-insensitive, accent-sensitive spelling **within one kind** across sources, languages and countries. `kind` is `given|surname`; a spelling used as both is returned as two choices with separate canonical IDs and separate detail content. `total` counts these groups before pagination. The frontend redirects a search with exactly one total result straight to its localized detail; multiple results remain a selection list. Imports normalize casing (first letter uppercase, remainder lowercase) and reuse a tenant/name/kind identity across all providers. Wikidata snapshots remain distinct per source QID; apply `etymolog_schema.sql` before deploying this importer to extend `uq_etymolog_import` with `external_id`.
 
 `wikipedia-names` adds `language=cs`, `kind=etymologies|culture`, `batch_size=1..3`.
-Apply `2026-09-28-etymolog-wikipedia-tenant.sql` to seed two due tasks without
+Apply `etymolog_seed.sql` to seed all rules, including these two due tasks, without
 running them. Fixed reviewed article sections are imported as unpublished entries
 with CC BY-SA 4.0, revision-pinned URLs, author history and verbatim citations.
 The existing worker and `/entries/:id/imports` provenance endpoint handle them;
@@ -2131,7 +2131,7 @@ required for this narrowly scoped machine route; ordinary CRUD still requires it
 Nightly dispatch is limited to today's Europe/Prague date and hour 03, deduplicated
 by tenant/date. A step commits its progress with the job transaction and returns
 `status,request_id,next_step,total`; stale IDs return `status=idle`. Apply
-`2026-09-28-etymolog-http-worker.sql` and `2026-09-28-etymolog-rate-limit.sql` first.
+`etymolog_schema.sql` first.
 Running steps also return `retry_after` (seconds); a positive value permits the
 same `next_step` to be retried after the cooldown. Admin batch status includes
 `retry_at` (UTC) and `retry_count`. Health is read-only. See the module

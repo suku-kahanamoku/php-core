@@ -20,21 +20,23 @@ final class EtymologExternalRepository extends BaseRepository
             foreach (['name_id' => 'etymolog_name', 'source_id' => 'etymolog_source', 'entry_id' => 'etymolog_entry', 'occurrence_id' => 'etymolog_occurrence'] as $field => $table) {
                 if ($existing[$field] !== null && !$this->_db->fetchOne("SELECT id FROM {$table} WHERE franchise_code=? AND id=? AND deleted=0", [$this->_code, $existing[$field]])) { return; }
             }
+            $nameId = (new EtymologNameRepository($this->_db, $this->_code))->existing((int)$existing['name_id']);
+            if ($nameId === null) { return; }
+            foreach (['entry_id' => 'etymolog_entry', 'occurrence_id' => 'etymolog_occurrence'] as $field => $table) {
+                if ($existing[$field] !== null) {
+                    $this->_db->update($table, ['name_id' => $nameId], 'franchise_code=? AND id=? AND name_id=?', [$this->_code, $existing[$field], $existing['name_id']]);
+                }
+            }
+            $snapshot['name_id'] = $nameId;
             $this->_db->update('etymolog_external_record', $snapshot, 'id=? AND franchise_code=?', [$existing['id'], $this->_code]);
             return; // Never overwrite manual edits, citations or publication.
         }
         $nameKey = $provider.':'.hash('sha256', json_encode([$item['kind'], $item['language'], $item['country_code'], $item['name']], JSON_THROW_ON_ERROR));
-        $stable = $this->_db->fetchOne('SELECT id,deleted FROM etymolog_name WHERE franchise_code=? AND import_key=?', [$this->_code, $nameKey]);
-        $names = $stable ? [$stable] : $this->_db->fetchAll('SELECT id,deleted FROM etymolog_name WHERE franchise_code=? AND BINARY name=BINARY ? AND kind=? AND language<=>? AND (? IS NOT NULL OR country_code<=>?)', [$this->_code, $item['name'], $item['kind'], $item['language'], $item['language'], $item['country_code']]);
-        if (count($names) > 1) { throw new SyncException('ambiguous_name_match'); }
-        if ($names && (int)$names[0]['deleted'] === 1) { return; }
         $sourceKey = $provider.':'.hash('sha256', $item['source_key']);
         $source = $this->_db->fetchOne('SELECT id,deleted FROM etymolog_source WHERE franchise_code=? AND import_key=?', [$this->_code, $sourceKey]);
         if ($source && (int)$source['deleted'] === 1) { return; }
-        $nameId = $names ? (int)$names[0]['id'] : $this->_db->insert('etymolog_name', [
-            'franchise_code' => $this->_code, 'name' => $item['name'], 'kind' => $item['kind'], 'language' => $item['language'],
-            'country_code' => $item['country_code'], 'published' => 0, 'import_key' => $nameKey,
-        ]);
+        $nameId = (new EtymologNameRepository($this->_db, $this->_code))->resolve($item['name'], $item['kind'], $item['language'], $item['country_code'], $nameKey);
+        if ($nameId === null) { return; }
         $sourceId = $source ? (int)$source['id'] : $this->_db->insert('etymolog_source', [
             'franchise_code' => $this->_code, 'import_key' => $sourceKey, 'title' => $item['source_title'],
             'url' => $item['source_url'], 'license' => $item['license'], 'license_url' => $item['license_url'],

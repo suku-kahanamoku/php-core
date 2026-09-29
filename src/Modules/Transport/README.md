@@ -26,9 +26,9 @@ Linky, spoje a jízdní řády používají `transport_*`; tabulky produktů se 
 PHP 8.1+ s PDO MySQL, curl, zip a mbstring; MySQL 8. OTP běží zvlášť v Dockeru/JVM.
 PHP nemusí obsahovat Java knihovny. Spustit `composer install` podle lockfile (společný HttpModule používá Guzzle).
 
-1. Na zálohované databázi aplikovat pouze novou aditivní migraci
-   `migrations/2026-09-27-transport.sql`. Je opakovatelná. Nespouštět `schema.sql`
-   na existující databázi. Migrace nepřidává veřejné hosty ani nemění ostatní tenanty.
+1. Aplikovat `migrations/schema.sql`, potom `migrations/tram_schema.sql` a
+   volitelně `migrations/tram_seed.sql` (12 druhů dopravy). Schémata jsou
+   opakovatelná a pouze doplňují chybějící strukturu. Neobsahují data ani veřejné hosty.
 2. Pro zvolený TRAM host přidat mapování `host:tram` do stávajících `FRANCHISE_CODES`.
    Zachovat ostatní mapování.
 3. Zkopírovat `config/transport.example.json` do soukromé serverové konfigurace,

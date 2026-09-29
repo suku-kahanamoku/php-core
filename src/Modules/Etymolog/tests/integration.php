@@ -28,31 +28,13 @@ $server->exec('CREATE DATABASE etymolog_test CHARACTER SET utf8mb4');
 $db = testDatabase();
 $root = dirname(__DIR__, 4);
 $db->getPdo()->exec(file_get_contents($root.'/migrations/schema.sql'));
-$migration = file_get_contents($root.'/migrations/2026-09-27-etymolog.sql');
+$migration = file_get_contents($root.'/migrations/etymolog_schema.sql');
 $db->getPdo()->exec($migration);
-$db->getPdo()->exec($migration);
-check(true, 'additive migration applies twice');
 $upgradeName = $db->insert('etymolog_name', ['franchise_code' => 'upgrade', 'name' => 'Before migration', 'kind' => 'given']);
 $upgradeEntry = $db->insert('etymolog_entry', ['franchise_code' => 'upgrade', 'name_id' => $upgradeName, 'type' => 'legend', 'title' => 'Existing', 'body' => 'Preserve me']);
-$storyMigration = file_get_contents($root.'/migrations/2026-09-28-etymolog-stories.sql');
-$db->getPdo()->exec($storyMigration);
-$db->getPdo()->exec($storyMigration);
-check(true, 'story migration applies twice');
+$db->getPdo()->exec($migration);
 $preserved = $db->fetchOne('SELECT name_id,body FROM etymolog_entry WHERE id=?', [$upgradeEntry]);
-check((int)$preserved['name_id'] === $upgradeName && $preserved['body'] === 'Preserve me', 'upgrade preserves existing content and primary name FK');
-$sourceMigration = file_get_contents($root.'/migrations/2026-09-28-etymolog-sources.sql');
-$db->getPdo()->exec($sourceMigration);
-$db->getPdo()->exec($sourceMigration);
-check(true, 'external source migration applies twice');
-$cultureMigration = file_get_contents($root.'/migrations/2026-09-28-etymolog-culture.sql');
-$db->getPdo()->exec($cultureMigration);$db->getPdo()->exec($cultureMigration);
-check(true, 'culture calendar migration applies twice');
-$backgroundMigration = file_get_contents($root.'/migrations/2026-09-28-etymolog-background.sql');
-$db->getPdo()->exec($backgroundMigration); $db->getPdo()->exec($backgroundMigration);
-$httpWorkerMigration = file_get_contents($root.'/migrations/2026-09-28-etymolog-http-worker.sql');
-$db->getPdo()->exec($httpWorkerMigration); $db->getPdo()->exec($httpWorkerMigration);
-$rateMigration = file_get_contents($root.'/migrations/2026-09-28-etymolog-rate-limit.sql');
-$db->getPdo()->exec($rateMigration); $db->getPdo()->exec($rateMigration);
+check((int)$preserved['name_id'] === $upgradeName && $preserved['body'] === 'Preserve me', 'repeated consolidated schema preserves existing content and primary name FK');
 foreach (['etymolog', 'other'] as $tenant) {
     foreach (['admin', 'user'] as $role) {
         $roleId = $db->insert('role', ['franchise_code' => $tenant, 'name' => $role, 'label' => $role]);
@@ -251,11 +233,13 @@ try {
     catch (EtymologException $e) { check($e->status === 409, 'overlapping sync prevented by tenant lock'); }
     finally { $stmt=$second->prepare('SELECT RELEASE_LOCK(?)');$stmt->execute([$lock]); }
     check(count($fake->requests) > 0 && str_starts_with($fake->requests[0]->url, 'https://www.wikidata.org/w/api.php?') && $fake->requests[0]->redirectHosts === [], 'provider fixed endpoint and no redirect');
-    $seed = file_get_contents($root.'/migrations/2026-09-27-etymolog-tenant.sql');
+    // The consolidated seed loads every provider up front; later explicit fixture
+    // jobs coexist with these seeded jobs (the API permits separate jobs per rule).
+    $seed = file_get_contents($root.'/migrations/etymolog_seed.sql');
     $db->getPdo()->exec($seed);
     $db->getPdo()->exec($seed);
     check((int)$db->fetchOne("SELECT COUNT(*) n FROM role WHERE franchise_code='etymolog'")['n'] === 2, 'tenant auth seed idempotent');
-    check((int)$db->fetchOne("SELECT COUNT(*) n FROM etymolog_sync_job WHERE franchise_code='etymolog' AND kind='given'")['n'] === 1, 'tenant sync seed idempotent');
+    check((int)$db->fetchOne("SELECT COUNT(*) n FROM etymolog_sync_job WHERE franchise_code='etymolog' AND kind='given' AND provider='wikidata'")['n'] === 1, 'tenant sync seed idempotent');
     require __DIR__.'/stories.php';
     require __DIR__.'/sources.php';
     require __DIR__.'/culture.php';
@@ -264,6 +248,7 @@ try {
     require __DIR__.'/wikipedia.php';
     require __DIR__.'/http-worker.php';
     require __DIR__.'/publication.php';
+    require __DIR__.'/name-identity.php';
     echo "Checks: $checks passed\n";
 } finally {
     proc_terminate($process); fclose($pipes[0]); proc_close($process);

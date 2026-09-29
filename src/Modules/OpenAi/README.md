@@ -88,10 +88,9 @@ ale žádné dříve zobrazené ID se trvale nevyloučí. Zákazník se k němu 
 vrátit. „Lepší“ znamená přesnější shodu s doloženými požadavky, nikoli vyšší
 cenu, popularitu nebo marži.
 
-Migrace `migrations/20260921_fun_product_catalog_enrichment.sql` idempotentně
-obohacuje 23 dohledaných existujících FAnn produktů a přidává 30 aktuálních variant. Ukládá
-zdrojovou URL, datum kontroly, značku, variantu, EAN, diagnostické otázky a
-normalizované výběrové atributy v `data`; historický seed nemění.
+`migrations/fann_seed.sql` obsahuje sloučený FAnn katalog se zdrojovou URL,
+datem kontroly, variantami a výběrovými atributy. Doplňuje pouze chybějící řádky.
+Pořadí instalace popisuje `migrations/README.md`.
 
 ## Konfigurace
 
@@ -154,7 +153,7 @@ Na existující databázi se nejprve spustí aditivní migrace:
 
 ```bash
 mysql -h "$DB_HOST" -u "$DB_USER" -p "$DB_NAME" \
-  < migrations/20260923_openai_vector_store.sql
+  < migrations/schema.sql
 ```
 
 Po nastavení serverového `OPENAI_API_KEY` vytvoří první příkaz tenantový Vector

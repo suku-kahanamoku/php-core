@@ -44,13 +44,12 @@ $server->exec('CREATE DATABASE transport_test CHARACTER SET utf8mb4');
 $db = new PDO($dsn, 'root', '', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,PDO::ATTR_EMULATE_PREPARES => false]);
 $db->exec("SET time_zone='+00:00'");
 $root = dirname(__DIR__, 4);
-$schema = file_get_contents($root.'/migrations/schema.sql');
-preg_match('/CREATE TABLE `enumeration` \(.*?ENGINE=InnoDB[^;]*;/s', $schema, $m);
-$db->exec($m[0]);
-$migration = file_get_contents($root.'/migrations/2026-09-27-transport.sql');
-$db->exec($migration);
-$db->exec($migration);
-check(true, 'migration applies twice');
+foreach (['schema', 'tram_schema', 'tram_seed'] as $file) {
+    $sql = file_get_contents($root.'/migrations/'.$file.'.sql');
+    $db->exec($sql);
+    $db->exec($sql);
+}
+check(true, 'consolidated schemas and seed apply twice');
 $r = new TransportRepository($db, 'tram');
 $other = new TransportRepository($db, 'other');
 $config = json_decode(file_get_contents($root.'/config/transport.example.json'), true);
@@ -195,8 +194,6 @@ $http->responses = ['entur' => new HttpResponse(200, '{"data":{"trip":{"tripPatt
 $result = $journeys->search($q);
 check($result['partial'] && count($result['journeys']) === 1, 'malformed provider response is isolated and falls back');
 // HTTP contract and transport client behavior through a real local server.
-preg_match('/CREATE TABLE `api_rate_limit` \(.*?ENGINE=InnoDB[^;]*;/s', $schema, $m);
-$db->exec($m[0]);
 $socket = stream_socket_server('tcp://127.0.0.1:0', $errno, $errstr);
 $address = stream_socket_get_name($socket, false);
 fclose($socket);

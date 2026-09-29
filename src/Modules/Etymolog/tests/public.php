@@ -70,12 +70,16 @@ check($mergedDetail===status(api('GET','etymolog/public/names/'.$storyAnna),200,
 status(api('GET','etymolog/public/names/'.$hiddenAnna),404,'draft member URL stays private even when matching a published dossier');
 $surnameAnna=$db->insert('etymolog_name', ['franchise_code'=>'etymolog','name'=>'Fixture Anna','kind'=>'surname','published'=>1]);
 $db->insert('etymolog_entry', ['franchise_code'=>'etymolog','name_id'=>$surnameAnna,'type'=>'etymology','title'=>'Surname source interpretation','body'=>'Distinct test source interpretation','published'=>1]);
-foreach (['', '&kind=given', '&kind=surname'] as $filter) {
-    $one=status(api('GET','etymolog/public/names?q=fixture%20anna'.$filter),200,'one name across kind filters');
-    check($one['total']===1 && (int)$one['items'][0]['id']===$storyAnna && $one['items'][0]['kind']==='both','given and surname filters lead to same single dossier');
+$choices=status(api('GET','etymolog/public/names?q=fixture%20anna'),200,'same spelling offers separate kinds');
+check($choices['total']===2 && count($choices['items'])===2 && array_column($choices['items'],'kind')===['given','surname'],'given name and surname are separate search choices');
+foreach (['given'=>$storyAnna,'surname'=>$surnameAnna] as $kind=>$expected) {
+    $one=status(api('GET','etymolog/public/names?q=fixture%20anna&kind='.$kind),200,'search filters the chosen kind');
+    check($one['total']===1 && (int)$one['items'][0]['id']===$expected && $one['items'][0]['kind']===$kind,'kind filter preserves its own canonical name ID');
 }
-$allInterpretations=status(api('GET','etymolog/public/names/'.$surnameAnna),200,'surname ID opens common dossier');
-check((int)$allInterpretations['name']['id']===$storyAnna && $allInterpretations['name']['kind']==='both' && count($allInterpretations['entries'])===3,'all etymologies and mythology remain distinct inside one dossier');
+$surnameDetail=status(api('GET','etymolog/public/names/'.$surnameAnna),200,'surname opens its own dossier');
+check((int)$surnameDetail['name']['id']===$surnameAnna && $surnameDetail['name']['kind']==='surname' && count($surnameDetail['entries'])===1 && $surnameDetail['occurrences']===[] && $surnameDetail['calendar_days']===[],'surname does not inherit given-name interpretations or statistics');
+$givenDetail=status(api('GET','etymolog/public/names/'.$statAnna),200,'old uppercase given-name ID stays in given kind');
+check((int)$givenDetail['name']['id']===$storyAnna && $givenDetail['name']['kind']==='given' && count($givenDetail['entries'])===2,'given dossier keeps etymology and mythology without surname content');
 foreach (['Fixture Žaneta','Fixture Zaneta'] as $spelling) { $db->insert('etymolog_name',['franchise_code'=>'etymolog','name'=>$spelling,'kind'=>'given','published'=>1]); }
 check(status(api('GET','etymolog/public/names?q=fixture%20zaneta'),200,'accent-insensitive discovery')['total']===2,'diacritically distinct names are not merged by unaccented search');
 for ($n=1;$n<=22;++$n) {

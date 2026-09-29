@@ -9,16 +9,8 @@ Notes:
 - This is shared infrastructure, not an HTTP module.
 - Keep connection, query helpers, and transaction behavior stable unless the task is explicitly about database access.
 - Most module work should start in the module Api, then Service, then Repository layer.
-- `migrations/schema.sql` is destructive and belongs only to a fresh database. Existing installations use dated additive migrations after a verified backup.
-- The normalized customer-profile schema and its final relation-table names are documented in [`../CustomerProfile/README.md`](../CustomerProfile/README.md).
-- Existing databases run `20260912_customer_profiles.sql`, `20260912_rename_customer_profile_relations.sql`, and then the idempotent `20260913_user_customer_profile_position.sql`; never substitute `schema.sql` for these production migrations.
-- FAnn databases then run `20260913_fun_product_categories.sql` to create catalogue categories, fill `product_category`, and clear the tenant's legacy `product.kind` values.
-- Zoo databases run `20260913_zoo_product_categories.sql` to convert the tenant's product-kind classification while preserving existing animal-category links.
-- All existing databases then run `20260913_remove_product_profile_is_target.sql`; purchase probability becomes the only product/profile suitability value.
-- FAnn databases run `20260913_product_alternatives.sql` to create ordered product-to-product alternatives and convert 27 known legacy names; unmatched free text is preserved.
-- Installations using semantic product retrieval run the additive
-  `20260923_openai_vector_store.sql` migration. It stores only tenant Vector
-  Store IDs, product/file mappings and document hashes; the product tables
-  remain the authoritative catalogue. The mapping intentionally has no product
-  foreign key: after a hard delete it must survive until synchronization removes
-  the remote OpenAI file and then deletes the mapping.
+- `migrations/schema.sql` contains repeatable shared DDL only: missing tables, columns, indexes and constraints. Apply it before a product schema.
+- Bootstrap/demo data live in product seeds (`zoo_seed.sql`, `fann_seed.sql`, etc.). `schema_seed.sql` is the optional original Zaječí dataset. Seeds preserve existing records.
+- Installation order: [`migrations/README.md`](../../../../migrations/README.md).
+- The normalized customer-profile model is documented in [`../CustomerProfile/README.md`](../CustomerProfile/README.md).
+- Shared schema includes OpenAI Vector Store mappings. The product mapping intentionally has no product FK: it survives a hard delete until synchronization removes the remote file.

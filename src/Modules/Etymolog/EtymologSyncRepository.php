@@ -25,20 +25,18 @@ final class EtymologSyncRepository extends BaseRepository
     public function import(array $job, array $item): void
     {
         $key = 'wikidata:'.$job['kind'].':'.$item['external_id'];
-        $name = $this->_db->fetchOne('SELECT id,deleted FROM etymolog_name WHERE franchise_code=? AND import_key=?', [$this->_code, $key]);
-        if ($name && (int)$name['deleted'] === 1) {
-            return; // A deleted imported name is a tombstone, never silently resurrected.
-        }
-        $id = $name ? (int)$name['id'] : $this->_db->insert('etymolog_name', [
-            'franchise_code' => $this->_code, 'name' => $item['name'], 'kind' => $job['kind'], 'import_key' => $key,
-            'published' => 0, 'language' => $job['language'],
-        ]);
-        // Editorial fields (including name, language, country and summary) are never updated by sync.
+        $existing = $this->_db->fetchOne("SELECT i.id,i.name_id FROM etymolog_import_record i JOIN etymolog_name n ON n.franchise_code=i.franchise_code AND n.id=i.name_id WHERE i.franchise_code=? AND i.provider='wikidata' AND i.external_id=? AND n.kind=? ORDER BY i.id LIMIT 1", [$this->_code, $item['external_id'], $job['kind']]);
+        $id = (new EtymologNameRepository($this->_db, $this->_code))->resolve(
+            $item['name'], $job['kind'], $job['language'], null, $key,
+            $existing ? (int)$existing['name_id'] : null,
+        );
+        if ($id === null) { return; }
+        // Source snapshots stay separate even when several Wikidata entities describe one name.
         $payload = json_encode($item['payload'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        $data = ['external_id' => $item['external_id'], 'source_url' => $item['source_url'], 'license' => WikidataProvider::LICENSE,
+        $data = ['name_id' => $id, 'external_id' => $item['external_id'], 'source_url' => $item['source_url'], 'license' => WikidataProvider::LICENSE,
             'license_url' => WikidataProvider::LICENSE_URL, 'attribution' => WikidataProvider::ATTRIBUTION,
             'revision' => $item['revision'], 'payload' => $payload, 'content_hash' => hash('sha256', $payload), 'fetched_at' => gmdate('Y-m-d H:i:s')];
-        $existing = $this->_db->fetchOne("SELECT id FROM etymolog_import_record WHERE franchise_code=? AND name_id=? AND provider='wikidata'", [$this->_code, $id]);
+        $existing = $this->_db->fetchOne("SELECT id FROM etymolog_import_record WHERE franchise_code=? AND name_id=? AND provider='wikidata' AND external_id=?", [$this->_code, $id, $item['external_id']]) ?: $existing;
         if ($existing) {
             $this->_db->update('etymolog_import_record', $data, 'id=? AND franchise_code=?', [(int)$existing['id'], $this->_code]);
         } else {

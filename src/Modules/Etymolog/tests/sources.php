@@ -100,10 +100,10 @@ try {
     $db->insert('etymolog_external_record', ['franchise_code' => 'other', 'provider' => 'wiktionary', 'external_id' => 'cross', 'name_id' => $dictNameId, 'source_id' => $record['source_id'], 'revision' => '1', 'source_url' => 'https://example.org', 'license' => 'test', 'license_url' => 'https://example.org', 'attribution' => 'test', 'payload' => '{}', 'content_hash' => str_repeat('a',64), 'fetched_at' => gmdate('Y-m-d H:i:s')]);
     throw new LogicException('Expected external FK failure');
 } catch (RuntimeException $e) {check($e->getPrevious() instanceof PDOException, 'external FK independently blocks foreign tenant');}
-$sourceSeed = file_get_contents($root.'/migrations/2026-09-28-etymolog-sources-tenant.sql');
+$sourceSeed = file_get_contents($root.'/migrations/etymolog_seed.sql');
 $db->getPdo()->exec($sourceSeed); $db->getPdo()->exec($sourceSeed);
-check((int)$db->fetchOne("SELECT COUNT(*) n FROM etymolog_sync_job WHERE franchise_code='etymolog' AND provider='wiktionary'")['n'] === 10, 'dictionary country seed idempotent');
-check((int)$db->fetchOne("SELECT COUNT(*) n FROM etymolog_sync_job WHERE franchise_code='etymolog' AND provider='poland-pesel'")['n'] === 2, 'male and female statistics seeds idempotent');
+check((int)$db->fetchOne("SELECT COUNT(*) n FROM etymolog_sync_job WHERE franchise_code='etymolog' AND provider='wiktionary'")['n'] === 13, 'dictionary country seed stays unique alongside explicit fixture job');
+check((int)$db->fetchOne("SELECT COUNT(*) n FROM etymolog_sync_job WHERE franchise_code='etymolog' AND provider='poland-pesel'")['n'] === 3, 'male and female seeds stay unique alongside explicit fixture job');
 
 $csu = new App\Modules\Etymolog\Providers\CsuBabyNamesProvider($fake);
 $zipFixture = static function (bool $formula = false, bool $externalRelationship = false): string {
