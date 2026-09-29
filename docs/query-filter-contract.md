@@ -1,8 +1,8 @@
 # Query filter contract for new endpoints
 
-> **Status: mandatory for new list/search endpoints.**
-> Existing endpoints may retain older inputs and response shapes while clients
-> migrate. Compatibility adapters validate input and preserve authorization.
+> **Status: mandatory wire format for php-core clients.**
+> Existing endpoints may retain older inputs and response shapes for backwards
+> compatibility, but current clients send the single format below.
 
 ---
 
@@ -26,7 +26,7 @@ their documented legacy inputs and translate them before calling a repository.
 
 `q` is a JSON object. Every key is a column; the value describes the condition.
 
-### 2.1 Preferred: MongoDB-compatible operator form
+### 2.1 Client wire format: MongoDB-compatible operator form
 
 ```json
 { "name": { "$regex": "nov" } }
@@ -35,7 +35,7 @@ their documented legacy inputs and translate them before calling a repository.
 { "status": { "$ne": "cancelled" } }
 ```
 
-### 2.2 Also accepted: native `value` + `operator` form
+### 2.2 Backend compatibility only: native `value` + `operator` form
 
 ```json
 { "name":   { "value": "nov", "operator": "regex" } }
@@ -43,7 +43,7 @@ their documented legacy inputs and translate them before calling a repository.
 { "deleted_at": { "operator": "null" } }
 ```
 
-### 2.3 Shorthand scalar form (implicit `eq`)
+### 2.3 Scalar equality (implicit `eq`)
 
 ```json
 { "status": "active", "published": 1 }
@@ -120,7 +120,7 @@ without a policy allowlist.
 
 ## 4. Sorting and projection
 
-- `sort` is a JSON array of single-key objects: `[{"name":1},{"created_at":-1}]`.
+- Clients send `sort` as a JSON array of single-key objects: `[{"name":1},{"created_at":-1}]`.
   `1` = ASC, `-1` = DESC. Column names are validated; unknown names fall back to
   the repository default. Legacy `sort=name DESC` is tolerated by `SQL_SORT()`
   but new clients MUST send the JSON array.
@@ -147,7 +147,8 @@ reads `$data['data']`; repositories must return that shape.
 
 - `/etymolog/public/names` accepts both JSON `q` and its older plain-text
   `q`, and still returns its established dossier envelope with `items`.
-  The `kind` parameter remains supported.
+  The `kind` parameter remains supported for older callers; current clients put
+  `kind` inside `q`.
 - `/files` accepts JSON `q`, older plain-text `q`, and the older
   `{"search":"..."}` filter. It also accepts legacy sort aliases such as
   `created_desc`. These inputs are translated and validated before SQL.
@@ -167,6 +168,10 @@ text into a LIKE expression.
 4. Never bind `LIKE` values by hand; use the `regex`/`start`/`end` operators.
 5. Return rows under `data` via the shared response envelope.
 6. Reject non-JSON `q` with `422` at the service/validation boundary.
-7. Frontends encode the object with `JSON.stringify(...)` and
-   `encodeURIComponent(...)`. A free-text search box maps to
-   `{ "<column>": { "$regex": <text> } }`.
+7. Frontends encode the object with `JSON.stringify(...)` and URL query
+   encoding. A free-text search box maps to
+   `{ "<column>": { "$regex": <text> } }`. Nuxt form-module legacy
+   `value/operator` values are converted by each server-side `phpApiFetch`
+   proxy before reaching php-core; Astro Etymolog constructs the same wire
+   format in its server-side provider. Never send plain-text `q`, an extra
+   `kind` query parameter, or text `sort` from current clients.
