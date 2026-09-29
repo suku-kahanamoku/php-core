@@ -2101,7 +2101,7 @@ folklore and the community Czech name-day calendar synchronizers.
 
 ### Etymolog: background synchronization
 
-`POST /etymolog/sync/start` (admin, `{}` only) returns 202 with the queued/current tenant batch. Repeated requests reuse an active batch. `GET /etymolog/sync/status` (admin) returns its status and counters or null. Internal key, resolved tenant and user bearer remain mandatory. The detached PHP worker and CLI cron share one runner, processing one batch per due enabled job and respecting retry intervals. Apply `etymolog_schema.sql` and `etymolog_seed.sql` before use; neither starts synchronization. See the Etymolog README for providers and worker requirements.
+`POST /etymolog/sync/start` (admin, `{}` only) returns 202 with the queued/current tenant batch. Repeated requests reuse an active batch. `GET /etymolog/sync/status` (admin) returns its status and counters or null. Internal key, resolved tenant and user bearer remain mandatory. The detached PHP worker and CLI cron share one runner, draining all remaining batches of each job due at pass start. Intermediate batches are immediately eligible; the configured refresh interval starts only when a source pass finishes. Source failures retain their cursor and retry deadline. Apply `etymolog_schema.sql` and `etymolog_seed.sql` before use; neither starts synchronization. See the Etymolog README for providers and worker requirements.
 
 Etymolog public dossiers group the same case-insensitive, accent-sensitive spelling **within one kind** across sources, languages and countries. `kind` is `given|surname`; a spelling used as both is returned as two choices with separate canonical IDs and separate detail content. `total` counts these groups before pagination. The frontend redirects a search with exactly one total result straight to its localized detail; multiple results remain a selection list. Imports normalize casing (first letter uppercase, remainder lowercase) and reuse a tenant/name/kind identity across all providers. Wikidata snapshots remain distinct per source QID; apply `etymolog_schema.sql` before deploying this importer to extend `uq_etymolog_import` with `external_id`.
 
@@ -2135,7 +2135,10 @@ tenant and `ETYMOLOG_SYNC_DISPATCH=cloudflare`. Bodies are exact objects:
 required for this narrowly scoped machine route; ordinary CRUD still requires it.
 Nightly dispatch is limited to today's Europe/Prague date and hour 03, deduplicated
 by tenant/date. A step commits its progress with the job transaction and returns
-`status,request_id,next_step,total`; stale IDs return `status=idle`. Apply
+`status,request_id,next_step,total`; stale IDs return `status=idle`. `next_step`
+counts committed source batches independently of completed jobs. The next step
+continues the same job until its provider reports completion. Admin status adds
+`step_index`; `completed/total` still count jobs. Valid step indices are 0..2147483647. Apply
 `etymolog_schema.sql` first.
 Running steps also return `retry_after` (seconds); a positive value permits the
 same `next_step` to be retried after the cooldown. Admin batch status includes

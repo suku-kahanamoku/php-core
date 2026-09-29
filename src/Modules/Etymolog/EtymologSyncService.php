@@ -7,6 +7,19 @@ final class EtymologSyncService
 {
     public function __construct(private readonly EtymologRepository $jobs, private readonly EtymologSyncRepository $sync, private readonly ProviderRegistry $providers, private readonly ?EtymologStoryRepository $stories = null, private readonly ?EtymologExternalRepository $external = null, private readonly ?EtymologCalendarRepository $calendar = null) {}
 
+    /** CLI-only full pass for a selected due job; HTTP uses durable individual steps. */
+    public function runPass(int $jobId): array
+    {
+        $processed = 0; $scanned = 0; $batches = 0;
+        do {
+            $result = $this->run($jobId);
+            $processed += $result['processed'];
+            $scanned += $result['scanned'] ?? 0;
+            if ($result['status'] !== 'idle') { ++$batches; }
+        } while ($result['status'] === 'success');
+        return array_replace($result, ['processed' => $processed, 'scanned' => $scanned, 'batches' => $batches]);
+    }
+
     /** One bounded batch per invocation; cursor is committed with the entire batch. */
     public function run(?int $jobId = null, ?\Closure $onFinished = null): array
     {
@@ -20,6 +33,9 @@ final class EtymologSyncService
             $runId = $this->sync->start((int)$job['id']);
             try {
                 $batch = $this->providers->get($job['provider'])->batch($job['language'], $job['kind'], $job['cursor'], (int)$job['batch_size']);
+                if (!$batch['complete'] && (!is_string($batch['cursor'] ?? null) || $batch['cursor'] === '' || $batch['cursor'] === $job['cursor'])) {
+                    throw new SyncException('provider_cursor_stalled');
+                }
                 return $this->jobs->transaction(function () use ($job, $runId, $batch, $onFinished) {
                     if ($job['provider'] === 'czech-namedays') {
                         ($this->calendar ?? throw new SyncException('calendar_repository_missing'))->retireLegacyCalendar();

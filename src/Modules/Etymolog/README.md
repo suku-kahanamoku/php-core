@@ -173,8 +173,10 @@ záznam se před importem znovu kontroluje podle `P31` a `P407`; zastaralý výs
 vyhledávacího indexu se přeskočí. Popisek preferuje vybraný jazyk, potom `mul`
 a `en`. Země původu zůstává nevyplněná.
 
-Jedna úloha zpracuje 1–50 výsledků na běh (výchozí 20), interval 300–2592000 s
-(výchozí 3600). Jedno spuštění CLI bez `--job` projde všechny splatné zapnuté úlohy, u každé jednu dávku. `--job` zpracuje pouze vybranou splatnou úlohu.
+Jedna dávka Wikidat zpracuje 1–50 výsledků (výchozí 20), interval mezi úplnými
+průchody je 300–2592000 s (výchozí 3600). Jedno spuštění CLI bez `--job`
+dokončí všechny zbývající dávky všech splatných zapnutých úloh. `--job` dokončí
+zbývající dávky pouze vybrané splatné úlohy.
 Ukončený průchod resetuje kurzor, takže další průchod aktualizuje starší záznamy.
 Kurzor je neprůhledný systémový řetězec, v aktuálním provideru offset vyhledávání.
 Index není neměnný snapshot; opakované průchody kompenzují posuny výsledků.
@@ -554,14 +556,19 @@ každá edice je samostatný citovaný pramen. Nové texty jsou koncepty a přip
   tentýž aktivní běh (`accepted=false`), nevytvoří druhý proces.
 - `GET /api/etymolog/sync/status`: admin, poslední běh nebo `null`.
   Stavy: `queued`, `running`, `complete`, `partial`, `failed`;
-  počty `total`, `completed`, `failed`, `processed`. Časy jsou UTC.
+  počty úloh `total`, `completed`, `failed`, položek `processed` a dokončených
+  kroků/dávek `step_index`. Průběžná dávka nezvyšuje počet dokončených úloh.
+  Časy jsou UTC.
 - BFF kontroluje origin, přihlášení, roli a prázdný obsah. Tenant pochází
   výhradně z backendové konfigurace. Endpointy nejsou veřejné.
 - Cron `php scripts/etymolog-sync.php --tenant=etymolog` používá stejný
   `EtymologBackgroundService::work()`. Interní `--request=<id>` slouží workeru.
-- Jeden průchod zpracuje jednu dávku každé zapnuté úlohy splatné při zahájení.
-  Neresetuje kurzory, neobchází interval ani Retry-After, nepublikuje koncepty.
-  Chyba jednoho zdroje se zaznamená a další zdroje pokračují.
+- Jeden průchod dokončí všechny zbývající dávky zapnutých úloh splatných při
+  zahájení. Nejdříve běží importy samotných jmen, poté jejich textové obohacení.
+  Kurzory se neresetují; další dávka je splatná hned, interval začne až po
+  dokončení celého zdroje. Koncepty se nepublikují. Chyba jednoho zdroje se
+  zaznamená a další zdroje pokračují. CLI při omezení zdroje ponechá kurzor
+  a další pokus odloží pro následující cron; HTTP worker má dvě odložená opakování.
 - Samostatný MySQL advisory lock serializuje celé průchody; dosavadní tenantový
   zámek chrání jednotlivé dávky a CRUD. Ukončení procesu uvolní zámek automaticky.
   Opuštěný požadavek bez workeru je po 120 sekundách označen jako neúspěšný;
@@ -622,10 +629,11 @@ odpověď, změna licence nebo limit API ponechá kurzor pro opakování.
 
 Nasazení nevyžaduje novou tabulku ani změnu úloh. Staré číselné kurzory katalogu
 se automaticky převedou na začátek průchodu DB. U nových kurzorů se pokračuje
-na uložené pozici. Tlačítko i cron stále zpracují **jednu dávku každé splatné
-zapnuté úlohy**, nikoli celou databázi jedním kliknutím. Při jediném denním
-spuštění bude rozsáhlá DB postupovat pomalu. Úlohy opakovaně neresetovat;
-reset by je vracel na začátek. Po dokončení se další průchod vrací k prvním
+na uložené pozici. Tlačítko i cron dokončí **všechny zbývající dávky každé
+splatné zapnuté úlohy**. Krátké HTTP kroky automaticky navazují přes frontu,
+pokud zdroj nezpůsobí chybu; není potřeba opakovaně klikat nebo čekat na další
+noc. Rozsáhlý průchod může trvat hodiny podle počtu jmen a limitů pramenů.
+Úlohy opakovaně neresetovat; reset by je vracel na začátek. Po dokončení se další průchod vrací k prvním
 jménům; nově přidaná jména se zahrnou automaticky.
 
 Import kontroluje CC BY-SA 4.0 a ukládá text, trvalou URL konkrétní revize,
@@ -701,8 +709,9 @@ spouštěčem; nezpřístupňuje CRUD. Akce `health` pouze ověří připravenos
 `nightly` přijímá dnešní pražské datum jen mezi 03:00–03:59 a `step` zpracuje
 jednu dávku jedné úlohy. Ostatní API zůstává za uživatelským přihlášením.
 
-První krok zmrazí seznam splatných zapnutých úloh. Každý krok nese request ID a
-pořadí; opakované doručení již dokončeného kroku neimportuje nic znovu. Zápis
+První krok zmrazí seznam splatných zapnutých úloh. Nejdříve jsou importy jmen
+(`wikidata`, statistiky a kalendář), poté textové zdroje, aby používaly doplněnou DB.
+Každý krok nese request ID a pořadí dávky, nezávislé na počtu dokončených úloh; opakované doručení již dokončeného kroku neimportuje nic znovu. Zápis
 obsahu, posun kurzoru, historie úlohy a postup celého běhu se potvrdí ve stejné
 transakci. Při chybě zdroje se dávka vrátí zpět a pokračují ostatní úlohy.
 Při síťové chybě spojení Cloudflare → PHP se tentýž krok opakuje maximálně
@@ -712,8 +721,20 @@ Jedno HTTP volání má celkový rozpočet 20 sekund na čekání na zdrojové H
 požadavky; parser a databáze mají navíc vlastní čas běhu. Nepřenášíme celou
 synchronizaci do jednoho požadavku. Worker má timeout 45 sekund. Chyby a limity
 jsou viditelné v běhu úloh, data se automaticky nepublikují. Noční průchod
-zpracuje jednu nastavenou dávku každé splatné úlohy; celé rozsáhlé katalogy se
-postupně doplňují další noci. Ruční spuštění nadále respektuje intervaly úloh.
+automaticky pokračuje dalšími dávkami až do dokončení všech vybraných úloh.
+Zdroj s nepostupujícím kurzorem skončí s `provider_cursor_stalled`, aby nezpůsobil
+nekonečnou smyčku. Po poslední dávce se úloha v témže běhu znovu nespouští.
+Ruční spuštění respektuje splatnost úloh při zahájení. Denní start zůstává
+v 03:00 Europe/Prague; pokračování aktivního běhu nepotřebuje další cron.
+
+Stav pořadí kroků je uložen v existujícím `pending_jobs` jako JSON
+`{"jobs":[1,2],"step":42}`. `completed` počítá dokončené úlohy, `step` dokončené
+kroky včetně neúspěšných po vyčerpání opakování. Starý seznam `[1,2]` je
+kompatibilní a při pokračování se převede automaticky. Není potřeba nová
+SQL migrace nad již aktuálním schématem. Nasazujte také aktualizovaný Worker
+`cloudflare/etymolog`, který dovoluje pokračování přes 10 000 kroků; lze jej
+nasadit před PHP, podporuje i původní backend. Poté nasaďte frontend s novým
+popisem a počitadlem dávek. Nasazení samo synchronizaci nespouští.
 
 Worker `/health` a `/probe` vyžadují samostatný tajný klíč. První ověřuje
 spojení s PHP, druhý pouze průchod frontou a autentizované `health`; ani jeden

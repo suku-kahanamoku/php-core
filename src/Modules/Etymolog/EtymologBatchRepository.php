@@ -51,6 +51,7 @@ final class EtymologBatchRepository extends BaseRepository
         if ($row) {
             unset($row['franchise_code']);
             foreach (['total', 'completed', 'failed', 'processed'] as $key) { $row[$key] = (int)$row[$key]; }
+            $row['step_index'] = $this->progress($row)['step'];
         }
         return $row;
     }
@@ -81,31 +82,44 @@ final class EtymologBatchRepository extends BaseRepository
             $request = $this->enqueue(null);
             $this->_db->insert('etymolog_sync_schedule', ['franchise_code' => $this->_code, 'scheduled_date' => $date, 'request_id' => $request['request_id']]);
             $pdo->commit();
-            return ['request_id' => $request['request_id'], 'next_step' => $request['completed']];
+            return ['request_id' => $request['request_id'], 'next_step' => $request['step_index']];
         } catch (\Throwable $e) { if ($pdo->inTransaction()) { $pdo->rollBack(); } throw $e; }
     }
 
     public function prepareSteps(string $id): array
     {
         $ids = $this->dueIds();
-        $this->update($id, ['pending_jobs' => json_encode($ids, JSON_THROW_ON_ERROR), 'total' => count($ids), 'status' => $ids ? 'running' : 'complete', 'finished_at' => $ids ? null : gmdate('Y-m-d H:i:s')]);
+        $this->update($id, ['pending_jobs' => json_encode(['jobs' => $ids, 'step' => 0], JSON_THROW_ON_ERROR), 'total' => count($ids), 'status' => $ids ? 'running' : 'complete', 'finished_at' => $ids ? null : gmdate('Y-m-d H:i:s')]);
         return $this->status();
     }
 
+    /** Old in-flight requests stored only a list; their step equalled completed jobs. */
+    public function progress(array $batch): array
+    {
+        if ($batch['pending_jobs'] === null) { return ['jobs' => [], 'step' => (int)$batch['completed']]; }
+        $state = json_decode($batch['pending_jobs'], true, 64, JSON_THROW_ON_ERROR);
+        if (array_is_list($state)) { return ['jobs' => $state, 'step' => (int)$batch['completed']]; }
+        return $state;
+    }
+
     /** Called inside the same transaction as imported content, job cursor and audit. */
-    public function finishStep(array $batch, array $result): void
+    public function finishStep(array $batch, array $result, bool $retryLimited = true): void
     {
         $limited = ($result['error_code'] ?? null) === 'upstream_rate_limited';
         $retryAt = $limited ? gmdate('Y-m-d H:i:s', time() + max(300, min(604800, (int)($result['retry_after'] ?? 300)))) : null;
-        if ($limited && (int)$batch['retry_count'] < 2) {
-            // Audit/cursor and this deferral commit in one transaction. No completed/failed count yet.
+        if ($retryLimited && $limited && (int)$batch['retry_count'] < 2) {
+            // No advancement until this source batch succeeds or exhausts its retry budget.
             $this->update($batch['request_id'], ['retry_at' => $retryAt, 'retry_count' => (int)$batch['retry_count'] + 1]);
             return;
         }
-        $completed = (int)$batch['completed'] + 1;
+        $state = $this->progress($batch);
+        ++$state['step'];
+        // An intermediate successful batch keeps the same job selected for the next step.
+        $completed = (int)$batch['completed'] + ($result['status'] === 'success' ? 0 : 1);
         $failed = (int)$batch['failed'] + ($result['status'] === 'failed' ? 1 : 0);
         $done = $completed >= (int)$batch['total'];
-        $this->update($batch['request_id'], ['completed' => $completed, 'failed' => $failed, 'retry_count' => 0, 'retry_at' => $done ? null : $retryAt,
+        $this->update($batch['request_id'], ['completed' => $completed, 'failed' => $failed, 'retry_count' => 0, 'retry_at' => $done || !$retryLimited ? null : $retryAt,
+            'pending_jobs' => json_encode($state, JSON_THROW_ON_ERROR),
             'processed' => (int)$batch['processed'] + $result['processed'],
             'status' => $done ? ($failed ? 'partial' : 'complete') : 'running',
             'finished_at' => $done ? gmdate('Y-m-d H:i:s') : null]);
@@ -118,7 +132,7 @@ final class EtymologBatchRepository extends BaseRepository
 
     public function dueIds(): array
     {
-        return array_map(static fn ($row) => (int)$row['id'], $this->_db->fetchAll('SELECT id FROM etymolog_sync_job WHERE franchise_code=? AND deleted=0 AND enabled=1 AND (next_run_at IS NULL OR next_run_at<=UTC_TIMESTAMP()) ORDER BY COALESCE(next_run_at,created_at),id', [$this->_code]));
+        return array_map(static fn ($row) => (int)$row['id'], $this->_db->fetchAll('SELECT id FROM etymolog_sync_job WHERE franchise_code=? AND deleted=0 AND enabled=1 AND (next_run_at IS NULL OR next_run_at<=UTC_TIMESTAMP()) ORDER BY CASE WHEN provider IN (\'wikidata\',\'poland-pesel\',\'csu-baby-names\',\'czech-namedays\') THEN 0 ELSE 1 END,COALESCE(next_run_at,created_at),id', [$this->_code]));
     }
 
     public function update(string $id, array $data): void

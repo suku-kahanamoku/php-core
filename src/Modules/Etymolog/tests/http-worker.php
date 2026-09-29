@@ -62,7 +62,7 @@ $rateId=$db->insert('etymolog_sync_job',['franchise_code'=>$rateTenant,'title'=>
 $rateProvider=new class implements App\Modules\Etymolog\Contracts\BatchProvider {
     public int $calls=0;public bool $limited=true;
     public function batch(string $language,string $kind,?string $cursor,int $limit):array {
-        ++$this->calls;if($cursor!=='kept')throw new LogicException('Cursor lost');
+        ++$this->calls;if($cursor==='advanced')return ['items'=>[],'complete'=>true,'cursor'=>null];if($cursor!=='kept')throw new LogicException('Cursor lost');
         if($this->limited)throw new SyncException('upstream_rate_limited',1800);
         return ['items'=>[],'complete'=>false,'cursor'=>'advanced'];
     }
@@ -77,8 +77,9 @@ $db->update('etymolog_sync_batch',['heartbeat_at'=>gmdate('Y-m-d H:i:s',time()-3
 check($rateRepo->status()['status']==='running','intentional cooldown is not mistaken for a crashed worker');
 $due=static function()use($db,$rateTenant,$rateId){$db->update('etymolog_sync_batch',['retry_at'=>'2000-01-01 00:00:00','heartbeat_at'=>gmdate('Y-m-d H:i:s')],'franchise_code=?',[$rateTenant]);$db->update('etymolog_sync_job',['next_run_at'=>null],'id=?',[$rateId]);};
 $due();$rateProvider->limited=false;$r=$rateService->step($id,0);
-check($r['status']==='complete'&&$rateRepo->status()['failed']===0&&$rateRepo->status()['retry_at']===null,'successful retry finishes one step and clears cooldown');
+check($r['status']==='running'&&$r['next_step']===1&&$rateRepo->status()['completed']===0&&$rateRepo->status()['failed']===0&&$rateRepo->status()['retry_at']===null,'successful retry advances the batch and clears cooldown without finishing the job');
 check($db->fetchOne('SELECT `cursor` FROM etymolog_sync_job WHERE id=?',[$rateId])['cursor']==='advanced','successful retry commits new cursor');
+check($rateService->step($id,1)['status']==='complete','continuation after successful retry completes the source pass');
 $rateProvider->limited=true;$db->update('etymolog_sync_job',['cursor'=>'kept','next_run_at'=>null],'id=?',[$rateId]);$id=$rateRepo->enqueue(null)['request_id'];
 for($attempt=0;$attempt<3;$attempt++){$due();$r=$rateService->step($id,0);}
 check($r['status']==='partial'&&$rateRepo->status()['completed']===1&&$rateRepo->status()['failed']===1,'persistent 429 stops after initial attempt plus two retries');

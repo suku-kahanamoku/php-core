@@ -166,7 +166,7 @@ try {
     check($imported['country_code'] === null && $imported['language'] === 'cs' && $imported['published'] === 0, 'import keeps stated language without inferring country or publishing');
     $snapshot = $sync->imports((int)$imported['id'])[0];
     check($snapshot['license'] === 'CC0-1.0' && isset($snapshot['payload']['claims']['P138'][0]['references']), 'license and statement references retained');
-    check($service->run($jobId)['status'] === 'idle', 'cron respects due time');
+    check(strtotime($jobs->findById($jobId)['next_run_at'].' UTC') <= time(), 'unfinished pass is immediately eligible for continuation');
     status(api('PATCH', 'etymolog/names/'.$imported['id'], ['name' => 'Edited', 'summary' => 'Manual'], $editor), 200, 'edit imported name');
     $db->query('UPDATE etymolog_sync_job SET next_run_at=NULL,`cursor`=NULL WHERE id=?', [$jobId]);
     $entity['lastrevid'] = 2;
@@ -188,6 +188,7 @@ try {
     $db->query('UPDATE etymolog_sync_job SET next_run_at=NULL WHERE id=?', [$jobId]);
     $fake->responses = [$jsonResponse(['query' => ['search' => []]])];
     check($service->run($jobId)['status'] === 'complete' && $jobs->findById($jobId)['cursor'] === null, 'completed pass resets cursor for periodic refresh');
+    check($service->run($jobId)['status'] === 'idle', 'completed pass respects refresh interval');
     status(api('DELETE', 'etymolog/names/'.$imported['id'], token: $editor), 200, 'soft delete imported name');
     $db->query('UPDATE etymolog_sync_job SET next_run_at=NULL WHERE id=?', [$jobId]);
     $fake->responses = [$discovery, $jsonResponse(['entities' => ['Q123' => $entity]])];
@@ -247,6 +248,7 @@ try {
     require __DIR__.'/background.php';
     require __DIR__.'/wikipedia.php';
     require __DIR__.'/http-worker.php';
+    require __DIR__.'/full-pass.php';
     require __DIR__.'/publication.php';
     require __DIR__.'/name-identity.php';
     echo "Checks: $checks passed\n";

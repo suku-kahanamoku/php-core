@@ -33,7 +33,7 @@ final class EtymologBackgroundService
         return $this->work($current['request_id']);
     }
 
-    /** Cron and the detached CLI use exactly this pass: one batch per due enabled job. */
+    /** Cron and the detached CLI use exactly this pass: all remaining batches of each due enabled job. */
     public function work(?string $requestId = null): array
     {
         return $this->batches->lock('worker', function () use ($requestId) {
@@ -50,17 +50,17 @@ final class EtymologBackgroundService
             if (!$current || $current['request_id'] !== $requestId || $current['status'] !== 'queued') {
                 return ['status' => 'idle'];
             }
-            $done = 0; $failed = 0; $processed = 0;
             try {
-                $ids = $this->batches->dueIds();
-                $this->batches->update($requestId, ['status' => 'running', 'total' => count($ids)]);
-                foreach ($ids as $id) {
-                    try { $result = $this->sync->run($id); $processed += $result['processed']; }
-                    catch (SyncException) { ++$failed; } // Already audited with retry time; continue other sources.
-                    ++$done;
-                    $this->batches->update($requestId, ['completed' => $done, 'failed' => $failed, 'processed' => $processed]);
+                $batch = $this->batches->prepareSteps($requestId);
+                while ($batch['status'] === 'running') {
+                    $ids = $this->batches->progress($batch)['jobs'];
+                    try {
+                        // CLI persists each batch separately too. Rate limits stop this job;
+                        // its durable retry time is respected by the next cron invocation.
+                        $this->sync->run((int)$ids[$batch['completed']], fn (array $result) => $this->batches->finishStep($batch, $result, false));
+                    } catch (SyncException) { /* Failure audited; continue with the next source. */ }
+                    $batch = $this->batches->status();
                 }
-                $this->batches->update($requestId, ['status' => $failed ? 'partial' : 'complete', 'finished_at' => gmdate('Y-m-d H:i:s')]);
             } catch (\Throwable $e) {
                 $this->batches->update($requestId, ['status' => 'failed', 'error_code' => 'worker_failed', 'finished_at' => gmdate('Y-m-d H:i:s')]);
                 throw $e;

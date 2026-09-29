@@ -42,5 +42,5 @@ $requestId = $options['request'] ?? null;
 if ($requestId !== null && (!is_string($requestId) || !preg_match('/^[a-f0-9]{32}$/D', $requestId) || $job !== null)) {
     fwrite(STDERR, "Invalid --request or incompatible --job.\n"); exit(2);
 }
-$result = $job !== null ? \App\Modules\Etymolog\EtymologModule::sync($db, $tenant)->run((int)$job) : ($queuedOnly ? $background->workQueued() : $background->work($requestId));
+$result = $job !== null ? \App\Modules\Etymolog\EtymologModule::sync($db, $tenant)->runPass((int)$job) : ($queuedOnly ? $background->workQueued() : $background->work($requestId));
 echo json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES).PHP_EOL;

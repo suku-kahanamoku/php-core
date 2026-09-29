@@ -22,7 +22,7 @@ final class EtymologWorkerApi
             if (count($body) !== count($expected) || array_diff(array_keys($body), $expected)) { throw new EtymologException('Invalid worker fields', 422); }
             if ($action === 'health') { $result = ['status' => 'ready']; }
             elseif ($action === 'nightly' && is_string($body['date'])) { $result = $this->service->nightly($body['date']); }
-            elseif ($action === 'step' && is_string($body['request_id']) && preg_match('/^[a-f0-9]{32}$/D', $body['request_id']) && is_int($body['step']) && $body['step'] >= 0 && $body['step'] <= 10000) { $result = $this->service->step($body['request_id'], $body['step']); }
+            elseif ($action === 'step' && is_string($body['request_id']) && preg_match('/^[a-f0-9]{32}$/D', $body['request_id']) && is_int($body['step']) && $body['step'] >= 0 && $body['step'] <= 2147483647) { $result = $this->service->step($body['request_id'], $body['step']); }
             else { throw new EtymologException('Invalid worker parameters', 422); }
             header('Cache-Control: private, no-store');
             Response::success($result);
