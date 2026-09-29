@@ -15,7 +15,7 @@ final class EtymologExternalRepository extends BaseRepository
         // Reuse evidence imported before DB-driven discovery, including archived entries.
         // Match source page + section + tenant name/kind, never a list of legacy name keys.
         if (!$existing && $provider === 'wikipedia-names' && isset($item['payload']['page_id'], $item['payload']['section'])) {
-            $existing = $this->_db->fetchOne("SELECT r.* FROM etymolog_external_record r JOIN etymolog_name n ON n.id=r.name_id AND n.franchise_code=r.franchise_code WHERE r.franchise_code=? AND r.provider=? AND r.external_id NOT LIKE 'cs:auto:%' AND n.kind=? AND BINARY LOWER(TRIM(n.name))=BINARY LOWER(TRIM(?)) AND JSON_UNQUOTE(JSON_EXTRACT(r.payload,'$.page_id'))=? AND JSON_UNQUOTE(JSON_EXTRACT(r.payload,'$.section'))=? ORDER BY r.id LIMIT 1", [$this->_code,$provider,$item['kind'],$item['name'],(string)$item['payload']['page_id'],$item['payload']['section']]);
+            $existing = $this->_db->fetchOne("SELECT r.* FROM etymolog_external_record r JOIN etymolog_name n ON n.id=r.name_id AND n.franchise_code=r.franchise_code WHERE r.franchise_code=? AND r.provider=? AND r.external_id NOT LIKE 'cs:auto:%' AND n.kind=? AND n.normalized_name=LOWER(TRIM(?)) AND JSON_UNQUOTE(JSON_EXTRACT(r.payload,'$.page_id'))=? AND JSON_UNQUOTE(JSON_EXTRACT(r.payload,'$.section'))=? ORDER BY r.id LIMIT 1", [$this->_code,$provider,$item['kind'],$item['name'],(string)$item['payload']['page_id'],$item['payload']['section']]);
             if ($existing) {
                 $this->_db->update('etymolog_external_record', ['external_id'=>$item['external_id']], 'franchise_code=? AND id=?', [$this->_code,$existing['id']]);
             }

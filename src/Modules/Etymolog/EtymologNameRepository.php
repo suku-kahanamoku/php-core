@@ -22,8 +22,8 @@ final class EtymologNameRepository extends BaseRepository
         }
         $name = NameNormalizer::display($name);
         // Language/country/source describe evidence, not a separate name identity.
-        // Binary comparison after LOWER retains diacritics; tombstones are never revived.
-        $match = $this->_db->fetchOne('SELECT id,name,deleted FROM etymolog_name WHERE franchise_code=? AND kind=? AND BINARY LOWER(TRIM(name))=BINARY LOWER(?) ORDER BY deleted DESC,(BINARY name=BINARY UPPER(name)),id LIMIT 1', [$this->_code, $kind, $name]);
+        // Indexed binary normalization retains diacritics; tombstones are never revived.
+        $match = $this->_db->fetchOne('SELECT id,name,deleted FROM etymolog_name WHERE franchise_code=? AND kind=? AND normalized_name=LOWER(TRIM(?)) ORDER BY deleted DESC,(BINARY name=BINARY UPPER(name)),id LIMIT 1', [$this->_code, $kind, $name]);
         if ($match) {
             if ((int)$match['deleted'] === 1) { return null; }
             if ($match['name'] !== $name) {

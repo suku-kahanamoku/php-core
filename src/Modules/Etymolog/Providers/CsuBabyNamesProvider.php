@@ -6,6 +6,7 @@ namespace App\Modules\Etymolog\Providers;
 use App\Modules\Etymolog\Contracts\BatchProvider;
 use App\Modules\Etymolog\Readers\NameStatisticsXlsxReader;
 use App\Modules\Etymolog\SyncException;
+use App\Modules\Etymolog\EtymologSnapshotRepository;
 use App\Modules\Http\Contracts\HttpClient;
 
 /** Reviewed fixed annual release; new years require adding a separately verified release. */
@@ -14,7 +15,7 @@ final class CsuBabyNamesProvider implements BatchProvider
     public const FILE_URL = 'https://csu.gov.cz/docs/107508/0a6170f4-bc53-7d35-afe2-3d5fcd0acb47/data_detska_jmena_top_100_cesko_2025.xlsx?version=1.0';
     public const SOURCE_URL = 'https://csu.gov.cz/produkty/viktorie-byla-vubec-poprve-nejoblibenejsi-jakub-prvenstvi-obhajil-tesne';
     public const TERMS_URL = 'https://csu.gov.cz/podminky_pro_vyuzivani_a_dalsi_zverejnovani_statistickych_udaju_csu';
-    public function __construct(private readonly HttpClient $http) {}
+    public function __construct(private readonly HttpClient $http, private readonly ?EtymologSnapshotRepository $snapshots = null) {}
 
     public function batch(string $language, string $kind, ?string $cursor, int $limit): array
     {
@@ -23,7 +24,9 @@ final class CsuBabyNamesProvider implements BatchProvider
         if ($cursor !== null && (!is_array($state) || !is_int($state['offset'] ?? null) || $state['offset'] < 1 || $state['offset'] > 300 || !is_string($state['hash'] ?? null) || !preg_match('/^[a-f0-9]{64}$/D', $state['hash']))) { throw new SyncException('invalid_provider_cursor'); }
         $terms = ProviderHttp::get($this->http, self::TERMS_URL, 2000000)->body;
         if (!preg_match('~https://creativecommons\.org/licenses/by/4\.0(?:/|["\'])~', $terms)) { throw new SyncException('upstream_license_changed'); }
-        $bytes = ProviderHttp::get($this->http, self::FILE_URL, 2000000)->body;
+        $bytes = $state === null ? null : $this->snapshots?->get(self::FILE_URL, $state['hash']);
+        $downloaded = $bytes === null;
+        if ($downloaded) { $bytes = ProviderHttp::get($this->http, self::FILE_URL, 2000000)->body; }
         $hash = hash('sha256', $bytes);
         if ($state !== null && $state['hash'] !== $hash) { throw new SyncException('statistics_snapshot_changed'); }
         $rows = (new NameStatisticsXlsxReader())->read($bytes);
@@ -42,6 +45,7 @@ final class CsuBabyNamesProvider implements BatchProvider
             ];
         }
         $next = $offset + count($items); $complete = $next >= count($rows);
+        if (!$complete && $downloaded) { $this->snapshots?->put(self::FILE_URL, $bytes); }
         return ['items' => $items, 'cursor' => $complete ? null : json_encode(['offset' => $next, 'hash' => $hash], JSON_THROW_ON_ERROR), 'complete' => $complete];
     }
 }

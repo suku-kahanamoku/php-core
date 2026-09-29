@@ -22,6 +22,7 @@ final class EtymologHttpWorkerService
             if (!$batch || $batch['request_id'] !== $id) { return ['status' => 'idle']; }
             if (!in_array($batch['status'], ['queued', 'running'], true)) { return $this->result($batch); }
             if ($batch['status'] === 'queued') { $batch = $this->batches->prepareSteps($id); }
+            $batch = $this->batches->optimizePending($batch);
             if ($index < $batch['step_index']) { return $this->result($batch); } // Lost response / duplicate delivery.
             if ($index !== $batch['step_index']) { throw new EtymologException('Out of order worker step', 409); }
             if ($batch['completed'] >= $batch['total']) { return $this->result($batch); }

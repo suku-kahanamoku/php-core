@@ -249,6 +249,7 @@ try {
     require __DIR__.'/wikipedia.php';
     require __DIR__.'/http-worker.php';
     require __DIR__.'/full-pass.php';
+    require __DIR__.'/optimization.php';
     require __DIR__.'/publication.php';
     require __DIR__.'/name-identity.php';
     echo "Checks: $checks passed\n";

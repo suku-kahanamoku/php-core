@@ -89,8 +89,39 @@ final class EtymologBatchRepository extends BaseRepository
     public function prepareSteps(string $id): array
     {
         $ids = $this->dueIds();
-        $this->update($id, ['pending_jobs' => json_encode(['jobs' => $ids, 'step' => 0], JSON_THROW_ON_ERROR), 'total' => count($ids), 'status' => $ids ? 'running' : 'complete', 'finished_at' => $ids ? null : gmdate('Y-m-d H:i:s')]);
+        $state = $this->plannedState($ids, 0);
+        $this->update($id, ['pending_jobs' => json_encode($state, JSON_THROW_ON_ERROR), 'total' => count($ids), 'status' => $ids ? 'running' : 'complete', 'finished_at' => $ids ? null : gmdate('Y-m-d H:i:s')]);
         return $this->status();
+    }
+
+    /** Reorder unfinished work once after deployment without replaying committed steps. */
+    public function optimizePending(array $batch): array
+    {
+        $state = $this->progress($batch);
+        if (($state['plan'] ?? null) === 2 || $batch['status'] !== 'running') { return $batch; }
+        // The current retry count belongs to the old first job; preserve an active cooldown.
+        $prefix = array_slice($state['jobs'], 0, $batch['completed']);
+        $remaining = array_slice($state['jobs'], $batch['completed']);
+        $rows = $this->jobRows();
+        $completedKeys = [];
+        foreach ($rows as $row) {
+            if (in_array((int)$row['id'], $prefix, true)) { $completedKeys[$this->workKey($row)] = true; }
+        }
+        $rows = array_values(array_filter($rows, fn ($row) => in_array((int)$row['id'], $remaining, true) && !isset($completedKeys[$this->workKey($row)])));
+        $ids = array_column($this->uniqueJobs($rows), 'id');
+        $next = $this->plannedState(array_merge($prefix, array_map('intval', $ids)), $state['step']);
+        $done = count($next['jobs']) === (int)$batch['completed'];
+        $this->update($batch['request_id'], ['pending_jobs' => json_encode($next, JSON_THROW_ON_ERROR), 'total' => count($next['jobs']), 'retry_count' => 0,
+            'status' => $done ? ($batch['failed'] ? 'partial' : 'complete') : 'running',
+            'retry_at' => $done ? null : $batch['retry_at'], 'finished_at' => $done ? gmdate('Y-m-d H:i:s') : null]);
+        return $this->status();
+    }
+
+    private function plannedState(array $ids, int $step): array
+    {
+        $priorities = [];
+        foreach ($this->jobRows() as $row) { $priorities[(int)$row['id']] = $this->priority($row['provider']); }
+        return ['jobs' => $ids, 'step' => $step, 'plan' => 2, 'priorities' => $priorities];
     }
 
     /** Old in-flight requests stored only a list; their step equalled completed jobs. */
@@ -114,7 +145,19 @@ final class EtymologBatchRepository extends BaseRepository
         }
         $state = $this->progress($batch);
         ++$state['step'];
-        // An intermediate successful batch keeps the same job selected for the next step.
+        // Rotate unfinished text jobs within their phase so mythology does not wait
+        // for the entire etymology dictionary. Later inventory/statistics stay behind.
+        if ($result['status'] === 'success' && isset($state['priorities'])) {
+            $index = (int)$batch['completed'];
+            $current = $state['jobs'][$index];
+            $priority = $state['priorities'][$current] ?? 1;
+            $end = $index;
+            while (isset($state['jobs'][$end + 1]) && ($state['priorities'][$state['jobs'][$end + 1]] ?? 1) === $priority) { ++$end; }
+            if ($end > $index) {
+                array_splice($state['jobs'], $index, 1);
+                array_splice($state['jobs'], $end, 0, [$current]);
+            }
+        }
         $completed = (int)$batch['completed'] + ($result['status'] === 'success' ? 0 : 1);
         $failed = (int)$batch['failed'] + ($result['status'] === 'failed' ? 1 : 0);
         $done = $completed >= (int)$batch['total'];
@@ -130,9 +173,49 @@ final class EtymologBatchRepository extends BaseRepository
         return $batch['retry_at'] ? max(0, strtotime($batch['retry_at'].' UTC') - time()) : 0;
     }
 
+    private function priority(string $provider): int
+    {
+        return match ($provider) {
+            'wikipedia-names', 'wiktionary', 'wiktionary-cs', 'wiktionary-fr', 'wikisource', 'erben-folklore' => 0,
+            'wikidata', 'czech-namedays' => 2,
+            'poland-pesel', 'csu-baby-names' => 3,
+            default => 1,
+        };
+    }
+
+    private function jobRows(): array
+    {
+        return $this->_db->fetchAll('SELECT id,provider,language,kind,next_run_at,created_at FROM etymolog_sync_job WHERE franchise_code=? AND deleted=0 AND enabled=1 ORDER BY id', [$this->_code]);
+    }
+
+    private function workKey(array $job): string
+    {
+        if (in_array($job['provider'], ['wiktionary','wiktionary-cs','wiktionary-fr'], true)) {
+            return $job['provider'].':'.$job['language'].':'.preg_replace('/_priority$/D', '', $job['kind']);
+        }
+        return 'job:'.$job['id'];
+    }
+
+    /** Prefer the regular dictionary job; a lone enabled legacy alias still works. */
+    private function uniqueJobs(array $rows): array
+    {
+        $selected = [];
+        foreach ($rows as $row) {
+            $key = $this->workKey($row);
+            if (!isset($selected[$key]) || (str_ends_with($selected[$key]['kind'], '_priority') && !str_ends_with($row['kind'], '_priority'))) { $selected[$key] = $row; }
+        }
+        $rows = array_values($selected);
+        usort($rows, fn ($a, $b) => ($this->priority($a['provider']) <=> $this->priority($b['provider']))
+            ?: strcmp($a['next_run_at'] ?? $a['created_at'], $b['next_run_at'] ?? $b['created_at']) ?: ((int)$a['id'] <=> (int)$b['id']));
+        return $rows;
+    }
+
     public function dueIds(): array
     {
-        return array_map(static fn ($row) => (int)$row['id'], $this->_db->fetchAll('SELECT id FROM etymolog_sync_job WHERE franchise_code=? AND deleted=0 AND enabled=1 AND (next_run_at IS NULL OR next_run_at<=UTC_TIMESTAMP()) ORDER BY CASE WHEN provider IN (\'wikidata\',\'poland-pesel\',\'csu-baby-names\',\'czech-namedays\') THEN 0 ELSE 1 END,COALESCE(next_run_at,created_at),id', [$this->_code]));
+        // Deduplicate BEFORE checking due times, so an alias cannot bypass the regular
+        // job's refresh interval. Settings, cursors and imported data are not deleted.
+        $rows = array_filter($this->uniqueJobs($this->jobRows()), static fn ($row) => $row['next_run_at'] === null || strtotime($row['next_run_at'].' UTC') <= time());
+        return array_map(static fn ($row) => (int)$row['id'], array_values($rows));
     }
 
     public function update(string $id, array $data): void

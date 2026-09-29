@@ -71,6 +71,7 @@ $pdo->exec("INSERT INTO etymolog_import_record(franchise_code,name_id,provider,e
 $importBefore = rows('SELECT * FROM etymolog_import_record');
 $pdo->exec('ALTER TABLE etymolog_import_record DROP INDEX uq_etymolog_import, ADD UNIQUE KEY uq_etymolog_import (franchise_code,name_id,provider)');
 $pdo->exec('ALTER TABLE product DROP COLUMN stock_quantity');
+$pdo->exec('ALTER TABLE etymolog_name DROP INDEX idx_etymolog_name_identity, DROP COLUMN normalized_name');
 $pdo->exec('ALTER TABLE etymolog_sync_batch DROP COLUMN retry_at, DROP COLUMN retry_count, DROP COLUMN pending_jobs');
 $pdo->exec('ALTER TABLE etymolog_sync_job MODIFY COLUMN `cursor` VARCHAR(255) NULL');
 $pdo->exec('ALTER TABLE etymolog_entry MODIFY COLUMN name_id INT UNSIGNED NOT NULL');
@@ -80,6 +81,8 @@ $pdo->exec('ALTER TABLE customer_profile_question DROP FOREIGN KEY fk_customer_p
 $pdo->exec("CREATE TABLE partial_sentinel (id INT PRIMARY KEY, body TEXT)");
 $pdo->exec("INSERT INTO partial_sentinel VALUES (1, 'Keep unrelated data')");
 foreach ($schemas as $file) { apply($file); }
+verify($pdo->query("SELECT normalized_name FROM etymolog_name WHERE id={$upgradeNameId}")->fetchColumn() === 'anna', 'schema upgrade computes indexed identity for existing names');
+verify((int)$pdo->query("SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='etymolog_name' AND INDEX_NAME='idx_etymolog_name_identity'")->fetchColumn() === 5, 'schema upgrade restores name identity index');
 verify(rows('SELECT * FROM etymolog_import_record') === $importBefore, 'Wikidata index upgrade preserves existing snapshots and name links');
 verify((int)$pdo->query("SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='etymolog_import_record' AND INDEX_NAME='uq_etymolog_import'")->fetchColumn() === 4, 'existing Wikidata identity index now retains multiple source IDs per name');
 verify((int)$pdo->query("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='etymolog_sync_batch' AND COLUMN_NAME IN ('retry_at','retry_count','pending_jobs')")->fetchColumn() === 3, 'missing worker columns restored');

@@ -57,11 +57,11 @@ $guardedId=$passRepo->enqueue(null)['request_id'];$failedStep=$guarded->step($gu
 check($failedStep['status']==='running'&&$passRepo->status()['failed']===1&&$stalled->calls===1&&$passJobs->findById($stalledId)['last_error']==='provider_cursor_stalled','non-advancing provider fails once and keeps its saved cursor');
 check($guarded->step($guardedId,1)['status']==='partial'&&$passRepo->status()['completed']===2,'broken source does not prevent remaining jobs from finishing');
 
-// Names ingested during this run must exist before dictionary/folklore discovery begins.
+// Existing names receive text evidence before inventory expansion.
 $orderTenant='pass-order-fixture';$orderRepo=new App\Modules\Etymolog\EtymologBatchRepository($db,$orderTenant);
 $enrichment=$db->insert('etymolog_sync_job',['franchise_code'=>$orderTenant,'provider'=>'wikipedia-names','title'=>'Older enrichment']);
 $inventory=$db->insert('etymolog_sync_job',['franchise_code'=>$orderTenant,'provider'=>'czech-namedays','title'=>'Later inventory']);
-check($orderRepo->dueIds()===[$inventory,$enrichment],'name inventory jobs precede enrichment even when enrichment was created earlier');
+check($orderRepo->dueIds()===[$enrichment,$inventory],'text enrichment precedes inventory expansion');
 
 // Deployed requests using the legacy JSON list remain consumable after code upgrade.
 $db->update('etymolog_sync_job',['next_run_at'=>null,'cursor'=>'1'],'id=?',[$passJob]);

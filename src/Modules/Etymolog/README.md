@@ -405,6 +405,18 @@ znovu procházejí idempotentně. Ve výstupu CLI `scanned` u Wiktionary uvádí
 prohlédnutých hesel, `processed` jen počet nalezených výkladů; nula neznamená
 chybu, pokud hesla neměla samostatný vhodný etymologický oddíl.
 
+PESEL CSV a ČSÚ XLSX používají při pokračování dávky lokální snapshot v
+`temp/etymolog-snapshots`, oddělený podle tenantu, zdrojové URL a SHA-256.
+Nový průchod vždy stáhne aktuální soubor. Licence a metadata se ověřují i při
+čtení z cache; obsah souboru je v rámci průchodu neměnný. Cache platí nejvýše
+7 dní, jednotlivý soubor má limit 25 MB; expirované soubory se odstraňují při
+dalším zápisu. Pokud cache chybí, stáhne se soubor znovu a ověří původní hash;
+změna zdrojových dat stále vede na `statistics_snapshot_changed`.
+Adresář `temp` je již zakázaný pro HTTP přístup a ignorovaný Gitem.
+PESEL kurzor nově obsahuje bajtovou pozici: další dávka přeskočí přímo na další
+řádek. Starý kurzor s pouhým offsetem se při prvním pokračování automaticky
+převede, bez resetu dosavadního postupu.
+
 XLSX provider potřebuje rozšíření PHP **zip** a **dom**. Veškeré síťové požadavky
 vedou přes sdílený HTTP modul. Cron zůstává stejný; `--job=ID` umožňuje spustit
 konkrétní splatnou úlohu. Při 429 úloha zaznamená backoff; neresetovat ji jen
@@ -564,7 +576,10 @@ každá edice je samostatný citovaný pramen. Nové texty jsou koncepty a přip
 - Cron `php scripts/etymolog-sync.php --tenant=etymolog` používá stejný
   `EtymologBackgroundService::work()`. Interní `--request=<id>` slouží workeru.
 - Jeden průchod dokončí všechny zbývající dávky zapnutých úloh splatných při
-  zahájení. Nejdříve běží importy samotných jmen, poté jejich textové obohacení.
+  zahájení. Nejdříve běží etymologie a kulturní texty k existujícím jménům,
+  poté importy dalších jmen a kalendář, nakonec statistiky. Úlohy stejné
+  priority se střídají po dávkách. Nová jména získaná až v pozdější fázi
+  dostanou textové obohacení v následujícím splatném průchodu.
   Kurzory se neresetují; další dávka je splatná hned, interval začne až po
   dokončení celého zdroje. Koncepty se nepublikují. Chyba jednoho zdroje se
   zaznamená a další zdroje pokračují. CLI při omezení zdroje ponechá kurzor
@@ -584,7 +599,9 @@ každá edice je samostatný citovaný pramen. Nové texty jsou koncepty a přip
 ### Jedno veřejné heslo pro více importních zdrojů
 
 Veřejné `search`/`detail` sdružují zveřejněné záznamy podle dvojice
-`kind, BINARY LOWER(TRIM(name))` napříč zdroji, zeměmi a jazyky. Diakritika
+`kind, normalized_name` napříč zdroji, zeměmi a jazyky. Generovaný
+indexovaný sloupec `normalized_name` ukládá `LOWER(TRIM(name))` v binární
+kolaci a automaticky reaguje i na redakční přejmenování. Diakritika
 zůstává významná; accent-insensitive LIKE slouží pouze k vyhledávání.
 `Anna/given` a `Anna/surname` jsou dva výsledky s vlastními ID a podklady.
 Reprezentantem každé skupiny je nejstarší zveřejněný zápis, který není celý
@@ -728,13 +745,26 @@ Ruční spuštění respektuje splatnost úloh při zahájení. Denní start zů
 v 03:00 Europe/Prague; pokračování aktivního běhu nepotřebuje další cron.
 
 Stav pořadí kroků je uložen v existujícím `pending_jobs` jako JSON
-`{"jobs":[1,2],"step":42}`. `completed` počítá dokončené úlohy, `step` dokončené
-kroky včetně neúspěšných po vyčerpání opakování. Starý seznam `[1,2]` je
-kompatibilní a při pokračování se převede automaticky. Není potřeba nová
-SQL migrace nad již aktuálním schématem. Nasazujte také aktualizovaný Worker
-`cloudflare/etymolog`, který dovoluje pokračování přes 10 000 kroků; lze jej
-nasadit před PHP, podporuje i původní backend. Poté nasaďte frontend s novým
-popisem a počitadlem dávek. Nasazení samo synchronizaci nespouští.
+`{"jobs":[1,2],"step":42,"plan":2,"priorities":{"1":0,"2":3}}`.
+`completed` počítá dokončené úlohy, `step` dokončené kroky včetně neúspěšných
+po vyčerpání opakování. Starý seznam i objekt bez `plan` jsou kompatibilní:
+HTTP worker při dalším kroku přeuspořádá nedokončené úlohy, zachová kurzory,
+počet kroků, zpracované položky i případnou právě platnou čekací lhůtu.
+Dokončené úlohy se neopakují.
+
+Společný plánovač slučuje obyčejnou slovníkovou úlohu a její historický alias
+`*_priority` pro stejný provider, jazyk a druh jména. Přednost má obyčejná
+zapnutá úloha a její interval; pokud není zapnutá, samostatný alias funguje dál.
+Konfiguraci ani kurzory úloh tento výběr nemaže. Různé jazyky a jméno/příjmení
+zůstávají oddělené. Explicitní CLI `--job=ID` stále vybírá konkrétní úlohu.
+
+**Nasazení optimalizace:** před novým PHP kódem aplikujte aktuální
+`migrations/etymolog_schema.sql`. Přidá generovaný normalizovaný název a index
+pro rychlé hledání již existujících jmen a procházení DB; existující záznamy
+zachová, opakované spuštění je bezpečné. Seed se kvůli této změně neopakuje.
+PHP potřebuje zápis do `temp/etymolog-snapshots` (adresář vzniká automaticky).
+Optimalizace nemění protokol současného Cloudflare Workeru ani frontend.
+Nasazení samo nezakládá synchronizaci; již aktivní fronta může pokračovat.
 
 Worker `/health` a `/probe` vyžadují samostatný tajný klíč. První ověřuje
 spojení s PHP, druhý pouze průchod frontou a autentizované `health`; ani jeden

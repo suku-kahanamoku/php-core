@@ -190,6 +190,7 @@ CREATE TABLE IF NOT EXISTS `etymolog_name` (
   `created_by` int unsigned DEFAULT NULL,
   `updated_by` int unsigned DEFAULT NULL,
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `normalized_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin GENERATED ALWAYS AS (lower(trim(`name`))) STORED,
   `kind` varchar(16) COLLATE utf8mb4_bin NOT NULL,
   `language` varchar(35) COLLATE utf8mb4_bin DEFAULT NULL,
   `country_code` char(2) COLLATE utf8mb4_bin DEFAULT NULL,
@@ -199,6 +200,7 @@ CREATE TABLE IF NOT EXISTS `etymolog_name` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_etymolog_name_tenant_id` (`franchise_code`,`id`),
   UNIQUE KEY `uq_etymolog_name_import` (`franchise_code`,`import_key`),
+  KEY `idx_etymolog_name_identity` (`franchise_code`,`kind`,`normalized_name`,`deleted`,`id`),
   KEY `idx_etymolog_name_search` (`franchise_code`,`name`,`kind`),
   KEY `idx_etymolog_name_active` (`franchise_code`,`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
@@ -966,6 +968,11 @@ EXECUTE schema_stmt;
 DEALLOCATE PREPARE schema_stmt;
 
 SET @schema_ddl = IF((SELECT COUNT(*)=0 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='etymolog_name' AND COLUMN_NAME='name'), 'ALTER TABLE `etymolog_name` ADD COLUMN `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL', 'DO 0');
+PREPARE schema_stmt FROM @schema_ddl;
+EXECUTE schema_stmt;
+DEALLOCATE PREPARE schema_stmt;
+
+SET @schema_ddl = IF((SELECT COUNT(*)=0 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='etymolog_name' AND COLUMN_NAME='normalized_name'), 'ALTER TABLE `etymolog_name` ADD COLUMN `normalized_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin GENERATED ALWAYS AS (lower(trim(`name`))) STORED', 'DO 0');
 PREPARE schema_stmt FROM @schema_ddl;
 EXECUTE schema_stmt;
 DEALLOCATE PREPARE schema_stmt;
@@ -1742,6 +1749,11 @@ EXECUTE schema_stmt;
 DEALLOCATE PREPARE schema_stmt;
 
 SET @schema_ddl = IF((SELECT COUNT(*)=0 FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='etymolog_name' AND INDEX_NAME='uq_etymolog_name_import'), 'ALTER TABLE `etymolog_name` ADD UNIQUE KEY `uq_etymolog_name_import` (`franchise_code`,`import_key`)', 'DO 0');
+PREPARE schema_stmt FROM @schema_ddl;
+EXECUTE schema_stmt;
+DEALLOCATE PREPARE schema_stmt;
+
+SET @schema_ddl = IF((SELECT COUNT(*)=0 FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='etymolog_name' AND INDEX_NAME='idx_etymolog_name_identity'), 'ALTER TABLE `etymolog_name` ADD KEY `idx_etymolog_name_identity` (`franchise_code`,`kind`,`normalized_name`,`deleted`,`id`)', 'DO 0');
 PREPARE schema_stmt FROM @schema_ddl;
 EXECUTE schema_stmt;
 DEALLOCATE PREPARE schema_stmt;

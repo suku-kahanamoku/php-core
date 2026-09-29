@@ -5,19 +5,21 @@ namespace App\Modules\Etymolog\Providers;
 
 use App\Modules\Etymolog\Contracts\BatchProvider;
 use App\Modules\Etymolog\SyncException;
+use App\Modules\Etymolog\EtymologSnapshotRepository;
 use App\Modules\Http\Contracts\HttpClient;
 
 /** Official national surname counts, separate male/female populations; never inferred ethnicity. */
 final class PolandPeselProvider implements BatchProvider
 {
     private const API = 'https://api.dane.gov.pl/1.4/';
-    public function __construct(private readonly HttpClient $http) {}
+    public function __construct(private readonly HttpClient $http, private readonly ?EtymologSnapshotRepository $snapshots = null) {}
 
     public function batch(string $language, string $kind, ?string $cursor, int $limit): array
     {
         if ($language !== 'pl' || !in_array($kind, ['surname_male', 'surname_female'], true) || $limit < 1 || $limit > 500) { throw new SyncException('invalid_provider_configuration'); }
         $state = $cursor === null ? null : json_decode($cursor, true);
         if ($cursor !== null && (!is_array($state) || !is_int($state['resource'] ?? null) || $state['resource'] < 1 || !is_int($state['offset'] ?? null) || $state['offset'] < 1 || $state['offset'] > 2000000 || !is_string($state['hash'] ?? null) || !preg_match('/^[a-f0-9]{64}$/D', $state['hash']))) { throw new SyncException('invalid_provider_cursor'); }
+        if (isset($state['position']) && (!is_int($state['position']) || $state['position'] < 1 || $state['position'] > 25000000)) { throw new SyncException('invalid_provider_cursor'); }
         $dataset = ProviderHttp::json($this->http, self::API.'datasets/1681');
         $rights = $dataset['data']['attributes'] ?? [];
         if (($dataset['data']['id'] ?? null) !== '1681' || ($rights['license_name'] ?? null) !== 'CC0 1.0') { throw new SyncException('upstream_license_changed'); }
@@ -46,7 +48,9 @@ final class PolandPeselProvider implements BatchProvider
             !preg_match('~^/media/resources/[0-9]{8}/[^/]+\.csv$~D', $url['path'] ?? '') || str_contains(rawurldecode($url['path']), '..') || str_contains(rawurldecode(substr($url['path'], 26)), '/')) {
             throw new SyncException('statistics_download_url_not_allowed');
         }
-        $csv = ProviderHttp::get($this->http, $csvUrl, 25000000)->body;
+        $csv = $state === null ? null : $this->snapshots?->get($csvUrl, $state['hash']);
+        $downloaded = $csv === null;
+        if ($downloaded) { $csv = ProviderHttp::get($this->http, $csvUrl, 25000000)->body; }
         if (!preg_match('//u', $csv)) { throw new SyncException('statistics_encoding_changed'); }
         $hash = hash('sha256', $csv);
         if ($state !== null && $state['hash'] !== $hash) { throw new SyncException('statistics_snapshot_changed'); }
@@ -58,8 +62,16 @@ final class PolandPeselProvider implements BatchProvider
             if (is_array($header)) { $header[0] = ltrim($header[0], "\xEF\xBB\xBF"); }
             if ($header !== ['Nazwisko aktualne', 'Liczba']) { throw new SyncException('statistics_schema_changed'); }
             $offset = $state['offset'] ?? 0;
-            for ($i = 0; $i < $offset; ++$i) {
-                if (fgetcsv($stream, 0, ',', '"', '') === false) { throw new SyncException('invalid_provider_cursor'); }
+            if (isset($state['position'])) {
+                $position = $state['position'];
+                if ($position < ftell($stream) || $position >= strlen($csv) || !in_array($csv[$position - 1], ["\n", "\r"], true) || fseek($stream, $position) !== 0) {
+                    throw new SyncException('invalid_provider_cursor');
+                }
+            } else {
+                // Existing cursors traverse preceding rows once, then switch to a byte position.
+                for ($i = 0; $i < $offset; ++$i) {
+                    if (fgetcsv($stream, 0, ',', '"', '') === false) { throw new SyncException('invalid_provider_cursor'); }
+                }
             }
             $items = []; $eof = false;
             for ($i = 0; $i < $limit; ++$i) {
@@ -84,8 +96,10 @@ final class PolandPeselProvider implements BatchProvider
                         'row' => $offset + $i + 2, 'license_evidence' => ['license_name' => $rights['license_name'], 'conditions' => $rights['current_condition_descriptions'] ?? []]],
                 ];
             }
+            $position = ftell($stream);
             if (!$eof) { $eof = fgetcsv($stream, 0, ',', '"', '') === false; }
         } finally { fclose($stream); }
-        return ['items' => $items, 'cursor' => $eof ? null : json_encode(['resource' => $resourceId, 'offset' => $offset + count($items), 'hash' => $hash], JSON_THROW_ON_ERROR), 'complete' => $eof];
+        if (!$eof && $downloaded) { $this->snapshots?->put($csvUrl, $csv); }
+        return ['items' => $items, 'cursor' => $eof ? null : json_encode(['resource' => $resourceId, 'offset' => $offset + count($items), 'hash' => $hash, 'position' => $position], JSON_THROW_ON_ERROR), 'complete' => $eof];
     }
 }

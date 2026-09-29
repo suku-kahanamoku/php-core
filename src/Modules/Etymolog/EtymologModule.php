@@ -15,6 +15,7 @@ final class EtymologModule
         if ($httpStep) { $http = new Providers\SyncBudgetProvider($http); }
         $http = new Providers\WikimediaHttpProvider($http); // Includes pacing time in the HTTP-step budget.
         $names = new EtymologDiscoveryRepository($db, $tenant);
+        $snapshots = new EtymologSnapshotRepository(dirname(__DIR__, 3).'/temp/etymolog-snapshots', $tenant);
         $registry = new ProviderRegistry([
             'wikipedia-names' => new WikipediaNamesProvider($http, $names),
             'erben-folklore' => new ErbenFolkloreProvider($http, $names),
@@ -24,8 +25,8 @@ final class EtymologModule
             'wiktionary-fr' => new WiktionaryProvider($http, $names, 'fr'),
             'wiktionary-cs' => new WiktionaryProvider($http, $names, 'cs'),
             'wiktionary' => new WiktionaryProvider($http, $names),
-            'csu-baby-names' => new CsuBabyNamesProvider($http),
-            'poland-pesel' => new PolandPeselProvider($http),
+            'csu-baby-names' => new CsuBabyNamesProvider($http, $snapshots),
+            'poland-pesel' => new PolandPeselProvider($http, $snapshots),
         ]);
         return new EtymologSyncService(new EtymologRepository($db, $tenant, 'sync-jobs'), new EtymologSyncRepository($db, $tenant), $registry, new EtymologStoryRepository($db, $tenant), new EtymologExternalRepository($db, $tenant), new EtymologCalendarRepository($db, $tenant));
     }
