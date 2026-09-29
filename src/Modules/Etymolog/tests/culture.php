@@ -68,36 +68,58 @@ catch(App\Modules\Etymolog\SyncException $e){check($e->reason==='story_license_n
 $calendarProvider=new App\Modules\Etymolog\Providers\CzechNamedaysProvider($fake);
 $calendarService=new App\Modules\Etymolog\EtymologSyncService($jobs,$sync,new App\Modules\Etymolog\ProviderRegistry(['czech-namedays'=>$calendarProvider]),$storyRepo,$external,$calendarRepo);
 $calendarJob=status(api('POST','etymolog/sync-jobs',['title'=>'Calendar','provider'=>'czech-namedays','kind'=>'calendar','batch_size'=>500],$admin),201,'create name-day job');
-$dates=[];
-for($m=1;$m<=12;++$m){for($d=1;$d<=31;++$d){if(checkdate($m,$d,2000)){$dates[sprintf('%02d%02d',$d,$m)]='Testovník';}}}
-$dates['0101']='Nový rok';$dates['2902']='Horymír';$dates['2412']=['Eva','Adam','Štědrý den'];
-$calendarJs='function when(when) { var json_data = '.json_encode($dates,JSON_UNESCAPED_UNICODE).'; var result = json_data[when]; }';
-$calendarLicense=file_get_contents(__DIR__.'/fixtures/Unlicense.txt');
-$revision=str_repeat('a',40);
-$calendarResponses=static fn()=>[$jsonResponse(['sha'=>$revision]),new App\Modules\Http\HttpResponse(200,$calendarLicense),new App\Modules\Http\HttpResponse(200,$calendarJs)];
+$calendarHtml='<table class="wikitable"><tr><th>měsíc</th><th>datum</th><th>svátek (jmeniny)</th><th>svátek</th></tr>';
+for($m=1;$m<=12;++$m){for($d=1;$d<=31;++$d){if(checkdate($m,$d,2000)){
+    $label=($m===1 && $d===1)?'Mečislav':(($m===12 && $d===24)?'Eva a Adam':(($m===12 && $d===25)?'':'Testovník'));
+    $calendarHtml.='<tr><td>'.$d.'. '.$m.'.</td><td>'.$label.'</td><td>Státní svátek</td></tr>';
+}}}
+$calendarHtml.='</table>';
+$revision=26142257;
+$rightsFixture=['query'=>['rightsinfo'=>['url'=>App\Modules\Etymolog\Providers\WikipediaNamesProvider::LICENSE_URL]]];
+$calendarPage=static fn(string $html,int $rev=26142257)=>['parse'=>['title'=>'Jmeniny','pageid'=>14885,'revid'=>$rev,'text'=>['*'=>$html]]];
+$calendarResponses=static fn()=>[$jsonResponse($rightsFixture),$jsonResponse($calendarPage($calendarHtml))];
+// Existing GitHub data remains truthful in the audit but disappears from public content.
+$legacySource=$db->insert('etymolog_source',['franchise_code'=>'etymolog','title'=>'Legacy source','import_key'=>'czech-namedays:cs','url'=>'https://github.com/segeda/svatky-api-nodejs','license'=>'Unlicense']);
+$legacyCalendar=$db->insert('etymolog_calendar',['franchise_code'=>'etymolog','title'=>'Legacy calendar','import_key'=>'czech-namedays:cs','country_code'=>'CZ','tradition'=>'Legacy']);
+$legacyDay=$db->insert('etymolog_calendar_day',['franchise_code'=>'etymolog','calendar_id'=>$legacyCalendar,'source_id'=>$legacySource,'name_id'=>$id,'title'=>'Legacy date','month'=>1,'day'=>1,'source_url'=>'https://github.com/segeda/svatky-api-nodejs','published'=>1]);
+$otherLegacySource=$db->insert('etymolog_source',['franchise_code'=>'other','title'=>'Other tenant legacy source','import_key'=>'czech-namedays:cs','license'=>'Unlicense']);
+$fake->responses=[$jsonResponse(['query'=>['rightsinfo'=>['url'=>'https://example.org/proprietary']]])];
+try{$calendarService->run((int)$calendarJob['id']);throw new LogicException('Expected licence failure');}
+catch(App\Modules\Etymolog\SyncException $e){check($e->reason==='upstream_license_changed','failed first import does not retire existing data');}
+check((int)$db->fetchOne('SELECT deleted FROM etymolog_source WHERE id=?',[$legacySource])['deleted']===0 && (int)$db->fetchOne('SELECT published FROM etymolog_calendar_day WHERE id=?',[$legacyDay])['published']===1,'source replacement is atomic with a successful batch');
+$db->query('UPDATE etymolog_sync_job SET next_run_at=NULL WHERE id=?',[$calendarJob['id']]);
 $fake->responses=$calendarResponses();$result=$calendarService->run((int)$calendarJob['id']);
-check($result['processed']===368 && $result['status']==='complete','all 366 dates and shared name days imported');
+check((int)$db->fetchOne('SELECT deleted FROM etymolog_source WHERE id=?',[$otherLegacySource])['deleted']===0,'source retirement preserves other tenants');
+check($result['processed']===366 && $result['status']==='complete','Wikipedia dates and multiple names imported without state holidays');
+check((int)$db->fetchOne('SELECT deleted FROM etymolog_source WHERE id=?',[$legacySource])['deleted']===1 && $db->fetchOne('SELECT license FROM etymolog_source WHERE id=?',[$legacySource])['license']==='Unlicense','legacy source archived without relabeling its provenance');
+check((int)$db->fetchOne('SELECT published FROM etymolog_calendar_day WHERE id=?',[$legacyDay])['published']===0 && (int)$db->fetchOne('SELECT deleted FROM etymolog_name WHERE id=?',[$id])['deleted']===0,'legacy dates withdrawn but shared names preserved');
 $ny=$db->fetchOne("SELECT d.* FROM etymolog_calendar_day d JOIN etymolog_external_record x ON x.franchise_code=d.franchise_code AND x.calendar_day_id=d.id WHERE x.provider='czech-namedays' AND d.month=1 AND d.day=1");
-check($ny['kind']==='observance' && $ny['name_id']===null,'New Year is not a person name');
+check($ny['kind']==='name_day' && $ny['name_id']!==null && $ny['published']===0,'new name days are drafts with an explicit name');
 $cp=status(api('GET','etymolog/calendar-days/'.$ny['id'].'/imports',token:$editor),200,'calendar provenance API');
-check($cp[0]['license']==='Unlicense' && $cp[0]['revision']===$revision,'calendar pins source commit and licence');
+check($cp[0]['license']==='CC-BY-SA-4.0' && $cp[0]['revision']===(string)$revision && str_starts_with($cp[0]['source_url'],'https://cs.wikipedia.org/'),'calendar pins Wikipedia revision and licence');
 status(api('GET','etymolog/calendar-days/'.$ny['id'].'/imports',token:$other,host:'other.test'),404,'calendar import snapshots tenant scoped');
 status(api('PATCH','etymolog/calendar-days/'.$ny['id'],['notes'=>'Manual note'],$editor),200,'editor can annotate imported day');
 $db->query('UPDATE etymolog_sync_job SET next_run_at=NULL WHERE id=?',[$calendarJob['id']]);
 $fake->responses=$calendarResponses();$calendarService->run((int)$calendarJob['id']);
 check($db->fetchOne('SELECT notes FROM etymolog_calendar_day WHERE id=?',[$ny['id']])['notes']==='Manual note','calendar reimport preserves editorial data');
-check((int)$db->fetchOne("SELECT COUNT(*) n FROM etymolog_external_record WHERE provider='czech-namedays'")['n']===368,'calendar imports idempotent');
+check((int)$db->fetchOne("SELECT COUNT(*) n FROM etymolog_external_record WHERE provider='czech-namedays'")['n']===366,'calendar imports idempotent');
 $fake->responses=$calendarResponses();$cb=$calendarProvider->batch('cs','calendar',null,1);
-check(!$cb['complete'] && json_decode($cb['cursor'],true)['revision']===$revision,'calendar resume pins commit');
-$fake->responses=[new App\Modules\Http\HttpResponse(200,$calendarLicense),new App\Modules\Http\HttpResponse(200,$calendarJs)];
-$cb2=$calendarProvider->batch('cs','calendar',$cb['cursor'],1);
+check(!$cb['complete'] && json_decode($cb['cursor'],true)['revision']===$revision,'calendar resume pins Wikipedia revision');
+$fake->responses=$calendarResponses();$cb2=$calendarProvider->batch('cs','calendar',$cb['cursor'],1);
 check($cb2['items'][0]['day']===2,'calendar next batch starts after previous row');
-$fake->responses=[$jsonResponse(['sha'=>$revision]),new App\Modules\Http\HttpResponse(200,'different licence')];
+$fake->responses=$calendarResponses();$cb3=$calendarProvider->batch('cs','calendar',json_encode(['revision'=>str_repeat('a',40),'offset'=>100]),1);
+check($cb3['items'][0]['day']===1,'legacy cursor restarts new source from beginning');
+$fake->responses=[$jsonResponse(['query'=>['rightsinfo'=>['url'=>'https://example.org/proprietary']]])];
 try{$calendarProvider->batch('cs','calendar',null,1);throw new LogicException('Expected licence failure');}
-catch(App\Modules\Etymolog\SyncException $e){check($e->reason==='upstream_license_changed','calendar licence fingerprint must match reviewed terms');}
-$fake->responses=[$jsonResponse(['sha'=>$revision]),new App\Modules\Http\HttpResponse(200,$calendarLicense),new App\Modules\Http\HttpResponse(200,'var json_data = {"0101": runMaliciousCode()}; var result = 1;')];
-try{$calendarProvider->batch('cs','calendar',null,1);throw new LogicException('Expected JS rejection');}
-catch(App\Modules\Etymolog\SyncException $e){check($e->reason==='calendar_schema_changed','source JavaScript never executed');}
+catch(App\Modules\Etymolog\SyncException $e){check($e->reason==='upstream_license_changed','calendar requires reviewed Wikipedia licence');}
+foreach ([str_replace('Mečislav','Neznámý popisek',$calendarHtml)=>'calendar_label_needs_review',str_replace('1. 1.','32. 1.',$calendarHtml)=>'invalid_calendar_date',str_replace('<td>1. 1.</td><td>Mečislav</td><td>Státní svátek</td>','',$calendarHtml)=>'calendar_coverage_changed'] as $html=>$expected) {
+    $fake->responses=[$jsonResponse($rightsFixture),$jsonResponse($calendarPage($html))];
+    try{$calendarProvider->batch('cs','calendar',null,500);throw new LogicException('Expected schema failure');}
+    catch(App\Modules\Etymolog\SyncException $e){check($e->reason===$expected,'reject unsafe calendar change: '.$expected);}
+}
+$fake->responses=[$jsonResponse($rightsFixture),$jsonResponse($calendarPage($calendarHtml,123))];
+try{$calendarProvider->batch('cs','calendar',$cb['cursor'],1);throw new LogicException('Expected revision failure');}
+catch(App\Modules\Etymolog\SyncException $e){check($e->reason==='invalid_calendar_revision','resume rejects mismatched revision');}
 status(api('DELETE','etymolog/calendar-days/'.$ny['id'],token:$editor),200,'imported day may archive');
 status(api('DELETE','etymolog/calendar-days/'.$ny['id'].'?force=true',token:$admin),409,'snapshot preserves calendar provenance from hard delete');
 $db->query('UPDATE etymolog_sync_job SET next_run_at=NULL WHERE id=?',[$calendarJob['id']]);

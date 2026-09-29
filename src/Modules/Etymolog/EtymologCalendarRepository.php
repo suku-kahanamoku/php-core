@@ -28,6 +28,19 @@ final class EtymologCalendarRepository extends BaseRepository
             'notes' => 'Datum kapitoly historické sbírky; vztah ke jménům je veden přes redakčně kontrolované entry-names.', 'published' => 0]);
     }
 
+    /** Called once after a validated Wikipedia batch, in the same tenant lock/transaction. */
+    public function retireLegacyCalendar(): void
+    {
+        $sources = $this->_db->fetchAll("SELECT id FROM etymolog_source WHERE franchise_code=? AND import_key='czech-namedays:cs' AND deleted=0", [$this->_code]);
+        foreach ($sources as $source) {
+            $this->_db->query('UPDATE etymolog_calendar_day SET published=0,deleted=1 WHERE franchise_code=? AND source_id=?', [$this->_code, $source['id']]);
+            $this->_db->update('etymolog_source', ['deleted'=>1], 'franchise_code=? AND id=?', [$this->_code, $source['id']]);
+        }
+        $this->_db->query("UPDATE etymolog_calendar SET deleted=1 WHERE franchise_code=? AND import_key='czech-namedays:cs' AND deleted=0", [$this->_code]);
+        $this->_db->query("UPDATE etymolog_sync_job SET title=? WHERE franchise_code=? AND provider='czech-namedays' AND title='Český jmenný kalendář – komunitní zdroj'", ['Wikipedie – český jmenný kalendář', $this->_code]);
+        // Keep original snapshots and shared names. Never relabel GitHub data as Wikipedia.
+    }
+
     public function import(array $item): void
     {
         $provider = 'czech-namedays';
@@ -51,10 +64,10 @@ final class EtymologCalendarRepository extends BaseRepository
             $this->_db->update('etymolog_external_record', $snapshot, 'id=? AND franchise_code=?', [$existing['id'], $this->_code]);
             return;
         }
-        $calendarId = $this->calendar(['import_key' => 'czech-namedays:cs', 'title' => 'Český jmenný kalendář – segeda/svatky-api-nodejs', 'country_code' => 'CZ',
-            'system' => 'gregorian', 'tradition' => 'Komunitní občanský jmenný kalendář', 'notes' => 'Konkrétní webová edice; není univerzální ani oficiální kalendář.']);
+        $calendarId = $this->calendar(['import_key' => Providers\CzechNamedaysProvider::SOURCE_KEY, 'title' => Providers\CzechNamedaysProvider::TITLE, 'country_code' => 'CZ',
+            'system' => 'gregorian', 'tradition' => 'Český občanský jmenný kalendář podle Wikipedie', 'notes' => 'Konkrétní webová edice; není univerzální ani oficiální kalendář.']);
         if ($calendarId === null) {return;}
-        $source = $this->_db->fetchOne('SELECT id,deleted FROM etymolog_source WHERE franchise_code=? AND import_key=?', [$this->_code, 'czech-namedays:cs']);
+        $source = $this->_db->fetchOne('SELECT id,deleted FROM etymolog_source WHERE franchise_code=? AND import_key=?', [$this->_code, Providers\CzechNamedaysProvider::SOURCE_KEY]);
         if ($source && (int)$source['deleted'] === 1) {return;}
         $nameId = null;
         if ($item['name'] !== null) {
@@ -62,11 +75,11 @@ final class EtymologCalendarRepository extends BaseRepository
             $nameId = (new EtymologNameRepository($this->_db, $this->_code))->resolve($item['name'], 'given', 'cs', null, $nameKey);
             if ($nameId === null) { return; }
         }
-        $sourceId = $source ? (int)$source['id'] : $this->_db->insert('etymolog_source', ['franchise_code' => $this->_code, 'import_key' => 'czech-namedays:cs',
-            'title' => 'segeda/svatky-api-nodejs – český kalendář', 'url' => $item['source_url'], 'license' => $item['license'], 'license_url' => $item['license_url'], 'attribution' => $item['attribution']]);
+        $sourceId = $source ? (int)$source['id'] : $this->_db->insert('etymolog_source', ['franchise_code' => $this->_code, 'import_key' => Providers\CzechNamedaysProvider::SOURCE_KEY,
+            'title' => Providers\CzechNamedaysProvider::TITLE, 'url' => $item['source_url'], 'license' => $item['license'], 'license_url' => $item['license_url'], 'attribution' => $item['attribution']]);
         $dayId = $this->_db->insert('etymolog_calendar_day', ['franchise_code' => $this->_code, 'import_key' => $provider.':'.hash('sha256', $item['external_id']),
             'calendar_id' => $calendarId, 'source_id' => $sourceId, 'name_id' => $nameId, 'title' => $item['title'], 'kind' => $item['kind'],
-            'month' => $item['month'], 'day' => $item['day'], 'source_url' => $item['source_url'], 'locator' => 'cs.js: '.sprintf('%02d%02d', $item['day'], $item['month']), 'published' => 0]);
+            'month' => $item['month'], 'day' => $item['day'], 'source_url' => $item['source_url'], 'locator' => $item['locator'] ?? ('Jmeniny / '.$item['day'].'. '.$item['month'].'.'), 'published' => 0]);
         $this->_db->insert('etymolog_external_record', $snapshot + ['franchise_code' => $this->_code, 'provider' => $provider, 'external_id' => $item['external_id'],
             'name_id' => $nameId, 'source_id' => $sourceId, 'calendar_day_id' => $dayId]);
     }

@@ -23,7 +23,7 @@ INSERT INTO `etymolog_sync_job` (`franchise_code`,`deleted`,`title`,`provider`,`
 SELECT 'etymolog',0,'Erben – pranostiky a tradice','erben-folklore','cs','folklore',4,604800,1
 WHERE NOT EXISTS (SELECT 1 FROM `etymolog_sync_job` WHERE `franchise_code`='etymolog' AND `provider`='erben-folklore' AND `language`='cs' AND `kind`='folklore');
 INSERT INTO `etymolog_sync_job` (`franchise_code`,`deleted`,`title`,`provider`,`language`,`kind`,`batch_size`,`interval_seconds`,`enabled`)
-SELECT 'etymolog',0,'Český jmenný kalendář – komunitní zdroj','czech-namedays','cs','calendar',500,604800,1
+SELECT 'etymolog',0,'Wikipedie – český jmenný kalendář','czech-namedays','cs','calendar',500,604800,1
 WHERE NOT EXISTS (SELECT 1 FROM `etymolog_sync_job` WHERE `franchise_code`='etymolog' AND `provider`='czech-namedays' AND `language`='cs' AND `kind`='calendar');
 INSERT INTO `etymolog_sync_job` (`franchise_code`,`deleted`,`title`,`provider`,`language`,`kind`,`batch_size`,`interval_seconds`,`enabled`)
 SELECT 'etymolog',0,'Český Wikislovník – příjmení','wiktionary-cs','cs','surname',3,300,1

@@ -365,7 +365,7 @@ Podrobný průzkum, licence, limity a zdroje vyžadující další dohodu:
 | poland-pesel | pl | surname_male/surname_female | 1–500 | příjmení žijících osob k datu |
 | csu-baby-names | cs | births_2025 | 1–500 | TOP 100 novorozeneckých jmen 2025 |
 | erben-folklore | cs | folklore | 1–4 | pranostiky a tradice z Erbena |
-| czech-namedays | cs | calendar | 1–500 | konkrétní český komunitní kalendář |
+| czech-namedays | cs | calendar | 1–500 | český kalendář z Wikipedie |
 
 `EtymologExternalRepository` zajišťuje SQL pro nové importy. `etymolog_external_record`
 má unikátní `(franchise_code,provider,external_id)`, tenantové FK na jméno, zdroj
@@ -476,14 +476,28 @@ publikovaného dne je nutné provést až po odpublikování závislých dnů.
 Běžné `q` umožňuje filtrovat např. `{"calendar_id":1,"month":2,"day":24}`
 nebo `{"name_id":123,"kind":"name_day"}`.
 
-`czech-namedays`, `language=cs`, `kind=calendar`, dávka 1–500: komunitní český
-kalendář z repozitáře **segeda/svatky-api-nodejs**, Unlicense. Nový průchod
-zjistí commit hlavní větve; pokračování drží tento commit. Licence se kontroluje
-přes otisk ověřeného znění. Ze souboru `cs.js` se přečte jen JSON objekt,
-JavaScript se nikdy nespouští. Kontroluje se všech 366 platných dat a oddělují
-se jmeniny od konkrétně ověřených významných dnů. Neznámý víceslovný popisek
-vyžaduje kontrolu, nestane se automaticky jménem. Nejde o oficiální liturgický
-ani právní kalendář a neobsahuje všechny možné varianty jmenin.
+`czech-namedays`, `language=cs`, `kind=calendar`, dávka 1–500: český občanský
+kalendář z článku [Jmeniny na české Wikipedii](https://cs.wikipedia.org/wiki/Jmeniny),
+CC BY-SA 4.0. Provider přes MediaWiki API ověřuje licenci a načítá jedinou
+kalendářní tabulku. Ověřuje všech 366 dat, importuje pouze sloupec jmenin,
+rozděluje více jmen u jednoho dne a nepřebírá státní svátky jako jména. Změna
+struktury nebo neznámý popisek skončí chybou místo odhadu. Kalendář není právně
+závazný ani liturgický; nezdůvodňuje sám o sobě historický původ svátku.
+
+Každá položka obsahuje odkaz na konkrétní revizi, původní popisek tabulky,
+autorství, licenci a popis úprav. Pokračování dávky drží stejnou revizi.
+GitHub už provider nevolá. Historický kurzor s Git SHA se rozpozná a nový
+průchod začne od první položky Wikipedie. Nové importní identity začínají
+`wikipedia:cs:`; zdroj a kalendář mají klíč `wikipedia-calendar:cs:Jmeniny`.
+
+**Přechod ze starého zdroje:** po nasazení backendu použít u úlohy kalendáře
+reset postupu/splatnosti, pokud ještě není na řadě, a poté běžné tlačítko
+synchronizace. V transakci první úspěšné dávky se původní kalendář a pramen
+`czech-namedays:cs` archivují a jejich dny odpublikují. Původní snapshoty a licence
+zůstávají jako audit; nikdy se nepřepisují na Wikipedii. Sdílená jména a další
+prameny se nemění. Nová data jsou koncepty pro redakční publikaci. Při chybě
+stažení nebo licence se přechod neprovede. Vlastní název úlohy se zachová;
+pouze původní výchozí název se změní na „Wikipedie – český jmenný kalendář“.
 
 Obě synchronizace vytvářejí koncepty, opakování aktualizuje jen snapshot;
 ruční úpravy a archivované záznamy zachovává. Zmizí-li položka v nové verzi

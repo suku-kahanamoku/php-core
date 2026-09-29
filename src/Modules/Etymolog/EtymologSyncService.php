@@ -21,6 +21,9 @@ final class EtymologSyncService
             try {
                 $batch = $this->providers->get($job['provider'])->batch($job['language'], $job['kind'], $job['cursor'], (int)$job['batch_size']);
                 return $this->jobs->transaction(function () use ($job, $runId, $batch, $onFinished) {
+                    if ($job['provider'] === 'czech-namedays') {
+                        ($this->calendar ?? throw new SyncException('calendar_repository_missing'))->retireLegacyCalendar();
+                    }
                     foreach ($batch['items'] as $item) {
                         if (in_array($job['provider'], ['wikisource', 'erben-folklore'], true)) {
                             $story = ($this->stories ?? throw new SyncException('story_repository_missing'))->import($item, $job['provider']);
