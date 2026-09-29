@@ -10,12 +10,16 @@ final class EtymologPublicRepository
 {
     public function __construct(private readonly Database $db, private readonly string $tenant) {}
 
-    public function search(string $query, string $kind, int $page): array
+    public function search(string $filter, int $page): array
     {
-        $where = 'franchise_code=? AND deleted=0 AND published=1 AND name LIKE ? ESCAPE \'!\'';
-        $params = [$this->tenant, '%'.strtr($query, ['!' => '!!', '%' => '!%', '_' => '!_']).'%'];
+        $f = SQL_FILTER($filter);
+        $where  = 'franchise_code=? AND deleted=0 AND published=1';
+        $params = [$this->tenant];
+        if ($f['sql'] !== '') {
+            $where .= ' AND '.$f['sql'];
+            array_push($params, ...$f['params']);
+        }
 
-        if ($kind !== '') { $where .= ' AND kind=?'; $params[] = $kind; }
         // Group spelling within each name kind, independently of source/country.
         // Binary LOWER keeps diacritics significant for identity; LIKE still permits unaccented search.
         $grouped = 'SELECT COALESCE(MIN(CASE WHEN BINARY name <> BINARY UPPER(name) THEN id END),MIN(id)) id,

@@ -41,7 +41,7 @@ class FileRepository extends BaseRepository
      * @param  string     $sort
      * @param  string     $filter
      * @param  array|null $projection
-     * @return array{items: list<array<string, mixed>>, total: int, page: int, limit: int, totalPages: int}
+     * @return array{data: list<array<string, mixed>>, total: int, page: int, limit: int, totalPages: int}
      */
     public function findAll(
         int $page = 1,
@@ -50,47 +50,50 @@ class FileRepository extends BaseRepository
         string $filter = '',
         ?array $projection = null,
         ?int $ownerId = null,
+        string $legacySearch = '',
     ): array {
         $proj   = new Projection($projection);
         $select = $this->_buildSelect($proj);
+
+        $limit  = min(100, max(1, $limit));
+        $offset = ($page - 1) * $limit;
 
         // Extrahuj 'deleted' z filtru (vychozi 0 = pouze aktivni).
         $filterArr  = $filter !== '' ? (json_decode($filter, true) ?? []) : [];
         $deletedVal = isset($filterArr['deleted']) ? (int) $filterArr['deleted'] : 0;
         unset($filterArr['deleted']);
-        $search = $filterArr['search'] ?? ($filter !== '' && !str_starts_with($filter, '{') ? $filter : '');
+        $filter = count($filterArr) > 0 ? json_encode($filterArr) : '';
 
-        $where  = 'f.franchise_code = ? AND f.deleted = ?';
+        $where  = ['f.franchise_code = ?', 'f.deleted = ?'];
         $params = [$this->_code, $deletedVal];
 
         if ($ownerId !== null) {
-            $where .= ' AND f.user_id = ?';
+            $where[]  = 'f.user_id = ?';
             $params[] = $ownerId;
         }
 
-        if ($search !== '') {
-            $where   .= ' AND (f.name LIKE ? OR f.type LIKE ?)';
-            $params[] = "%{$search}%";
-            $params[] = "%{$search}%";
+        if ($legacySearch !== '') {
+            $needle = '%' . _sql_like_escape($legacySearch) . '%';
+            $where[] = "(f.name LIKE ? ESCAPE '!' OR f.type LIKE ? ESCAPE '!')";
+            array_push($params, $needle, $needle);
         }
 
-        $orderBy = match ($sort) {
-            'name'         => 'f.name ASC',
-            'name_desc'    => 'f.name DESC',
-            'size'         => 'f.size ASC',
-            'size_desc'    => 'f.size DESC',
-            'created_desc' => 'f.created_at DESC',
-            default        => 'f.created_at DESC',
-        };
+        $f = SQL_FILTER($filter, 'f');
+        if ($f['sql'] !== '') {
+            $where[] = $f['sql'];
+            array_push($params, ...$f['params']);
+        }
 
-        $offset = ($page - 1) * $limit;
-        $total  = (int) $this->_db->fetchOne(
-            "SELECT COUNT(*) AS cnt FROM file f WHERE {$where}",
+        $whereStr = implode(' AND ', $where);
+        $orderBy  = SQL_SORT($sort, 'f.created_at DESC', 'f');
+
+        $total = (int) $this->_db->fetchOne(
+            "SELECT COUNT(*) AS cnt FROM file f WHERE {$whereStr}",
             $params,
         )['cnt'];
 
         $items = $this->_db->fetchAll(
-            "SELECT {$select} FROM file f WHERE {$where} ORDER BY {$orderBy} LIMIT ? OFFSET ?",
+            "SELECT {$select} FROM file f WHERE {$whereStr} ORDER BY {$orderBy} LIMIT ? OFFSET ?",
             [...$params, $limit, $offset],
         );
 

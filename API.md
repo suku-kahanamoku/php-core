@@ -278,6 +278,9 @@ GET /roles?sort=[{"position":1},{"name":1}]
 
 ## Filtering
 
+> The contract for new list/search endpoints is in [docs/query-filter-contract.md](docs/query-filter-contract.md).
+> Existing endpoints keep documented compatibility parameters until their clients migrate.
+
 The `q` parameter accepts a **JSON object** where each key is a column name and the value is a specification object `{ "value": ..., "operator": "..." }`.
 
 ### Format

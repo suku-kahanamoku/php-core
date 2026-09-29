@@ -13,6 +13,11 @@ use App\Utils\Projection;
  */
 class ProductRepository extends BaseRepository
 {
+    /** Povolene cizi tabulky pro teckovou notaci ve filtru. */
+    private const FILTER_RELATIONS = [
+        'category' => ['columns' => ['id', 'syscode', 'name', 'parent_id', 'published']],
+    ];
+
     /**
      * Konstruktor tridy ProductRepository.
      *
@@ -139,7 +144,7 @@ class ProductRepository extends BaseRepository
             $params[] = $this->_code;
         }
 
-        $f = SQL_FILTER($filter, 'p');
+        $f = SQL_FILTER($filter, 'p', $this->_jsonCols, self::FILTER_RELATIONS);
         if ($f['sql'] !== '') {
             $where[] = $f['sql'];
             array_push($params, ...$f['params']);

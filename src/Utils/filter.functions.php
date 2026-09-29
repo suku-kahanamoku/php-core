@@ -19,20 +19,31 @@ declare(strict_types=1);
  *
  * Podporovane operatory: eq, neq, lt, lte, gt, gte, range, regex, start, end, in, null, notnull
  *
+ * Syntaxe je MongoDB-compatible: `{"name":{"$regex":"x"}}`, `{"id":{"$in":[1,2]}}`,
+ * `{"price":{"$gte":100}}`. Nativni zapis `{"name":{"value":"x","operator":"regex"}}`
+ * zustava podporovan. Zkraceny skalarni tvar `{"name":"x"}` je implicitni `eq`.
+ *
+ * Operatory regex/start/end jsou podminene LIKE s ESCAPE '!' — hodnota se escapuje,
+ * takze uzivatelsky znak `%` nebo `_` je literal, ne zastepny znak.
+ *
  * Nazvy sloupcu jsou validovany kvuli prevenci SQL injection. Jednoduche sloupce musi odpovidat
  * /^[a-zA-Z_][a-zA-Z0-9_]*$/. JSON podpole pouzivaji tecka-notaci: "data.year"
  * je prelozeno na JSON_UNQUOTE(JSON_EXTRACT(alias.data, '$.year')).
+ * Odkaz na cizi tabulku ("category.syscode") je pripustny VYHRADNE tehdy, kdyz je
+ * tabulka uvedena v $relations se svym seznamem sloupcu. Cokoliv jineho se zahodi.
  *
  * @param string   $filter    Hodnota parametru (JSON retezec).
  * @param string   $prefix    Volitelny alias tabulky (napr. "u") predrazeny jako "u.col".
- * @param string[] $jsonCols  Seznam nazvu sloupcu, u nichz tecka-notace znamena JSON podpole
- *                            (napr. ["data"]). Jina "tabulka.sloupec" notace je
- *                            povazovana za primo alias.sloupec odkaz (cizi tabulka).
+ * @param string[] $jsonCols  Seznam nazvu sloupcu, u nichz tecka-notace znamena JSON podpole (napr. ["data"]).
+ * @param array<string, array{alias?: string, columns: string[]}> $relations
+ *                            Povolene reference na cizi tabulky, napr.
+ *                            ['category' => ['columns' => ['id', 'syscode']]].
+ *                            Alias se da odlisit od prefixu: ['user' => ['alias' => 'u', 'columns' => [...]]].
  * @return array{sql: string, params: array<mixed>}
  *   sql    – SQL fragment AND-spojenych podminek (prazdny retezec kdyz nic nenalezeno).
  *   params – Pozicni hodnoty vazanych parametru.
  */
-function SQL_FILTER(string $filter, string $prefix = '', array $jsonCols = ['data']): array
+function SQL_FILTER(string $filter, string $prefix = '', array $jsonCols = ['data'], array $relations = []): array
 {
     $filter = trim($filter);
 
@@ -61,7 +72,8 @@ function SQL_FILTER(string $filter, string $prefix = '', array $jsonCols = ['dat
             (string) $col,
             $spec,
             $prefix,
-            $jsonCols
+            $jsonCols,
+            $relations
         );
         if ($result !== null) {
             $conditions[] = $result['sql'];
@@ -87,16 +99,18 @@ function SQL_FILTER(string $filter, string $prefix = '', array $jsonCols = ['dat
  * @param array    $spec      {'value': mixed, 'operator': string}
  * @param string   $prefix    Alias tabulky pro hlavni tabulku.
  * @param string[] $jsonCols  Nazvy sloupcu povazovane za JSON (tecka = JSON_EXTRACT).
- *                            Vsechna ostatni tecka-notace je povazovana za tableAlias.sloupec.
+ * @param array<string, array{alias?: string, columns: string[]}> $relations
+ *                            Povolene cizi tabulky pro teckovou notaci.
  * @return array{sql: string, params: array<mixed>}|null  null pri neplatnem vstupu.
  */
 function _sql_filter_condition(
     string $col,
     array $spec,
     string $prefix,
-    array $jsonCols = ['data']
+    array $jsonCols = ['data'],
+    array $relations = []
 ): ?array {
-        // tecka-notace: "data.field" → JSON_EXTRACT  |  "category.syscode" → category.syscode
+    // tecka-notace: "data.field" → JSON_EXTRACT  |  "category.syscode" → category.syscode
     if (str_contains($col, '.')) {
         [$left, $right] = explode('.', $col, 2);
         if (
@@ -110,9 +124,13 @@ function _sql_filter_condition(
             $qualified = $prefix !== ''
                 ? "JSON_UNQUOTE(JSON_EXTRACT({$prefix}.{$left}, '\$.{$right}'))"
                 : "JSON_UNQUOTE(JSON_EXTRACT({$left}, '\$.{$right}'))";
+        } elseif (isset($relations[$left]['columns']) && in_array($right, $relations[$left]['columns'], true)) {
+            // Povolena cizi tabulka: category.syscode → category.syscode (nebo alias.syscode).
+            $alias     = (string) ($relations[$left]['alias'] ?? $left);
+            $qualified = $alias . '.' . $right;
         } else {
-            // Sloupec cizi tabulky: category.syscode → category.syscode
-            $qualified = "{$left}.{$right}";
+            // Neznama tabulka/sloupec — zahodit, nepropoustet do SQL.
+            return null;
         }
     } else {
         if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $col)) {
@@ -198,19 +216,19 @@ function _sql_filter_operator(string $col, string $operator, mixed $value): ?arr
             if ($value === null) {
                 return null;
             }
-            return ['sql' => "{$col} LIKE ?", 'params' => ['%' . $value . '%']];
+            return ['sql' => "{$col} LIKE ? ESCAPE '!'", 'params' => ['%' . _sql_like_escape((string) $value) . '%']];
 
         case 'start':
             if ($value === null) {
                 return null;
             }
-            return ['sql' => "{$col} LIKE ?", 'params' => [$value . '%']];
+            return ['sql' => "{$col} LIKE ? ESCAPE '!'", 'params' => [_sql_like_escape((string) $value) . '%']];
 
         case 'end':
             if ($value === null) {
                 return null;
             }
-            return ['sql' => "{$col} LIKE ?", 'params' => ['%' . $value]];
+            return ['sql' => "{$col} LIKE ? ESCAPE '!'", 'params' => ['%' . _sql_like_escape((string) $value)]];
 
         case 'in':
             if (!is_array($value) || empty($value)) {
@@ -231,4 +249,15 @@ function _sql_filter_operator(string $col, string $operator, mixed $value): ?arr
         default:
             return null;
     }
+}
+
+/**
+ * Escapuje uzivatelskou hodnotu pro LIKE s ESCAPE '!', aby se `%` a `_`
+ * chovaly jako literaly a nemohly rozsirit dotaz (napr. `q={"name":{"$regex":"%"}}`).
+ *
+ * @internal
+ */
+function _sql_like_escape(string $value): string
+{
+    return strtr($value, ['!' => '!!', '%' => '!%', '_' => '!_']);
 }

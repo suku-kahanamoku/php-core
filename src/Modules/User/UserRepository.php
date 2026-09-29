@@ -14,6 +14,11 @@ use App\Utils\Projection;
  */
 class UserRepository extends BaseRepository
 {
+    /** Povolene cizi tabulky pro teckovou notaci; 'role' se v SQL joinuje pod aliasem 'r'. */
+    private const FILTER_RELATIONS = [
+        'role' => ['alias' => 'r', 'columns' => ['id', 'name', 'label']],
+    ];
+
     /**
      * Konstruktor tridy UserRepository.
      *
@@ -99,7 +104,7 @@ class UserRepository extends BaseRepository
         $where[]  = 'u.deleted = ?';
         $params[] = $deletedVal;
 
-        $f = SQL_FILTER($filter, 'u');
+        $f = SQL_FILTER($filter, 'u', ['data'], self::FILTER_RELATIONS);
         if ($f['sql'] !== '') {
             $where[] = $f['sql'];
             array_push($params, ...$f['params']);

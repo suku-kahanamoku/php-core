@@ -192,14 +192,26 @@ assert_test('range single element → empty', $r['sql'] === '');
 
 section('SQL_FILTER – regex / start / end');
 $r = SQL_FILTER('{"name":{"value":"test","operator":"regex"}}');
-assert_test('regex sql', $r['sql'] === 'name LIKE ?');
+assert_test('regex sql', $r['sql'] === "name LIKE ? ESCAPE '!'");
 assert_test('regex params', $r['params'] === ['%test%']);
 
 $r = SQL_FILTER('{"name":{"value":"test","operator":"start"}}');
+assert_test('start sql', $r['sql'] === "name LIKE ? ESCAPE '!'");
 assert_test('start params', $r['params'] === ['test%']);
 
 $r = SQL_FILTER('{"name":{"value":"test","operator":"end"}}');
+assert_test('end sql', $r['sql'] === "name LIKE ? ESCAPE '!'");
 assert_test('end params', $r['params'] === ['%test']);
+
+section('SQL_FILTER – LIKE wildcard escaping');
+$r = SQL_FILTER('{"name":{"$regex":"%"}}');
+assert_test('regex escapes percent', $r['params'] === ['%!%%']);
+$r = SQL_FILTER('{"name":{"$regex":"a_b"}}');
+assert_test('regex escapes underscore', $r['params'] === ['%a!_b%']);
+$r = SQL_FILTER('{"name":{"$regex":"a!b"}}');
+assert_test('regex escapes escape char', $r['params'] === ['%a!!b%']);
+$r = SQL_FILTER('{"name":{"value":"x%","operator":"start"}}');
+assert_test('start escapes percent', $r['params'] === ['x!%%']);
 
 section('SQL_FILTER – in');
 $r = SQL_FILTER('{"id":{"value":[1,2,3],"operator":"in"}}');
@@ -238,6 +250,31 @@ assert_test('dot-notation → JSON_EXTRACT', str_contains($r['sql'], "JSON_UNQUO
 assert_test('dot-notation with prefix', str_contains(SQL_FILTER('{"data.year":{"value":2023}}', 'p')['sql'], "JSON_UNQUOTE(JSON_EXTRACT(p.data, '$.year'))"));
 assert_test('dot-notation rejects invalid left side', SQL_FILTER('{"0bad.year":{"value":"x"}}')['sql'] === '');
 assert_test('dot-notation rejects invalid right side', SQL_FILTER('{"data.0bad":{"value":"x"}}')['sql'] === '');
+
+section('SQL_FILTER – cross-table relations allowlist');
+$relations = ['category' => ['columns' => ['id', 'syscode']]];
+assert_test(
+    'unknown table without relations → dropped',
+    SQL_FILTER('{"category.syscode":{"value":"tools"}}')['sql'] === '',
+);
+$r = SQL_FILTER('{"category.syscode":{"value":"tools"}}', 'p', ['data'], $relations);
+assert_test('allowed relation column → qualified', $r['sql'] === 'category.syscode = ?');
+assert_test('allowed relation params', $r['params'] === ['tools']);
+assert_test(
+    'relation column outside allowlist → dropped',
+    SQL_FILTER('{"category.secret":{"value":"x"}}', 'p', ['data'], $relations)['sql'] === '',
+);
+assert_test(
+    'relation table outside allowlist → dropped',
+    SQL_FILTER('{"user.email":{"value":"x"}}', 'o', ['data'], $relations)['sql'] === '',
+);
+$r = SQL_FILTER(
+    '{"user.email":{"value":"a@b.c"}}',
+    'o',
+    ['data'],
+    ['user' => ['alias' => 'u', 'columns' => ['email']]],
+);
+assert_test('relation alias mapping', $r['sql'] === 'u.email = ?');
 
 // ── Standalone summary ────────────────────────────────────────────────────────
 if (!isset($runnerMode)) {

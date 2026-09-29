@@ -8,6 +8,7 @@ use App\Modules\Auth\Auth;
 use App\Modules\BaseService;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
+use App\Utils\QueryPolicy;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 
@@ -43,6 +44,18 @@ class FileService extends BaseService
     /** Maximalni velikost souboru: 20 MB */
     private const MAX_SIZE = 20 * 1024 * 1024;
 
+    /** Povolene sloupce pro filtr `q` (allowlist). `deleted` je pro ne-adminy vynuceno na 0. */
+    private const FILTERS = [
+        'id', 'user_id', 'type', 'mime_type', 'path', 'name', 'size',
+        'visibility', 'entity_type', 'entity_id', 'expires_at',
+        'created_at', 'updated_at', 'deleted',
+    ];
+    private const SORTS = [
+        'id', 'user_id', 'type', 'mime_type', 'path', 'name', 'size',
+        'visibility', 'entity_type', 'entity_id', 'expires_at',
+        'created_at', 'updated_at', 'deleted',
+    ];
+
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->_files = new FileRepository($db, $franchiseCode);
@@ -59,7 +72,7 @@ class FileService extends BaseService
      * @param  string     $sort
      * @param  string     $filter
      * @param  array|null $projection
-     * @return array{items: list<array<string, mixed>>, total: int, page: int, limit: int, totalPages: int}
+     * @return array{data: list<array<string, mixed>>, total: int, page: int, limit: int, totalPages: int}
      */
     public function list(
         int $page,
@@ -69,13 +82,57 @@ class FileService extends BaseService
         ?array $projection
     ): array {
         $this->_auth->require();
+        $isAdmin = $this->_auth->hasRole('admin');
+        $legacySearch = '';
+        $decoded = json_decode($filter, true);
+        if (json_last_error() !== JSON_ERROR_NONE || is_int($decoded) || is_float($decoded) || is_bool($decoded) || $decoded === null) {
+            // Existing /files clients may pass plain text as q, including numeric names.
+            $legacySearch = trim($filter);
+            $decoded = [];
+        } elseif (!is_array($decoded) || (array_is_list($decoded) && $decoded !== [])) {
+            Response::error('Invalid file filter', 422);
+        }
+        if (array_key_exists('search', $decoded)) {
+            if (!is_string($decoded['search'])) {
+                Response::error('Invalid file search', 422);
+            }
+            $legacySearch = trim($decoded['search']);
+            unset($decoded['search']);
+        }
+        if (mb_strlen($legacySearch) > 255) {
+            Response::error('File search is too long', 422);
+        }
+        if ($isAdmin && array_key_exists('deleted', $decoded)) {
+            $deleted = $decoded['deleted'];
+            if (is_array($deleted)) {
+                $operator = $deleted['operator'] ?? 'eq';
+                if ($operator !== 'eq' || (!array_key_exists('value', $deleted) && !array_key_exists('$eq', $deleted))) {
+                    Response::error('Invalid deleted filter', 422);
+                }
+                $deleted = $deleted['value'] ?? $deleted['$eq'];
+            }
+            if (!in_array($deleted, [0, 1, '0', '1', false, true], true)) {
+                Response::error('Invalid deleted filter', 422);
+            }
+            $decoded['deleted'] = (int) $deleted;
+        }
+        $filter = QueryPolicy::filter((string) json_encode($decoded), self::FILTERS, $isAdmin ? [] : ['deleted' => 0]);
+        $sort = match ($sort) {
+            'name' => 'name ASC',
+            'name_desc' => 'name DESC',
+            'size' => 'size ASC',
+            'size_desc' => 'size DESC',
+            'created_desc' => 'created_at DESC',
+            default => QueryPolicy::sort($sort, self::SORTS, 'created_at DESC'),
+        };
         return $this->_files->findAll(
             $page,
             $limit,
             $sort,
             $filter,
             $projection,
-            $this->_auth->hasRole('admin') ? null : $this->_auth->id(),
+            $isAdmin ? null : $this->_auth->id(),
+            $legacySearch,
         );
     }
 

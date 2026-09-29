@@ -12,7 +12,7 @@ declare(strict_types=1);
  *   - Security: SQL injection attempts via column names and values
  *   - Multi-column / partial-validity behaviour
  *   - Prefix aliasing
- *   - Integration: actual HTTP requests using ?filter= param on all 9 endpoints
+ *   - Integration: HTTP requests using JSON q on disposable test servers
  */
 
 if (!function_exists('assert_test')) {
@@ -165,11 +165,11 @@ assert_test('range with null element → empty', $r['sql'] === '');
 
 section('SQL_FILTER unit – regex (contains)');
 $r = f('{"name":{"value":"test","operator":"regex"}}');
-assert_test('regex: sql', $r['sql'] === 'name LIKE ?');
+assert_test('regex: sql', $r['sql'] === "name LIKE ? ESCAPE '!'");
 assert_test('regex: param', $r['params'] === ['%test%']);
 
 $r = f('{"name":{"value":"a%b","operator":"regex"}}');
-assert_test('regex value with %: param', $r['params'] === ['%a%b%']);
+assert_test('regex value with %: param', $r['params'] === ['%a!%b%']);
 
 $r = f('{"name":{"value":"","operator":"regex"}}');
 assert_test('regex empty string: param', $r['params'] === ['%%']);
@@ -179,7 +179,7 @@ assert_test('regex null → empty', $r['sql'] === '');
 
 section('SQL_FILTER unit – start');
 $r = f('{"name":{"value":"jan","operator":"start"}}');
-assert_test('start: sql', $r['sql'] === 'name LIKE ?');
+assert_test('start: sql', $r['sql'] === "name LIKE ? ESCAPE '!'");
 assert_test('start: param', $r['params'] === ['jan%']);
 
 $r = f('{"name":{"value":null,"operator":"start"}}');
@@ -187,7 +187,7 @@ assert_test('start null → empty', $r['sql'] === '');
 
 section('SQL_FILTER unit – end');
 $r = f('{"name":{"value":"ovic","operator":"end"}}');
-assert_test('end: sql', $r['sql'] === 'name LIKE ?');
+assert_test('end: sql', $r['sql'] === "name LIKE ? ESCAPE '!'");
 assert_test('end: param', $r['params'] === ['%ovic']);
 
 $r = f('{"name":{"value":null,"operator":"end"}}');
@@ -247,7 +247,7 @@ assert_test('prefix u: sql', $r['sql'] === 'u.created_at >= ?');
 assert_test('prefix u: param', $r['params'] === ['2024-01-01']);
 
 $r = f('{"name":{"value":"test","operator":"regex"}}', 'p');
-assert_test('prefix p regex: sql', $r['sql'] === 'p.name LIKE ?');
+assert_test('prefix p regex: sql', $r['sql'] === "p.name LIKE ? ESCAPE '!'");
 assert_test('prefix p regex: param', $r['params'] === ['%test%']);
 
 $r = f('{"id":{"value":[1,2],"operator":"in"}}', 'o');
@@ -266,7 +266,7 @@ assert_test('2 cols: sql', $r['sql'] === 'name = ? AND price >= ?');
 assert_test('2 cols: params', $r['params'] === ['jan', 100]);
 
 $r = f('{"status":{"value":"active"},"price":{"value":[10,100],"operator":"range"},"name":{"value":"test","operator":"regex"}}');
-assert_test('3 cols: sql', $r['sql'] === 'status = ? AND price BETWEEN ? AND ? AND name LIKE ?');
+assert_test('3 cols: sql', $r['sql'] === "status = ? AND price BETWEEN ? AND ? AND name LIKE ? ESCAPE '!'");
 assert_test('3 cols: params', $r['params'] === ['active', 10, 100, '%test%']);
 
 // one invalid column skipped, valid ones still processed
@@ -287,7 +287,7 @@ $r = f('{"price":{"value":10,"operator":"GTE"}}');
 assert_test('GTE uppercase: sql', $r['sql'] === 'price >= ?');
 
 $r = f('{"name":{"value":"test","operator":"REGEX"}}');
-assert_test('REGEX uppercase: sql', $r['sql'] === 'name LIKE ?');
+assert_test('REGEX uppercase: sql', $r['sql'] === "name LIKE ? ESCAPE '!'");
 
 $r = f('{"status":{"value":"draft","operator":"NEQ"}}');
 assert_test('NEQ uppercase: sql', $r['sql'] === 'status != ?');
@@ -346,7 +346,7 @@ $r = f('{"name":{"value":"% wildcard"}}');
 assert_test('percent in eq value not modified', $r['params'] === ['% wildcard']);
 
 $r = f('{"name":{"value":"% wildcard","operator":"regex"}}');
-assert_test('percent in regex value wrapped: param', $r['params'] === ['%% wildcard%']);
+assert_test('percent in regex value wrapped: param', $r['params'] === ['%!% wildcard%']);
 
 /* ═══════════════════════════════════════════════════════════
    UNIT – spec is not array
@@ -365,10 +365,12 @@ $r = f('{"name":null}');
 assert_test('null spec treated as no-op: empty', $r['sql'] === '');
 
 /* ═══════════════════════════════════════════════════════════
-   INTEGRATION – actual HTTP API with ?filter= param
+   INTEGRATION – actual HTTP API with JSON q
    Auth token obtained once, reused across all requests.
 ═══════════════════════════════════════════════════════════ */
 
+// Standalone execution is unit-only. The API runner supplies a test server and cleans fixtures.
+if (isset($runnerMode) || isset($argv[1])) {
 section('SQL_FILTER integration – auth setup');
 $r     = request('POST', "{$base}/auth/login", ['email' => 'admin@example.com', 'password' => 'admin123'], false);
 $token = $r['data']['data']['token'] ?? null;
@@ -544,11 +546,11 @@ if ($token !== null) {
     // ── Enumerations ──────────────────────────────────────────────────────────
     section('SQL_FILTER integration – GET /enumerations');
     $r = request('GET', $base . '/enumerations?limit=100&q=' . urlencode('{"type":{"value":"order_status"}}'), [], false);
-    assert_test('enumerations eq type filter: 200', $r['status'] === 200, dump_on_fail($r));
-    assert_test('enumerations eq type filter: has items', count($r['data']['data']) >= 1);
+    assert_test('enumerations public type policy: 200', $r['status'] === 200, dump_on_fail($r));
+    assert_test('enumerations public type policy: has items', count($r['data']['data']) >= 1);
     assert_test(
-        'enumerations eq type filter: all order_status',
-        count(array_filter($r['data']['data'], fn ($e) => $e['type'] !== 'order_status')) === 0,
+        'enumerations public type policy hides order_status',
+        count(array_filter($r['data']['data'], fn ($e) => $e['type'] === 'order_status')) === 0,
     );
 
     $r = request('GET', $base . '/enumerations?limit=100&q=' . urlencode('{"published":{"value":1}}'), [], false);
@@ -624,6 +626,8 @@ if ($token !== null) {
 
     $r = request('GET', $base . '/roles?filter={}', [], false);
     assert_test('empty filter obj → 200', $r['status'] === 200);
+}
+
 }
 
 // ── Standalone summary ────────────────────────────────────────────────────────

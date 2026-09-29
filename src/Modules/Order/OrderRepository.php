@@ -13,6 +13,11 @@ use App\Utils\Projection;
  */
 class OrderRepository extends BaseRepository
 {
+    /** Povolene cizi tabulky pro teckovou notaci; 'user' se v SQL joinuje pod aliasem 'u'. */
+    private const FILTER_RELATIONS = [
+        'user' => ['alias' => 'u', 'columns' => ['id', 'first_name', 'last_name', 'email']],
+    ];
+
     /**
      * Konstruktor tridy OrderRepository.
      *
@@ -106,7 +111,7 @@ class OrderRepository extends BaseRepository
         $where[]  = 'o.deleted = ?';
         $params[] = $deletedVal;
 
-        $f = SQL_FILTER($filter, 'o');
+        $f = SQL_FILTER($filter, 'o', $this->_jsonCols, self::FILTER_RELATIONS);
         if ($f['sql'] !== '') {
             $where[] = $f['sql'];
             array_push($params, ...$f['params']);

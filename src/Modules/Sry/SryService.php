@@ -198,7 +198,7 @@ final class SryService
                 "",
                 json_encode(["published" => 1]),
             );
-            array_push($items, ...$result["items"]);
+            array_push($items, ...$result["data"]);
         } while ($page <= $result["totalPages"]);
         return $items;
     }
