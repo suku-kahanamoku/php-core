@@ -2156,3 +2156,9 @@ v `resources` a nejvýše 100 položek `skipped_records` (`resource`, `id`, `rea
 Operace se serializuje se synchronizací a CRUD, zapisuje `updated_by`, nemění
 smazaná data ani cizího tenanta. Opakování již publikované položky nemění.
 Nevytváří synchronizační běh ani nezapíná automatickou publikaci budoucích importů.
+
+The default Etymolog seed now contains ten Czech-only source jobs. On an empty
+archive the shared runner first imports Czech calendar/CSU names, then Wikidata
+names, then text enrichment. Populated archives retain text-first scheduling.
+`migrations/etymolog_reset_cz.sql` is an explicit destructive tenant-only reset,
+not an automatic migration; it preserves users and removes foreign source jobs.

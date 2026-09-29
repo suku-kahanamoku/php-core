@@ -106,8 +106,8 @@ try {
 } catch (RuntimeException $e) {check($e->getPrevious() instanceof PDOException, 'external FK independently blocks foreign tenant');}
 $sourceSeed = file_get_contents($root.'/migrations/etymolog_seed.sql');
 $db->getPdo()->exec($sourceSeed); $db->getPdo()->exec($sourceSeed);
-check((int)$db->fetchOne("SELECT COUNT(*) n FROM etymolog_sync_job WHERE franchise_code='etymolog' AND provider='wiktionary'")['n'] === 13, 'dictionary country seed stays unique alongside explicit fixture job');
-check((int)$db->fetchOne("SELECT COUNT(*) n FROM etymolog_sync_job WHERE franchise_code='etymolog' AND provider='poland-pesel'")['n'] === 3, 'male and female seeds stay unique alongside explicit fixture job');
+check((int)$db->fetchOne("SELECT COUNT(*) n FROM etymolog_sync_job WHERE franchise_code='etymolog' AND provider='wiktionary'")['n'] === 1, 'Czech seed adds no foreign dictionary jobs alongside explicit fixture');
+check((int)$db->fetchOne("SELECT COUNT(*) n FROM etymolog_sync_job WHERE franchise_code='etymolog' AND provider='poland-pesel'")['n'] === 1, 'Czech seed adds no PESEL jobs alongside explicit fixture');
 
 $csu = new App\Modules\Etymolog\Providers\CsuBabyNamesProvider($fake);
 $zipFixture = static function (bool $formula = false, bool $externalRelationship = false): string {

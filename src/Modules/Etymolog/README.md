@@ -1,5 +1,37 @@
 # Etymolog
 
+## Aktuální provoz: pouze česká jména a příjmení
+
+Výchozí `etymolog_seed.sql` obsahuje deset českých úloh: Wikidata s doloženým
+jazykem `cs` (rodná jména/příjmení), český Wikislovník (oba druhy), českou
+Wikipedii (etymologie/kultura), Wikizdroje, Erbena, český kalendář a ČSÚ.
+Polský PESEL, další jazykové mutace, anglická/francouzská edice slovníku ani
+historické `*_priority` duplicity se již neseedují. Implementace providerů
+zůstávají k dispozici pro případné budoucí rozšíření; níže uvedený katalog
+popisuje jejich možnosti, nikoli současné aktivní úlohy.
+České zaměření znamená doložené užívání v češtině/ČR, ne český jazykový původ:
+například převzatá rodná jména z českého kalendáře a statistiky zůstávají součástí.
+
+`migrations/etymolog_reset_cz.sql` je **destruktivní, ručně spouštěný** reset
+výhradně tenantu `etymolog`. Odstraní všechna hesla, výklady, příběhy, vazby,
+statistiky, kalendáře, importní záznamy, prameny a historii běhů; z úloh ponechá
+jen výše uvedené české definice a vymaže jejich postup. Uživatele, role, ostatní
+tenanty i denní ochranu `sync_schedule` zachová. Nastavení ponechaných úloh
+(včetně enabled/deleted) nepřepisuje. Během aktivního workeru/fronty odmítne
+zásah (`SKIPPED_BUSY`). Spouštět celý soubor na jednom spojení, při chybě
+rollback a ukončit spojení, nikdy nepokračovat pomocí `--force`.
+
+Postup: záloha → `etymolog_reset_cz.sql` → `etymolog_seed.sql` → spuštění
+přes běžný background service/tlačítko. Seed doplní případné chybějící české
+úlohy a sám nesynchronizuje. Původní `etymolog_reset_content.sql` zůstává
+variantou resetu bez změny konfigurace zdrojů.
+
+Při prázdném archivu má první průchod výjimku z běžné priority textů:
+nejdřív český kalendář a ČSÚ, potom Wikidata, následně etymologie a kulturní
+texty nad vzniklými DB jmény. Toto pořadí je uloženo pro celý běh. Další běhy
+nad existujícími jmény opět upřednostňují texty. Nové texty zůstávají koncepty.
+
+
 Tenantová redakční databáze křestních jmen, příjmení, jejich výkladů a historických
 podkladů. API je pod `/api/etymolog`. Všechny endpointy vyžadují stávající
 `X-Internal-Key` a Bearer token ze společného `/api/auth/login`.

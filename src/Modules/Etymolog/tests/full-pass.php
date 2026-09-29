@@ -59,6 +59,7 @@ check($guarded->step($guardedId,1)['status']==='partial'&&$passRepo->status()['c
 
 // Existing names receive text evidence before inventory expansion.
 $orderTenant='pass-order-fixture';$orderRepo=new App\Modules\Etymolog\EtymologBatchRepository($db,$orderTenant);
+$db->insert('etymolog_name',['franchise_code'=>$orderTenant,'name'=>'Existing','kind'=>'given']);
 $enrichment=$db->insert('etymolog_sync_job',['franchise_code'=>$orderTenant,'provider'=>'wikipedia-names','title'=>'Older enrichment']);
 $inventory=$db->insert('etymolog_sync_job',['franchise_code'=>$orderTenant,'provider'=>'czech-namedays','title'=>'Later inventory']);
 check($orderRepo->dueIds()===[$enrichment,$inventory],'text enrichment precedes inventory expansion');

@@ -57,6 +57,7 @@ $cachedCsuNext=$cachedCsu->batch('cs','births_2025',$cachedCsuFirst['cursor'],1)
 check(count($fake->requests)===$beforeCacheCalls+1&&$cachedCsuNext['items'][0]['name']==='TEST1NAME2','CSU continuation reuses pinned XLSX and still checks current licence');
 
 $planTenant='optimization-plan-fixture';$planRepo=new EtymologBatchRepository($db,$planTenant);
+$db->insert('etymolog_name',['franchise_code'=>$planTenant,'name'=>'Existing','kind'=>'given']);
 $planJob=static function(string $provider,string $kind,string $language='cs',array $extra=[])use($db,$planTenant):int{return $db->insert('etymolog_sync_job',$extra+['franchise_code'=>$planTenant,'provider'=>$provider,'kind'=>$kind,'language'=>$language,'title'=>$provider.' '.$kind]);};
 $planStats=$planJob('poland-pesel','surname_male','pl');
 $planInventory=$planJob('wikidata','given');
@@ -116,3 +117,17 @@ check($db->fetchOne('SELECT normalized_name FROM etymolog_name WHERE id=?',[$ide
 for($i=0;$i<1000;$i++){$db->insert('etymolog_name',['franchise_code'=>$identityTenant,'name'=>'Fixture'.$i,'kind'=>'given']);}
 $identityPlan=$db->fetchOne('EXPLAIN SELECT id,name,deleted FROM etymolog_name WHERE franchise_code=? AND kind=? AND normalized_name=LOWER(TRIM(?)) ORDER BY deleted DESC,(BINARY name=BINARY UPPER(name)),id LIMIT 1',[$identityTenant,'given','RENAMED']);
 check($identityPlan['key']==='idx_etymolog_name_identity'&&(int)$identityPlan['rows']<=2,'MySQL uses narrow indexed lookup instead of scanning tenant names for each imported row');
+
+// First pass after a complete reset must not finish empty enrichment before names exist.
+$bootTenant='empty-bootstrap-fixture';$bootRepo=new EtymologBatchRepository($db,$bootTenant);
+$bootText=$db->insert('etymolog_sync_job',['franchise_code'=>$bootTenant,'provider'=>'wikipedia-names','kind'=>'etymologies','title'=>'Text']);
+$bootNames=$db->insert('etymolog_sync_job',['franchise_code'=>$bootTenant,'provider'=>'wikidata','kind'=>'given','title'=>'Names']);
+$bootCalendar=$db->insert('etymolog_sync_job',['franchise_code'=>$bootTenant,'provider'=>'czech-namedays','kind'=>'calendar','title'=>'Calendar']);
+$bootCsu=$db->insert('etymolog_sync_job',['franchise_code'=>$bootTenant,'provider'=>'csu-baby-names','kind'=>'births_2025','title'=>'Czech births']);
+check($bootRepo->dueIds()===[$bootCalendar,$bootCsu,$bootNames,$bootText],'empty archive bootstraps Czech calendar and names before text discovery');
+$bootId=$bootRepo->enqueue(null)['request_id'];$bootBatch=$bootRepo->prepareSteps($bootId);
+$db->insert('etymolog_name',['franchise_code'=>$bootTenant,'name'=>'Imported','kind'=>'given']);
+$bootRepo->finishStep($bootBatch,['status'=>'success','processed'=>1]);
+$bootState=$bootRepo->progress($bootRepo->status());
+check($bootState['jobs']===[$bootCsu,$bootCalendar,$bootNames,$bootText]&&$bootState['priorities'][$bootNames]===-1,'bootstrap priority survives later steps after first name is imported');
+check($bootRepo->dueIds()===[$bootText,$bootNames,$bootCalendar,$bootCsu],'subsequent plans restore text-first priority for populated archive');

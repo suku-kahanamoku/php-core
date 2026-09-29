@@ -88,8 +88,9 @@ final class EtymologBatchRepository extends BaseRepository
 
     public function prepareSteps(string $id): array
     {
-        $ids = $this->dueIds();
-        $state = $this->plannedState($ids, 0);
+        $bootstrap = $this->needsBootstrap();
+        $ids = $this->dueIds($bootstrap);
+        $state = $this->plannedState($ids, 0, $bootstrap);
         $this->update($id, ['pending_jobs' => json_encode($state, JSON_THROW_ON_ERROR), 'total' => count($ids), 'status' => $ids ? 'running' : 'complete', 'finished_at' => $ids ? null : gmdate('Y-m-d H:i:s')]);
         return $this->status();
     }
@@ -117,10 +118,10 @@ final class EtymologBatchRepository extends BaseRepository
         return $this->status();
     }
 
-    private function plannedState(array $ids, int $step): array
+    private function plannedState(array $ids, int $step, bool $bootstrap = false): array
     {
         $priorities = [];
-        foreach ($this->jobRows() as $row) { $priorities[(int)$row['id']] = $this->priority($row['provider']); }
+        foreach ($this->jobRows() as $row) { $priorities[(int)$row['id']] = $this->priority($row['provider'], $bootstrap); }
         return ['jobs' => $ids, 'step' => $step, 'plan' => 2, 'priorities' => $priorities];
     }
 
@@ -173,8 +174,16 @@ final class EtymologBatchRepository extends BaseRepository
         return $batch['retry_at'] ? max(0, strtotime($batch['retry_at'].' UTC') - time()) : 0;
     }
 
-    private function priority(string $provider): int
+    private function needsBootstrap(): bool
     {
+        return !$this->_db->fetchOne('SELECT id FROM etymolog_name WHERE franchise_code=? AND deleted=0 LIMIT 1', [$this->_code]);
+    }
+
+    private function priority(string $provider, bool $bootstrap = false): int
+    {
+        // An empty archive needs real source names before DB-driven text discovery.
+        if ($bootstrap && in_array($provider, ['czech-namedays','csu-baby-names'], true)) { return -2; }
+        if ($bootstrap && $provider === 'wikidata') { return -1; }
         return match ($provider) {
             'wikipedia-names', 'wiktionary', 'wiktionary-cs', 'wiktionary-fr', 'wikisource', 'erben-folklore' => 0,
             'wikidata', 'czech-namedays' => 2,
@@ -197,7 +206,7 @@ final class EtymologBatchRepository extends BaseRepository
     }
 
     /** Prefer the regular dictionary job; a lone enabled legacy alias still works. */
-    private function uniqueJobs(array $rows): array
+    private function uniqueJobs(array $rows, bool $bootstrap = false): array
     {
         $selected = [];
         foreach ($rows as $row) {
@@ -205,16 +214,16 @@ final class EtymologBatchRepository extends BaseRepository
             if (!isset($selected[$key]) || (str_ends_with($selected[$key]['kind'], '_priority') && !str_ends_with($row['kind'], '_priority'))) { $selected[$key] = $row; }
         }
         $rows = array_values($selected);
-        usort($rows, fn ($a, $b) => ($this->priority($a['provider']) <=> $this->priority($b['provider']))
+        usort($rows, fn ($a, $b) => ($this->priority($a['provider'], $bootstrap) <=> $this->priority($b['provider'], $bootstrap))
             ?: strcmp($a['next_run_at'] ?? $a['created_at'], $b['next_run_at'] ?? $b['created_at']) ?: ((int)$a['id'] <=> (int)$b['id']));
         return $rows;
     }
 
-    public function dueIds(): array
+    public function dueIds(?bool $bootstrap = null): array
     {
         // Deduplicate BEFORE checking due times, so an alias cannot bypass the regular
         // job's refresh interval. Settings, cursors and imported data are not deleted.
-        $rows = array_filter($this->uniqueJobs($this->jobRows()), static fn ($row) => $row['next_run_at'] === null || strtotime($row['next_run_at'].' UTC') <= time());
+        $rows = array_filter($this->uniqueJobs($this->jobRows(), $bootstrap ?? $this->needsBootstrap()), static fn ($row) => $row['next_run_at'] === null || strtotime($row['next_run_at'].' UTC') <= time());
         return array_map(static fn ($row) => (int)$row['id'], array_values($rows));
     }
 

@@ -75,7 +75,7 @@ try { $broken->start(null); throw new LogicException('Expected launch failure');
 catch (EtymologException $e) { check($e->status === 503 && $batches->status()['error_code'] === 'worker_launch_failed', 'failed launcher remains visible and retryable'); }
 $newSeed = file_get_contents($root.'/migrations/etymolog_seed.sql');
 $db->getPdo()->exec($newSeed); $db->getPdo()->exec($newSeed);
-check((int)$db->fetchOne("SELECT COUNT(*) n FROM etymolog_sync_job WHERE franchise_code='etymolog' AND provider IN ('wiktionary-cs','wiktionary-fr')")['n'] === 8, 'new dictionary rules seed idempotently');
+check((int)$db->fetchOne("SELECT COUNT(*) n FROM etymolog_sync_job WHERE franchise_code='etymolog' AND provider IN ('wiktionary-cs','wiktionary-fr')")['n'] === 2, 'only the two Czech dictionary rules seed idempotently');
 
 $liveLock = 'ety-worker:'.substr(hash('sha256', $batchTenant), 0, 48);
 $separate = new PDO($dsn, 'root', '');
