@@ -2107,11 +2107,16 @@ Etymolog public dossiers group the same case-insensitive, accent-sensitive spell
 
 `wikipedia-names` adds `language=cs`, `kind=etymologies|culture`, `batch_size=1..3`.
 Apply `etymolog_seed.sql` to seed all rules, including these two due tasks, without
-running them. Fixed reviewed article sections are imported as unpublished entries
+running them. Article targets come from every active tenant DB name/surname,
+including drafts, with no fixed name list. One article is processed per call;
+JSON cursors resume by name ID and, for cultural links, pinned parent revision.
+Discovered source sections are imported as unpublished entries
 with CC BY-SA 4.0, revision-pinned URLs, author history and verbatim citations.
 The existing worker and `/entries/:id/imports` provenance endpoint handle them;
 there is no new public write endpoint or automatic publication. Refreshes preserve
-editorial content and deletion tombstones. See the Etymolog README for the catalog.
+editorial content and deletion tombstones. Wiktionary and Wikisource likewise
+use DB-driven discovery; legacy priority kinds are aliases, not fixed lists.
+See the Etymolog README for matching rules and cursor compatibility.
 
 On hosts that disable web PHP process execution, synchronization start returns
 503 and records `worker_process_disabled`. After provisioning an external CLI

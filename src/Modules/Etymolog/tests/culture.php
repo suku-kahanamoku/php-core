@@ -43,26 +43,30 @@ try {$db->insert('etymolog_calendar_day',['franchise_code'=>'other','calendar_id
 catch(RuntimeException $e){check($e->getPrevious() instanceof PDOException,'calendar composite FK independently enforces tenant');}
 
 $calendarRepo=new App\Modules\Etymolog\EtymologCalendarRepository($db,'etymolog');
-$erben=new App\Modules\Etymolog\Providers\ErbenFolkloreProvider($fake);
+$erben=new App\Modules\Etymolog\Providers\ErbenFolkloreProvider($fake,new App\Modules\Etymolog\EtymologDiscoveryRepository($db,'etymolog'));
 $erbenService=new App\Modules\Etymolog\EtymologSyncService($jobs,$sync,new App\Modules\Etymolog\ProviderRegistry(['erben-folklore'=>$erben]),$storyRepo,$external,$calendarRepo);
 $erbenJob=status(api('POST','etymolog/sync-jobs',['title'=>'Folklore','provider'=>'erben-folklore','kind'=>'folklore','batch_size'=>1],$admin),201,'create folklore job');
-$erbenFixture=static function(string $license='PD old 70',int $revision=1):array{return ['parse'=>['title'=>'Prostonárodní české písně a říkadla/25. ledna','pageid'=>99490,'revid'=>$revision,'text'=>['*'=>'<div class="mw-parser-output"><table class="textinfo"><tr><td>Titulek:</td><td>25. ledna</td></tr><tr><td>Autor:</td><td>zapsal Karel Jaromír Erben</td></tr><tr><td>Zdroj:</td><td>Erben, sbírka, 1864, s. 47.</td></tr><tr><td>Licence:</td><td>'.$license.'</td></tr></table><table><tr><td>Navigation</td></tr></table><div class="poem"><p>Fixture original verse one.<br>Fixture original verse two.<script>evil()</script></p></div></div>']]];};
-$fake->responses=[$jsonResponse($erbenFixture())];
+$erbenName=$db->insert('etymolog_name',['franchise_code'=>'etymolog','name'=>'Pavel','kind'=>'given']);
+$erbenStart=json_encode(['after'=>$erbenName-1]);
+$db->query('UPDATE etymolog_sync_job SET `cursor`=? WHERE id=?',[$erbenStart,$erbenJob['id']]);
+$erbenSearch=['query'=>['search'=>[['pageid'=>99490,'ns'=>0,'title'=>'Prostonárodní české písně a říkadla/25. ledna']]]];
+$erbenFixture=static function(string $license='PD old 70',int $revision=1):array{return ['parse'=>['title'=>'Prostonárodní české písně a říkadla/25. ledna','pageid'=>99490,'revid'=>$revision,'text'=>['*'=>'<div class="mw-parser-output"><table class="textinfo"><tr><td>Titulek:</td><td>25. ledna</td></tr><tr><td>Autor:</td><td>zapsal Karel Jaromír Erben</td></tr><tr><td>Zdroj:</td><td>Erben, sbírka, 1864, s. 47.</td></tr><tr><td>Licence:</td><td>'.$license.'</td></tr></table><table><tr><td>Navigation</td></tr></table><div class="poem"><p>Pavel: fixture original verse one.<br>Fixture original verse two.<script>evil()</script></p></div></div>']]];};
+$fake->responses=[$jsonResponse($erbenSearch),$jsonResponse($erbenFixture())];
 $result=$erbenService->run((int)$erbenJob['id']);
-check($result['processed']===1 && $result['cursor']==='1','folklore cursor committed');
+check($result['processed']===1 && $result['cursor']===null,'folklore cursor committed');
 $ei=$db->fetchOne("SELECT * FROM etymolog_story_import WHERE provider='erben-folklore' AND franchise_code='etymolog'");
 $ee=status(api('GET','etymolog/entries/'.$ei['entry_id'],token:$editor),200,'folklore entry API');
-check($ee['type']==='proverb' && $ee['source_url']==='https://cs.wikisource.org/w/index.php?oldid=1' && $ee['body']==="Fixture original verse one.\nFixture original verse two.",'folklore imported verbatim with verse layout and source');
+check($ee['type']==='tradition' && $ee['source_url']==='https://cs.wikisource.org/w/index.php?oldid=1' && $ee['body']==="Pavel: fixture original verse one.\nFixture original verse two.",'folklore imported verbatim with verse layout and source');
 $ed=$db->fetchOne('SELECT * FROM etymolog_calendar_day WHERE entry_id=?',[$ei['entry_id']]);
-check($ed['month']===1 && $ed['day']===25 && $ed['kind']==='folklore' && $ed['name_id']===null,'historical chapter date is not inferred modern name day');
+check(!$ed,'text discovery never guesses a calendar day');
 $ep=status(api('GET','etymolog/entries/'.$ei['entry_id'].'/imports',token:$editor),200,'folklore provenance API');
 check($ep[0]['attribution']==='Karel Jaromír Erben; Wikizdroje','folklore correct author rather than Jirasek');
 status(api('PATCH','etymolog/entries/'.$ei['entry_id'],['published'=>1],$editor),200,'verbatim imported folklore may publish with citation');
-$db->query('UPDATE etymolog_sync_job SET next_run_at=NULL,`cursor`=NULL WHERE id=?',[$erbenJob['id']]);
-$fake->responses=[$jsonResponse($erbenFixture(revision:2))];$erbenService->run((int)$erbenJob['id']);
-check((int)$db->fetchOne('SELECT COUNT(*) n FROM etymolog_calendar_day WHERE entry_id=?',[$ei['entry_id']])['n']===1,'folklore date idempotent');
-$fake->responses=[$jsonResponse($erbenFixture('All rights reserved'))];
-try{$erben->batch('cs','folklore',null,1);throw new LogicException('Expected licence failure');}
+$db->query('UPDATE etymolog_sync_job SET next_run_at=NULL,`cursor`=? WHERE id=?',[$erbenStart,$erbenJob['id']]);
+$fake->responses=[$jsonResponse($erbenSearch),$jsonResponse($erbenFixture(revision:2))];$erbenService->run((int)$erbenJob['id']);
+check((int)$db->fetchOne('SELECT COUNT(*) n FROM etymolog_calendar_day WHERE entry_id=?',[$ei['entry_id']])['n']===0,'repeated folklore import does not invent calendar data');
+$fake->responses=[$jsonResponse($erbenSearch),$jsonResponse($erbenFixture('All rights reserved'))];
+try{$erben->batch('cs','folklore',$erbenStart,1);throw new LogicException('Expected licence failure');}
 catch(App\Modules\Etymolog\SyncException $e){check($e->reason==='story_license_not_allowed','folklore requires actual public-domain metadata');}
 
 $calendarProvider=new App\Modules\Etymolog\Providers\CzechNamedaysProvider($fake);

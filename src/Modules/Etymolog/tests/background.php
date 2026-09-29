@@ -8,8 +8,10 @@ status(api('POST', 'etymolog/sync/start', []), 401, 'anonymous cannot launch wor
 status(api('POST', 'etymolog/sync/start', ['tenant' => 'other'], $admin), 422, 'start rejects caller tenant or worker options');
 status(api('GET', 'etymolog/sync/status', token: $admin), 200, 'admin can read idle batch status');
 
+$dictionaryName=$db->insert('etymolog_name',['franchise_code'=>'etymolog','name'=>'Novotný','kind'=>'surname']);
+$dictionaryStart=json_encode(['after'=>$dictionaryName-1]);
 foreach (['cs', 'fr'] as $edition) {
-    $provider = new App\Modules\Etymolog\Providers\WiktionaryProvider($fake, $edition);
+    $provider = new App\Modules\Etymolog\Providers\WiktionaryProvider($fake, new App\Modules\Etymolog\EtymologDiscoveryRepository($db,'etymolog'), $edition);
     $lang = $edition === 'cs' ? 'čeština' : 'Tchèque';
     $ety = $edition === 'cs' ? 'etymologie' : 'Étymologie';
     $sense = $edition === 'cs' ? 'význam' : 'Nom de famille';
@@ -18,14 +20,14 @@ foreach (['cs', 'fr'] as $edition) {
     if ($edition === 'fr') { $html = str_replace('<p>Source fixture.</p>', '<dl><dd>Source fixture.</dd></dl><h5>Notes</h5><dl><dd>Other section.</dd></dl>', $html); }
     $page = ['parse' => ['pageid' => 555, 'title' => 'Novotný', 'revid' => 777, 'categories' => [['*' => $category]], 'text' => ['*' => $html]]];
     $priority = ['query' => ['pages' => ['555' => ['pageid' => 555, 'ns' => 0, 'title' => 'Novotný']]]];
-    $discovery = ['query' => ['categorymembers' => [['pageid' => 555, 'ns' => 0, 'title' => 'Novotný']]]];
+    $discovery = $priority;
     $fake->responses = [$jsonResponse($rights), $jsonResponse($priority), $jsonResponse($page)];
-    $batch = $provider->batch('cs', 'surname_priority', null, 3);
-    check($batch['scanned'] === 3 && $batch['cursor'] === '3' && $batch['items'][0]['entry']['language'] === $edition, $edition.' priority advances fixed discovery and retains source language');
+    $batch = $provider->batch('cs', 'surname_priority', $dictionaryStart, 3);
+    check($batch['scanned'] === 1 && $batch['complete'] && $batch['items'][0]['entry']['language'] === $edition, $edition.' legacy alias traverses DB names and retains source language');
     check($batch['items'][0]['entry']['body'] === 'Source fixture.' && str_contains($batch['items'][0]['source_url'], $edition.'.wiktionary.org'), $edition.' nested markup extracts only correct etymology');
     $priorityItem = $batch['items'][0];
     $fake->responses = [$jsonResponse($rights), $jsonResponse($discovery), $jsonResponse($page)];
-    $categoryItem = $provider->batch('cs', 'surname', null, 3)['items'][0];
+    $categoryItem = $provider->batch('cs', 'surname', $dictionaryStart, 3)['items'][0];
     check($categoryItem['external_id'] === $priorityItem['external_id'], $edition.' priority and category share identity');
     $jobs->exclusive(fn () => $jobs->transaction(function () use ($external, $edition, $priorityItem, $categoryItem) {
         $external->import('wiktionary-'.$edition, $priorityItem);
@@ -34,9 +36,9 @@ foreach (['cs', 'fr'] as $edition) {
     check((int)$db->fetchOne('SELECT COUNT(*) n FROM etymolog_external_record WHERE provider=? AND external_id=?', ['wiktionary-'.$edition, $priorityItem['external_id']])['n'] === 1, $edition.' overlapping discovery does not duplicate entries');
     $page['parse']['text']['*'] = str_replace($ety, 'Other section', $html);
     $fake->responses = [$jsonResponse($rights), $jsonResponse($priority), $jsonResponse($page)];
-    check($provider->batch('cs', 'surname_priority', null, 3)['items'] === [], $edition.' absent etymology is skipped');
+    check($provider->batch('cs', 'surname_priority', $dictionaryStart, 3)['items'] === [], $edition.' absent etymology is skipped');
     $fake->responses = [$jsonResponse($rights), $jsonResponse(['query' => ['pages' => ['-1' => ['title' => 'Missing', 'missing' => '']]]])];
-    $last = $provider->batch('cs', 'surname_priority', '12', 3);
+    $last = $provider->batch('cs', 'surname_priority', $dictionaryStart, 3);
     check($last['complete'] && $last['items'] === [], $edition.' missing priority pages still finish the pass');
 }
 // Do not disturb other fixtures: independent tenant, one due job, one failure, future and disabled jobs.
@@ -118,3 +120,17 @@ try { (new App\Modules\Etymolog\EtymologWorkerLauncher($cronTenant, 'invalid'))-
 catch (SyncException $e) { check($e->reason === 'worker_configuration_invalid', 'invalid dispatch fails before executing any command'); }
 try { $cronLauncher->launch('invalid'); throw new LogicException('Expected invalid request'); }
 catch (SyncException $e) { check($e->reason === 'worker_unavailable', 'cron dispatch also rejects invalid request IDs'); }
+
+$emptyDictionary=new App\Modules\Etymolog\Providers\WiktionaryProvider($fake,new App\Modules\Etymolog\EtymologDiscoveryRepository($db,'empty-dictionary-fixture'));
+$fake->responses=[];
+check($emptyDictionary->batch('cs','given',null,3)['complete'],'empty dictionary tenant performs no HTTP requests');
+try{$emptyDictionary->batch('cs','given','{"after":-1}',3);throw new LogicException('Expected invalid cursor');}
+catch(SyncException $e){check($e->reason==='invalid_provider_cursor','dictionary rejects malformed DB cursor before HTTP');}
+$legacyDictionary=new App\Modules\Etymolog\Providers\WiktionaryProvider($fake,new App\Modules\Etymolog\EtymologDiscoveryRepository($db,'dictionary-cursor-fixture'));
+$legacyName=$db->insert('etymolog_name',['franchise_code'=>'dictionary-cursor-fixture','name'=>'Libovolník','kind'=>'surname']);
+foreach(['2','{"category":0,"continue":"old"}'] as $legacyCursor){
+    $fake->responses=[$jsonResponse($rights),$jsonResponse(['query'=>['pages'=>['-1'=>['title'=>'Libovolník','missing'=>'']]]])];
+    $batch=$legacyDictionary->batch('cs','surname_priority',$legacyCursor,3);
+    parse_str(parse_url($fake->requests[array_key_last($fake->requests)]->url,PHP_URL_QUERY),$params);
+    check($batch['complete'] && $batch['scanned']===1 && $params['titles']==='Libovolník','old dictionary cursor and priority alias restart against actual DB names');
+}

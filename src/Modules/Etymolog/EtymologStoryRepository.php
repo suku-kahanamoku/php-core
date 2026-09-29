@@ -31,6 +31,14 @@ final class EtymologStoryRepository extends BaseRepository
                     $this->_db->update('etymolog_entry_name', ['name_id' => $nameId], 'franchise_code=? AND id=?', [$this->_code, $link['id']]);
                 }
             }
+            foreach ($item['names'] as $suggested) {
+                $label=is_array($suggested) ? $suggested['name'] : $suggested;
+                $kind=is_array($suggested) ? $suggested['kind'] : 'given';
+                $name=$this->_db->fetchOne('SELECT id FROM etymolog_name WHERE franchise_code=? AND kind=? AND BINARY LOWER(TRIM(name))=BINARY LOWER(TRIM(?)) AND deleted=0 ORDER BY id LIMIT 1', [$this->_code,$kind,$label]);
+                if ($name && !$this->_db->fetchOne('SELECT id FROM etymolog_entry_name WHERE franchise_code=? AND entry_id=? AND name_id=?', [$this->_code,$existing['entry_id'],$name['id']])) {
+                    $this->_db->insert('etymolog_entry_name',['franchise_code'=>$this->_code,'entry_id'=>(int)$existing['entry_id'],'name_id'=>(int)$name['id'],'relation'=>'mentioned','reviewed'=>0]);
+                }
+            }
             // Preserve all editorial content, citations, reviewed/rejected states and publication.
             $this->_db->update('etymolog_story_import', $snapshot, 'id=? AND franchise_code=?', [(int)$existing['id'], $this->_code]);
             return ['entry_id' => (int)$existing['entry_id'], 'source_id' => (int)$existing['source_id']];
@@ -58,7 +66,7 @@ final class EtymologStoryRepository extends BaseRepository
             $linked[$nameId] = true;
             $this->_db->insert('etymolog_entry_name', ['franchise_code' => $this->_code, 'entry_id' => $entryId,
                 'name_id' => $nameId, 'relation' => 'mentioned', 'reviewed' => 0,
-                'notes' => 'Návrh z kurátorovaného seznamu postav; vyžaduje redakční kontrolu.']);
+                'notes' => 'Návrh podle výskytu jména v textu pramene; vyžaduje redakční kontrolu.']);
         }
         $this->_db->insert('etymolog_story_import', $snapshot + ['franchise_code' => $this->_code,
             'entry_id' => $entryId, 'source_id' => $sourceId, 'provider' => $provider, 'external_id' => $item['external_id']]);

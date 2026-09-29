@@ -248,7 +248,7 @@ Příklad budoucího cronu (absolutní cesty přizpůsobit serveru):
 
 Samotná instalace modulu nemění systémový crontab. Seed připraví české úlohy;
 admin může další úlohy přidávat přes CRUD. Wikisource úloha má vlastní denní
-interval a aktuálně podporuje pouze český kurátorovaný katalog. Výchozí hodinový interval každé úlohy
+interval a vyhledává české kapitoly podle jmen uložených v DB. Výchozí hodinový interval každé úlohy
 se respektuje i při pětiminutovém spouštění skriptu.
 
 ## Ověření
@@ -296,15 +296,14 @@ Content-Type: application/json
 {"reviewed":1,"relation":"story_subject"}
 ```
 
-Nový provider `wikisource` má pevný, pouze rozšiřovaný katalog čtyř kapitol
-z Jiráskových Starých pověstí českých (vydání 1959):
+Provider `wikisource` vyhledává kapitoly ve **Starých pověstech českých (1959)**
+podle všech aktivních jmen a příjmení tenantu v databázi. Nemá seznam postav
+ani předvybrané kapitoly. Vyhledávání je omezené na tuto licenčně kontrolovanou
+knihu; vazbu navrhne pouze při doslovném výskytu jména v převzatém textu.
+Samotná shoda zápisu není důkaz totožnosti postavy, proto vyžaduje kontrolu.
+Skloňované či historicky odlišné zápisy nemusí toto konzervativní pravidlo najít.
 
-- O Libuši – návrhy Libuše, Kazi, Teta.
-- O Přemyslovi – Přemysl, Libuše.
-- O Bivoji – Bivoj, Kazi, Libuše.
-- O Krokovi a jeho dcerách – Krok, Kazi, Teta, Libuše.
-
-Volá jen `https://cs.wikisource.org/w/api.php` (`action=parse`), bez přesměrování,
+Volá jen `https://cs.wikisource.org/w/api.php` (`query/search` a `parse`), bez přesměrování,
 s timeoutem, limitem velikosti, ošetřením `maxlag` a `Retry-After`. Žádné URL
 z redakčního obsahu nestahuje. Před každým importem ověří titul, autora a přesné
 licenční označení `PD old 70` v metadatech kapitoly. Jiné licence, změna struktury
@@ -319,7 +318,7 @@ Frontend jej musí zobrazovat jako text, nikoli jako důvěryhodné HTML.
 Při prvním importu vzniká draft `legend/unverified`, zdroj s bibliografií,
 citace s trvalým odkazem na revizi a návrhy vazeb na jména. Existující jméno se
 použije podle společné identity zápisu a druhu, bez rozlišení velikosti písmen,
-země nebo jazyka. Chybějící jméno vznikne jako draft; vazby z pověsti zůstávají
+země nebo jazyka. Provider navrhuje pouze jméno načtené z DB; vazby z pověsti zůstávají
 neověřené do redakční kontroly. Opakované návrhy `Anna`/`ANNA` v jedné pověsti
 nevytvoří dvě vazby, ale stejné jméno a příjmení jsou dvě samostatné vazby.
 Archivované heslo se neobnoví. Stabilní importní klíč zachová ruční přejmenování.
@@ -332,7 +331,8 @@ navrhovaná jména, bibliografii, hash a čas načtení. Nejde o historii všech
 
 Další průchod aktualizuje snapshot a sjednotí názvy i aktivní vazby na stejné
 jméno stejného druhu. Nepřepisuje text, citaci, zdroj, publikaci ani stav
-schválení/odmítnutí vazeb. Novou revizi může redaktor zkontrolovat a přenést
+schválení/odmítnutí vazeb. Pokud kapitolu objeví další jméno z DB, přidá se
+pouze nová neověřená vazba, nikoli další pověst. Novou revizi může redaktor zkontrolovat a přenést
 přes běžný PATCH; stará citace nadále správně ukazuje na původní převzatou revizi.
 Archivované příběhy se neobnovují. Hard delete příběhu/zdroje blokuje snapshot;
 soft delete nadále respektuje aktivní doménové závislosti.
@@ -437,13 +437,13 @@ Migrace doplní starším importům webovou URL ze snapshotu a původní citát 
 při shodě citované URL se snapshotem. Nikdy nevydává redaktorem upravené tělo
 za původní text. Již vyplněný citát a obsah výkladu nemění.
 
-`erben-folklore`, `language=cs`, `kind=folklore`, dávka 1–4: čtyři kurátorované
-kapitoly **Prostonárodní české písně a říkadla (1864)**. Provider při každém
-načtení kontroluje autora, titul, bibliografii a PD old 70. Uchovává verše,
-odstavce, dobové znění i místní poznámky, odstraní navigaci a HTML. Vazby na
-jména jsou návrhy `reviewed=0`; např. Kučera je příjmení, nikoli křestní jméno.
-Kapitoly 25. ledna, 24. února a 12. března mají datum v historickém kalendáři;
-kapitole Na jmena se datum nevymýšlí.
+`erben-folklore`, `language=cs`, `kind=folklore`, dávka 1–4: prochází jména
+z DB a vyhledává jejich výskyty v **Prostonárodních českých písních a říkadlech
+(1864)**. Jedno volání zpracuje nejvýše jednu nalezenou kapitolu a uchová
+pokračování hledání. Kontroluje autora, titul, bibliografii a PD old 70.
+Zachovává původní text a verše. Importuje koncept `tradition` a vazbu
+`reviewed=0`; druh jména převezme z DB. Nevymýšlí datum ani nepřiřazuje
+celé kapitole typ pranostika podle pevného seznamu.
 
 ## Kalendáře a kalendářní dny
 
@@ -528,22 +528,24 @@ všech 30 úloh včetně 10 nových slovníkových idempotentně; neimportuje ob
 
 | Provider | Zdroj | Jazyk textu | Pravidla |
 | --- | --- | --- | --- |
-| `wiktionary-cs` | [Český Wikislovník](https://cs.wiktionary.org/wiki/Novotn%C3%BD) | cs | České příjmení / rodné jméno, běžný i přednostní průchod |
+| `wiktionary-cs` | [Český Wikislovník](https://cs.wiktionary.org/wiki/Novotn%C3%BD) | cs | Česká příjmení / rodná jména z DB |
 | `wiktionary-fr` | [Francouzský Wiktionnaire](https://fr.wiktionary.org/wiki/Novotn%C3%BD) | fr | Stejné druhy českých jmen; originální francouzské výklady |
-| `wiktionary` | [Anglický Wiktionary](https://en.wiktionary.org/wiki/Nov%C3%A1k) | en | Nově i přednostní česká příjmení / rodná jména |
+| `wiktionary` | [Anglický Wiktionary](https://en.wiktionary.org/wiki/Nov%C3%A1k) | en | Rodná jména / příjmení z DB |
 
 Nové edice podporují `language=cs`, `kind=given|surname|given_priority|surname_priority`.
-Anglická edice ponechává stávající jazykové pokrytí; prioritní průchod je pouze český.
-`*_priority` má pevný seznam 15 titulů na druh jména (Novák, Novotný atd.),
-nebere libovolnou URL ani text od klienta. Není to statistický žebříček.
-Běžný průchod navazuje přes MediaWiki continuation. Česká rodná jména se hledají
-v kategorii `Česká propria`, protože samostatné kategorie rodných jmen nejsou
-spolehlivě vyplněné; parser vyžaduje odpovídající význam a etymologii.
+Anglická edice ponechává stávající jazykové pokrytí. Všechny průchody vybírají
+jména podle vzestupného ID z DB daného tenantu, včetně konceptů a bez smazaných.
+`*_priority` zůstává pouze kompatibilní alias druhu existujících úloh pro češtinu;
+neobsahuje žádný prioritní seznam. Úlohy se mohou překrývat, ale import mají
+idempotentní. Slovník se dotazuje přímo na vybraná jména, nikoli na kategorie
+jako zdroj dalších jmen. Kategorie a význam slouží k ověření nalezeného článku.
+Staré číselné/kategorizační kurzory začnou jednou od prvního jména v DB,
+nové kurzory ukládají `after` (poslední dokončené ID).
 U každého textu se ověřuje aktuální CC BY-SA 4.0, ukládá revize, historie autorů,
 licence a původní jazyk. Výklad musí být skutečně přítomen ve správné jazykové
 sekci a skupině významů. Žádné generování ani automatický překlad.
-Stejná stránka z přednostního a abecedního průchodu má totožnou importní identitu;
-každá edice je samostatný citovaný pramen. Nové texty i jména jsou koncepty.
+Stejná stránka z běžné úlohy a jejího kompatibilního aliasu má totožnou importní identitu;
+každá edice je samostatný citovaný pramen. Nové texty jsou koncepty a připojují se k existujícím jménům.
 
 ### API a společný worker
 
@@ -589,52 +591,55 @@ Frontend při `total=1` a jediném výsledku rovnou otevře lokalizovaný detail
 (přes JavaScript i serverové HTTP 302). Při více výsledcích zobrazí výběr pod
 formulářem. Jedna položka na poslední stránce většího hledání nepřesměrovává.
 
-### Vybrané etymologie a kulturní texty z Wikipedie
+### Etymologie a kulturní texty pro jména z databáze
 
-`WikipediaNamesProvider` (`wikipedia-names`, `language=cs`) přidává 15 konkrétních
-oddílů šesti jmen. Používá pouze API `https://cs.wikipedia.org/w/api.php`, pevný
-seznam článků a přesné názvy ověřených oddílů. Neprovádí plošný scraping ani
-negeneruje příběhy.
+`EtymologDiscoveryRepository` je společný tenantový výběr pro Wikipedii,
+Wikislovníky a Wikizdroje. Zdrojem kandidátů jsou **všechna aktivní jména a
+příjmení uložená v DB**, včetně nepublikovaných. Neexistuje pevný seznam jmen,
+postav ani výjimek. Shodný zápis bez ohledu na velikost písmen se prochází
+jednou v rámci druhu; jméno a příjmení jsou dvě samostatné identity.
+Wikidata, statistické a kalendářní importy nadále mohou doplňovat samotná jména.
 
-| Jméno | Pramen a vybrané oddíly | Zařazení |
-| --- | --- | --- |
-| Anna | [Svatá Anna](https://cs.wikipedia.org/wiki/Svat%C3%A1_Anna): Etymologie, Život, Patronka, Svátek; [Anna](https://cs.wikipedia.org/wiki/Anna): Pranostiky | Etymologie, legenda, tradice, pranostiky |
-| Jiří | [Svatý Jiří](https://cs.wikipedia.org/wiki/Svat%C3%BD_Ji%C5%99%C3%AD): Etymologie jména, Svatý Jiří a drak | Etymologie, legenda |
-| Martin | [Martin z Tours](https://cs.wikipedia.org/wiki/Martin_z_Tours): Legenda o plášti | Legenda |
-| Mikuláš | [Svatý Mikuláš](https://cs.wikipedia.org/wiki/Svat%C3%BD_Mikul%C3%A1%C5%A1): Legenda o šlechtici a jeho třech dcerách, Legenda o třech dětech, Česko a Slovensko | Legendy, tradice |
-| Barbora | [Barbora z Nikomédie](https://cs.wikipedia.org/wiki/Barbora_z_Nikom%C3%A9die): Život, Zajímavosti | Legenda, tradice |
-| Diana | [Diana (mytologie)](https://cs.wikipedia.org/wiki/Diana_(mytologie)): Jméno, Funkce | Etymologie, mytologie |
+`WikipediaNamesProvider` (`wikipedia-names`, `language=cs`) používá pouze
+`https://cs.wikipedia.org/w/api.php`. Pro aktuální jméno z DB hledá článek
+včetně rozlišovače `(jméno)` / `(rodné jméno)` / `(příjmení)` a ověří typ pomocí
+šablon nebo kategorií. Biografii či místo se shodným názvem za jméno nepovažuje.
 
-Náboženské legendy nejsou vydávány za doloženou historii ani automaticky
-přejmenovány na mytologii. Oddíl Svátek je převzatý text o tradici; nezakládá
-moderní kalendář ani neodvozuje datum z volného textu. Kalendáře nadále spravuje
-existující kalendářní import.
+- `kind=etymologies`: přebírá úvodní odstavce popisující původ a význam a
+  pojmenované etymologické/historické oddíly.
+- `kind=culture`: přebírá výslovné oddíly legend, mytologie, tradic a pranostik.
+  U rodného jména navíc sleduje explicitní odkazy na světce a mytologii
+  z článku o jméně. Cílová stránka musí mít odpovídající kategorii; běžná
+  biografie není automaticky legenda. Vazba na jméno i revize výchozího
+  článku zůstávají ve zdrojovém snapshotu.
 
-Seed `migrations/etymolog_seed.sql` obsahuje také dvě zapnuté úlohy: `kind=etymologies` (3 oddíly) a `kind=culture` (12 oddílů),
-obě s dávkou 3 a intervalem 300 sekund. Neimportuje obsah, nepublikuje data,
-neobnovuje smazané úlohy ani nemění jejich existující nastavení. Nové úlohy
-zpracuje stávající tlačítko **Spustit synchronizaci** i stejný cron worker.
-První úspěšný průchod nových úloh načte etymologii Anny, Jiřího a Diany a
-pro Annu legendu, patronát a pranostiky; další splatné dávky pokračují ostatními
-kulturními oddíly. Jeden klik nevyčerpá celý kulturní katalog.
+Jeden krok Wikipedie zpracuje nejvýše jeden článek (i když kompatibilní
+konfigurace povoluje `batch_size=1..3`), aby se vešel do HTTP workeru.
+Kurzor `after` pokračuje podle ID; kulturní větev navíc uchovává `name_id`,
+`page_id`, `revision` a index navazujícího článku. Wikizdroje ukládají také
+`offset` stránkovaného hledání. Prázdný výsledek posune průchod dál; vadná
+odpověď, změna licence nebo limit API ponechá kurzor pro opakování.
 
-API kontroluje CC BY-SA 4.0, shodu článku a oddílu. Číslo oddílu se vyhledá
-v konkrétní revizi a tělo se čte přes stejné `oldid`; při změně licence,
-chybějícím oddílu nebo nesouhlasící revizi celá dávka selže bez posunu kurzoru.
-Ukládá se trvalý odkaz na oddíl, revize, historie autorů, licence, popis
-převodu do prostého textu a doslovná citace těla. Žádný automatický překlad.
+Nasazení nevyžaduje novou tabulku ani změnu úloh. Staré číselné kurzory katalogu
+se automaticky převedou na začátek průchodu DB. U nových kurzorů se pokračuje
+na uložené pozici. Tlačítko i cron stále zpracují **jednu dávku každé splatné
+zapnuté úlohy**, nikoli celou databázi jedním kliknutím. Při jediném denním
+spuštění bude rozsáhlá DB postupovat pomalu. Úlohy opakovaně neresetovat;
+reset by je vracel na začátek. Po dokončení se další průchod vrací k prvním
+jménům; nově přidaná jména se zahrnou automaticky.
 
-Nové texty jsou **nepublikované koncepty** s `certainty=unverified`. Redaktor je
-zkontroluje a zveřejní v administraci; nově založené jméno je rovněž koncept.
-Citace splňuje existující kontrolu publikace kulturního obsahu.
-`EtymologExternalRepository` opakovaně aktualizuje pouze zdrojový snapshot,
-zachovává ruční úpravy, publikaci a původní citace, respektuje tombstones.
-Importní identita je pevný klíč oddílu nezávislý na revizi. Pořadí katalogů
-se nemění, nové oddíly se pouze připojují na konec.
+Import kontroluje CC BY-SA 4.0 a ukládá text, trvalou URL konkrétní revize,
+licenci, historii autorů, popis změn a doslovnou citaci. Text negeneruje ani
+nepřekládá. Nové výklady jsou **nepublikované koncepty**. Dostupnost závisí na
+skutečných pramenech: průchod všech jmen nezaručuje etymologii nebo pověst pro
+každé jméno. Kalendářní data se z volných kulturních textů neodvozují.
 
-Ověření: metadata a ukázkový oddíl byly načteny pro kontrolu pramene bez importu;
-integrační testy v `tests/wikipedia.php` používají pouze falešné HTTP a
-jednorázovou DB. Celá sada po rozšíření: 426 kontrol.
+Opakovaný import zachovává ruční úpravy, publikaci, původní citace a smazané
+záznamy. Importní identita rozlišuje jméno, druh, stránku a oddíl, nikoli revizi.
+Starší záznamy z katalogu se rozpoznávají podle uložené stránky, oddílu a
+stejného tenantového jména/druhu; neexistuje převodní seznam konkrétních jmen.
+Testy v `tests/wikipedia.php` ověřují tento přechod i dynamické objevování
+pomocí falešného HTTP a jednorázové databáze.
 
 ### Hosting se zakázaným spouštěním procesů
 

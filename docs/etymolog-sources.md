@@ -10,7 +10,7 @@ z pouhé shody názvu ani neodvozuje národnost nositele jména.
 | Zdroj | Obsah | Licence | Implementace a rozsah |
 |---|---|---|---|
 | [Wikidata](https://www.wikidata.org/wiki/Wikidata:Licensing) | Katalog jmen, jazyk užití, alternativní popisky a tvrzení s dostupnými referencemi | CC0-1.0 | Existující `wikidata`; cs/sk/pl/uk/de/en, křestní jména a příjmení. Nejde o úplný odborný etymologický slovník. |
-| [České Wikizdroje](https://cs.wikisource.org/wiki/Staré_pověsti_české_(1959)) | Pověsti a souvislosti s postavami/jmény | U vybraných kapitol ověřované PD old 70 | Existující `wikisource`; čtyři kurátorované kapitoly, drafty a návrhy vztahů. Další díla vyžadují konkrétní výběr a kontrolu licence. |
+| [České Wikizdroje](https://cs.wikisource.org/wiki/Staré_pověsti_české_(1959)) | Pověsti a souvislosti s postavami/jmény | U vybraných kapitol ověřované PD old 70 | Existující `wikisource`; vyhledávání kapitol podle jmen v DB, drafty a návrhy vztahů. Další díla vyžadují konkrétní výběr a kontrolu licence. |
 | [English Wiktionary](https://en.wiktionary.org/wiki/Wiktionary:Copyrights) | Etymologické odstavce pro jazykově zařazená jména a příjmení | CC-BY-SA-4.0; odkaz na historii autorů, revizi, licenci a popis úprav | Nový `wiktionary`; cs/sk/pl/uk/de/en přes jazykové kategorie. Výklad zůstává anglicky. Kategorie není zárukou přítomnosti etymologie; chybějící výklad se přeskočí. |
 | [Ministerstwo Cyfryzacji / PESEL](https://dane.gov.pl/pl/dataset/1681) | Celostátní počty příjmení žijících osob v registru; mužská a ženská populace zvlášť | API metadat deklaruje CC0 1.0; kontrolujeme i případné dodatečné podmínky | Nový `poland-pesel`; úplné oficiální CSV, automatický výběr nejnovějšího národního vydání. Země PL, jazyk jména se neodvozuje. |
 | [ČSÚ – dětská jména 2025](https://csu.gov.cz/produkty/viktorie-byla-vubec-poprve-nejoblibenejsi-jakub-prvenstvi-obhajil-tesne) | TOP 100 jmen narozených dětí v Česku za rok 2025, podle pohlaví | [CC BY 4.0](https://csu.gov.cz/podminky_pro_vyuzivani_a_dalsi_zverejnovani_statistickych_udaju_csu) | Nový `csu-baby-names`; ověřený XLSX, 201 řádků kvůli shodnému pořadí. Pevně vybrané vydání 2025, nové ročníky se přidají po ověření formátu a metodiky. |
@@ -22,7 +22,7 @@ Příklad skutečně existující etymologie: [Novák](https://en.wiktionary.org
 etymologii, kterou anglická edice uvádí pro češtinu. Proto provider používá
 `en.wiktionary.org`, ale jazyk zkoumaného jména vybírá zvlášť.
 
-Technické rozhraní: MediaWiki Action API `query/categorymembers`,
+Technické rozhraní: MediaWiki Action API `query/titles` podle jmen a příjmení z DB,
 `query/siteinfo` (`rightsinfo`) a `parse`. Kategorie příjmení, pro křestní jména
 postupně mužská, ženská, unisex a obecná kategorie. Nepředstíráme rekurzivní
 pokrytí libovolných podkategorií. Čteme aktuální revizi, ověřujeme členství
@@ -157,24 +157,17 @@ neprokazuje pravdivost ručně zadaného pramene ani historického děje.
 Karel Jaromír Erben, Praha: Jaroslav Pospíšil, **1864**. U každé importované
 kapitoly API skutečně uvádí autora, bibliografii a **PD old 70**.
 
-| Kapitola | Obsah | Vazba |
-|---|---|---|
-| [25. ledna](https://cs.wikisource.org/wiki/Proston%C3%A1rodn%C3%AD_%C4%8Desk%C3%A9_p%C3%ADsn%C4%9B_a_%C5%99%C3%ADkadla/25._ledna) | Dvě pranostiky, včetně Obrácení sv. Pavla | Pavel; datum historické kapitoly 25. 1. |
-| [24. února](https://cs.wikisource.org/wiki/Proston%C3%A1rodn%C3%AD_%C4%8Desk%C3%A9_p%C3%ADsn%C4%9B_a_%C5%99%C3%ADkadla/24._%C3%BAnora) | Matějské pranostiky a zvyk se stromy; zachované regionální poznámky | Matěj, Josef; datum kapitoly 24. 2. |
-| [12. března](https://cs.wikisource.org/wiki/Proston%C3%A1rodn%C3%AD_%C4%8Desk%C3%A9_p%C3%ADsn%C4%9B_a_%C5%99%C3%ADkadla/12._b%C5%99ezna) | Dětské výroční říkání a pranostika spojená s Řehořem | Řehoř; datum kapitoly 12. 3. |
-| [Na jmena](https://cs.wikisource.org/wiki/Proston%C3%A1rodn%C3%AD_%C4%8Desk%C3%A9_p%C3%ADsn%C4%9B_a_%C5%99%C3%ADkadla/Na_jmena) | Tradiční dětská říkadla o jménech | Návrhy Mikuláš, Michal, Havel a příjmení Kučera; bez vymyšleného data |
+Provider `erben-folklore` vyhledává podle aktivních jmen a příjmení v DB,
+nikoli podle pevného seznamu kapitol nebo postav. Importuje původní text do
+konceptu `tradition`, zachová verše a bibliografii. Vazbu navrhne až po ověření
+doslovného výskytu jména v textu a ponechá ji `reviewed=0`. Skloňované zápisy
+může konzervativní kontrola vynechat. Nové kalendářní datum z textu neodvozuje.
+Chybějící nebo nezpracovanou kapitolu nenahrazuje vlastním vyprávěním.
 
-Provider `erben-folklore` přebírá celé krátké kapitoly do `proverb` / `tradition`,
-zachovává dobové znění a verše. Kniha může na jedné stránce spojovat pranostiky
-se zvykem; nevyrábíme z textu nový souhrn. Jazykové přiřazení jmen je ručně
-kurátorovaný návrh s `reviewed=0`, nikoli AI etymologie či genealogický důkaz.
-Historický kalendář není automaticky dnešní církevní či občanský kalendář.
+### Český jmenný kalendář — dřívější GitHub zdroj (nahrazen Wikipedií)
 
-Při průzkumu se ukázalo, že některé položky obsahu knihy jsou nezpracované:
-např. odkaz **24. dubna** je redlink a **Sv. Jan Křtitel** nemá hotovou kapitolu.
-Import je nezahrnuje a chybějící text nenahrazuje novým vyprávěním.
-
-### Český jmenný kalendář — implementováno
+Aktuální implementace čerpá z Wikipedie, viz modulový README. Následující
+popis je historický a není návodem pro dnešní import.
 
 Repozitář [segeda/svatky-api-nodejs](https://github.com/segeda/svatky-api-nodejs),
 [licence Unlicense](https://github.com/segeda/svatky-api-nodejs/blob/07f60431bf637238b09b6c27553b4f40494c7970/LICENSE.md).
@@ -205,10 +198,10 @@ dvě jmeniny. Soubory jiných zemí nejsou tímto providerem automaticky zahrnut
 
 Původní Jiráskovy pověsti nadále poskytuje `wikisource`; tento krok přidává
 pranostiky, doloženou tradici a kalendář. Pro další mytologická a literární díla
-se katalog rozšiřuje až po ověření konkrétního dostupného textu a licence.
+lze přidat další prohledávané sbírky po ověření dostupného textu a licence.
 
 
-### Ověřený stav kulturního rozšíření
+### Historický stav před zavedením dynamického hledání
 
 Po záloze a aplikaci migrace jsou v konfigurované DB skutečně uložené čtyři
 nové Erbenovy kapitoly, tři historické kalendářní vazby a 383 záznamů českého

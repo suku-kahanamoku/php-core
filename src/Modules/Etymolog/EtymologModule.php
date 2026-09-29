@@ -14,15 +14,16 @@ final class EtymologModule
         $http = HttpModule::client();
         if ($httpStep) { $http = new Providers\SyncBudgetProvider($http); }
         $http = new Providers\WikimediaHttpProvider($http); // Includes pacing time in the HTTP-step budget.
+        $names = new EtymologDiscoveryRepository($db, $tenant);
         $registry = new ProviderRegistry([
-            'wikipedia-names' => new WikipediaNamesProvider($http),
-            'erben-folklore' => new ErbenFolkloreProvider($http),
+            'wikipedia-names' => new WikipediaNamesProvider($http, $names),
+            'erben-folklore' => new ErbenFolkloreProvider($http, $names),
             'czech-namedays' => new CzechNamedaysProvider($http),
             'wikidata' => new WikidataProvider($http, $_ENV['ETYMOLOG_WIKIDATA_USER_AGENT'] ?? 'Etymolog/1.0 (https://etymolog.prasentace.cz; name history research)'),
-            'wikisource' => new WikisourceProvider($http),
-            'wiktionary-fr' => new WiktionaryProvider($http, 'fr'),
-            'wiktionary-cs' => new WiktionaryProvider($http, 'cs'),
-            'wiktionary' => new WiktionaryProvider($http),
+            'wikisource' => new WikisourceProvider($http, $names),
+            'wiktionary-fr' => new WiktionaryProvider($http, $names, 'fr'),
+            'wiktionary-cs' => new WiktionaryProvider($http, $names, 'cs'),
+            'wiktionary' => new WiktionaryProvider($http, $names),
             'csu-baby-names' => new CsuBabyNamesProvider($http),
             'poland-pesel' => new PolandPeselProvider($http),
         ]);

@@ -5,6 +5,8 @@ namespace App\Modules\Etymolog\Providers;
 
 use App\Modules\Etymolog\Contracts\BatchProvider;
 use App\Modules\Etymolog\SyncException;
+use App\Modules\Etymolog\EtymologDiscoveryRepository;
+use App\Modules\Etymolog\NameNormalizer;
 use App\Modules\Http\Contracts\HttpClient;
 
 /** Fixed dictionary editions; preserve original language and source attribution. */
@@ -12,7 +14,7 @@ final class WiktionaryProvider implements BatchProvider
 {
     private const LANGUAGES = ['cs' => 'Czech', 'sk' => 'Slovak', 'pl' => 'Polish', 'uk' => 'Ukrainian', 'de' => 'German', 'en' => 'English'];
     public const LICENSE_URL = 'https://creativecommons.org/licenses/by-sa/4.0/';
-    public function __construct(private readonly HttpClient $http, private readonly string $edition = 'en')
+    public function __construct(private readonly HttpClient $http, private readonly EtymologDiscoveryRepository $names, private readonly string $edition = 'en')
     {
         if (!in_array($edition, ['en', 'cs', 'fr'], true)) { throw new SyncException('unsupported_dictionary_edition'); }
     }
@@ -32,12 +34,6 @@ final class WiktionaryProvider implements BatchProvider
             $kind === 'surname' ? ['surnames'] : ['male given names', 'female given names', 'unisex given names', 'given names']);
     }
 
-    // Reviewed discovery only, not invented content; same source identities as category discovery.
-    private const PRIORITY = [
-        'surname' => ['Novák', 'Novotný', 'Svoboda', 'Dvořák', 'Černý', 'Procházka', 'Kučera', 'Veselý', 'Horák', 'Němec', 'Marek', 'Pokorný', 'Pospíšil', 'Hájek', 'Jelínek'],
-        'given' => ['Jan', 'Jiří', 'Petr', 'Josef', 'Pavel', 'Martin', 'Tomáš', 'Anna', 'Marie', 'Eva', 'Jana', 'Hana', 'Lenka', 'Lucie', 'Kateřina'],
-    ];
-
     private function api(array $params): array
     {
         return ProviderHttp::json($this->http, 'https://'.$this->edition.'.wiktionary.org/w/api.php?'.http_build_query($params + ['format' => 'json', 'maxlag' => 5]));
@@ -50,44 +46,32 @@ final class WiktionaryProvider implements BatchProvider
         $languages = $this->languages();
         if (!isset($languages[$language]) || !in_array($kind, ['given', 'surname'], true) || $limit < 1 || $limit > 3 || ($priority && $language !== 'cs')) { throw new SyncException('invalid_provider_configuration'); }
         $categories = $this->categories($language, $kind);
+        // Legacy priority and category cursors are retired; every task now follows DB IDs.
+        $state=$cursor===null ? ['after'=>0] : json_decode($cursor,true);
+        if ((is_int($state) && $state>=0) || (is_array($state) && isset($state['category']))) { $state=['after'=>0]; }
+        if (!is_array($state) || !is_int($state['after'] ?? null) || $state['after']<0) { throw new SyncException('invalid_provider_cursor'); }
+        $selected=[]; $scanned=0; $after=$state['after'];
+        for ($i=0;$i<$limit;++$i) {
+            $record=$this->names->next($kind,$after);
+            if (!$record) { break; }
+            $after=(int)$record['id']; ++$scanned;
+            if (!preg_match('/[|:#\x00-\x1f]/u', $record['name'])) { $selected[]=NameNormalizer::display($record['name']); }
+        }
+        $complete=$this->names->next($kind,$after)===null;
+        $nextCursor=$complete ? null : json_encode(['after'=>$after],JSON_THROW_ON_ERROR);
+        if (!$selected) { return ['items'=>[],'scanned'=>$scanned,'cursor'=>$nextCursor,'complete'=>$complete]; }
         $rights = $this->api(['action' => 'query', 'meta' => 'siteinfo', 'siprop' => 'rightsinfo']);
         if (!in_array($rights['query']['rightsinfo']['url'] ?? '', [self::LICENSE_URL, self::LICENSE_URL.'deed.en', self::LICENSE_URL.'deed.cs', self::LICENSE_URL.'deed.fr'], true)) { throw new SyncException('upstream_license_changed'); }
-        $next = null;
-        if ($priority) {
-            if ($cursor !== null && (!preg_match('/^(0|[1-9][0-9]*)$/D', $cursor) || (int)$cursor >= count(self::PRIORITY[$kind]))) { throw new SyncException('invalid_provider_cursor'); }
-            $offset = (int)($cursor ?? '0');
-            $titles = array_slice(self::PRIORITY[$kind], $offset, $limit);
-            $discovery = $this->api(['action' => 'query', 'titles' => implode('|', $titles)]);
-            if (!is_array($discovery['query']['pages'] ?? null)) { throw new SyncException('invalid_discovery_response'); }
-            if (count($discovery['query']['pages']) > count($titles)) { throw new SyncException('invalid_discovery_response'); }
-            $pages = array_values(array_filter($discovery['query']['pages'], static fn ($page) => is_array($page) && !array_key_exists('missing', $page)));
-            $complete = $offset + count($titles) >= count(self::PRIORITY[$kind]);
-            $nextCursor = $complete ? null : (string)($offset + count($titles));
-            $scanned = count($titles);
-        } else {
-            $state = $cursor === null ? ['category' => 0, 'continue' => null] : json_decode($cursor, true);
-            if (!is_array($state) || !is_int($state['category'] ?? null) || $state['category'] < 0 || $state['category'] >= count($categories) ||
-                !array_key_exists('continue', $state) || ($state['continue'] !== null && (!is_string($state['continue']) || strlen($state['continue']) > 1500))) {
-                throw new SyncException('invalid_provider_cursor');
-            }
-            $params = ['action' => 'query', 'list' => 'categorymembers', 'cmtitle' => 'Category:'.$categories[$state['category']], 'cmnamespace' => 0, 'cmtype' => 'page', 'cmlimit' => $limit];
-            if ($state['continue'] !== null) { $params['cmcontinue'] = $state['continue']; }
-            $discovery = $this->api($params);
-            $pages = $discovery['query']['categorymembers'] ?? null;
-            if (!is_array($pages) || !array_is_list($pages) || count($pages) > $limit) { throw new SyncException('invalid_discovery_response'); }
-            $next = $discovery['continue']['cmcontinue'] ?? null;
-            if ($next !== null && (!is_string($next) || $next === '' || strlen($next) > 1500 || $next === $state['continue'] || $pages === [])) { throw new SyncException('invalid_discovery_cursor'); }
-            $categoryIndex = $state['category'] + ($next === null ? 1 : 0);
-            $complete = $categoryIndex >= count($categories);
-            $nextCursor = $complete ? null : json_encode(['category' => $categoryIndex, 'continue' => $next], JSON_THROW_ON_ERROR);
-            $scanned = count($pages);
-        }
+        $discovery=$this->api(['action'=>'query','titles'=>implode('|',$selected)]);
+        if (!is_array($discovery['query']['pages'] ?? null) || count($discovery['query']['pages'])>count($selected)) { throw new SyncException('invalid_discovery_response'); }
+        $pages=array_values(array_filter($discovery['query']['pages'],static fn($p)=>is_array($p) && !isset($p['missing']) && !isset($p['invalid'])));
         $items = [];
         foreach ($pages as $page) {
             if (!is_int($page['pageid'] ?? null) || $page['pageid'] < 1 || ($page['ns'] ?? null) !== 0 || !is_string($page['title'] ?? null) || strlen($page['title']) > 255) { throw new SyncException('invalid_discovery_response'); }
+            if (!in_array($page['title'],$selected,true)) { throw new SyncException('invalid_discovery_response'); }
             $response = $this->api(['action' => 'parse', 'pageid' => $page['pageid'], 'prop' => 'text|revid|categories']);
             $p = $response['parse'] ?? null;
-            if (!is_array($p) || ($p['pageid'] ?? null) !== $page['pageid'] || !is_string($p['title'] ?? null) || strlen($p['title']) > 255 || !is_int($p['revid'] ?? null) || $p['revid'] < 1 || !is_string($p['text']['*'] ?? null)) { throw new SyncException('invalid_etymology_response'); }
+            if (!is_array($p) || ($p['pageid'] ?? null) !== $page['pageid'] || ($p['title'] ?? null) !== $page['title'] || !is_string($p['title'] ?? null) || strlen($p['title']) > 255 || !is_int($p['revid'] ?? null) || $p['revid'] < 1 || !is_string($p['text']['*'] ?? null)) { throw new SyncException('invalid_etymology_response'); }
             $currentCategories = array_map(static fn ($v) => str_replace('_', ' ', (string)($v['*'] ?? '')), $p['categories'] ?? []);
             if (array_intersect($categories, $currentCategories) === []) { continue; } // stale index membership
             $text = $this->extract($p['text']['*'], $languages[$language], $kind);

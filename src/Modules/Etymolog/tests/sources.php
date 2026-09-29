@@ -1,7 +1,7 @@
 <?php
 // Runs only within the isolated integration harness.
 $external = new App\Modules\Etymolog\EtymologExternalRepository($db, 'etymolog');
-$wikt = new App\Modules\Etymolog\Providers\WiktionaryProvider($fake);
+$wikt = new App\Modules\Etymolog\Providers\WiktionaryProvider($fake, new App\Modules\Etymolog\EtymologDiscoveryRepository($db, 'etymolog'));
 $pesel = new App\Modules\Etymolog\Providers\PolandPeselProvider($fake);
 $externalService = new App\Modules\Etymolog\EtymologSyncService($jobs, $sync, new App\Modules\Etymolog\ProviderRegistry(['wiktionary' => $wikt, 'poland-pesel' => $pesel]), $storyRepo, $external);
 $wiktJob = status(api('POST', 'etymolog/sync-jobs', ['title' => 'Etymologies', 'provider' => 'wiktionary', 'kind' => 'surname', 'batch_size' => 1], $admin), 201, 'create etymology job');
@@ -9,12 +9,16 @@ $wiktJobId = (int)$wiktJob['id'];
 status(api('POST', 'etymolog/sync-jobs', ['title' => 'Too large', 'provider' => 'wiktionary', 'batch_size' => 4], $admin), 422, 'bound dictionary request count');
 status(api('POST', 'etymolog/sync-jobs', ['title' => 'Too large', 'batch_size' => 51], $admin), 422, 'keep Wikidata batch bound');
 $rights = ['query' => ['rightsinfo' => ['url' => 'https://creativecommons.org/licenses/by-sa/4.0/deed.en', 'text' => 'CC BY-SA 4.0']]];
-$discoveryWikt = ['continue' => ['cmcontinue' => 'page|TEST|123'], 'query' => ['categorymembers' => [['pageid' => 123, 'ns' => 0, 'title' => 'Testovník']]]];
+$wiktName=$db->insert('etymolog_name',['franchise_code'=>'etymolog','name'=>'Testovník','kind'=>'surname','language'=>'cs']);
+$wiktLast=$db->insert('etymolog_name',['franchise_code'=>'etymolog','name'=>'Závěrečník','kind'=>'surname']);
+$wiktStart=json_encode(['after'=>$wiktName-1]);
+$db->query('UPDATE etymolog_sync_job SET `cursor`=? WHERE id=?',[$wiktStart,$wiktJobId]);
+$discoveryWikt = ['query'=>['pages'=>['123'=>['pageid'=>123,'ns'=>0,'title'=>'Testovník']]]];
 $htmlWikt = '<div class="mw-parser-output"><div class="mw-heading"><h2>Czech</h2></div><div class="mw-heading"><h3>Etymology 1</h3></div><p>Dictionary test etymology.<sup>1</sup><script>evil()</script></p><h4>Proper noun</h4><ol><li>a male surname</li></ol><h3>Etymology 2</h3><p>Wrong homonym.</p><h4>Noun</h4><ol><li>an object</li></ol><h2>German</h2><h3>Etymology</h3><p>Wrong language.</p><h3>Proper noun</h3><ol><li>a surname</li></ol></div>';
 $parsedWikt = ['parse' => ['pageid' => 123, 'title' => 'Testovník', 'revid' => 11, 'categories' => [['*' => 'Czech_surnames']], 'text' => ['*' => $htmlWikt]]];
 $fake->responses = [$jsonResponse($rights), $jsonResponse($discoveryWikt), $jsonResponse($parsedWikt)];
 $result = $externalService->run($wiktJobId);
-check($result['processed'] === 1 && strlen($result['cursor']) > 32, 'dictionary continuation persisted without truncation');
+check($result['processed'] === 1 && json_decode($result['cursor'],true)['after'] === $wiktName, 'dictionary DB cursor persisted');
 $record = $db->fetchOne("SELECT * FROM etymolog_external_record WHERE provider='wiktionary' AND franchise_code='etymolog'");
 $dictEntryId = (int)$record['entry_id']; $dictNameId = (int)$record['name_id'];
 $dictEntry = status(api('GET', 'etymolog/entries/'.$dictEntryId, token: $editor), 200, 'dictionary entry API');
@@ -27,21 +31,21 @@ status(api('GET', 'etymolog/names/'.$dictNameId.'/external-records', token: $edi
 status(api('GET', 'etymolog/names/'.$dictNameId.'/external-records', token: $other, host: 'other.test'), 404, 'foreign external name snapshots hidden');
 status(api('GET', 'etymolog/entries/'.$dictEntryId.'/imports'), 401, 'anonymous dictionary provenance denied');
 status(api('PATCH', 'etymolog/entries/'.$dictEntryId, ['body' => 'Manual etymology'], $editor), 200, 'edit dictionary import');
-$db->query('UPDATE etymolog_sync_job SET next_run_at=NULL,`cursor`=NULL WHERE id=?', [$wiktJobId]);
+$db->query('UPDATE etymolog_sync_job SET next_run_at=NULL,`cursor`=? WHERE id=?', [$wiktStart,$wiktJobId]);
 $parsedWikt['parse']['revid'] = 12;
 $fake->responses = [$jsonResponse($rights), $jsonResponse($discoveryWikt), $jsonResponse($parsedWikt)];
 $externalService->run($wiktJobId);
 check($db->fetchOne('SELECT body FROM etymolog_entry WHERE id=?', [$dictEntryId])['body'] === 'Manual etymology' && $external->imports('entries', $dictEntryId)[0]['revision'] === '12', 'dictionary refresh preserves manual text and updates snapshot');
 check(count($external->imports('entries', $dictEntryId)) === 1, 'dictionary import idempotent');
 $fake->responses = [$jsonResponse(['query' => ['rightsinfo' => ['url' => 'https://example.org/no-reuse']]])];
-try {$wikt->batch('cs', 'surname', null, 1);throw new LogicException('Expected license failure');}
+try {$wikt->batch('cs', 'surname', $wiktStart, 1);throw new LogicException('Expected license failure');}
 catch (App\Modules\Etymolog\SyncException $e) {check($e->reason === 'upstream_license_changed', 'dictionary license change fails closed');}
 $noEty = $parsedWikt; $noEty['parse']['text']['*'] = str_replace('Etymology', 'Other', $htmlWikt);
 $fake->responses = [$jsonResponse($rights), $jsonResponse($discoveryWikt), $jsonResponse($noEty)];
-check($wikt->batch('cs', 'surname', null, 1)['items'] === [], 'no etymology never fabricates explanation');
-$fake->responses = [$jsonResponse($rights), $jsonResponse(['query' => ['categorymembers' => []]])];
-$b = $wikt->batch('cs', 'given', null, 1);
-check(!$b['complete'] && json_decode($b['cursor'], true)['category'] === 1, 'given name discovery advances through gender categories');
+check($wikt->batch('cs', 'surname', $wiktStart, 1)['items'] === [], 'no etymology never fabricates explanation');
+$fake->responses = [$jsonResponse($rights), $jsonResponse(['query' => ['pages' => ['-1'=>['title'=>'Missing','missing'=>'']]]])];
+$b = $wikt->batch('cs', 'surname', $wiktStart, 1);
+check(!$b['complete'] && json_decode($b['cursor'], true)['after'] === $wiktName, 'missing dictionary page advances to next DB name');
 
 $peselJob = status(api('POST', 'etymolog/sync-jobs', ['title' => 'PESEL', 'provider' => 'poland-pesel', 'language' => 'pl', 'kind' => 'surname_male', 'batch_size' => 1], $admin), 201, 'create statistics job');
 $peselJobId = (int)$peselJob['id'];

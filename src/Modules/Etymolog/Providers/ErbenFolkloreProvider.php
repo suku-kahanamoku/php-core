@@ -5,48 +5,38 @@ namespace App\Modules\Etymolog\Providers;
 
 use App\Modules\Etymolog\Contracts\BatchProvider;
 use App\Modules\Etymolog\SyncException;
+use App\Modules\Etymolog\EtymologDiscoveryRepository;
 use App\Modules\Http\Contracts\HttpClient;
 
-/** Curated primary texts only. No generated stories, name etymologies or inferred dates. */
+/** Licensed folklore discovered from DB names, with exact mentions and reviewed associations. */
 final class ErbenFolkloreProvider implements BatchProvider
 {
     private const BOOK = 'Prostonárodní české písně a říkadla';
-    // Append only: cursor indexes this reviewed catalog. Names are unreviewed associations.
-    private const CATALOG = [
-        ['title' => '25. ledna', 'type' => 'proverb', 'names' => ['Pavel'], 'month' => 1, 'day' => 25],
-        ['title' => '24. února', 'type' => 'proverb', 'names' => ['Matěj', 'Josef'], 'month' => 2, 'day' => 24],
-        ['title' => '12. března', 'type' => 'tradition', 'names' => ['Řehoř'], 'month' => 3, 'day' => 12],
-        ['title' => 'Na jmena', 'type' => 'tradition', 'names' => ['Mikuláš', 'Michal', 'Havel', ['name' => 'Kučera', 'kind' => 'surname']]],
-    ];
-    public function __construct(private readonly HttpClient $http) {}
+    public function __construct(private readonly HttpClient $http, private readonly EtymologDiscoveryRepository $names) {}
 
     public function batch(string $language, string $kind, ?string $cursor, int $limit): array
     {
-        if ($language !== 'cs' || $kind !== 'folklore' || $limit < 1 || $limit > 4 || ($cursor !== null && !preg_match('/^[0-4]$/D', $cursor))) { throw new SyncException('invalid_provider_configuration'); }
-        $offset = (int)($cursor ?? '0'); $items = [];
-        foreach (array_slice(self::CATALOG, $offset, $limit) as $record) {
-            $page = self::BOOK.'/'.$record['title'];
-            $data = ProviderHttp::json($this->http, 'https://cs.wikisource.org/w/api.php?'.http_build_query(['action' => 'parse', 'page' => $page, 'prop' => 'text|revid', 'format' => 'json', 'maxlag' => 5]));
-            $p = $data['parse'] ?? [];
-            if (($p['title'] ?? null) !== $page || !is_int($p['pageid'] ?? null) || $p['pageid'] < 1 || !is_int($p['revid'] ?? null) || $p['revid'] < 1 || !is_string($p['text']['*'] ?? null)) { throw new SyncException('invalid_folklore_response'); }
-            $text = $this->extract($p['text']['*'], $record['title']);
-            $url = 'https://cs.wikisource.org/w/index.php?oldid='.$p['revid'];
-            $item = $record + ['external_id' => 'cs:'.$p['pageid'], 'revision' => (string)$p['revid'], 'body' => $text['body'], 'region' => null,
-                'source_url' => $url, 'bibliography' => $text['bibliography'], 'author' => 'Karel Jaromír Erben', 'source_title' => self::BOOK.' – '.$record['title'],
-                'license' => WikisourceProvider::LICENSE, 'license_url' => WikisourceProvider::LICENSE_URL];
-            if (isset($record['month'])) {
-                $item['calendar'] = ['import_key' => 'erben:1864', 'title' => 'Erben 1864 – výroční tradice', 'country_code' => 'CZ',
-                    'system' => 'gregorian', 'tradition' => 'Lidový výroční cyklus zachycený ve sbírce z roku 1864',
-                    'notes' => 'Historické datum z názvu kapitoly; není tvrzením o dnešních jmeninách ani o době vzniku tradice.'];
+        if ($language !== 'cs' || $kind !== 'folklore' || $limit < 1 || $limit > 4) { throw new SyncException('invalid_provider_configuration'); }
+        $result=(new WikisourceDiscoveryProvider($this->http,$this->names))->page(self::BOOK,$cursor);
+        $items=[];
+        if ($result['page']) {
+            $page=$result['page']; $name=$result['name'];
+            $title=substr($page['title'],strlen(self::BOOK)+1);
+            $text=$this->extract($page['text']['*'],$title);
+            if (WikisourceDiscoveryProvider::mentions($text['body'],$name['name'])) {
+                $names=[['name'=>$name['name'],'kind'=>$name['kind']]];
+                $url='https://cs.wikisource.org/w/index.php?oldid='.$page['revid'];
+                $items[]=['external_id'=>'cs:'.$page['pageid'],'revision'=>(string)$page['revid'],
+                    'type'=>'tradition','title'=>$title,'body'=>$text['body'],'region'=>null,'names'=>$names,
+                    'source_url'=>$url,'source_title'=>self::BOOK.' – '.$title,'bibliography'=>$text['bibliography'],
+                    'author'=>'Karel Jaromír Erben','license'=>WikisourceProvider::LICENSE,'license_url'=>WikisourceProvider::LICENSE_URL,
+                    'payload'=>['page'=>$page['title'],'page_id'=>$page['pageid'],'revision'=>$page['revid'],'body'=>$text['body'],
+                        'bibliography'=>$text['bibliography'],'author'=>'Karel Jaromír Erben','license'=>WikisourceProvider::LICENSE,
+                        'suggested_names'=>$names,'association'=>'Exact DB name mention in the licensed body, pending editorial review.',
+                        'changes'=>'Plain text without HTML, no generated narrative or inferred calendar date.']];
             }
-            $item['payload'] = ['page' => $page, 'revision' => $p['revid'], 'body' => $text['body'], 'bibliography' => $text['bibliography'],
-                'author' => $item['author'], 'license' => $item['license'], 'suggested_names' => $record['names'],
-                'source_date' => isset($record['month']) ? ['month' => $record['month'], 'day' => $record['day']] : null,
-                'changes' => 'Plain-text transcription; verse line breaks preserved; navigation and markup omitted. No AI-generated or rewritten content.'];
-            $items[] = $item;
         }
-        $next = $offset + count($items); $complete = $next >= count(self::CATALOG);
-        return ['items' => $items, 'cursor' => $complete ? null : (string)$next, 'complete' => $complete];
+        return ['items'=>$items,'scanned'=>$result['scanned'],'cursor'=>$result['cursor'],'complete'=>$result['complete']];
     }
 
     private function extract(string $html, string $title): array

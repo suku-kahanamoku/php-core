@@ -5,75 +5,43 @@ namespace App\Modules\Etymolog\Providers;
 
 use App\Modules\Etymolog\Contracts\BatchProvider;
 use App\Modules\Etymolog\SyncException;
+use App\Modules\Etymolog\EtymologDiscoveryRepository;
 use App\Modules\Http\Contracts\HttpClient;
-use App\Modules\Http\{HttpRequest, HttpException};
 
-/** A reviewed, append-only catalog. No arbitrary page or URL supplied by an API user. */
+/** DB-driven search of a licensed collection; no manually selected names or chapters. */
 final class WikisourceProvider implements BatchProvider
 {
     public const LICENSE = 'PD-old-70';
     public const LICENSE_URL = 'https://cs.wikisource.org/wiki/Wikizdroje:Licence#PD_old_70';
     public const AUTHOR = 'Alois Jirásek';
-    private const BOOK = 'Staré pověsti české (1959)/';
-    // Keep order stable: the cursor indexes this catalog. Add new chapters only at the end.
-    private const CATALOG = [
-        ['title' => 'O Libuši', 'names' => ['Libuše', 'Kazi', 'Teta'], 'region' => 'Čechy – Vyšehrad'],
-        ['title' => 'O Přemyslovi', 'names' => ['Přemysl', 'Libuše'], 'region' => 'Čechy – Stadice a Vyšehrad'],
-        ['title' => 'O Bivoji', 'names' => ['Bivoj', 'Kazi', 'Libuše'], 'region' => 'Čechy'],
-        ['title' => 'O Krokovi a jeho dcerách', 'names' => ['Krok', 'Kazi', 'Teta', 'Libuše'], 'region' => 'Čechy'],
-    ];
-
-    public function __construct(private readonly HttpClient $http) {}
+    private const BOOK = 'Staré pověsti české (1959)';
+    public function __construct(private readonly HttpClient $http, private readonly EtymologDiscoveryRepository $names) {}
 
     public function batch(string $language, string $kind, ?string $cursor, int $limit): array
     {
-        if ($language !== 'cs' || $kind !== 'stories' || $limit < 1 || $limit > 4 ||
-            ($cursor !== null && !preg_match('/^(0|[1-9][0-9]{0,5})$/D', $cursor)) || (int)$cursor > count(self::CATALOG)) {
-            throw new SyncException('invalid_provider_configuration');
+        if ($language !== 'cs' || $kind !== 'stories' || $limit < 1 || $limit > 4) { throw new SyncException('invalid_provider_configuration'); }
+        $result=(new WikisourceDiscoveryProvider($this->http,$this->names))->page(self::BOOK,$cursor);
+        $items=[];
+        if ($result['page']) {
+            $page=$result['page']; $name=$result['name'];
+            $title=substr($page['title'],strlen(self::BOOK)+1);
+            $text=$this->extract($page['text']['*'],$title);
+            if (WikisourceDiscoveryProvider::mentions($text['body'],$name['name'])) {
+                $names=[['name'=>$name['name'],'kind'=>$name['kind']]];
+                $url='https://cs.wikisource.org/w/index.php?oldid='.$page['revid'];
+                $items[]=['external_id'=>'cs:'.$page['pageid'],'revision'=>(string)$page['revid'],
+                    'type'=>'legend','title'=>$title,'body'=>$text['body'],'region'=>null,'names'=>$names,
+                    'source_url'=>$url,'source_title'=>self::BOOK.' – '.$title,'bibliography'=>$text['bibliography'],
+                    'author'=>'Alois Jirásek','license'=>WikisourceProvider::LICENSE,'license_url'=>WikisourceProvider::LICENSE_URL,
+                    'payload'=>['page'=>$page['title'],'page_id'=>$page['pageid'],'revision'=>$page['revid'],'body'=>$text['body'],
+                        'bibliography'=>$text['bibliography'],'author'=>'Alois Jirásek','license'=>WikisourceProvider::LICENSE,
+                        'suggested_names'=>$names,'association'=>'Exact DB name mention in the licensed body, pending editorial review.',
+                        'changes'=>'Plain text without HTML, no generated narrative or inferred calendar date.']];
+            }
         }
-        $offset = (int)($cursor ?? '0');
-        $items = [];
-        foreach (array_slice(self::CATALOG, $offset, $limit) as $record) {
-            $page = self::BOOK.$record['title'];
-            $response = $this->http->send(new HttpRequest('https://cs.wikisource.org/w/api.php?'.http_build_query([
-                'action' => 'parse', 'page' => $page, 'prop' => 'text|revid|categories', 'format' => 'json', 'maxlag' => 5,
-            ]), headers: ['Accept' => 'application/json', 'User-Agent' => 'Etymolog/1.0 (https://etymolog.prasentace.cz; name history research)'],
-                timeoutMs: 25000, connectTimeoutMs: 5000, maxBytes: 2000000));
-            $delay = max(300, min(604800, $response->retryAfter ?? 300));
-            if (!$response->successful()) {
-                throw new SyncException($response->status === 429 ? 'upstream_rate_limited' : 'upstream_unavailable', $delay);
-            }
-            try { $data = $response->json(); }
-            catch (HttpException) { throw new SyncException('invalid_upstream_json'); }
-            if (in_array($data['error']['code'] ?? '', ['ratelimited', 'maxlag'], true)) {
-                throw new SyncException('upstream_rate_limited', $delay);
-            }
-            if (isset($data['error']) || isset($data['errors'])) {
-                throw new SyncException('upstream_api_error', $delay);
-            }
-            $parsed = $data['parse'] ?? null;
-            if (!is_array($parsed) || ($parsed['title'] ?? null) !== $page || !is_int($parsed['pageid'] ?? null) || $parsed['pageid'] < 1 ||
-                !is_int($parsed['revid'] ?? null) || $parsed['revid'] < 1 || !is_string($parsed['text']['*'] ?? null)) {
-                throw new SyncException('invalid_story_response');
-            }
-            $text = $this->extract($parsed['text']['*'], $record['title']);
-            $sourceUrl = 'https://cs.wikisource.org/w/index.php?oldid='.$parsed['revid'];
-            $items[] = [
-                'external_id' => 'cs:'.$parsed['pageid'], 'revision' => (string)$parsed['revid'],
-                'title' => $record['title'], 'body' => $text['body'], 'region' => $record['region'],
-                'names' => $record['names'], 'source_url' => $sourceUrl, 'bibliography' => $text['bibliography'],
-                'payload' => ['page' => $page, 'page_id' => $parsed['pageid'], 'revision' => $parsed['revid'],
-                    'body' => $text['body'], 'bibliography' => $text['bibliography'], 'author' => self::AUTHOR,
-                    'license' => self::LICENSE, 'license_url' => self::LICENSE_URL,
-                    'suggested_names' => $record['names'], 'region' => $record['region']],
-            ];
-        }
-        $next = $offset + count($items);
-        $complete = $next >= count(self::CATALOG);
-        return ['items' => $items, 'cursor' => $complete ? null : (string)$next, 'complete' => $complete];
+        return ['items'=>$items,'scanned'=>$result['scanned'],'cursor'=>$result['cursor'],'complete'=>$result['complete']];
     }
 
-    /** Extract only prose; fail closed if the curated edition, license or markup changes. */
     private function extract(string $html, string $title): array
     {
         $dom = new \DOMDocument();
