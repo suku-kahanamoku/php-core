@@ -638,8 +638,11 @@ každá edice je samostatný citovaný pramen. Nové texty jsou koncepty a přip
 - `POST /api/etymolog/sync/start`, prázdné JSON `{}`: admin, HTTP 202;
   založí požadavek a spustí oddělený PHP CLI proces. Opakovaný klik vrátí
   tentýž aktivní běh (`accepted=false`), nevytvoří druhý proces.
+- `POST /api/etymolog/sync/stop`, JSON `{"request_id":"..."}`: admin,
+  zastaví přesně označený běh. Rozpracovaná dávka se bezpečně dokončí;
+  další se nespustí. Zdrojové kurzory a již importovaná data zůstanou uložené.
 - `GET /api/etymolog/sync/status`: admin, poslední běh nebo `null`.
-  Stavy: `queued`, `running`, `complete`, `partial`, `failed`;
+  Stavy: `queued`, `running`, `stopping`, `stopped`, `complete`, `partial`, `failed`;
   počty úloh `total`, `completed`, `failed`, položek `processed` a dokončených
   kroků/dávek `step_index`. Průběžná dávka nezvyšuje počet dokončených úloh.
   Časy jsou UTC.
