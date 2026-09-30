@@ -13,6 +13,13 @@ use App\Modules\Router\Response;
 use App\Utils\Projection;
 use App\Utils\QueryPolicy;
 
+/**
+ * Aplikační služby produktů: CRUD, publikování a dotazový kontrakt pro seznamy.
+ *
+ * Seznamy staví na standardním kontraktu (`q`, `sort`, `projection`, `page`,
+ * `limit`) s whitelistami `QueryPolicy`, které brání přístupu k interním
+ * sloupcům a umožňují jen indexované řazení.
+ */
 class ProductService extends BaseService
 {
     private const PUBLIC_FIELDS = [

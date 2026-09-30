@@ -11,8 +11,13 @@ use App\Modules\Role\RoleRepository;
 use App\Modules\Router\Response;
 use App\Utils\QueryPolicy;
 
+/**
+ * Aplikační logika uživatelů: výpis, detail, vlastní profil a správa vazeb na
+ * profily zákazníka včetně jejich pořadí.
+ */
 class UserService extends BaseService
 {
+    /** @var list<string> Pole, která smí klient použít k řazení vlastního profilu. */
     private const SELF_FIELDS = [
         'id', 'first_name', 'last_name', 'email', 'phone', 'profiles', 'role',
     ];

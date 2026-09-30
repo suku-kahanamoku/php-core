@@ -59,6 +59,15 @@ final class OpenAiVectorStoreProvider
         );
     }
 
+    /**
+     * Odpojí soubor od Vector Store (soubor v OpenAI zůstává existovat).
+     *
+     * @param  string $vectorStoreId ID Vector Store.
+     * @param  string $fileId        ID souboru v OpenAI.
+     * @return void                  Vedlejší efekt: `DELETE /vector_stores/{id}/files/{id}`.
+     * @throws OpenAiConfigurationException Pokud není nastaven `OPENAI_API_KEY`.
+     * @throws OpenAiUpstreamException      Při chybě OpenAI (mimo 2xx).
+     */
     public function detachFile(string $vectorStoreId, string $fileId): void
     {
         $this->request(
@@ -67,6 +76,14 @@ final class OpenAiVectorStoreProvider
         );
     }
 
+    /**
+     * Smaže nahraný soubor v OpenAI.
+     *
+     * @param  string $fileId ID souboru v OpenAI.
+     * @return void            Vedlejší efekt: `DELETE /files/{id}`.
+     * @throws OpenAiConfigurationException Pokud není nastaven `OPENAI_API_KEY`.
+     * @throws OpenAiUpstreamException      Při chybě OpenAI (mimo 2xx).
+     */
     public function deleteFile(string $fileId): void
     {
         $this->request('DELETE', '/files/' . rawurlencode($fileId));

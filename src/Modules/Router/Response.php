@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 namespace App\Modules\Router;
 
+/**
+ * Statické odpovědi REST API — všechny metody ukončí request (`never`).
+ *
+ * Každá odpověď má jednotný obal `{ success, message, data, errors }`, aby klient
+ * mohl rozlišovat úspěch a chybu bez znalosti HTTP stavových kódů. List endpointy
+ * navíc přesouvají stránkovací metadata do `meta`.
+ */
 class Response
 {
     /**
@@ -66,6 +73,13 @@ class Response
         exit;
     }
 
+    /**
+     * Odesle úspěšnou odpověď 201 Created.
+     *
+     * @param  mixed  $data    Tělo odpovědi.
+     * @param  string $message Zpráva (výchozí 'Created').
+     * @return never
+     */
     public static function created(
         mixed $data = null,
         string $message = 'Created'
@@ -237,12 +251,12 @@ class Response
     }
 
     /**
-     * Flatten a row for factory template resolution.
-     * Nested arrays (e.g. data.quality) are accessible via dot-notation key.
+     * Zploští řádek pro resoluci šablon factory.
+     * Vnořená pole (např. data.quality) jsou dostupná přes klíč s tečkou.
      *
-     * @param  array<string, mixed> $row
-     * @param  string               $prefix
-     * @return array<string, string>
+     * @param  array<string, mixed> $row    Zaznam k rozvinutí.
+     * @param  string               $prefix Prefix cesty, kterým se předkládá každý klíč.
+     * @return array<string, string>       Mapa cesta => hodnota jako řetězec.
      */
     private static function _flattenForFactory(array $row, string $prefix = ''): array
     {

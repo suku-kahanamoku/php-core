@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\Router;
 
+/**
+ * Normalizovaný příchozí HTTP požadavek vytvořený z globálních superglobálů.
+ *
+ * Všechny vlastnosti jsou readonly a vyplní se v konstruktoru, takže instance
+ * slouží jako neměnný kontext předávaný do handlerů a middleware.
+ */
 class Request
 {
     /** Set only after the application middleware verifies the internal key. */
@@ -17,6 +23,11 @@ class Request
     public readonly array  $headers;
     public readonly array  $files;
 
+    /**
+     * Načte požadavek ze superglobálů ($_SERVER, $_GET, $_POST, $_FILES, php://input).
+     *
+     * @return void Vedlejší efekt: při nezjištěném franchise kódu ukončí request s 403.
+     */
     public function __construct()
     {
         $this->method        = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
@@ -79,9 +90,7 @@ class Request
         return $map[$code];
     }
 
-    /**
-     * Extracts host from plain host, host:port, or URL-like strings.
-     */
+    /** @return string Hostni část bez portu a bez cesty (prázdný řetězec, pokud nelze zjistit). */
     private static function extractHost(string $value): string
     {
         $value = trim($value);
@@ -123,6 +132,11 @@ class Request
         return rtrim($path, '/') ?: '/';
     }
 
+    /**
+     * Načte a normalizuje tělo požadavku.
+     *
+     * @return array Obsah JSON těla nebo $_POST u formulářových požadavků; prázdné pole, pokud tělo není pole.
+     */
     private function _parseBody(): array
     {
         $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
@@ -136,6 +150,11 @@ class Request
         return $_POST;
     }
 
+    /**
+     * Sbere HTTP hlavičky z $_SERVER do mapy s malými písmeny v klíčích.
+     *
+     * @return array<string, string> Hlavičky bez předpony HTTP_, doplněné o content-type.
+     */
     private function _parseHeaders(): array
     {
         $headers = [];

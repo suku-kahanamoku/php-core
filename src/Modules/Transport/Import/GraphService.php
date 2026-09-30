@@ -9,12 +9,36 @@ use App\Modules\Http\Contracts\HttpClient;
 use App\Modules\Http\HttpRequest;
 use App\Modules\Transport\Repositories\TransportRepository;
 
-/** Versioned graph directories and immutable endpoints allow atomic activation and rollback. */
+/**
+ * Verzované adresáře grafů a neměnné koncové body umožňují atomickou aktivaci
+ * i návrat na předchozí verzi.
+ *
+ * Export ověří kontrolní součet snapshotu a zkopíruje archiv do nového,
+ * dosud nepoužitého adresáře. Aktivace navíc ověří manifest, potvrzení sestavení
+ * a dvě prostorově shodné zastávky přes GraphQL dotaz na plánovač; adresa
+ * koncového bodu smí patřit jen jedné verzi, jinak by šlo vrátit zpět k jinému
+ * sestavení.
+ */
 final class GraphService
 {
+    /**
+     * @param  TransportRepository $r    Repozitář daného okurku.
+     * @param  HttpClient          $http Sdílený HTTP klient pro kontrolu plánovače.
+     * @return void
+     */
     public function __construct(private readonly TransportRepository $r, private readonly HttpClient $http)
     {
     }
+
+    /**
+     * Vyexportuje snapshot feedu do nového adresáře pro sestavení grafu.
+     *
+     * @param  int    $version   ID verze feedu v jednom ze stavů `ready`, `active` nebo `retired`.
+     * @param  string $directory Cílový adresář, který ještě nesmí existovat.
+     * @return array<string, mixed>         Manifest s kódem okurku, feedem, verzí, součtem a ID feedu pro plánovač.
+     * @throws TransportException          'invalid_snapshot', 'directory_exists',
+     *                                    'export_failed' (500) nebo chyba konfigurace.
+     */
     public function export(int $version, string $directory): array
     {
         $v = $this->version($version);
@@ -37,6 +61,17 @@ final class GraphService
         file_put_contents($directory.'/build-config.json', json_encode(['transitModelTimeZone' => $v['timezone'], 'transitServiceStart' => $v['valid_from'], 'transitServiceEnd' => $v['valid_until'], 'gtfs' => [['source' => 'timetable.gtfs.zip','feedId' => $feedId]],'osm' => [['source' => 'streets.osm.pbf']]], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
         return $manifest;
     }
+    /**
+     * Ověří sestavený graf a atomicky jej aktivuje pro feed okurku.
+     *
+     * @param  int    $version     ID verze feedu.
+     * @param  string $manifestPath Cesta k `manifest.json` sestavení.
+     * @param  string $url         Vnitřní adresa plánovače; musí být jedinečná pro tuto verzi.
+     * @return void               Vedlejší efekt: přechod stavů verzí a `active_version_id` feedu v transakci.
+     * @throws TransportException 'invalid_snapshot', 'invalid_manifest', 'expired_snapshot',
+     *                            'graph_not_ready' (503), 'mutable_graph_endpoint'
+     *                            nebo chyba konfigurace koncové adresy.
+     */
     public function activate(int $version, string $manifestPath, string $url): void
     {
         ConfigurationService::url($url, true);
@@ -89,6 +124,13 @@ final class GraphService
             throw $e;
         }
     }
+    /**
+     * Načte verzi feedu včetně konfigurace a časového pásma feedu.
+     *
+     * @param  int $id ID verze.
+     * @return array<string, mixed> Řádek verze doplněný o `config` a `timezone`.
+     * @throws TransportException 'not_found' (404), pokud verze v okurku neexistuje.
+     */
     private function version(int $id): array
     {
         return $this->r->rows('SELECT v.*,f.config,f.timezone FROM transport_feed_version v JOIN transport_feed f ON f.franchise_code=v.franchise_code AND f.code=v.feed_code WHERE v.franchise_code=? AND v.id=?', [$this->r->tenant,$id])[0] ?? throw new TransportException('not_found', 'Feed version not found.', 404);

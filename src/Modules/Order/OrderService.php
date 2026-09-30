@@ -12,6 +12,12 @@ use App\Modules\Enumeration\EnumerationRepository;
 use App\Modules\Product\ProductRepository;
 use App\Modules\Router\Response;
 
+/**
+ * Aplikační služby objednávek: košík, přepočet cen, stavy a vztah k faktuře.
+ *
+ * Ceny a dostupnost se přepočítávají z katalogu okurku, ne z hodnot poslaných
+ * klientem, a každý dotaz je omezen na `franchise_code`.
+ */
 class OrderService extends BaseService
 {
     private OrderRepository         $_order;
@@ -252,12 +258,15 @@ class OrderService extends BaseService
     }
 
     /**
-     * Create an address record for the order and return its ID. Returns null when required fields are missing.
+     * Uloží adresu k objednávce a vrátí její ID.
      *
-     * @param  int|null             $userId
-     * @param  array<string, mixed> $addr
-     * @param  string               $type
-     * @return int|null
+     * Adresa se vytvoří pouze pro přihlášeného uživatele a pouze tehdy, když
+     * obsahuje ulici; země se normalizuje z kódu na ISO 3166.
+     *
+     * @param  int|null             $userId ID uživatele objednávky, nebo null pro hosta.
+     * @param  array<string, mixed> $addr   Adresa z payloadu objednávky.
+     * @param  string               $type   Typ adresy (např. `billing`, `shipping`).
+     * @return int|null                    ID nové adresy, nebo null pokud se neukládá.
      */
     private function resolveAddress(?int $userId, array $addr, string $type): ?int
     {

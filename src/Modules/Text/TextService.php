@@ -10,6 +10,12 @@ use App\Modules\Database\Database;
 use App\Modules\Router\Response;
 use App\Utils\QueryPolicy;
 
+/**
+ * Aplikační služby textů pro veřejný obsah okurku.
+ *
+ * Zveřejné čtení vrací jen zveřejněné záznamy; `QueryPolicy` určuje povolené
+ * filtry, projekce a řazení.
+ */
 class TextService extends BaseService
 {
     private const PUBLIC_FIELDS = ['id', 'syscode', 'title', 'content', 'language', 'published'];

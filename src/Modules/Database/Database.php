@@ -7,11 +7,25 @@ namespace App\Modules\Database;
 use PDO;
 use PDOException;
 
+/**
+ * Tenká PDO wrapperka poskytující singleton připojení k MySQL.
+ *
+ * Konfigurace se načítá z prostředí (DB_HOST, DB_PORT, DB_NAME, DB_USER,
+ * DB_PASSWORD, DB_CHARSET). Tato třída je jediné místo, kde se komponentuje
+ * PDO — repository vrstva přistupuje k databázi pouze přes ni, aby se nestalo
+ * síťové/DB volání mimo vrstvu repozitářů.
+ */
 class Database
 {
     private static ?Database $_instance = null;
     private PDO $_pdo;
 
+    /**
+     * Otevře PDO spojení podle údajů v prostředí.
+     *
+     * @return void
+     * @throws \RuntimeException Pokud se spojení s databází nezdaří.
+     */
     private function __construct()
     {
         $host     = $_ENV['DB_HOST']     ?? 'localhost';
@@ -161,7 +175,16 @@ class Database
     }
 
     // Zabrankuje klonovani/deserializaci
+
+    /** @return void Klonování singletonu není povoleno. */
     private function __clone() {}
+
+    /**
+     * Zablokuje deserializaci singletonu.
+     *
+     * @return never
+     * @throws \RuntimeException Vždy — deserializace Database není podporována.
+     */
     public function __wakeup(): never
     {
         throw new \RuntimeException('Cannot unserialize singleton.');

@@ -6,8 +6,16 @@ namespace App\Modules\Auth;
 
 use App\Modules\Database\Database;
 
+/**
+ * Repozitar relacnich Bearer tokenu (`user_token`).
+ *
+ * Tokeny jsou ulozene v plain textu, coz je pri zeleznych relacich běžné; jejich
+ * platnost je omezena na `expires_at` a kazdy token je navazany na uzivatele
+ * i okurkove omezeni (viz `findUserByToken`).
+ */
 class UserTokenRepository
 {
+    /** Databazove pripojeni. */
     private Database $_db;
 
     /**
@@ -77,6 +85,12 @@ class UserTokenRepository
         return $this->_db->delete('user_token', 'token = ?', [$token]);
     }
 
+    /**
+     * Smaže všechny tokeny uživatele (odhlášení ze všech zařízení).
+     *
+     * @param  int $userId ID uživatele.
+     * @return int         Počet smazaných záznamů.
+     */
     public function deleteByUserId(int $userId): int
     {
         return $this->_db->delete('user_token', 'user_id = ?', [$userId]);

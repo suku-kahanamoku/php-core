@@ -56,6 +56,12 @@ class FileService extends BaseService
         'created_at', 'updated_at', 'deleted',
     ];
 
+    /**
+     * @param  Database $db            Databázová vrstva pro daný okrsek.
+     * @param  string   $franchiseCode Kód okurku, pod kterým jsou soubory uloženy.
+     * @param  Auth     $auth          Ověření identity a rolí.
+     * @return void
+     */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->_files = new FileRepository($db, $franchiseCode);
@@ -359,6 +365,16 @@ class FileService extends BaseService
         ]);
     }
 
+    /**
+     * Odešle hotový soubor z úložiště `files/`.
+     *
+     * Cesta musí ležet v podadresáři daného okurku a po `realpath()` i uvnitř
+     * kořene, takže se k souborům nedá dostat přes `..` ani symlink. Cachiování
+     * je veřejné jen u souborů dostupných veřejně, jinak `no-store`.
+     *
+     * @param  string $path Cesta z URL (může být procentuálně kódovaná).
+     * @return never        Vždy ukončí požadavek (`readfile()` + `exit`, jinak 404).
+     */
     public function download(string $path): never
     {
         $path = ltrim(rawurldecode($path), '/');
@@ -386,6 +402,15 @@ class FileService extends BaseService
         exit;
     }
 
+    /**
+     * Odešle dočasný soubor patřící přihlášenému uživateli.
+     *
+     * Cesta musí začínat `temp/<okrsek>/<id uživatele>/` a po `realpath()`
+     * zůstat v kořeni `temp/`, takže si uživatel nestáhne cizí rozpracovaný soubor.
+     *
+     * @param  string $path Cesta z URL (může být procentuálně kódovaná).
+     * @return never        Vždy ukončí požadavek (`readfile()` + `exit`, jinak 404).
+     */
     public function downloadTemp(string $path): never
     {
         $this->_auth->require();
@@ -434,6 +459,13 @@ class FileService extends BaseService
 
     // ── Helpers ─────────────────────────────────────────────────────────────
 
+    /**
+     * Ověří nahrání: musí jít o skutečně nahraný soubor, bez chyby přenosu,
+     * do 20 MB a s povoleným MIME typem zjištěným ze zawřenka souboru.
+     *
+     * @param  array<string, mixed> $file Jeden záznam z `$_FILES`.
+     * @return void                     Bez návratu; při chybě ukončí požadavek 422.
+     */
     private function _validateUpload(array $file): void
     {
         if (!isset($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
@@ -452,6 +484,11 @@ class FileService extends BaseService
         }
     }
 
+    /**
+     * Vygeneruje náhodný UUID ve tvaru verze 4.
+     *
+     * @return string 16bajtový identifikátor jako textový řetězec.
+     */
     private function _generateUuid(): string
     {
         $data    = random_bytes(16);
@@ -466,11 +503,17 @@ class FileService extends BaseService
         return rtrim($_ENV['FILE_ROOT'] ?? dirname(__DIR__, 3), '/');
     }
 
+    /**
+     * @return string Absolutní cesta ke kořenu dočasných souborů.
+     */
     private function _tempRoot(): string
     {
         return $this->_root() . '/temp';
     }
 
+    /**
+     * @return string Absolutní cesta ke kořenu trvalých souborů.
+     */
     private function _filesRoot(): string
     {
         return $this->_root() . '/files';

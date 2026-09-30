@@ -5,12 +5,14 @@ declare(strict_types=1);
 use App\Modules\Router\Response;
 
 /**
- * Creates a fluent validation builder for the given data array.
+ * Vytvoří fluent validátor pro zadané pole dat.
  *
- * Usage:
+ * Použití:
  *   VALIDATOR($data)->required(['email','password'])->email('email')->validate();
  *
- * Halts with HTTP 422 on ->validate() when any rule fails.
+ * Volání `->validate()` při jakémkoli neúspěšném pravidle ukončí request s HTTP 422
+ * a tělem `{ success: false, errors: { pole: zpráva } }`. Jednotlivá pravidla se
+ * přeskakují, pokud už na poli vznikla chyba, aby se nehlásily duplicity.
  */
 function VALIDATOR(array $data): object
 {
@@ -18,12 +20,23 @@ function VALIDATOR(array $data): object
         private array $_errors = [];
         private array $_data;
 
+        /**
+         * Uloží data k validaci do validátoru.
+         *
+         * @param  array<string, mixed> $data Vstupní data, obvykle tělo požadavku.
+         * @return void
+         */
         public function __construct(array $data)
         {
             $this->_data = $data;
         }
 
-        /** Field(s) must be non-empty (after trim). */
+        /**
+         * Pole (nebo seznam polí) musí být vyplněné; prázdný řetězec se trimuje.
+         *
+         * @param  string|array $fields Název pole nebo seznam názvů polí.
+         * @return static               Tentýž validátor pro další řetězení.
+         */
         public function required(string|array $fields): static
         {
             foreach ((array) $fields as $field) {
@@ -39,7 +52,12 @@ function VALIDATOR(array $data): object
             return $this;
         }
 
-        /** Field must be a valid e-mail address (skipped when empty). */
+        /**
+         * Pole musí obsahovat platnou e-mailovou adresu (prázdné pole se přeskočí).
+         *
+         * @param  string $field Název kontrolovaného pole.
+         * @return static        Tentýž validátor pro další řetězení.
+         */
         public function email(string $field): static
         {
             if (isset($this->_errors[$field])) {
@@ -52,7 +70,13 @@ function VALIDATOR(array $data): object
             return $this;
         }
 
-        /** Field string length must be >= $min. */
+        /**
+         * Délka řetězce v poli musí být alespoň $min znaků.
+         *
+         * @param  string $field Název kontrolovaného pole.
+         * @param  int    $min   Minimální požadovaná délka.
+         * @return static        Tentýž validátor pro další řetězení.
+         */
         public function minLength(string $field, int $min): static
         {
             if (isset($this->_errors[$field])) {
@@ -64,7 +88,13 @@ function VALIDATOR(array $data): object
             return $this;
         }
 
-        /** Field must be numeric and optionally >= $min. */
+        /**
+         * Pole musí být číselné a volitelně nejméně $min.
+         *
+         * @param  string     $field Název kontrolovaného pole.
+         * @param  float|null $min   Volitelná dolní mez.
+         * @return static           Tentýž validátor pro další řetězení.
+         */
         public function numeric(string $field, ?float $min = null): static
         {
             if (isset($this->_errors[$field])) {
@@ -79,7 +109,14 @@ function VALIDATOR(array $data): object
             return $this;
         }
 
-        /** Field must match regex $pattern (skipped when empty). */
+        /**
+         * Pole musí odpovídat regulárnímu výrazu (prázdné pole se přeskočí).
+         *
+         * @param  string $field   Název kontrolovaného pole.
+         * @param  string $pattern  Regulární výraz (bez oddělovačů).
+         * @param  string $message  Chybová zpráva, pokud regulárnímu výrazu neodpovídá.
+         * @return static           Tentýž validátor pro další řetězení.
+         */
         public function pattern(
             string $field,
             string $pattern,
@@ -95,7 +132,13 @@ function VALIDATOR(array $data): object
             return $this;
         }
 
-        /** Field must be numeric and <= $max. */
+        /**
+         * Pole musí být číselné a nejvýše $max.
+         *
+         * @param  string $field Název kontrolovaného pole.
+         * @param  float  $max   Maximální povolená hodnota.
+         * @return static        Tentýž validátor pro další řetězení.
+         */
         public function max(string $field, float $max): static
         {
             if (isset($this->_errors[$field])) {
@@ -108,7 +151,13 @@ function VALIDATOR(array $data): object
             return $this;
         }
 
-        /** Field value must be one of the allowed values (skipped when empty). */
+        /**
+         * Hodnota pole musí být jednou z povolených hodnot (prázdné pole se přeskočí).
+         *
+         * @param  string $field   Název kontrolovaného pole.
+         * @param  array  $allowed Povolené hodnoty; porovnáváno striktně.
+         * @return static           Tentýž validátor pro další řetězení.
+         */
         public function in(string $field, array $allowed): static
         {
             if (isset($this->_errors[$field])) {
@@ -121,7 +170,12 @@ function VALIDATOR(array $data): object
             return $this;
         }
 
-        /** Field must be a valid URL (skipped when empty). */
+        /**
+         * Pole musí obsahovat platnou URL (prázdné pole se přeskočí).
+         *
+         * @param  string $field Název kontrolovaného pole.
+         * @return static        Tentýž validátor pro další řetězení.
+         */
         public function url(string $field): static
         {
             if (isset($this->_errors[$field])) {
@@ -134,7 +188,12 @@ function VALIDATOR(array $data): object
             return $this;
         }
 
-        /** Field must be a valid date parseable by strtotime (skipped when empty). */
+        /**
+         * Pole musí obsahovat datum zpracovatelné funkcí strtotime (prázdné pole se přeskočí).
+         *
+         * @param  string $field Název kontrolovaného pole.
+         * @return static        Tentýž validátor pro další řetězení.
+         */
         public function date(string $field): static
         {
             if (isset($this->_errors[$field])) {
@@ -147,7 +206,12 @@ function VALIDATOR(array $data): object
             return $this;
         }
 
-        /** Field must be a boolean-like value: true/false/1/0/"1"/"0" (skipped when empty). */
+        /**
+         * Pole musí obsahovat hodnotu podobnou booleanu: true/false/1/0/"1"/"0" (prázdné pole se přeskočí).
+         *
+         * @param  string $field Název kontrolovaného pole.
+         * @return static        Tentýž validátor pro další řetězení.
+         */
         public function boolean(string $field): static
         {
             if (isset($this->_errors[$field])) {
@@ -160,19 +224,27 @@ function VALIDATOR(array $data): object
             return $this;
         }
 
-        /** Get all validation errors. */
+        /**
+         * @return array<string, string> Mapa chybných polí na chybové zprávy.
+         */
         public function errors(): array
         {
             return $this->_errors;
         }
 
-        /** Check if any validation rules failed. */
+        /**
+         * @return bool true, pokud alespoň jedno pravilo selhalo.
+         */
         public function fails(): bool
         {
             return !empty($this->_errors);
         }
 
-        /** Halt with HTTP 422 if any validation rules failed. */
+        /**
+         * Ukončí request s HTTP 422, pokud selhalo alespoň jedno pravidlo.
+         *
+         * @return void           Vedlejší efekt: při chybách ukončí request přes Response::validationError().
+         */
         public function validate(): void
         {
             if (!empty($this->_errors)) {

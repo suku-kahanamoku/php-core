@@ -6,9 +6,26 @@ namespace App\Modules\Etymolog;
 use App\Modules\BaseRepository;
 use App\Modules\Etymolog\Providers\WikisourceProvider;
 
-/** Story SQL only; called under the same tenant lock and batch transaction as name imports. */
+/**
+ * Výhradně SQL pro kulturní texty (příběhy); voláno pod stejným zámkem okurku
+ * a ve stejné dávkové transakci jako import jmen.
+ *
+ * Navržené vazby text–jméno se vytvářejí vždy jako nerevidované a ruční
+ * odmítnutí se nikdy nepřepíše. Citace do textu výslovně dokládá znění pramene,
+ * nikoli pravdivost děje, předpovědi nebo původ jména.
+ */
 final class EtymologStoryRepository extends BaseRepository
 {
+    /**
+     * Uloží nebo aktualizuje jeden kulturní text.
+     *
+     * @param  array<string, mixed> $item     Položka s textem, zdrojem a navrženými jmény.
+     * @param  string               $provider Klíč zdroje: 'wikisource' nebo 'erben-folklore'.
+     * @return array{entry_id: int, source_id: int}|null IDs výkladu a zdroje, nebo null pokud
+     *                                           byl výklad nebo zdroj smazán.
+     * @throws SyncException                 'unsupported_story_provider' pro neznámý zdroj.
+     * @throws \JsonException               Pokud payload nelze serializovat nebo dekódovat.
+     */
     public function import(array $item, string $provider = 'wikisource'): ?array
     {
         if (!in_array($provider, ['wikisource', 'erben-folklore'], true)) {throw new SyncException('unsupported_story_provider');}
@@ -73,6 +90,13 @@ final class EtymologStoryRepository extends BaseRepository
         return ['entry_id' => $entryId, 'source_id' => $sourceId];
     }
 
+    /**
+     * Vrátí importní záznamy kulturního textu s dekódovaným payloadem.
+     *
+     * @param  int $entryId ID výkladu (textu).
+     * @return list<array<string, mixed>> Záznamy seřazené podle ID.
+     * @throws \JsonException               Pokud uložený payload není platný JSON.
+     */
     public function imports(int $entryId): array
     {
         $rows = $this->_db->fetchAll('SELECT id,source_id,provider,external_id,revision,source_url,license,license_url,attribution,payload,content_hash,fetched_at FROM etymolog_story_import WHERE franchise_code=? AND entry_id=? ORDER BY id', [$this->_code, $entryId]);

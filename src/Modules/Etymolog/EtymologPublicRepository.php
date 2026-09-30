@@ -5,11 +5,29 @@ namespace App\Modules\Etymolog;
 
 use App\Modules\Database\Database;
 
-/** Read-only, fixed public projection. Every join remains inside the resolved tenant. */
+/**
+ * Repozitar pouze pro čtení s pevnou veřejnou projekcí.
+ *
+ * Každý JOIN zůstává uvnitř vybraného okurku, takže i agregace a existuje
+ * poddotazy nemohou přes hranici okurku. Zveřejná projekce vrací jen sloupce,
+ * které se smí zobrazit na webu.
+ */
 final class EtymologPublicRepository
 {
+    /**
+     * @param  Database $db     Databazove pripojeni.
+     * @param  string   $tenant Kod okurku; vsechny dotazy jsou jim omezene.
+     * @return void
+     */
     public function __construct(private readonly Database $db, private readonly string $tenant) {}
 
+    /**
+     * Vyhledá zveřejněná jména a seskupí varianty pravopisu.
+     *
+     * @param  string $filter JSON filtr, který se převede na SQL přes `SQL_FILTER()`.
+     * @param  int    $page   Číslo stránky (20 položek na stránku).
+     * @return array{items: list<array<string, mixed>>, total: int, page: int, limit: int} Stránka výsledků.
+     */
     public function search(string $filter, int $page): array
     {
         $f = SQL_FILTER($filter);
@@ -33,6 +51,16 @@ final class EtymologPublicRepository
         return ['items' => $items, 'total' => $total, 'page' => $page, 'limit' => 20];
     }
 
+    /**
+     * Načte detail jména a všechny související záznamy včetně zdrojů.
+     *
+     * Zahrnuje výklady, citace, varianty pravopisu, historické výskyty, kalendářní
+     * dny a deduplikované zdroje. Jazyk a země jsou vráceny jen tehdy, když
+     * všechny varianty jména mají stejnou hodnotu.
+     *
+     * @param  int $id ID jména.
+     * @return array<string, mixed>|null Kompletní detail, nebo null pokud jméno není zveřejněné.
+     */
     public function detail(int $id): ?array
     {
         $name = $this->db->fetchOne('SELECT id,name,kind,language,country_code,summary FROM etymolog_name WHERE id=? AND franchise_code=? AND deleted=0 AND published=1', [$id, $this->tenant]);

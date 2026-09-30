@@ -5,9 +5,28 @@ namespace App\Modules\Etymolog;
 
 use App\Modules\BaseRepository;
 
-/** Shared import identity. Caller holds Etymolog's tenant lock and transaction. */
+/**
+ * Společná identita jmen při importu. Volající drží výhradní zámek okurku a transakci modulu Etymolog.
+ *
+ * Jméno se identifikuje podle normalizované podoby a druhu, přičemž diakritika
+ * zůstává rozlišovaná. Editorské přejmenování a reklasifikace se zachovávají,
+ * mění se pouze velikost písmen. Smazané („tombstone“) záznamy se nikdy nevrací
+ * do stavu aktivního, místo toho se vrátí null.
+ */
 final class EtymologNameRepository extends BaseRepository
 {
+    /**
+     * Vyřeší nebo vytvoří jméno a vrátí jeho ID.
+     *
+     * @param  string      $name      Normalizované jméno.
+     * @param  string      $kind      Druh jména ('given' nebo 'surname').
+     * @param  string|null $language  Jazyk jako součást důkazu.
+     * @param  string|null $country   Země jako součást důkazu.
+     * @param  string      $importKey Stabilní klíč importu (poskytovatel a druh zdroje).
+     * @param  int|null    $existingId  Již existující ID, pokud má být použita jeho identita.
+     * @return int|null               ID jména, nebo null pokud jméno bylo smazáno.
+     * @throws SyncException          'missing_import_name', pokud zadané ID neexistuje.
+     */
     public function resolve(string $name, string $kind, ?string $language, ?string $country, string $importKey, ?int $existingId = null): ?int
     {
         $existing = $existingId !== null
@@ -35,6 +54,13 @@ final class EtymologNameRepository extends BaseRepository
             'kind' => $kind, 'language' => $language, 'country_code' => $country, 'published' => 0, 'import_key' => $importKey]);
     }
 
+    /**
+     * Načte existující jméno beze změny; existující řádek dodá všechny identifikační a editorské údaje.
+     *
+     * @param  int $id ID jména.
+     * @return int|null  ID jména, nebo null pokud jméno je smazané.
+     * @throws SyncException 'missing_import_name', pokud záznam neexistuje.
+     */
     public function existing(int $id): ?int
     {
         // The existing row supplies all identity/editorial fields.

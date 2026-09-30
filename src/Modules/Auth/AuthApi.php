@@ -10,9 +10,21 @@ use App\Modules\Router\Response;
 use App\Modules\Router\Router;
 use App\Utils\RateLimiter;
 
+/**
+ * HTTP vrstva modulu Auth: obsluhuje endpointy /auth/* a přihlášení, registraci,
+ * změnu a reset hesla.
+ *
+ * Endpointy s heslem jsou omezené `RateLimiter`em, aby se nedalo bruteforcovat
+ * heslo ani masivně spamovat registracemi či resetovacími e-maily. Složená
+ * `AuthService` zde dostává okrsek ze stejného composition rootu jako rate limiter,
+ * takže obě strany používají shodný `franchiseCode`.
+ */
 class AuthApi
 {
+    /** Aplikacni sluzby autentizace. */
     private AuthService $_service;
+
+    /** Limiter pro omezení početnosti citlivých operací. */
     private RateLimiter $_rateLimiter;
 
     /**
@@ -130,6 +142,12 @@ class AuthApi
         Response::success($result, 'Password reset successful');
     }
 
+    /**
+     * POST /auth/complete-reset — Dokončení resetu hesla. Veřejně dostupné.
+     *
+     * @param  Request $request  body: token (required), new_password (required, min. 8 znaku)
+     * @return void              Odpovědi: 200 úspěch, 422 neplatný token.
+     */
     public function completePasswordReset(Request $request): void
     {
         $this->_rateLimiter->hit('password-reset-complete', $this->_subject('complete'), 10, 3600);
@@ -178,6 +196,15 @@ class AuthApi
         $router->post('/oauth', [$this, 'oauth']);
     }
 
+    /**
+     * Sestaví klíč pro rate limiting z hodnoty požadované a IP adresy.
+     *
+     * Používá se adresa klienta jako druhá složka, aby limitace platila i při
+     * sdílených e-mailech z více sítí.
+     *
+     * @param  string $value Hodnota, podle které se limituje (např. e-mail).
+     * @return string        Normalizovaný klíč ve tvaru `hodnota|ip`.
+     */
     private function _subject(string $value): string
     {
         return strtolower(trim($value)) . '|' . (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown');

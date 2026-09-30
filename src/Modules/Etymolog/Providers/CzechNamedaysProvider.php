@@ -7,18 +7,54 @@ use App\Modules\Etymolog\Contracts\BatchProvider;
 use App\Modules\Etymolog\SyncException;
 use App\Modules\Http\Contracts\HttpClient;
 
-/** Czech Wikipedia calendar table; no inferred dates, generated text or GitHub fallback. */
+/**
+ * Kalendář jmenin z tabulky české Wikipedie; žádná odvozená data, generovaný
+ * text ani náhradní zdroj.
+ *
+ * Poskytovatel je záměrně velmi přísný: kontroluje licenci, ID stránky a revizi
+ * a vyžaduje přesně 366 unikátních dnů. Adnotace připojené redaktory Wikipedie
+ * se z označení svátků odstraňují, takže ze svátku se nestane jméno. Změní-li se
+ * struktura tabulky, dávka skončí chybou místo neúplného importu.
+ */
 final class CzechNamedaysProvider implements BatchProvider
 {
+    /** Klíč zdroje pro importní záznam. */
     public const SOURCE_KEY = 'wikipedia-calendar:cs:Jmeniny';
+
+    /** Titulek zdroje s uvedením stránky a revize. */
     public const TITLE = 'Wikipedie: Jmeniny – český jmenný kalendář';
+
+    /**
+     * @param  HttpClient $http Sdílený HTTP klient z `HttpModule::client()`.
+     * @return void
+     */
     public function __construct(private readonly HttpClient $http) {}
 
+    /**
+     * Provede dotaz do Wikipedie API včetně ochrany proti zpoždění replik.
+     *
+     * @param  array<string, mixed> $params Parametry akce.
+     * @return array<string, mixed>          Dekódovaná odpověď API.
+     * @throws SyncException                Při chybě upstreamu nebo neplatné odpovědi.
+     */
     private function api(array $params): array
     {
         return ProviderHttp::json($this->http, 'https://cs.wikipedia.org/w/api.php?'.http_build_query($params + ['format'=>'json', 'maxlag'=>5]));
     }
 
+    /**
+     * Stáhne jednu dávku jmenin podle kurzoru.
+     *
+     * @param  string     $language Musí být 'cs'.
+     * @param  string     $kind     Musí být 'calendar'.
+     * @param  string|null $cursor  Kurzor z předchozí dávky; starý kurzor z GitHubu se zahazuje.
+     * @param  int        $limit    Maximální počet dní v dávce (1–500).
+     * @return array{items:list<array<string, mixed>>, cursor:?string, complete:bool} Dávka jmenin.
+     * @throws SyncException           'invalid_provider_configuration', 'invalid_provider_cursor',
+     *                                'upstream_license_changed', 'invalid_calendar_revision',
+     *                                'calendar_schema_changed', 'calendar_coverage_changed',
+     *                                'calendar_label_needs_review' nebo 'invalid_calendar_date'.
+     */
     public function batch(string $language, string $kind, ?string $cursor, int $limit): array
     {
         if ($language !== 'cs' || $kind !== 'calendar' || $limit < 1 || $limit > 500) { throw new SyncException('invalid_provider_configuration'); }
@@ -50,6 +86,14 @@ final class CzechNamedaysProvider implements BatchProvider
         return ['items'=>$items, 'cursor'=>$complete ? null : json_encode(['source'=>'wikipedia', 'revision'=>$revision, 'offset'=>$next], JSON_THROW_ON_ERROR), 'complete'=>$complete];
     }
 
+    /**
+     * Vytáhne dny a jména z HTML tabulky české Wikipedie.
+     *
+     * @param  string $html HTML stránky z Wikipedie API.
+     * @return list<array<string, mixed>>  Řádky se jménem, názvem dne, měsícem a dnem.
+     * @throws SyncException               Při změně struktury, neplatném datu, duplicitě,
+     *                                    neočekávaném počtu dnů nebo tvaru, který vyžaduje kontrolu.
+     */
     private function extract(string $html): array
     {
         $dom = new \DOMDocument();

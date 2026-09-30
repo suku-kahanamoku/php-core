@@ -10,8 +10,15 @@ use App\Modules\Router\Request;
 use App\Modules\Router\Response;
 use App\Modules\Router\Router;
 
+/**
+ * HTTP vrstva modulu Category: CRUD a stromové zobrazení kategorií produktů.
+ *
+ * Smazání kategorie odmítá, pokud ji používají produkty (viz `CategoryService`),
+ * takže klient dostane 409 místo tichého smazání.
+ */
 class CategoryApi
 {
+    /** Aplikacni sluzby kategorii. */
     private CategoryService $_service;
 
     /**

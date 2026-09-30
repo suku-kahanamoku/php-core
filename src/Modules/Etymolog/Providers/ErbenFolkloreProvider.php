@@ -8,12 +8,37 @@ use App\Modules\Etymolog\SyncException;
 use App\Modules\Etymolog\EtymologDiscoveryRepository;
 use App\Modules\Http\Contracts\HttpClient;
 
-/** Licensed folklore discovered from DB names, with exact mentions and reviewed associations. */
+/**
+ * Lidová vyprávění podle licence, objevovaná z jmen v databázi, s přesnými
+ * zmínkami a kontrolovanými vazbami.
+ *
+ * Text se importuje pouze tehdy, když obsahuje přesnou zmínku existujícího
+ * jména. Autor, název a veřejná doména se ověřují z infoboxu stránky; při
+ * jakékoli změně se dávka zastaví místo toho, aby se do databáze dostal
+ * neočekávaný obsah. Vazba text–jméno zůstává nerevidovaná.
+ */
 final class ErbenFolkloreProvider implements BatchProvider
 {
+    /** Název knihy na Wikisource, ze které se texty čtou. */
     private const BOOK = 'Prostonárodní české písně a říkadla';
+
+    /**
+     * @param  HttpClient $http  Sdílený HTTP klient.
+     * @param  EtymologDiscoveryRepository $names Zdroj kandidátních jmen z databáze.
+     * @return void
+     */
     public function __construct(private readonly HttpClient $http, private readonly EtymologDiscoveryRepository $names) {}
 
+    /**
+     * Stáhne jednu dávku lidových textů podle kurzoru.
+     *
+     * @param  string     $language Musí být 'cs'.
+     * @param  string     $kind     Musí být 'folklore'.
+     * @param  string|null $cursor  Kurzor objevování jmen.
+     * @param  int        $limit    Maximální počet kandidátů na dávku (1–4).
+     * @return array{items:list<array<string, mixed>>, scanned:int, cursor:?string, complete:bool} Dávka textů.
+     * @throws SyncException           Při chybě upstreamu nebo změně metadat stránky.
+     */
     public function batch(string $language, string $kind, ?string $cursor, int $limit): array
     {
         if ($language !== 'cs' || $kind !== 'folklore' || $limit < 1 || $limit > 4) { throw new SyncException('invalid_provider_configuration'); }
@@ -39,6 +64,15 @@ final class ErbenFolkloreProvider implements BatchProvider
         return ['items'=>$items,'scanned'=>$result['scanned'],'cursor'=>$result['cursor'],'complete'=>$result['complete']];
     }
 
+    /**
+     * Převede HTML stránky na čistý text a bibliografický údaj.
+     *
+     * @param  string $html   HTML z Wikipedie API.
+     * @param  string $title  Očekávaný název kapitoly (pro kontrolu infoboxu).
+     * @return array{body: string, bibliography: string} Čistý text a údaj „Zdroj“.
+     * @throws SyncException Při nečitelném značkování, změně metadat, jiné licenci
+     *                       nebo textu mimo povolenou délku.
+     */
     private function extract(string $html, string $title): array
     {
         $dom = new \DOMDocument(); $previous = libxml_use_internal_errors(true);

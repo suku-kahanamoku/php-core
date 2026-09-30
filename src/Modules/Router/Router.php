@@ -4,6 +4,19 @@ declare(strict_types=1);
 
 namespace App\Modules\Router;
 
+/**
+ * Dopocitava jednoduchy router s pojmenovanymi parametry v cestě.
+ *
+ * Struktura route definice (vytvorena v `_addRoute()`) je:
+ *   - `method`     — HTTP metoda, pro kterou routa platí
+ *   - `path`       — puvodni vzor cesty, napr. `/addresses/:id`
+ *   - `pattern`    — zkompilovany regex vzor s pojmenovanymi skupinami
+ *   - `handler`    — callable(Request $request, array $params): mixed
+ *   - `middleware` — seznam callablu spustenych pred handlerem
+ *
+ * Router nema zadne automaticke zpracovani chyb — pokud handler nestihne poslat
+ * odpoved, spadne rideni na vnejsi vrstvu (api/bootstrap.php).
+ */
 class Router
 {
     /** @var array<string, array<string, callable>> */
@@ -23,7 +36,7 @@ class Router
      * Registruje GET routu.
      *
      * @param  string   $path     URL vzor (napr. '/:id')
-     * @param  callable $handler  Obsluzna funkce
+     * @param  callable $handler  Obsluzna funkce (Request, array $params): mixed
      * @return self
      */
     public function get(string $path, callable $handler): self
@@ -107,6 +120,17 @@ class Router
         return $this;
     }
 
+    /**
+     * Zkompiluje a uloží routu pro danou metodu.
+     *
+     * Z placeholderu `:name` vytvoří pojmenovanou regex skupinu `(?P<name>[^/]+)`,
+     * takže hodnota se v handleru předává jako `$params['name']`.
+     *
+     * @param  string   $method  HTTP metoda (GET, POST, PUT, PATCH, DELETE).
+     * @param  string   $path    URL vzor, např. '/addresses/:id'.
+     * @param  callable $handler Obslužná funkce (Request, array $params): mixed.
+     * @return self         Pro retezene volani.
+     */
     private function _addRoute(string $method, string $path, callable $handler): self
     {
         // Preved :param na pojmenovane regex skupiny
@@ -130,11 +154,11 @@ class Router
     // ─── Zpracovani ──────────────────────────────────────────────────────────────────
 
     /**
-     * Zpracuje prichozi HTTP pozadavek a zavola odpovidajici handler.
-     * Pokud zadna routa neodpovida, vraci 404. Pokud metoda nesouhlasi, vraci 405.
+     * Zpracuje příchozí HTTP požadavek a zavolá odpovídající handler.
+     * Pokud žádná routa neodpovídá, vrací 404. Pokud metoda nesouhlasí, vrací 405.
      *
-     * @param  Request $request
-     * @return void
+     * @param  Request $request Aktuální požadavek s normalizovanou cestou (Request::$uri).
+     * @return void            Handler je odpovedom zodpovedny; zde se pouze zavola.
      */
     public function dispatch(Request $request): void
     {

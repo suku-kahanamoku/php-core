@@ -4,11 +4,25 @@ declare(strict_types=1);
 
 namespace App\Modules\FannCatalog;
 
-/** Koordinuje cteni katalogu, deduplikaci variant a jejich ulozeni. */
+/**
+ * Koordinuje čtení katalogu, deduplikaci variant a jejich uložení.
+ *
+ * Import je omezen na `limitPerCategory` variant v každé kategorii a na 200
+ * procházených stránek; stejná varianta nalezená v více kategoriích se stáhne
+ * jen jednou, ale vztahy ke kategoriím se uloží všechny. Zápis do databáze je
+ * idempotentní (`upsert`), takže opakovaný import nevytváří duplicity.
+ */
 final class FannCatalogImporter
 {
+    /** Vstupní stránka katalogu. */
     public const CATALOG_URL = 'https://www.fann.cz/produkty';
 
+    /**
+     * @param  FannCatalogProvider   $http       Stahování stránek (síť přes `HttpModule`).
+     * @param  FannCatalogParser     $parser     Parsování HTML katalogu.
+     * @param  FannCatalogRepository $repository Ukládání kategorií a produktů.
+     * @return void
+     */
     public function __construct(
         private readonly FannCatalogProvider $http,
         private readonly FannCatalogParser $parser,
@@ -17,9 +31,14 @@ final class FannCatalogImporter
     }
 
     /**
-     * Synchronizuje hlavni kategorie a nejvyse zadany pocet variant v kazde z nich.
-     * @param callable(string): void|null $progress
+     * Synchronizuje hlavní kategorie a nejvýše zadaný počet variant v každé z nich.
+     *
+     * @param  int                          $limitPerCategory Limit variant na kategorii (1–200).
+     * @param  int                          $concurrency      Počet souběžných stahování (1–6).
+     * @param  callable(string): void|null  $progress         Volitelný zpětný volat pro průběžný výpis.
      * @return array{categories: int, unique_products: int, relations: int, per_category: array<string, int>}
+     *         Počet kategorií, unikátních variant, vztahů a variant podle kategorie.
+     * @throws RuntimeException             Při chybě stahování, parsování nebo uložení.
      */
     public function import(int $limitPerCategory = 50, int $concurrency = 4, ?callable $progress = null): array
     {

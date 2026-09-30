@@ -10,6 +10,18 @@ use App\Modules\Router\Request;
 use App\Modules\Router\Response;
 use App\Modules\Router\Router;
 
+/**
+ * HTTP vrstva rolí.
+ *
+ * Routy (oprávnění kontroluje `Auth` uvnitř služby):
+ *   GET  /roles        seznam rolí
+ *   GET  /roles/:id    detail role
+ *   POST /roles        vytvoření role
+ *   PATCH/DELETE /roles/:id  úprava a zrušení
+ *
+ * Seznamy používají standardní dotazový kontrakt (`page`, `limit`, `sort`, `q`,
+ * `projection`, řádky v klici `data`) a vstupy se ověřují přes `VALIDATOR()`.
+ */
 class RoleApi
 {
     private RoleService $_service;

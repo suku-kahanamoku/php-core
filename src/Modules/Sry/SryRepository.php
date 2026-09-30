@@ -2,9 +2,22 @@
 declare(strict_types=1);
 namespace App\Modules\Sry;
 use App\Modules\BaseRepository;
-/** Shared transaction boundary for Sry repositories; no public raw-SQL API. */
+/**
+ * Společná hranice transakcí pro repozitáře modulu Sry; bez veřejného API pro surové SQL.
+ *
+ * Podřízené repozitáře tak nemají přímý přístup k PDO — jediné, co mohou pro
+ * více krokové operace použít, je `transaction()`. Vnořené volání se řeší
+ * pomocí savepointu, aby se vnější transakce neukončila předčasně.
+ */
 abstract class SryRepository extends BaseRepository
 {
+    /**
+     * Provede callback v transakci; při chybě se změní rollback.
+     *
+     * @param  callable $action Callback bez parametrů; jeho návratová hodnota se předá dál.
+     * @return mixed            Návratová hodnota callbacku.
+     * @throws \Throwable      Výjimka z callbacku se po rollbacku znovu vyhodí.
+     */
     public function transaction(callable $action): mixed
     {
         $pdo = $this->_db->getPdo();

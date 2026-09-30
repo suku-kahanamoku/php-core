@@ -6,7 +6,14 @@ namespace App\Modules\Http;
 
 use PHPMailer\PHPMailer\PHPMailer;
 
-/** SMTP/native-mail transport, scoped to one tenant. */
+/**
+ * SMTP/native-mail transport omezený na jednoho tenanta (okruh).
+ *
+ * Konfigurace se načítá z prostředí s prefixem daného franchise kódu a s fallbackem
+ * na globální `MAILER_*` proměnné. Instance se vytváří výhradně přes
+ * `HttpModule::smtp($franchiseCode)`, aby credentials jednoho okruku nepronikly do
+ * jiného. Implementuje `MailClient`, takže doménové služby neznají PHPMailer.
+ */
 final class SmtpService implements \App\Modules\Http\Contracts\MailClient
 {
     private string $_from;
@@ -18,6 +25,13 @@ final class SmtpService implements \App\Modules\Http\Contracts\MailClient
     private bool   $_smtpAuth;
     private string $_smtpSecure;
 
+    /**
+     * Načte SMTP konfiguraci okurku z prostředí.
+     *
+     * @param  string          $franchiseCode Kód okurku; prázdný řetězec znamená pouze globální `MAILER_*` proměnné.
+     * @param  \Closure|null   $messageFactory Testovací factory nahrazující PHPMailer.
+     * @return void
+     */
     public function __construct(string $franchiseCode = '', private readonly ?\Closure $messageFactory = null)
     {
         $prefix = $this->resolveMailerEnvPrefix($franchiseCode);
@@ -53,6 +67,12 @@ final class SmtpService implements \App\Modules\Http\Contracts\MailClient
         )));
     }
 
+    /**
+     * Sestaví prefix prostředí pro daný kód okurku.
+     *
+     * @param  string $franchiseCode Kód okurku, např. 'cz-shop' → 'CZ_SHOP_'.
+     * @return string                Prefix bez podtržítka na konci, nebo prázdný řetězec pro globální konfiguraci.
+     */
     private function resolveMailerEnvPrefix(string $franchiseCode): string
     {
         if ($franchiseCode === '') {
@@ -62,6 +82,21 @@ final class SmtpService implements \App\Modules\Http\Contracts\MailClient
         return trim(preg_replace('/[^A-Z0-9]+/', '_', strtoupper($franchiseCode)), '_') . '_';
     }
 
+    /**
+     * Sestaví a odešle jeden HTML e-mail přes SMTP (nebo native mail, pokud host není nastaven).
+     *
+     * Chyby se nelouhou — zapisují se do logu a vrací se false, aby volající mohl
+     * rozhodnout o retry nebo o fallbacku.
+     *
+     * @param  string            $to         Primární příjemce.
+     * @param  string            $subject    Předmět zprávy.
+     * @param  string            $html       Tělo zprávy v HTML.
+     * @param  list<string>      $attachments Cesty k přílohám; neexistující soubory se přeskočí.
+     * @param  string|array|null $bcc        Skrytí příjemci, nebo null.
+     * @param  string|null       $fromEmail  E-mail pro odpověď; výchozí z konfigurace okurku.
+     * @param  string|null       $fromName   Jméno pro odpověď; výchozí z konfigurace okurku.
+     * @return bool                       true, pokud byla zpráva odeslána.
+     */
     public function send(
         string $to,
         string $subject,

@@ -7,10 +7,16 @@ namespace App\Modules\FannCatalog;
 use App\Modules\Database\Database;
 use RuntimeException;
 
-/** Uklada importovane kategorie a produkty idempotentne pro jeden tenant. */
+/**
+ * Ukládá importované kategorie a produkty idempotentně pro jednoho tenanta.
+ *
+ * Cizí slug se přes `CATEGORY_DEFINITIONS` mapuje na anglický `syscode`, který
+ * používají backend i klienti; neznámá kategorie je chyba, aby do databáze
+ * neprosákly zdrojové názvy. Všechny dotazy jsou omezené na `franchise_code`.
+ */
 final class FannCatalogRepository
 {
-    /** Anglicke klice a zobrazovane nazvy pouzivane napric backendem a klienty. */
+    /** Anglické klíče a zobrazované názvy používané napříč backendem a klienty. */
     private const CATEGORY_DEFINITIONS = [
         'plet' => ['syscode' => 'skincare', 'name' => 'Skin Care'],
         'vune' => ['syscode' => 'perfumes', 'name' => 'Fragrances'],
@@ -23,6 +29,11 @@ final class FannCatalogRepository
         ],
     ];
 
+    /**
+     * @param  Database $database      Databázová vrstva (PDO zůstává uvnitř).
+     * @param  string   $franchiseCode Kód okurku, ke kterému zápis patří.
+     * @return void
+     */
     public function __construct(
         private readonly Database $database,
         private readonly string $franchiseCode = 'fann',

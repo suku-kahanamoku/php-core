@@ -11,6 +11,12 @@ use App\Modules\Router\Request;
 use App\Modules\Router\Response;
 use App\Modules\Router\Router;
 
+/**
+ * HTTP API uživatelů a jejich přiřazení k profilům zákazníka.
+ *
+ * Routy řeší výhradně v kontextu okurku, ke kterému je API složeno, a data se
+ * načítají přes `UserService`, který zajišťuje pole, řazení a filtry.
+ */
 class UserApi
 {
     private UserService $_service;

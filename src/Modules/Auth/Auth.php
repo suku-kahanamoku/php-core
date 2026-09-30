@@ -8,10 +8,22 @@ use App\Modules\Database\Database;
 use App\Modules\Router\Request;
 use App\Modules\Router\Response;
 
+/**
+ * Session-based autentizace uzivatelu: Bearer tokeny, overeni platnosti a
+ * kontrola roli.
+ *
+ * Zalogovany uzivatel je cachovan v `_currentUser`, takže `user()`, `id()` a
+ * `role()` neprovadeji zadny dotaz do databaze, dokud je platny stav
+ * pozadavku. Kazdy pozadavek prochazi jednim objektem `Auth` vytvorenym v
+ * composition rootu.
+ */
 class Auth
 {
+    /** Počet bajtů, z nichž se generuje token (32 bajtů = 64 hex znaků). */
     private const _TOKEN_BYTES    = 32;
-    private const TOKEN_LIFETIME = 86400; // vychozi doba platnosti: 24 hodin
+
+    /** Vychozi doba platnosti: 24 hodin (prekonatelná promennou TOKEN_LIFETIME). */
+    private const TOKEN_LIFETIME = 86400;
 
     private UserTokenRepository $_userToken;
     private ?array    $_currentUser = null;
@@ -177,6 +189,12 @@ class Auth
         }
     }
 
+    /**
+     * Vytažne token z hlavičky Authorization (včetně varianty REDIRECT).
+     *
+     * @return string|null Token, nebo null pokud hlavička chybí nebo není ve
+     *                    tvaru `Bearer <token>`.
+     */
     private function _extractToken(): ?string
     {
         $header = $_SERVER['HTTP_AUTHORIZATION']

@@ -8,12 +8,42 @@ use App\Modules\Etymolog\SyncException;
 use App\Modules\Etymolog\EtymologSnapshotRepository;
 use App\Modules\Http\Contracts\HttpClient;
 
-/** Official national surname counts, separate male/female populations; never inferred ethnicity. */
+/**
+ * Oficiální národní počty příjmení, odděleně pro muže a ženy; žádná odvozovaná
+ * etnicita.
+ *
+ * Poskytovatel kontroluje dataset, licenci CC0 i nepřítomnost dodatečných podmínek.
+ * Adresa CSV musí být na `api.dane.gov.pl` a odpovídat povolenému vzoru, jinak se
+ * soubor nestáhne. Významy jsou počty žijících evidovaných osob, ne narozeniny
+ * a ne součet obou pohlaví — což je i uvedeno v poznámce k importu.
+ */
 final class PolandPeselProvider implements BatchProvider
 {
+    /** Základní adresa otevřeného API dane.gov.pl. */
     private const API = 'https://api.dane.gov.pl/1.4/';
+
+    /**
+     * @param  HttpClient $http      Sdílený HTTP klient.
+     * @param  EtymologSnapshotRepository|null $snapshots Mezipaměť na stažené CSV.
+     * @return void
+     */
     public function __construct(private readonly HttpClient $http, private readonly ?EtymologSnapshotRepository $snapshots = null) {}
 
+    /**
+     * Stáhne jednu dávku počtů příjmení podle kurzoru.
+     *
+     * @param  string     $language Musí být 'pl'.
+     * @param  string     $kind     'surname_male' nebo 'surname_female'.
+     * @param  string|null $cursor  Kurzor s ID zdroje, offsetem, hashem a bajtovou pozicí.
+     * @param  int        $limit    Maximální počet řádků v dávce (1–500).
+     * @return array{items:list<array<string, mixed>>, cursor:?string, complete:bool} Dávka počtů.
+     * @throws SyncException           'invalid_provider_configuration', 'invalid_provider_cursor',
+     *                                'upstream_license_changed', 'national_surname_resource_missing',
+     *                                'invalid_statistics_resource', 'statistics_download_url_not_allowed',
+     *                                'statistics_schema_changed', 'statistics_encoding_changed',
+     *                                'statistics_snapshot_changed', 'invalid_statistics_row'
+     *                                nebo 'statistics_buffer_failed'.
+     */
     public function batch(string $language, string $kind, ?string $cursor, int $limit): array
     {
         if ($language !== 'pl' || !in_array($kind, ['surname_male', 'surname_female'], true) || $limit < 1 || $limit > 500) { throw new SyncException('invalid_provider_configuration'); }

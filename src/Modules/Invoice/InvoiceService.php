@@ -20,6 +20,13 @@ use Endroid\QrCode\ErrorCorrectionLevel;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 
+/**
+ * Aplikační služby faktur: převod objednávky na fakturu, PDF, platbu a stav.
+ *
+ * Faktura vzniká z objednávky a do okurku se zapisuje s `franchise_code`, takže
+ * fakturu jiného okurku nelze načíst. Adresa se do faktury kopíruje jako
+ * snapshot, aby se historická faktura nezměnila po úpravě adresy uživatele.
+ */
 class InvoiceService extends BaseService
 {
     private InvoiceRepository     $_invoice;
@@ -387,6 +394,12 @@ class InvoiceService extends BaseService
         return (string) ob_get_clean();
     }
 
+    /**
+     * Vytvoří neměnný výřez adresy pro uložení do faktury.
+     *
+     * @param  array<string, mixed> $address Adresa uživatele.
+     * @return array<string, mixed>          Jen vyplněné hodnoty (bez `null`).
+     */
     private function _addressSnapshot(array $address): array
     {
         return array_filter([

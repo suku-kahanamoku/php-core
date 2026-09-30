@@ -4,8 +4,24 @@ declare(strict_types=1);
 
 namespace App\Modules\Transport;
 
+/**
+ * Převod kódované geometrie na GeoJSON.
+ *
+ * Dekódování je omezené na 1 MB vstupu a 30 bitů na souřadnici, aby se
+ * ztrátové nebo podvržené vstupy od upstreamu nezpracovaly bez omezení.
+ */
 final class GeometryMapper
 {
+    /**
+     * Dekóduje kódovanou polyline (Google/OTP formát) na `LineString`.
+     *
+     * @param  string $encoded Kódovaná polyline.
+     * @return array{type: string, coordinates: list<array{0: float, 1: float}>}
+     *         GeoJSON geometrie s body `[lon, lat]`.
+     * @throws TransportException 'invalid_geometry' (502), pokud je vstup příliš
+     *                            dlouhý, obsahuje neplatné znaky nebo souřadnice
+     *                            mimo rozsah.
+     */
     public static function polyline(string $encoded): array
     {
         $points = [];

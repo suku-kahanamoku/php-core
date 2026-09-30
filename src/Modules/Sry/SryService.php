@@ -4,6 +4,17 @@ declare(strict_types=1);
 
 namespace App\Modules\Sry;
 
+/**
+ * Doménová služba aplikace „Školní řad“ (Sry).
+ *
+ * Centrální místo obchodní logiky rodinného systému: členové rodiny, denní body
+ * a oprávnění k Wi-Fi a mobilnímu datu, úkoly a jejich revize, mediální soubory
+ * v cloudu, notifikace, realtime a chat. Veškeré vstupy validuje přes `SryInput`
+ * a chyby signalizuje výjimkou `SryError` s odpovídajícím HTTP kódem.
+ *
+ * Data patří vždy jednomu okurku (`sry`); hranice rodiny (`family_id`) se
+ * kontroluje u každého dotazu, aby člen rodiny neviděl cizí záznamy.
+ */
 final class SryService
 {
     private FamilyRepository $family;
@@ -15,6 +26,11 @@ final class SryService
     private \App\Modules\Enumeration\EnumerationRepository $enumerations;
     private \App\Modules\User\UserRepository $users;
     private \App\Modules\Role\RoleRepository $roles;
+    /**
+     * @param \App\Modules\Database\Database $db   Připojení k databázi pro repozitáře modulu.
+     * @param  CloudflareGateway                 $cloud Brána pro podepsané URL a hlavičky k uploadu/stahování souborů.
+     * @return void
+     */
     public function __construct(
         \App\Modules\Database\Database $db,
         private CloudflareGateway $cloud,
@@ -35,12 +51,29 @@ final class SryService
         $this->users = new \App\Modules\User\UserRepository($db, "sry");
         $this->roles = new \App\Modules\Role\RoleRepository($db, "sry");
     }
+    /**
+     * Ověří, že aktér v kontextu má roli `admin`.
+     *
+     * @param  array<string, mixed> $a Kontext aktéra (`role`, `id`, `family_id`).
+     * @return void                    Vedlejší efekt: bez role `admin` vyhodí `SryError` s kódem 403.
+     * @throws SryError                'forbidden' (403), pokud aktér není administrátor.
+     */
     private function admin(array $a): void
     {
         if ($a["role"] !== "admin") {
             throw new SryError("forbidden", 403);
         }
     }
+    /**
+     * Načte a zvaliduje celočíselný parametr z těla požadavku.
+     *
+     * @param  array<string, mixed> $b   Tělo požadavku.
+     * @param  string                $key Klíč parametru.
+     * @param  int                   $min Dolní mez včetně.
+     * @param  int                   $max Horní mez včetně.
+     * @return int                         Hodnota parametru.
+     * @throws SryError                   'invalidInput' (422), pokud chybí, není celé číslo nebo je mimo rozsah.
+     */
     private function integer(
         array $b,
         string $key,
@@ -53,6 +86,12 @@ final class SryService
         }
         return $v;
     }
+    /**
+     * Vrátí aktuální kalendářní den v časovém pásu rodiny.
+     *
+     * @param  array<string, mixed> $a Kontext aktéra s `family_id`.
+     * @return string                   Datum ve formátu `Y-m-d`.
+     */
     public function today(array $a): string
     {
         $f = $this->family->timezone($a["family_id"]);
@@ -61,6 +100,16 @@ final class SryService
             new \DateTimeZone($f["timezone"]),
         ))->format("Y-m-d");
     }
+    /**
+     * Načte člena rodiny a zkontroluje, že ho aktér smí vidět.
+     *
+     * Člen rodiny (`user`) smí číst pouze sebe, administrátor všechny členy.
+     *
+     * @param  array<string, mixed> $a  Kontext aktéra (`role`, `id`, `family_id`).
+     * @param  int                   $id ID člena.
+     * @return array<string, mixed>      Záznam člena.
+     * @throws SryError                  'notFound' (404), pokud člen neexistuje nebo není viditelný.
+     */
     public function member(array $a, int $id): array
     {
         $m = $this->family->findMember($id, $a["family_id"]);
@@ -74,6 +123,12 @@ final class SryService
         }
         return $m;
     }
+    /**
+     * Vrátí členy rodiny s vypočteným stavem bodů a oprávnění k internetu.
+     *
+     * @param  array<string, mixed> $a Kontext aktéra (`role`, `id`, `family_id`).
+     * @return array<string, mixed>     `{ members: [...], today: 'Y-m-d' }`; člen role `user` vidí jen sebe a administrátory.
+     */
     public function family(array $a): array
     {
         $members = $this->family->members($a["family_id"]);
@@ -102,13 +157,32 @@ final class SryService
         unset($m);
         return ["members" => $members, "today" => $this->today($a)];
     }
+    /**
+     * Přidá dítě do rodiny; volitelně mu založí i přihlašovací účet.
+     *
+     * Celá operace běží v jedné transakci, aby nevznikl člen bez účtu.
+     *
+     * @param  array<string, mixed> $a Kontext aktéra; musí mít roli `admin`.
+     * @param  array<string, mixed> $b Tělo požadavku: `name` povinné, `email` a `password` volitelné.
+     * @return array<string, mixed>     Vytvořený člen.
+     * @throws SryError                 'forbidden' (403), 'invalidInput' (422), 'accountExists' (409)
+     *                                  nebo 'notConfigured' (503), pokud chybí role `user`.
+     */
     public function addChild(array $a, array $b): array
     {
         $this->admin($a);
         $name = SryInput::text($b, "name");
         $email = empty($b["email"]) ? null : SryInput::email($b);
         $password = $email ? SryInput::password($b) : null;
-        return $this->family->transaction(function () use (
+        return $this->family->transaction(
+            /**
+             * Tělo operace běží v jedné transakci nad databází okurku.
+             *
+             * @return mixed                    Výsledek, který transakce vrátí.
+             * @throws SryError                 Chyba domény; transakce se vrátí zpět.
+             * @throws \PDOException           Chyba databáze; transakce se vrátí zpět.
+             */
+            function () use (
             $a,
             $name,
             $email,
@@ -149,6 +223,15 @@ final class SryService
             return $this->member($a, $id);
         });
     }
+    /**
+     * Změní denní cíl bodů a oprávnění k Wi-Fi a datům daného dítěte.
+     *
+     * @param  array<string, mixed> $a  Kontext aktéra; musí mít roli `admin`.
+     * @param  int                   $id  ID dítěte.
+     * @param  array<string, mixed> $b  Tělo požadavku: `daily_target`, `wifi_allowed`, `data_allowed` (všechna tři povinná).
+     * @return array<string, mixed>      Aktualizovaný člen.
+     * @throws SryError                  'forbidden' (403) nebo 'invalidInput' (422).
+     */
     public function updateChild(array $a, int $id, array $b): array
     {
         $this->admin($a);
@@ -163,7 +246,15 @@ final class SryService
         ) {
             throw new SryError("invalidInput");
         }
-        return $this->family->transaction(function () use (
+        return $this->family->transaction(
+            /**
+             * Tělo operace běží v jedné transakci nad databází okurku.
+             *
+             * @return mixed                    Výsledek, který transakce vrátí.
+             * @throws SryError                 Chyba domény; transakce se vrátí zpět.
+             * @throws \PDOException           Chyba databáze; transakce se vrátí zpět.
+             */
+            function () use (
             $a,
             $id,
             $b,
@@ -180,6 +271,11 @@ final class SryService
             return $this->member($a, $id);
         });
     }
+    /**
+     * Vrátí publikované kategorie a číselníky pro výběr v úlohách.
+     *
+     * @return array<string, mixed> `{ categories: [...], enumerations: [...] }`.
+     */
     public function catalog(): array
     {
         return [
@@ -187,6 +283,12 @@ final class SryService
             "enumerations" => $this->published($this->enumerations),
         ];
     }
+    /**
+     * Načte všechny publikované záznamy z libovolného repozitáře stránkovaně.
+     *
+     * @param  object $repository Repozitář s metodou `findAll()` (kategorie nebo číselníky).
+     * @return list<array<string, mixed>>  Záznamy s `published = 1`.
+     */
     private function published(object $repository): array
     {
         $items = [];
@@ -202,6 +304,12 @@ final class SryService
         } while ($page <= $result["totalPages"]);
         return $items;
     }
+    /**
+     * Vrátí úkoly viditelné aktérovi (člen vidí jen vlastní zadání).
+     *
+     * @param  array<string, mixed> $a Kontext aktéra (`role`, `id`, `family_id`).
+     * @return list<array<string, mixed>>  Zadání s body, termínem a stavem.
+     */
     public function tasks(array $a): array
     {
         return $this->tasks->forFamily(
@@ -209,6 +317,15 @@ final class SryService
             $a["role"] === "user" ? $a["id"] : null,
         );
     }
+    /**
+     * Načte zadání úkolu a zkontroluje oprávnění aktéra.
+     *
+     * @param  array<string, mixed> $a    Kontext aktéra (`role`, `id`, `family_id`).
+     * @param  int                   $id    ID zadání.
+     * @param  bool                  $lock  true uzamkne řádek proti souběžné změně (SELECT ... FOR UPDATE).
+     * @return array<string, mixed>       Řádek zadání.
+     * @throws SryError                   'notFound' (404), pokud zadání neexistuje nebo patří jinému členu.
+     */
     public function assignment(array $a, int $id, bool $lock = false): array
     {
         $row = $this->tasks->findAssignment($id, $a["family_id"], $lock);
@@ -220,6 +337,14 @@ final class SryService
         }
         return $row;
     }
+    /**
+     * Vrátí detail zadání včetně odevzdání a přiložených médií.
+     *
+     * @param  array<string, mixed> $a Kontext aktéra.
+     * @param  int                   $id ID zadání.
+     * @return array<string, mixed>     Řádek zadání doplněný o `submissions` a `media_ids`.
+     * @throws SryError                 'notFound' (404), pokud zadání není viditelné.
+     */
     public function detail(array $a, int $id): array
     {
         $row = $this->assignment($a, $id);
@@ -230,6 +355,15 @@ final class SryService
         );
         return $row;
     }
+    /**
+     * Vytvoří úkol a rovnou ho přiřadí dítěti s termínem a bodovým ohodnocením.
+     *
+     * @param  array<string, mixed> $a Kontext aktéra; musí mít roli `admin`.
+     * @param  array<string, mixed> $b Tělo požadavku: `member_id`, `title`, `due_date`, `points` povinné;
+     *                                   volitelné `description`, `category_id`, `enumeration_id`, `media_ids` (max 5).
+     * @return array<string, mixed>     Detail nového zadání.
+     * @throws SryError                 'forbidden' (403), 'invalidInput' (422) nebo 'notFound' (404).
+     */
     public function createTask(array $a, array $b): array
     {
         $this->admin($a);
@@ -274,7 +408,15 @@ final class SryService
         foreach ($media as $mid) {
             $this->ownedMedia($a, (int) $mid);
         }
-        return $this->family->transaction(function () use (
+        return $this->family->transaction(
+            /**
+             * Tělo operace běží v jedné transakci nad databází okurku.
+             *
+             * @return mixed                    Výsledek, který transakce vrátí.
+             * @throws SryError                 Chyba domény; transakce se vrátí zpět.
+             * @throws \PDOException           Chyba databáze; transakce se vrátí zpět.
+             */
+            function () use (
             $a,
             $b,
             $member,
@@ -316,6 +458,19 @@ final class SryService
             return $this->detail($a, $id);
         });
     }
+    /**
+     * Odevzdá obrázek nebo video k úkolu.
+     *
+     * Odevzdání je možné až po termínu a jen v očekávané revizi zadání; součástí
+     * je optimistická kontrola `revision` a stavu proti souběžným změnám.
+     *
+     * @param  array<string, mixed> $a Kontext aktéra; musí mít roli `user`.
+     * @param  int                   $id ID zadání.
+     * @param  array<string, mixed> $b Tělo požadavku: `media_id`, `revision` povinné, `note` volitelné.
+     * @return array<string, mixed>     Aktualizovaný detail zadání.
+     * @throws SryError                 'forbidden' (403), 'imageRequired' (422), 'conflict' (409),
+     *                                  'notDue' (409) nebo 'notFound' (404).
+     */
     public function submit(array $a, int $id, array $b): array
     {
         if ($a["role"] !== "user") {
@@ -327,7 +482,15 @@ final class SryService
             throw new SryError("imageRequired");
         }
         $revision = $this->integer($b, "revision");
-        return $this->family->transaction(function () use (
+        return $this->family->transaction(
+            /**
+             * Tělo operace běží v jedné transakci nad databází okurku.
+             *
+             * @return mixed                    Výsledek, který transakce vrátí.
+             * @throws SryError                 Chyba domény; transakce se vrátí zpět.
+             * @throws \PDOException           Chyba databáze; transakce se vrátí zpět.
+             */
+            function () use (
             $a,
             $id,
             $b,
@@ -360,6 +523,16 @@ final class SryService
             return $this->detail($a, $id);
         });
     }
+    /**
+     * Rodič schválí nebo vrátí odevzdání; schválení uděluje body za daný den.
+     *
+     * @param  array<string, mixed> $a Kontext aktéra; musí mít roli `admin`.
+     * @param  int                   $id ID zadání.
+     * @param  array<string, mixed> $b Tělo požadavku: `revision`, `decision` ('approved'|'returned') povinné,
+     *                                   `note` povinné pouze při vrácení.
+     * @return array<string, mixed>     Aktualizovaný detail zadání.
+     * @throws SryError                 'forbidden' (403), 'invalidInput' (422) nebo 'conflict' (409).
+     */
     public function review(array $a, int $id, array $b): array
     {
         $this->admin($a);
@@ -369,7 +542,15 @@ final class SryService
             throw new SryError("invalidInput");
         }
         $note = SryInput::text($b, "note", 2000, $decision === "returned");
-        return $this->family->transaction(function () use (
+        return $this->family->transaction(
+            /**
+             * Tělo operace běží v jedné transakci nad databází okurku.
+             *
+             * @return mixed                    Výsledek, který transakce vrátí.
+             * @throws SryError                 Chyba domény; transakce se vrátí zpět.
+             * @throws \PDOException           Chyba databáze; transakce se vrátí zpět.
+             */
+            function () use (
             $a,
             $id,
             $revision,
@@ -413,6 +594,12 @@ final class SryService
             return $this->detail($a, $id);
         });
     }
+    /**
+     * Vrátí ID administrátorů (rodičů) v dané rodině.
+     *
+     * @param  array<string, mixed> $a Kontext aktéra s `family_id`.
+     * @return list<int>                 ID členů s rolí `admin`.
+     */
     private function parents(array $a): array
     {
         return array_map(
@@ -420,6 +607,14 @@ final class SryService
             array_column($this->family->parents($a["family_id"]), "id"),
         );
     }
+    /**
+     * Načte hotové medium vlastněné konkrétním členem rodiny.
+     *
+     * @param  array<string, mixed> $a  Kontext aktéra (`id`, `family_id`).
+     * @param  int                   $id  ID media.
+     * @return array<string, mixed>      Záznam media.
+     * @throws SryError                  'notFound' (404), pokud medium nepatří členu nebo ještě není připravené.
+     */
     private function ownedMedia(array $a, int $id): array
     {
         $m = $this->media->ownedReady($id, $a["family_id"], $a["id"]);
@@ -428,6 +623,15 @@ final class SryService
         }
         return $m;
     }
+    /**
+     * Vytvoří záznam media a vrátí podepsanou URL pro přímý upload do cloudu.
+     *
+     * @param  array<string, mixed> $a Kontext aktéra (`id`, `family_id`).
+     * @param  array<string, mixed> $b Tělo požadavku: `mime` a `size` (1 B – 25 MB);
+     *                                  povolené jsou jen JPEG, PNG, WebP, MP4 a povolené audio formáty.
+     * @return array{id: int, url: string}  ID media a URL pro upload.
+     * @throws SryError                     'invalidInput' (422), pokud typ nebo velikost nevyhovují.
+     */
     public function prepareMedia(array $a, array $b): array
     {
         $mime = $b["mime"] ?? "";
@@ -471,6 +675,14 @@ final class SryService
         ]);
         return ["id" => $id, "url" => $url];
     }
+    /**
+     * Ověří v cloudu nahrání media (velikost a MIME) a označí ho jako připravené.
+     *
+     * @param  array<string, mixed> $a  Kontext aktéra (`id`, `family_id`).
+     * @param  int                   $id  ID media.
+     * @return array{id: int}             Potvrzení `{ id }`.
+     * @throws SryError                  'notFound' (404) nebo 'uploadFailed' (409), pokud metadata nesouhlasí.
+     */
     public function completeMedia(array $a, int $id): array
     {
         $m = $this->media->owned($id, $a["family_id"], $a["id"]);
@@ -490,6 +702,16 @@ final class SryService
         $this->media->markReady($id);
         return ["id" => $id];
     }
+    /**
+     * Vrátí podepsanou URL ke stažení media.
+     *
+     * Člen vidí vlastní media a media přiložená k úkolům, které mu byly zadány.
+     *
+     * @param  array<string, mixed> $a  Kontext aktéra (`role`, `id`, `family_id`).
+     * @param  int                   $id  ID media.
+     * @return array{url: string}        Podepsaná URL pro čtení.
+     * @throws SryError                  'notFound' (404), pokud medium není připravené ani nepřidělené.
+     */
     public function mediaUrl(array $a, int $id): array
     {
         $m = $this->media->ready($id, $a["family_id"]);
@@ -510,6 +732,17 @@ final class SryService
             ]),
         ];
     }
+    /**
+     * Zapíše notifikaci a realtime událost pro příjemce.
+     *
+     * @param  array<string, mixed> $a          Kontext aktéra.
+     * @param  string               $topic     Téma události ('family', 'tasks', 'chat').
+     * @param  int                  $id        ID entity, ke které se událost vztahuje.
+     * @param  string               $event     Název události.
+     * @param  list<int>            $recipients ID členů, kterých se událost týká.
+     * @param  bool                 $notify    false vytvoří jen realtime záznam, bez trvalé notifikace.
+     * @return void                              Vedlejší efekt: zápis do tabulek notifikací a událostí.
+     */
     private function event(
         array $a,
         string $topic,
@@ -534,15 +767,37 @@ final class SryService
             ]);
         }
     }
+    /**
+     * Vrátí vlastní notifikace člena.
+     *
+     * @param  array<string, mixed> $a Kontext aktéra s `id`.
+     * @return list<array<string, mixed>>  Notifikace člena.
+     */
     public function notifications(array $a): array
     {
         return $this->notifications->forMember($a["id"]);
     }
+    /**
+     * Označí notifikaci člena jako přečtenou.
+     *
+     * @param  array<string, mixed> $a  Kontext aktéra s `id`.
+     * @param  int                   $id  ID notifikace.
+     * @return array{updated: true}      Potvrzení `{ updated: true }`.
+     */
     public function markRead(array $a, int $id): array
     {
         $this->notifications->markRead(gmdate("Y-m-d H:i:s"), $id, $a["id"]);
         return ["updated" => true];
     }
+    /**
+     * Zaregistruje push token zařízení pro daného člena.
+     *
+     * @param  array<string, mixed> $a Kontext aktéra s `id`.
+     * @param  array<string, mixed> $b Tělo požadavku: `token` ve tvaru Expo/Exponent,
+     *                                  volitelně `language` ('cs' nebo 'en').
+     * @return array{updated: true}     Potvrzení `{ updated: true }`.
+     * @throws SryError                 'invalidInput' (422), pokud token neodpovídá očekávanému formátu.
+     */
     public function push(array $a, array $b): array
     {
         $token = SryInput::text($b, "token", 255);
@@ -558,6 +813,14 @@ final class SryService
         $this->notifications->registerDevice($token, $a["id"], $language);
         return ["updated" => true];
     }
+    /**
+     * Odebere push token zařízení člena.
+     *
+     * @param  array<string, mixed> $a Kontext aktéra s `id`.
+     * @param  array<string, mixed> $b Tělo požadavku: `token`.
+     * @return array{updated: true}     Potvrzení `{ updated: true }`.
+     * @throws SryError                 'invalidInput' (422), pokud chybí token.
+     */
     public function removePush(array $a, array $b): array
     {
         $this->notifications->removeDevice(
@@ -566,6 +829,12 @@ final class SryService
         );
         return ["updated" => true];
     }
+    /**
+     * Vrátí podepsanou WebSocket URL pro realtime kanál člena.
+     *
+     * @param  array<string, mixed> $a  Kontext aktéra (`id`, `family_id`).
+     * @return array{url: string}        WebSocket URL (HTTPS se přepisuje na WSS).
+     */
     public function realtime(array $a): array
     {
         return [
@@ -580,10 +849,25 @@ final class SryService
             ),
         ];
     }
+    /**
+     * Vrátí konverzaci aktuálního člena s jeho rodiči.
+     *
+     * @param  array<string, mixed> $a Kontext aktéra (`id`, `family_id`).
+     * @return list<array<string, mixed>>  Zprávy konverzace.
+     */
     public function messages(array $a): array
     {
         return $this->chat->forMember($a["family_id"], $a["id"], $a["id"]);
     }
+    /**
+     * Odešle soukromou zprávu jinému členu rodiny.
+     *
+     * @param  array<string, mixed> $a Kontext aktéra (`id`, `family_id`).
+     * @param  array<string, mixed> $b Tělo požadavku: `recipient_id` a `body` (max 2000 znaků) povinné.
+     * @return array{id: int}           ID vytvořené zprávy.
+     * @throws SryError                 'invalidInput' (422) při chybějícím příjemci či textu nebo při pokusu psát sobě,
+     *                                  'notFound' (404) při neviditelném příjemci.
+     */
     public function sendMessage(array $a, array $b): array
     {
         $to = $this->member($a, $this->integer($b, "recipient_id"));
@@ -591,7 +875,15 @@ final class SryService
             throw new SryError("invalidInput");
         }
         $text = SryInput::text($b, "body", 2000);
-        return $this->family->transaction(function () use ($a, $to, $text) {
+        return $this->family->transaction(
+            /**
+             * Tělo operace běží v jedné transakci nad databází okurku.
+             *
+             * @return mixed                    Výsledek, který transakce vrátí.
+             * @throws SryError                 Chyba domény; transakce se vrátí zpět.
+             * @throws \PDOException           Chyba databáze; transakce se vrátí zpět.
+             */
+            function () use ($a, $to, $text) {
             $id = $this->chat->create([
                 "family_id" => $a["family_id"],
                 "sender_id" => $a["id"],

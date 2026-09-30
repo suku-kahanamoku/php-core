@@ -6,10 +6,25 @@ namespace App\Modules\Transport\Import;
 
 use App\Modules\Transport\TransportException;
 
-/** Reads ZIP entries as streams, never extracts attacker-controlled paths. */
+/**
+ * Čte položky ZIP jako proudy, nikdy nerozbalí cesty řízené útočníkem.
+ *
+ * Při otevření se ověří, že archiv nemá duplicitní položky, cesty s `..`,
+ * zpětnými lomítky nebo absolutní cesty a nepřekračuje limity (200 položek,
+ * 4 GB nekomprimovaně). Řádky se čtou proudově a proti BOM i počtu sloupců.
+ */
 final class GtfsArchiveReader
 {
+    /** Otevřený archiv. */
     private \ZipArchive $zip;
+
+    /**
+     * @param  string $path    Cesta k archivu na disku.
+     * @param  int    $maxRows Maximální počet řádků v jednom souboru.
+     * @return void
+     * @throws TransportException 'invalid_archive' nebo 'archive_limit', pokud archiv
+     *                            nelze otevřít nebo porušuje limity.
+     */
     public function __construct(string $path, private readonly int $maxRows = 10000000)
     {
         $this->zip = new \ZipArchive();
@@ -31,10 +46,26 @@ final class GtfsArchiveReader
             }
         }
     }
+    /**
+     * Ověří, že archiv obsahuje zadaný soubor.
+     *
+     * @param  string $name Název položky v archivu.
+     * @return bool         true, pokud položka existuje.
+     */
     public function has(string $name): bool
     {
         return $this->zip->locateName($name) !== false;
     }
+    /**
+     * Čte řádky CSV souboru z archivu jako dvojice sloupec–hodnota.
+     *
+     * @param  string             $file     Název položky (např. `stops.txt`).
+     * @param  list<string>       $required Povinné názvy sloupců v hlavičce.
+     * @param  bool               $optional true, když chybějící soubor není chyba.
+     * @return \Generator<int, array<string, string|null>> Řádky souboru.
+     * @throws TransportException 'missing_gtfs_file', 'invalid_archive', 'invalid_csv'
+     *                            nebo 'row_limit'.
+     */
     public function rows(string $file, array $required = [], bool $optional = false): \Generator
     {
         if (!$this->has($file)) {
@@ -72,6 +103,11 @@ final class GtfsArchiveReader
             fclose($stream);
         }
     }
+    /**
+     * Uzavře archiv.
+     *
+     * @return void Bez návratu.
+     */
     public function __destruct()
     {
         $this->zip->close();

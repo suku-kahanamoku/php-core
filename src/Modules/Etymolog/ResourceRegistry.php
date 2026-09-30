@@ -4,12 +4,28 @@ declare(strict_types=1);
 
 namespace App\Modules\Etymolog;
 
-/** Fixed resource/column allowlist shared by CRUD validation and repositories. */
+/**
+ * Pevný seznam zdrojů a povolených sloupců, sdílený validací CRUD a repozitáři.
+ *
+ * Definice zde je jediným zdrojem pravdy pro pole, výchozí hodnoty, povinné
+ * položky, reference a oprávnění. Repozitáře z ní odvozují whitelist filtrů,
+ * projekcí a řazení, takže klient se přes HTTP nedostane k žádnému jinému sloupci.
+ */
 final class ResourceRegistry
 {
+    /** Typy výkladů považované za kulturní obsah vyžadující citaci. */
     public const CULTURAL_TYPES = ['legend', 'mythology', 'fiction', 'tradition', 'proverb'];
+
+    /** Jazyky podporované zdroji. */
     public const LANGUAGES = ['cs', 'sk', 'pl', 'uk', 'de', 'en'];
 
+    /**
+     * Vrátí definice všech zdrojů podle klíče.
+     *
+     * @return array<string, array{table: string, fields: array<string, array{0: string, 1: mixed}>, required?: list<string>, system?: list<string>, references?: array<string, string>, admin?: bool}>
+     *                         Definice: tabulka, pole s typem a výchozí hodnotou, povinná pole,
+     *                         systémová pole, reference na jiné zdroje a příznak `admin`.
+     */
     public static function all(): array
     {
         // type, default; null defaults allow explicit null. Required fields are separate.
@@ -118,6 +134,13 @@ final class ResourceRegistry
         ];
     }
 
+    /**
+     * Vrátí definici jednoho zdroje.
+     *
+     * @param  string $resource Klíč zdroje.
+     * @return array<string, mixed> Definice zdroje ve tvaru `all()`.
+     * @throws EtymologException 404 'Resource not found' pro neznámý klíč.
+     */
     public static function get(string $resource): array
     {
         return self::all()[$resource] ?? throw new EtymologException('Resource not found', 404);

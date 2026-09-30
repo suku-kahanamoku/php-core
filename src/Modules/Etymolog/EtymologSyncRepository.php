@@ -6,8 +6,21 @@ namespace App\Modules\Etymolog;
 use App\Modules\BaseRepository;
 use App\Modules\Etymolog\Providers\WikidataProvider;
 
+/**
+ * Repozitar synchronizačních běhů, kurzoru zdrojů a importních záznamů.
+ *
+ * Každý importovaný záznam si drží vlastní `content_hash` a licenci poskytovatele,
+ * takže se dá zjistit, co se od minulého běhu změnilo, i odkud přišlo.
+ * Všechny dotazy jsou omezené na okurk z constructoru.
+ */
 final class EtymologSyncRepository extends BaseRepository
 {
+    /**
+     * Vrátí nejbližší vypršelý zdroj k synchronizaci.
+     *
+     * @param  int|null $id Volitelně konkrétní zdroj, jinak nejbližší podle času.
+     * @return array<string, mixed>|null Řádek `etymolog_sync_job`, nebo null pokud žádný není vypršelý.
+     */
     public function nextJob(?int $id = null): ?array
     {
         $extra = $id === null ? '' : ' AND id = ?';
@@ -15,6 +28,14 @@ final class EtymologSyncRepository extends BaseRepository
             $id === null ? [$this->_code] : [$this->_code, $id]) ?: null;
     }
 
+    /**
+     * Otevře nový běh zdroje a označí případný předchozí běh jako přerušený.
+     *
+     * Pod zámkem okurku může běžící záznam znamenat pouze přerušený proces.
+     *
+     * @param  int $jobId ID zdroje.
+     * @return int         ID nového běhu.
+     */
     public function start(int $jobId): int
     {
         // Under the tenant advisory lock, a previous running record can only be an interrupted process.
@@ -22,6 +43,17 @@ final class EtymologSyncRepository extends BaseRepository
         return $this->_db->insert('etymolog_sync_run', ['franchise_code' => $this->_code, 'job_id' => $jobId, 'status' => 'running', 'started_at' => gmdate('Y-m-d H:i:s')]);
     }
 
+    /**
+     * Uloží jeden položku z Wikidata k danému jménu.
+     *
+     * Jméno se nejprve vyřeší (případně vytvoří) a snapshot zůstává oddělený i
+     * tehdy, když více entit Wikidata popisuje stejné jméno.
+     *
+     * @param  array<string, mixed> $job  Řádek `etymolog_sync_job`.
+     * @param  array<string, mixed> $item Importovaná položka (`external_id`, `name`, `source_url`, `revision`, `payload`).
+     * @return void                    Vedlejší efekt: zápis importního záznamu.
+     * @throws \JsonException         Pokud payload nelze serializovat.
+     */
     public function import(array $job, array $item): void
     {
         $key = 'wikidata:'.$job['kind'].':'.$item['external_id'];
@@ -44,6 +76,21 @@ final class EtymologSyncRepository extends BaseRepository
         }
     }
 
+    /**
+     * Uzavře běh a naplánuje další termín zdroje podle výsledku.
+     *
+     * Při omezení rychlosti od upstreamu se respektuje doporučené zpoždění,
+     * jinak interval zdroje; úspěch naplánuje další běh ihned.
+     *
+     * @param  array<string, mixed> $job        Řádek `etymolog_sync_job`.
+     * @param  int                   $runId      ID běhu.
+     * @param  string                $status     Výsledek: 'success', 'failed' nebo 'partial'.
+     * @param  int                   $processed  Počet zpracovaných položek.
+     * @param  string|null           $cursor     Kurzor zdroje pro pokračování.
+     * @param  string|null           $error      Strojový kód chyby, nebo null.
+     * @param  int                   $retryAfter Doporučené zpoždění v sekundách.
+     * @return void                             Vedlejší efekt: aktualizace běhu a termínu zdroje.
+     */
     public function finish(array $job, int $runId, string $status, int $processed, ?string $cursor, ?string $error = null, int $retryAfter = 0): void
     {
         $this->_db->update('etymolog_sync_run', ['status' => $status, 'processed' => $processed, 'error_code' => $error, 'finished_at' => gmdate('Y-m-d H:i:s')],
@@ -53,6 +100,13 @@ final class EtymologSyncRepository extends BaseRepository
             'id=? AND franchise_code=?', [(int)$job['id'], $this->_code]);
     }
 
+    /**
+     * Vrátí importní záznamy jména s dekódovaným payloadem.
+     *
+     * @param  int $nameId ID jména.
+     * @return list<array<string, mixed>> Záznamy seřazené podle ID.
+     * @throws \JsonException           Pokud uložený payload není platný JSON.
+     */
     public function imports(int $nameId): array
     {
         $rows = $this->_db->fetchAll('SELECT id,provider,external_id,source_url,license,license_url,attribution,revision,payload,content_hash,fetched_at FROM etymolog_import_record WHERE franchise_code=? AND name_id=? ORDER BY id', [$this->_code, $nameId]);
@@ -62,6 +116,14 @@ final class EtymologSyncRepository extends BaseRepository
         return $rows;
     }
 
+    /**
+     * Vrátí stránku historie běhů zdroje (nejnovější nahoře).
+     *
+     * @param  int $jobId ID zdroje.
+     * @param  int $page  Číslo stránky, omezeno shora na 1 000 000.
+     * @param  int $limit  Velikost stránky, omezena na 1–100.
+     * @return array<string, mixed>  Řádky a metadata stránky (`data`, `total`, `page`, `limit`).
+     */
     public function runs(int $jobId, int $page = 1, int $limit = 20): array
     {
         $page = max(1, min(1000000, $page));

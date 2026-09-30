@@ -10,16 +10,22 @@ use App\Modules\Router\Request;
 use App\Modules\Router\Response;
 use App\Modules\Router\Router;
 
+/**
+ * HTTP vrstva modulu Address — endpointy pro správu adres uživatelů.
+ *
+ * Handler pouze překládá požadavek na volání `AddressService` a převádí výsledek
+ * na odpověď přes `Response`. Kontrola přihlášení a vlastnictví zůstává ve službě.
+ */
 class AddressApi
 {
     private AddressService $_service;
 
     /**
      * Konstruktor AddressApi.
-     * 
-     * @param Database $db
-     * @param string $franchiseCode
-     * @param Auth $auth
+     *
+     * @param Database $db           Připojení k databázi předané službě a repozitáři.
+     * @param string   $franchiseCode Kód okurku (tenanta); určuje, které řádky jsou viditelné.
+     * @param Auth     $auth         Kontext autentizace pro kontrolu rolí a vlastnictví.
      */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
@@ -27,11 +33,11 @@ class AddressApi
     }
 
     /**
-     * GET /address — Vrati strankovany seznam adres (admin only).
+     * GET /address — Vrátí stránkovaný seznam adres (pouze pro admina).
      *
-     * @param Request $request  query: sort, page, limit, q, projection
-     * @param array   $params
-     * @return void
+     * @param Request $request Aktuální požadavek; query: sort, page, limit, q, projection.
+     * @param array   $params  Parametry routy, zde jen případný `userId` pro filtrování na uživatele.
+     * @return void           Odpověď se stránkovacími metadaty (`Response::successList`).
      */
     public function list(Request $request, array $params = []): void
     {
@@ -48,11 +54,11 @@ class AddressApi
     }
 
     /**
-     * GET /addresses/:id — Vrati adresu dle ID.
+     * GET /addresses/:id — Vrátí adresu dle ID.
      *
-     * @param Request $request
-     * @param array{id: string} $params
-     * @return void
+     * @param Request           $request Aktuální požadavek; volitelná query `projection`.
+     * @param array{id: string} $params  Parametry routy s `id` adresy.
+     * @return void                      Odpověď s jedním záznamem (`Response::successItem`).
      */
     public function get(Request $request, array $params): void
     {
@@ -65,10 +71,11 @@ class AddressApi
     }
 
     /**
-     * POST /addresses — Vytvori novou adresu. Vyzaduje prihlaseni.
+     * POST /addresses — Vytvoří novou adresu. Vyžaduje přihlášení.
      *
-     * @param Request $request  body: type, name, street, city, zip, country, company, is_default, user_id
-     * @return void
+     * @param Request $request Tělo požadavku: type, name, street, city, zip, country, company, is_default.
+     * @return void            Odpověď 201 s vytvořenou adresou.
+     * @throws \Throwable       Při chybějícím street, city nebo zip je request ukončen s 422.
      */
     public function create(Request $request): void
     {
@@ -96,11 +103,11 @@ class AddressApi
     }
 
     /**
-     * PATCH /addresses/:id — Castecna aktualizace adresy. Vyzaduje prihlaseni; vlastnik nebo admin.
+     * PATCH /addresses/:id — Částečná aktualizace adresy. Vyžaduje přihlášení; vlastník nebo admin.
      *
-     * @param Request $request  body: libovolna podmnozina sloupcu adresy
-     * @param array{id: string} $params
-     * @return void
+     * @param Request           $request Tělo požadavku: libovolná podmnožina sloupců adresy.
+     * @param array{id: string} $params  Parametry routy s `id` adresy.
+     * @return void                      Odpověď s aktualizovanou adresou.
      */
     public function update(Request $request, array $params): void
     {
@@ -118,11 +125,12 @@ class AddressApi
     }
 
     /**
-     * PUT /addresses/:id — Uplna nahrada adresy. Vyzaduje prihlaseni; vlastnik nebo admin.
+     * PUT /addresses/:id — Úplná náhrada adresy. Vyžaduje přihlášení; vlastník nebo admin.
      *
-     * @param Request $request  body: type, name, street, city, zip, country (vsechna pole povinne)
-     * @param array{id: string} $params
-     * @return void
+     * @param Request           $request Tělo požadavku: type, name, street, city, zip, country (všechna povinná).
+     * @param array{id: string} $params  Parametry routy s `id` adresy.
+     * @return void                      Odpověď s nahrazenou adresou.
+     * @throws \Throwable                Při chybějícím street, city, zip nebo country je request ukončen s 422.
      */
     public function replace(Request $request, array $params): void
     {
@@ -147,11 +155,12 @@ class AddressApi
     }
 
     /**
-     * DELETE /addresses/:id — Smaze adresu. Vyzaduje prihlaseni; vlastnik nebo admin.
+     * DELETE /addresses/:id — Smaže adresu. Vyžaduje přihlášení; vlastník nebo admin.
      *
-     * @param Request $request
-     * @param array{id: string} $params
-     * @return void
+     * @param Request           $request Aktuální požadavek; query `force=1` volí tvrdé smazání místo soft-delete.
+     * @param array{id: string} $params  Parametry routy s `id` adresy.
+     * @return void                      Odpověď bez těla; chybí-li `id`, request končí s 422.
+     * @throws \Throwable                Při chybějícím `id` je request ukončen s 422.
      */
     public function delete(Request $request, array $params): void
     {
@@ -166,9 +175,11 @@ class AddressApi
     }
 
     /**
-     * Zaregistruje vsechny routy tohoto modulu do routeru.
+     * Zaregistruje všechny routy tohoto modulu do routeru.
      *
-     * @param  Router $router
+     * Zaregistruje routy modulu Address: GET/POST `/`, GET/PUT/PATCH/DELETE `/:id`.
+     *
+     * @param  Router $router Router, do kterého se routy zapisují (relativní cesty vůči vstupnímu bodu API).
      * @return void
      */
     public function registerRoutes(Router $router): void

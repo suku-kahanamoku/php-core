@@ -10,6 +10,12 @@ use App\Modules\Database\Database;
 use App\Modules\Router\Response;
 use App\Modules\User\UserRepository;
 
+/**
+ * Aplikační služby rolí a jejich přiřazení členům.
+ *
+ * Systémové role (`admin`, `user`) se nemažou, aby nešlo odebrat poslední
+ * oprávnění správce okurku; vše je omezeno na daný `franchise_code`.
+ */
 class RoleService extends BaseService
 {
     private RoleRepository $_role;

@@ -10,8 +10,16 @@ use App\Modules\Router\Request;
 use App\Modules\Router\Response;
 use App\Modules\Router\Router;
 
+/**
+ * HTTP vrstva modulu Enumeration: veřejné čtení číselníků pro frontend.
+ *
+ * Seznamy používají standardní dotazový kontrakt (`q`, `sort`, `projection`,
+ * `page`, `limit`, řádky v klíči `data`); allowlisty pro typy, pole, filtry a
+ * sorty jsou v `EnumerationService`.
+ */
 class EnumerationApi
 {
+    /** Aplikacni sluzby ciselniku. */
     private EnumerationService $_service;
 
     /**

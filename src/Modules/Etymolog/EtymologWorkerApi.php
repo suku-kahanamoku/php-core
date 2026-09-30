@@ -4,10 +4,28 @@ declare(strict_types=1);
 namespace App\Modules\Etymolog;
 use App\Modules\Router\{Request,Response};
 
-/** Machine-only route: internal API authentication PLUS a separate tenant-bound secret. */
+/**
+ * Routa výhradně pro stroje: interní autentizace API PLUS samostatný klíč vázaný na okurk.
+ *
+ * Klíč v hlavičce `X-Etymolog-Worker-Key` se porovnává v konstantním čase a
+ * endpoint je navíc zcela vypnutý, pokud `ETYMOLOG_SYNC_DISPATCH` není
+ * 'cloudflare'. Tělo požadavku je omezené na 512 bajtů a jeho klíče musí
+ * přesně odpovídat očekávané sadě pro danou akci.
+ */
 final class EtymologWorkerApi
 {
+    /**
+     * @param  EtymologHttpWorkerService $service Služby workera synchronizace.
+     * @return void
+     */
     public function __construct(private readonly EtymologHttpWorkerService $service) {}
+
+    /**
+     * Obslouží požadavek workera a vždy požadavek ukončí.
+     *
+     * @param  Request $r Aktuální požadavek.
+     * @return never     Vždy ukončí požadavek přes `Response::success()` nebo `Response::error()`.
+     */
     public function handle(Request $r): never
     {
         try {

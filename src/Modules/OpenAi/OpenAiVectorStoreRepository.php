@@ -6,9 +6,20 @@ namespace App\Modules\OpenAi;
 
 use App\Modules\Database\Database;
 
-/** Perzistentni stav tenantove synchronizace s OpenAI Vector Store. */
+/**
+ * Persistentní stav synchronizace jednoho okurku s OpenAI Vector Store.
+ *
+ * Všechny dotazy jsou omezené na `franchise_code`, takže se stav jednoho okurku
+ * nesmí promítnout do jiného. Zápisy jsou idempotentní (`ON DUPLICATE KEY UPDATE`),
+ * aby opakovaná synchronizace nevytvářela duplicity.
+ */
 final class OpenAiVectorStoreRepository implements OpenAiVectorStoreGateway
 {
+    /**
+     * @param  Database $database      Databázová vrstva (PDO zůstává uvnitř).
+     * @param  string   $franchiseCode Kód okurku, jehož stav se načítá a zapisuje.
+     * @return void
+     */
     public function __construct(
         private readonly Database $database,
         private readonly string $franchiseCode,
@@ -24,6 +35,13 @@ final class OpenAiVectorStoreRepository implements OpenAiVectorStoreGateway
         return $row === false ? null : $row;
     }
 
+    /**
+     * Uloží nebo aktualizuje Vector Store daného okurku.
+     *
+     * @param  string $vectorStoreId ID Vector Store v OpenAI.
+     * @param  string $name          Název pro přehlednost.
+     * @return void                  Vedlejší efekt: `INSERT ... ON DUPLICATE KEY UPDATE`.
+     */
     public function saveStore(string $vectorStoreId, string $name): void
     {
         $this->database->query(
@@ -34,7 +52,11 @@ final class OpenAiVectorStoreRepository implements OpenAiVectorStoreGateway
         );
     }
 
-    /** @return array<int, array<string, mixed>> Mapovani indexovane product_id. */
+    /**
+     * Načte mapování indexovaných produktů na soubory ve Vector Store.
+     *
+     * @return array<int, array<string, mixed>> Řádky indexované podle `product_id`.
+     */
     public function productMappings(): array
     {
         $result = [];
@@ -50,6 +72,15 @@ final class OpenAiVectorStoreRepository implements OpenAiVectorStoreGateway
         return $result;
     }
 
+    /**
+     * Uloží nebo aktualizuje mapování produktu na soubor ve Vector Store.
+     *
+     * @param  int    $productId     ID produktu okurku.
+     * @param  string $vectorStoreId ID Vector Store.
+     * @param  string $fileId        ID nahraného souboru v OpenAI.
+     * @param  string $sourceHash    Hash zdrojového dokumentu pro rozpoznání změn.
+     * @return void                  Vedlejší efekt: `INSERT ... ON DUPLICATE KEY UPDATE`.
+     */
     public function saveProductMapping(
         int $productId,
         string $vectorStoreId,
@@ -66,6 +97,12 @@ final class OpenAiVectorStoreRepository implements OpenAiVectorStoreGateway
         );
     }
 
+    /**
+     * Odebere mapování produktu (produkt už v okurku není nebo se nepublikuje).
+     *
+     * @param  int $productId ID produktu okurku.
+     * @return void           Vedlejší efekt: `DELETE openai_vector_store_product`.
+     */
     public function deleteProductMapping(int $productId): void
     {
         $this->database->query(

@@ -6,23 +6,70 @@ namespace App\Modules\Transport\Import;
 
 use App\Modules\Transport\TransportException;
 
+/**
+ * Import souborů GTFS do verzí dopravních dat.
+ *
+ * Volající vlastní transakci a zámek feedu, takže jsou všechny řádky neviditelné
+ * až do `commit`. Zápisy se sdružují do dávek (500 řádků nebo 1 MB), po nichž
+ * se kontrolují vztahy mezi zastávkami, spoji a časy; GTFS Flex se záměrně
+ * odmítá, protože vyžaduje jiný profil importu.
+ */
 final class GtfsImportService
 {
+    /** Připravené výkazy pro dávkové vkládání (podle tvaru dávky). */
     private array $statements = [];
+
+    /** Aktuálně sestavovaná dávka řádků. */
     private array $batch = [];
+
+    /** Tabulka, do které patří aktuální dávka. */
     private string $batchTable = '';
+
+    /** Sloupce aktuální dávky. */
     private array $batchColumns = [];
+
+    /** Orientační velikost aktuální dávky v bajtech. */
     private int $batchBytes = 0;
+
+    /**
+     * @param  \PDO   $db     Připravené připojení; import běží v cizí transakci.
+     * @param  string $tenant Kód okurku, do kterého se importuje.
+     * @return void
+     */
     public function __construct(private readonly \PDO $db, private readonly string $tenant)
     {
     }
-    /** The caller owns the transaction and per-feed lock. All rows remain invisible until commit. */
+
+    /**
+     * Naimportuje GTFS archiv do dané verze feedu.
+     *
+     * @param  string $path    Cesta k archivu na disku.
+     * @param  int    $version ID verze feedu.
+     * @return array<string, int> Počet vložených řádků podle tabulky.
+     * @throws TransportException Při neplatném archivu, souřadnicích, časech, kalendáři
+     *                            nebo vztazích mezi záznamy.
+     */
     public function import(string $path, int $version): array
     {
         $zip = new GtfsArchiveReader($path);
         $counts = [];
         $operators = [];
-        $put = function (string $table, array $data) use ($version, &$counts): void {
+        /**
+         * Vloží jeden řádek s výchozími sloupci verze a započítá ho.
+         *
+         * @param  string              $table Tabulka bez předpony `transport_`.
+         * @param  array<string, mixed> $data Atributy řádku.
+         * @return void               Vedlejší efekt: zápis do aktuální dávky.
+         */
+        $put =
+            /**
+             * Vloží jeden řádek s výchozími sloupci verze a započítá ho.
+             *
+             * @param  string               $table Tabulka bez předpony `transport_`.
+             * @param  array<string, mixed> $data  Atributy řádku.
+             * @return void                Vedlejší efekt: zápis do aktuální dávky.
+             */
+            function (string $table, array $data) use ($version, &$counts): void {
             $this->insert($table, ['franchise_code' => $this->tenant,'version_id' => $version] + $data);
             $counts[$table] = ($counts[$table] ?? 0) + 1;
         };
@@ -114,6 +161,16 @@ final class GtfsImportService
         $this->validate($version);
         return $counts;
     }
+    /**
+     * Ověří konzistenci naimportovaných vztahů.
+     *
+     * Kontroluje existenci mateřské zastávky, směr časů uvnitř spoje (jedním
+     * průchodem bez mezipaměti) a to, že každý spoj má zastávky.
+     *
+     * @param  int $version ID verze feedu.
+     * @return void         Bez návratu; při chybě transakci zruší volající.
+     * @throws TransportException 'invalid_gtfs_relations' při neplatných vztazích.
+     */
     private function validate(int $version): void
     {
         $statement = $this->db->prepare('SELECT 1 FROM transport_stop s LEFT JOIN transport_stop p ON p.franchise_code=s.franchise_code AND p.version_id=s.version_id AND p.external_id=s.parent_id WHERE s.franchise_code=? AND s.version_id=? AND s.parent_id IS NOT NULL AND p.external_id IS NULL LIMIT 1');
@@ -131,7 +188,24 @@ final class GtfsImportService
         $count = 0;
         $last = null;
         $previousTime = null;
-        $checkLast = static function (?array $last, int $count): void {
+        /**
+         * Ověří, že spoj má alespoň dvě zastávky a časované konce.
+         *
+         * @param  array<string, mixed>|null $last Poslední načtený řádek spoje.
+         * @param  int                        $count Počet dosud načtených zastávek spoje.
+         * @return void                                Bez návratu; při chybě vyhodí výjimku.
+         * @throws TransportException 'invalid_gtfs_relations', pokud spoj nesplňuje podmínky.
+         */
+        $checkLast =
+            /**
+             * Ověří, že spoj má alespoň dvě zastávky a časované konce.
+             *
+             * @param  array<string, mixed>|null $last Poslední načtený řádek spoje.
+             * @param  int                        $count Počet dosud načtených zastávek spoje.
+             * @return void                                Bez návratu; při chybě vyhodí výjimku.
+             * @throws TransportException 'invalid_gtfs_relations', pokud spoj nesplňuje podmínky.
+             */
+            static function (?array $last, int $count): void {
             if ($last !== null && ($count < 2 || $last['arrival_seconds'] === null || $last['departure_seconds'] === null)) {
                 throw new TransportException('invalid_gtfs_relations', 'Trips require two stops and timed endpoints.');
             }
@@ -172,6 +246,13 @@ final class GtfsImportService
         $statement->closeCursor();
     }
 
+    /**
+     * Přidá řádek do aktuální dávky a v případě potřeby ji vyprázdní.
+     *
+     * @param  string              $table Tabulka bez předpony `transport_`.
+     * @param  array<string, mixed> $data  Atributy řádku.
+     * @return void                     Vedlejší efekt: případné `flush()` před změnou tvaru dávky.
+     */
     private function insert(string $table, array $data): void
     {
         $columns = array_keys($data);
@@ -189,6 +270,12 @@ final class GtfsImportService
         }
     }
 
+    /**
+     * Vloží sestavenou dávku jedním výkazem (multi-row insert).
+     *
+     * @return void Vedlejší efekt: provedení připraveného výkazu.
+     * @throws \PDOException Pokud se výkaz neprovede.
+     */
     private function flush(): void
     {
         if (!$this->batch) {
@@ -209,20 +296,52 @@ final class GtfsImportService
         $this->batchBytes = 0;
     }
 
+    /**
+     * Serializuje původní řádek GTFS pro audit a dohledávání.
+     *
+     * @param  array<string, string|null> $data Řádek souboru.
+     * @return string                     JSON bez escapovaných lomítek a Unicode.
+     * @throws \JsonException            Pokud řádek nelze serializovat.
+     */
     private static function json(array $data): string
     {
         return json_encode($data, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
     }
+
+    /**
+     * Převede prázdnou hodnotu GTFS na `null`.
+     *
+     * @param  string $value Hodnota ze souboru.
+     * @return string|null   Hodnota, nebo null pro prázdný řetězec.
+     */
     private static function nullable(string $value): ?string
     {
         return $value === '' ? null : $value;
     }
+
+    /**
+     * Ověří identifikátor z GTFS.
+     *
+     * @param  string $value Identifikátor ze souboru.
+     * @return string       Identifikátor pro uložení.
+     * @throws TransportException 'invalid_gtfs_id', pokud je prázdný nebo delší
+     *                            než 255 znaků.
+     */
     private static function id(string $value): string
     {
         if ($value === '' || strlen($value) > 255) {
             throw new TransportException('invalid_gtfs_id', 'Invalid GTFS identifier.');
         } return $value;
     }
+    /**
+     * Načte souřadnici a ověří její rozsah.
+     *
+     * @param  string $value Hodnota ze souboru.
+     * @param  int    $bound Maximální absolutní hodnota (90 pro šířku, 180 pro délku).
+     * @return float|null    Souřadnice, nebo null pro prázdnou hodnotu.
+     * @throws TransportException 'invalid_coordinate', pokud hodnota není číslo
+     *                            nebo překračuje rozsah.
+     */
     private static function coordinate(string $value, int $bound): ?float
     {
         if ($value === '') {
@@ -231,6 +350,16 @@ final class GtfsImportService
             throw new TransportException('invalid_coordinate', 'Invalid coordinate.');
         } return (float)$value;
     }
+    /**
+     * Načte celočíselnou hodnotu v zadaném rozsahu; prázdná hodnota znamená nulu.
+     *
+     * @param  string $value Hodnota ze souboru.
+     * @param  int    $min   Nejmenší přípustná hodnota.
+     * @param  int    $max   Největší přípustná hodnota.
+     * @return int           Hodnota jako celé číslo.
+     * @throws TransportException 'invalid_gtfs_number', pokud hodnota není nezáporné
+     *                            celé číslo v rozsahu.
+     */
     private static function number(string $value, int $min, int $max): int
     {
         if ($value === '') {
@@ -239,6 +368,14 @@ final class GtfsImportService
             throw new TransportException('invalid_gtfs_number', 'Invalid GTFS numeric value.');
         } return (int)$value;
     }
+    /**
+     * Převede `route_type` z GTFS na způsob dopravy našeho systému.
+     *
+     * @param  string $value Hodnota `route_type` včetně rozšířených rozsahů GTFS.
+     * @return string        `bus`, `tram`, `train`, `metro`, `trolleybus`, `ferry`,
+     *                       `coach`, `airplane`, `cable_car`, `gondola`, `funicular`,
+     *                       `monorail`, nebo `other` pro nespuštěné trasy.
+     */
     public static function mode(string $value): string
     {
         $type = (int)$value;

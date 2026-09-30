@@ -6,11 +6,24 @@ namespace App\Modules\Templater;
 
 use RuntimeException;
 
+/**
+ * Vykreslování šablon e-mailů a HTML z adresáře `emails/<okrsek>`.
+ *
+ * Šablona se hledá jen uvnitř adresáře okurku, takže nelze vykreslit soubor
+ * mimo něj; data se předají šabloně jako proměnné.
+ */
 class TemplaterService
 {
+    /** Kořenová složka šablon. */
     private string $_emailsDir;
+
+    /** Kód okurku, jehož podadresář se použije. */
     private string $_code;
 
+    /**
+     * @param  string $franchiseCode Kód okurku určující podadresář šablon.
+     * @return void
+     */
     public function __construct(string $franchiseCode = '')
     {
         $this->_emailsDir = dirname(__DIR__, 3) . '/emails/';

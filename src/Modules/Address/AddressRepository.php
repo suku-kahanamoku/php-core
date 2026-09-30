@@ -16,8 +16,9 @@ class AddressRepository extends BaseRepository
     /**
      * Konstruktor tridy AddressRepository.
      *
-     * @param Database $db
-     * @param string   $franchiseCode
+     * @param Database $db            Připojení k databázi.
+     * @param string   $franchiseCode Kód okurku, podle kterého se filtrují řádky.
+     * @return void
      */
     public function __construct(Database $db, string $franchiseCode)
     {
@@ -39,13 +40,13 @@ class AddressRepository extends BaseRepository
     }
 
     /**
-     * Vrati strankovany seznam vsech adres.
+     * Vrátí stránkovaný seznam všech adres.
      *
-     * @param  int        $page
-     * @param  int        $limit
-     * @param  string     $sort
-     * @param  string     $filter
-     * @param  array|null $projection
+     * @param  int        $page       Číslo stránky (od 1).
+     * @param  int        $limit      Počet záznamů na stránku; ořízne na maximálně 100.
+     * @param  string     $sort       Řazení dle standardního dotazového kontraktu.
+     * @param  string     $filter     JSON filtr; klíč `deleted` se vyjme a řídí výběr smazaných řádků.
+     * @param  array|null $projection Požadované sloupce, nebo null pro všechny.
      * @return array{items: list<array<string,mixed>>, total: int, page: int, limit: int, totalPages: int}
      */
     public function findAll(
@@ -114,11 +115,11 @@ class AddressRepository extends BaseRepository
     }
 
     /**
-     * Najde adresu dle ID, volitelne s user JOINem.
+     * Najde adresu dle ID, volitelně s JOINem na uživatele.
      *
-     * @param  int        $id
-     * @param  array|null $projection
-     * @return array<string, mixed>|null
+     * @param  int        $id         ID adresy.
+     * @param  array|null $projection Požadované sloupce, nebo null pro všechny.
+     * @return array<string, mixed>|null Adresa, nebo null pokud neexistuje nebo je smazaná.
      */
     public function findById(int $id, ?array $projection = null): ?array
     {
@@ -150,10 +151,10 @@ class AddressRepository extends BaseRepository
     }
 
     /**
-     * Vlozi novou adresu a vrati vytvoreny zaznam.
+     * Vloží novou adresu a vrátí vytvořený záznam.
      *
-     * @param  array<string, mixed> $data
-     * @param  array|null           $projection
+     * @param  array<string, mixed> $data      Atributy nové adresy; franchise_code doplní repozitář.
+     * @param  array|null           $projection Požadované sloupce odpovědi, nebo null pro všechny.
      * @return array{
      *   id: int,
      *   created_at: string,
@@ -179,11 +180,11 @@ class AddressRepository extends BaseRepository
     }
 
     /**
-     * Aktualizuje adresu a vrati aktualizovany zaznam.
+     * Aktualizuje adresu a vrátí aktualizovaný záznam.
      *
-     * @param  int                  $id
-     * @param  array<string, mixed> $data
-     * @param  array|null           $projection
+     * @param  int                  $id        ID adresy k aktualizaci.
+     * @param  array<string, mixed> $data      Sloupce a nové hodnoty.
+     * @param  array|null           $projection Požadované sloupce odpovědi, nebo null pro všechny.
      * @return array{
      *   id: int,
      *   created_at: string,
@@ -212,11 +213,11 @@ class AddressRepository extends BaseRepository
     }
 
     /**
-     * Oznaci vsechny adresy daneho uzivatele a typu jako nevychozi (is_default = 0).
+     * Označí všechny adresy daného uživatele a typu jako nevychozí (is_default = 0).
      *
-     * @param int $userId
-     * @param string $type
-     * @return int Pocet aktualizovanych radku
+     * @param  int    $userId ID vlastníka adres.
+     * @param  string $type   Typ adresy ('billing' nebo 'shipping').
+     * @return int           Počet aktualizovaných řádků.
      */
     public function clearDefault(int $userId, string $type): int
     {

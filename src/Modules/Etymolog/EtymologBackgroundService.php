@@ -3,13 +3,44 @@
 declare(strict_types=1);
 namespace App\Modules\Etymolog;
 
+/**
+ * Orchesterace pozadostv o synchronizaci Etymologu a behu odpojenych workeru.
+ *
+ * Synchronizace je vzdy explicitni: spustit ji lze jen z administratorskeho
+ * tlacitka (viz `start()`) nebo pres odpojeny CLI worker (`workQueued()`).
+ * Autonomni pruch se nikdy nespusti samovolne.
+ *
+ * Stav a kurzor prace drzi `EtymologBatchRepository`, takze HTTP pozadavek
+ * jen rychle vlozi frontu a vrati stav, zatimco tezkou práci delaji workery.
+ */
 final class EtymologBackgroundService
 {
-    /** Launcher is injected so tests never spawn a real importer. */
+    /**
+     * @param  EtymologBatchRepository $batches Repozitar stavu a fronty synchronizace.
+     * @param  EtymologSyncService      $sync    Sluzby synchronizace jednotlivych zdrojů.
+     * @param  \Closure                 $launch  Spouštěč workera; injektovaný, aby testy nikdy nespustily skutecny import.
+     * @return void
+     */
     public function __construct(private readonly EtymologBatchRepository $batches, private readonly EtymologSyncService $sync, private readonly \Closure $launch) {}
 
+    /**
+     * Vrátí aktuální stav synchronizace pro zobrazení v UI.
+     *
+     * @return array<string, mixed>|null Stav běhu, nebo null pokud žádný běh neexistuje.
+     */
     public function status(): ?array { return $this->batches->status(); }
 
+    /**
+     * Vloží nový požadavek na synchronizaci a pokusí se spustit workera.
+     *
+     * Pokud již existuje rozpracovaný požadavek, vrací jeho stav s `accepted = false`
+     * a nespustí další běh. Nezbyde-li spuštění udržitelné (např. je worker
+     * vypnutý nebo chybně konfigurovaný), vrací 503 s důvodem místo tichého selhání.
+     *
+     * @param  int|null $actor ID uživatele, který požadavek spustil, nebo null pro automatický běh.
+     * @return array<string, mixed> Stav požadovaného běhu včetně klíče `accepted`.
+     * @throws EtymologException 503, pokud workera nelze spustit a chybu se nepodari zapsat.
+     */
     public function start(?int $actor): array
     {
         $request = $this->batches->enqueue($actor);
@@ -25,7 +56,11 @@ final class EtymologBackgroundService
         return $request;
     }
 
-    /** Only requests created by the admin button; never start an autonomous pass. */
+    /**
+     * Zpracuje pouze požadavek vytvořený tlačítkem; nikdy nespustí autonomní průch.
+     *
+     * @return array<string, mixed> Stav po zpracování, nebo `{ status: 'idle' }` pokud není čekání.
+     */
     public function workQueued(): array
     {
         $current = $this->batches->status();
@@ -33,10 +68,27 @@ final class EtymologBackgroundService
         return $this->work($current['request_id']);
     }
 
-    /** Cron and the detached CLI use exactly this pass: all remaining batches of each due enabled job. */
+    /**
+     * Projde vsechny zbyle dávky kazdeho vypršelého a povoleného zdroje.
+     *
+     * Stejny pruch pouziva cron i odpojeny CLI. Pri behu bez `requestId` se nejprve
+     * zkontroluje, zda jiny worker prave nepracuje, a pri jeho preruseni se beh
+     * ozaci jako neuspesny. Kazda dávka se zapisuje do databaze samostatne, takze
+     * omezeni rychlosti od upstreamu ukonci jen dávku, ne cely pozadavek.
+     *
+     * @param  string|null $requestId ID pozadovaného behu, nebo null pro automaticky novy.
+     * @return array<string, mixed>  Stav po dokonceni pruchu.
+     * @throws \Throwable            Chyba pri praci s databazi se po prepisu stavu vyhodi.
+     */
     public function work(?string $requestId = null): array
     {
-        return $this->batches->lock('worker', function () use ($requestId) {
+        return $this->batches->lock('worker',         /**
+         * Tělo práce běží pod výhradním zámkem workera v jedné transakci.
+         *
+         * @return array<string, mixed> Stav dávky a počet zpracovaných kroků.
+         * @throws \Throwable          Chyba databáze se po přepisu stavu vyhodí.
+         */
+function () use ($requestId) {
             if ($requestId === null) {
                 $previous = $this->batches->status();
                 if ($previous && $previous['status'] === 'running' && ($previous['pending_jobs'] ?? null) !== null) { return ['status' => 'idle']; }

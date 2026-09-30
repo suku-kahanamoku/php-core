@@ -7,11 +7,37 @@ namespace App\Modules\Transport\Import;
 use App\Modules\Transport\Repositories\TransportRepository;
 use App\Modules\Transport\TransportException;
 
+/**
+ * Synchronizace importovaného feedu (GTFS) včetně verze a platnosti.
+ *
+ * Běh drží databázový zámek `GET_LOCK`, takže dva souběžné importy téhož feedu
+ * se nepotkají. Nejprve se stáhne archiv do dočasného souboru a porovná se
+ * kontrolní součet: nezměněný feed se označí `unchanged` a nic neimportuje.
+ * Nová verze se importuje v transakci; při chybě zůstává předchozí data
+ * aktivní a běh končí stavem `failed`.
+ */
 final class FeedSyncService
 {
+    /**
+     * @param  TransportRepository                     $repository Repozitář daného okurku.
+     * @param  string                                  $storage   Adresář pro archivy (právo 0700, soubory 0600).
+     * @param  \App\Modules\Http\Contracts\HttpClient|null $http      Klient pro testy; jinak `HttpModule::client()`.
+     * @return void
+     */
     public function __construct(private readonly TransportRepository $repository, private readonly string $storage, private readonly ?\App\Modules\Http\Contracts\HttpClient $http = null)
     {
     }
+
+    /**
+     * Stáhne a naimportuje feed, nebo potvrdí, že se nezměnil.
+     *
+     * @param  string      $feedCode     Kód feedu okurku.
+     * @param  string|null $localArchive Místní GTFS archiv místo stahování (testy), max. 500 MB.
+     * @return array{version_id: int, status: string, checksum?: string, counts?: array<string, int>, valid_from?: string, valid_until?: string}
+     *         Identifikátor nové verze a její stav.
+     * @throws TransportException 'not_found' (404), 'sync_locked' (409), 'invalid_feed_url',
+     *                            'download_failed' (503), 'empty_calendar' nebo chyba importu.
+     */
     public function sync(string $feedCode, ?string $localArchive = null): array
     {
         $r = $this->repository;
@@ -75,6 +101,15 @@ final class FeedSyncService
             $r->rows('SELECT RELEASE_LOCK(?)', [$lock]);
         }
     }
+    /**
+     * Stáhne GTFS archiv přímo do souboru přes sdílený HTTP klient.
+     *
+     * @param  string $url    Adresa feedu; musí být HTTPS.
+     * @param  string $target Cílový soubor (`sink`).
+     * @return void           Vedlejší efekt: zápis archivu na disk.
+     * @throws TransportException 'invalid_feed_url' nebo 'download_failed' (503);
+     *                            při chybě zůstávají předchozí data aktivní.
+     */
     private function download(string $url, string $target): void
     {
         if (parse_url($url, PHP_URL_SCHEME) !== 'https') {

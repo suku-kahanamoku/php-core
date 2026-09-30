@@ -5,9 +5,23 @@ namespace App\Modules\Etymolog;
 
 use App\Modules\BaseRepository;
 
-/** SQL for sourced calendar imports; caller holds the tenant lock and transaction. */
+/**
+ * SQL pro importy kalendářů se zdrojem; volající drží výhradní zámek okurku
+ * a transakci.
+ *
+ * Zrušené záznamy se nikdy neobnovují — místo toho se import tiše ukončí,
+ * aby nevznikaly duplicity. Datum se u folklorních textů odvozuje jen z data
+ * kapitoly pramene; vztah ke jménům zůstává redakčně kontrolovaný a
+ * nezveřejněný.
+ */
 final class EtymologCalendarRepository extends BaseRepository
 {
+    /**
+     * Vyřeší nebo vytvoří kalendář podle importního klíče.
+     *
+     * @param  array<string, mixed> $data Atributy kalendáře včetně `import_key`.
+     * @return int|null                ID kalendáře, nebo null pokud byl zrušený.
+     */
     private function calendar(array $data): ?int
     {
         $row = $this->_db->fetchOne('SELECT id,deleted FROM etymolog_calendar WHERE franchise_code=? AND import_key=?', [$this->_code, $data['import_key']]);
@@ -15,6 +29,13 @@ final class EtymologCalendarRepository extends BaseRepository
         return $this->_db->insert('etymolog_calendar', $data + ['franchise_code' => $this->_code]);
     }
 
+    /**
+     * Připojí kalendářní den s datem folklorní kapitoly k existujícímu textu.
+     *
+     * @param  array<string, mixed> $item  Položka s `calendar`, názvem a datem kapitoly.
+     * @param  array{entry_id: int, source_id: int} $story Uložený text a jeho zdroj.
+     * @return void                       Vedlejší efekt: vložení nezveřejněného dne.
+     */
     public function attachFolklore(array $item, array $story): void
     {
         if (!isset($item['calendar'])) {return;}
@@ -28,7 +49,12 @@ final class EtymologCalendarRepository extends BaseRepository
             'notes' => 'Datum kapitoly historické sbírky; vztah ke jménům je veden přes redakčně kontrolované entry-names.', 'published' => 0]);
     }
 
-    /** Called once after a validated Wikipedia batch, in the same tenant lock/transaction. */
+    /**
+     * Jedenkrát po ověřené dávce z Wikipedie zruší původní komunitní kalendář;
+     * voláno ve stejném zámku okurku a transakci.
+     *
+     * @return void Vedlejší efekt: zrušení původních dnů, zdroje a kalendáře a oprava názvu úlohy.
+     */
     public function retireLegacyCalendar(): void
     {
         $sources = $this->_db->fetchAll("SELECT id FROM etymolog_source WHERE franchise_code=? AND import_key='czech-namedays:cs' AND deleted=0", [$this->_code]);
@@ -41,6 +67,13 @@ final class EtymologCalendarRepository extends BaseRepository
         // Keep original snapshots and shared names. Never relabel GitHub data as Wikipedia.
     }
 
+    /**
+     * Uloží nebo aktualizuje kalendářní den s jmeninou.
+     *
+     * @param  array<string, mixed> $item Položka z poskytovatele jmenin (jméno, den, měsíc, revize, licence).
+     * @return void                   Vedlejší efekt: zápis dne, zdroje, kalendáře a importního záznamu.
+     * @throws \JsonException        Pokud payload nelze serializovat.
+     */
     public function import(array $item): void
     {
         $provider = 'czech-namedays';

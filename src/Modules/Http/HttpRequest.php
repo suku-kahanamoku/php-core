@@ -4,14 +4,28 @@ declare(strict_types=1);
 
 namespace App\Modules\Http;
 
-/** Immutable per-request settings. Credentials are never stored in the shared client. */
+/**
+ * Neměnné nastavení pro jeden odchozí HTTP požadavek. Přihlašovací údaje se nikdy neukládají do sdíleného klienta.
+ *
+ * Objekt se předává do `HttpClient::send()` / `sendAll()`; doménové služby jej
+ * sestavují s credentials konkrétního tenanta pro konkrétní volání.
+ */
 final class HttpRequest
 {
     /**
-     * @param array<string,string|string[]>|list<string> $headers
-     * @param array|null $multipart Guzzle multipart parts (name, contents, filename, headers).
-     * @param list<string> $redirectHosts Explicit HTTPS redirect allowlist; GET/HEAD only.
-     * @param string|null $sink Private local download destination; body is not buffered in PHP memory.
+     * @param string                                     $url              Cílová URL (pouze http/https bez user info).
+     * @param string                                     $method           HTTP metoda.
+     * @param array<string,string|string[]>|list<string> $headers          Hlavičky jako mapa nebo seznam řádků "Nazev: hodnota".
+     * @param array|string|null                          $body             Tělo požadavku; pole se pošle jako JSON, řetězec doslova.
+     * @param int                                        $timeoutMs        Celkový časový limit v milisekundách.
+     * @param int                                        $maxBytes         Limit velikosti stahované odpovědi v bajtech.
+     * @param int                                        $connectTimeoutMs  Limit pro navázání spojení v milisekundách.
+     * @param array|null                                 $multipart        Multipart části Guzzle (name, contents, filename, headers).
+     * @param string|null                                $sink             Soukromá lokální cesta pro stažení; tělo se nebufferuje v paměti PHP.
+     * @param list<string>                               $redirectHosts    Explicitní allowlist HTTPS přesměrování; pouze GET/HEAD.
+     * @param int                                        $maxRedirects     Maximální počet povolených přesměrování.
+     * @throws \InvalidArgumentException Pokud jsou limity nekladné, jsou zadány současně body i multipart,
+     *                                   nebo jsou přesměrování povolena pro jinou metodu než GET/HEAD.
      */
     public function __construct(
         public readonly string $url,

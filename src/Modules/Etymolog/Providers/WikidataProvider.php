@@ -8,14 +8,41 @@ use App\Modules\Etymolog\Contracts\NameProvider;
 use App\Modules\Http\Contracts\HttpClient;
 use App\Modules\Http\{HttpRequest, HttpException};
 
+/**
+ * Jména a jejich tvrzení z Wikidat (CC0), objevená přes CirrusSearch.
+ *
+ * Zásadní pravidlo: z popisku entity se nikdy nevymýšlí etymologie. Uloží se jen
+ * to, co entita skutečně tvrdí, včetně referencí a kvalifikátorů, takže
+ * původ jména musí dohledat člověk. Vyhledávací index může zaostávat, proto se
+ * každá nalezená entita znovu ověří proti jejím vlastním tvrzením o typu a
+ * jazyce.
+ *
+ * Vyhledávání má omezené okno výsledků; když se dosáhne jeho hranice, dávka
+ * skončí chybou s doporučeným odstupem, nikoli se označí za dokončenou.
+ */
 final class WikidataProvider implements NameProvider
 {
+    /** Kód licence CC0-1.0 podle databáze zdrojů. */
     public const LICENSE = 'CC0-1.0';
+
+    /** Mapování jazyků na Q-ID položky jazyka ve Wikidatech. */
     private const LANGUAGE_ITEMS = ['cs' => 'Q9056', 'sk' => 'Q9058', 'pl' => 'Q809', 'uk' => 'Q8798', 'de' => 'Q188', 'en' => 'Q1860'];
+
+    /** Mapování druhů jmen na povolené třídy entit. */
     private const TYPES = ['surname' => ['Q101352'], 'given' => ['Q202444', 'Q12308941', 'Q11879590', 'Q3409032']];
+
+    /** Adresa textu licence CC0-1.0. */
     public const LICENSE_URL = 'https://creativecommons.org/publicdomain/zero/1.0/';
+
+    /** Uvedení autora zdroje. */
     public const ATTRIBUTION = 'Wikidata contributors';
 
+    /**
+     * @param  HttpClient $http      Sdílený HTTP klient.
+     * @param  string     $userAgent Identifikace klienta pro Wikidata API.
+     * @return void
+     * @throws \InvalidArgumentException Pokud User-Agent obsahuje zalomení řádku, je prázdný nebo delší než 512 znaků.
+     */
     public function __construct(private readonly HttpClient $http, private readonly string $userAgent = 'Etymolog/1.0 (https://etymolog.prasentace.cz; name history research)')
     {
         if (preg_match('/[\r\n]/', $userAgent) || strlen($userAgent) > 512 || trim($userAgent) === '') {
@@ -23,6 +50,19 @@ final class WikidataProvider implements NameProvider
         }
     }
 
+    /**
+     * Stáhne jednu dávku entit podle offsetu vyhledávání.
+     *
+     * @param  string     $language Jazyk, který musí entita mít v `P407`.
+     * @param  string     $kind     'given' nebo 'surname'.
+     * @param  string|null $cursor  Offset jako číselný řetězec, nebo null pro začátek.
+     * @param  int        $limit    Maximální počet entit v dávce (1–50).
+     * @return array{items:list<array<string, mixed>>, cursor:?string, complete:bool} Dávka položek.
+     * @throws SyncException           'invalid_provider_configuration', 'search_window_exceeded',
+     *                                'invalid_discovery_response', 'invalid_discovery_cursor',
+     *                                'invalid_entity_response', 'invalid_entity_label'
+     *                                nebo chyba upstreamu.
+     */
     public function batch(string $language, string $kind, ?string $cursor, int $limit): array
     {
         if (!in_array($language, ResourceRegistry::LANGUAGES, true) || !in_array($kind, ['given', 'surname'], true) || $limit < 1 || $limit > 50 ||
@@ -92,7 +132,16 @@ final class WikidataProvider implements NameProvider
         return ['items' => $items, 'cursor' => $next === null ? null : (string)$next, 'complete' => $next === null];
     }
 
-    /** Non-deprecated, concrete entity-valued statements only. */
+    /**
+     * Vrátí hodnoty tvrzení, která odkazují na konkrétní entitu.
+     *
+     * Zastaralá tvrzení a tvrzení s jiným typem hodnoty se přeskakují, aby se do
+     * databáze nedostaly nejednoznačné vazby.
+     *
+     * @param  array<string, mixed> $entity   Entita z `wbgetentities`.
+     * @param  string               $property ID vlastnosti (např. 'P31', 'P407').
+     * @return list<string>                  Q-ID hodnot vlastnosti.
+     */
     private function itemClaims(array $entity, string $property): array
     {
         $ids = [];
@@ -108,6 +157,18 @@ final class WikidataProvider implements NameProvider
         return $ids;
     }
 
+    /**
+     * Provede dotaz do Wikidat API a vrátí dekódovanou odpověď.
+     *
+     * Adresy se skládají výhradně zde, nikoli z adres ze zdrojů nebo od požadavku,
+     * a přesměrování se nepovoluje.
+     *
+     * @param  string $url    Sestavená adresa API.
+     * @param  string $accept Hodnota hlavičky `Accept`.
+     * @return array<string, mixed> Dekódovaná odpověď.
+     * @throws SyncException  'upstream_rate_limited', 'upstream_unavailable',
+     *                         'invalid_upstream_json' nebo 'upstream_api_error'.
+     */
     private function json(string $url, string $accept = 'application/json'): array
     {
         // Endpoints are built here, never from source URLs or user supplied URLs. No redirects.

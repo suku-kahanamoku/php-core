@@ -9,19 +9,49 @@ use App\Modules\Transport\DTO\ProviderDefinition;
 use App\Modules\Http\{HttpRequest,HttpResponse};
 use App\Modules\Transport\{ResourceIdCodec,TransportException};
 
+/**
+ * Živý poskytovatel dat z PID (Golemio).
+ *
+ * Token se přidává ke každému požadavku hlavičkou `X-Access-Token`, takže
+ * sdílený HTTP klient zůstává bez přihlašovacích údajů. Všechny odpovědi se
+ * ověřují přes `UpstreamResponseMapper` a chybějící nebo neočekávaná data
+ * končí chybou `invalid_upstream`.
+ */
 final class PidProvider implements ResourceProvider
 {
+    /**
+     * @param  ProviderDefinition $definition Definice poskytovatele okurku.
+     * @param  string             $token      Přístupový token PID z prostředí.
+     * @return void
+     */
     public function __construct(private readonly ProviderDefinition $definition, private readonly string $token)
     {
     }
+
+    /**
+     * @return ProviderDefinition Definice poskytovatele.
+     */
     public function definition(): ProviderDefinition
     {
         return $this->definition;
     }
+
+    /**
+     * @return list<string> Podporované operace: `places`, `stop`, `departures`, `realtime`.
+     */
     public function capabilities(): array
     {
         return ['places','stop','departures','realtime'];
     }
+    /**
+     * Sestaví požadavek na Golemio pro danou operaci.
+     *
+     * @param  string              $operation Jedna z podporovaných operací.
+     * @param  array<string, mixed> $input     Vstup operace (dotaz, ID, čas, limit).
+     * @return HttpRequest                    Požadavek s hlavičkou `X-Access-Token`.
+     * @throws TransportException 'unsupported_capability' (422), pokud operace
+     *                            PID neposkytuje.
+     */
     public function resourceRequest(string $operation, array $input): HttpRequest
     {
         $path = match($operation) {
@@ -33,6 +63,22 @@ final class PidProvider implements ResourceProvider
         };
         return new HttpRequest(rtrim($this->definition->config['url'], '/').$path, headers:['X-Access-Token: '.$this->token]);
     }
+    /**
+     * Převede odpověď Golemio na jednotný tvar výsledku.
+     *
+     * U odjezdů se časy doplňují pouze tehdy, když je PID predikuje, jinak se
+     * uvádí plánovaný čas a `realtime` je false. U polohy vozidla se navíc
+     * ověřuje, že jízda odpovídá očekávanému dni služby.
+     *
+     * @param  string               $operation Provedená operace.
+     * @param  HttpResponse         $result    Odpověď Golemio.
+     * @param  array<string, mixed> $input     Vstup operace; u `realtime` i
+     *                                        očekávaný čas první zastávky.
+     * @return array<string, mixed>           Výsledek bez obálky podle typu operace.
+     * @throws TransportException 'invalid_upstream' (502) při chybějících
+     *                            datech, 'instance_unverified' (503), pokud
+     *                            polohu nelze přiřadit k danému dni.
+     */
     public function resourceResult(string $operation, HttpResponse $result, array $input): array
     {
         $data = UpstreamResponseMapper::json($result);
@@ -53,7 +99,15 @@ final class PidProvider implements ResourceProvider
             foreach ($data['stops'] ?? [] as $stop) {
                 $stops[$stop['stop_id']] = $stop;
             }
-            return array_map(function ($d) use ($stops) {
+            return array_map(
+                /**
+                 * Převede jeden odjezd z Golemio na jednotný tvar a doplní zastávku
+                 * z mapy zastávek, pokud ji odpověď neobsahuje.
+                 *
+                 * @param  array<string, mixed> $d Odjezd z pole `departures`.
+                 * @return array<string, mixed>    Odjezd s plánovanými i očekávanými časy.
+                 */
+                function ($d) use ($stops) {
                 $scheduled = $d['departure_timestamp']['scheduled'] ?? null;
                 $live = (bool)($d['delay']['is_available'] ?? false);
                 $s = $stops[$d['stop']['id']] ?? [];
@@ -69,7 +123,8 @@ final class PidProvider implements ResourceProvider
                     'line' => ['id' => null,'name' => $d['route']['short_name'] ?? null,'code' => $d['route']['short_name'] ?? null,
                         'mode' => isset($d['route']['type']) ? \App\Modules\Transport\Import\GtfsImportService::mode((string)$d['route']['type']) : null],
                     'stop' => $stop];
-            }, $data['departures']);
+                },
+                $data['departures']);
         }
         $properties = $data['properties'] ?? null;
         if (!is_array($properties) || !isset($properties['last_position'])) {
@@ -88,6 +143,14 @@ final class PidProvider implements ResourceProvider
             'stale' => !$fresh,'cancelled' => $last['is_canceled'] ?? null,'delay_seconds' => $fresh ? ($last['delay']['actual'] ?? null) : null,
             'bearing' => $last['bearing'] ?? null,'speed_kmh' => $last['speed'] ?? null];
     }
+    /**
+     * Převede GeoJSON prvek na zastávku.
+     *
+     * @param  array<string, mixed> $feature Prvek z pole `features`.
+     * @return array<string, mixed>         Zastávka s veřejným ID.
+     * @throws TransportException 'invalid_upstream' (502), pokud chybí ID či
+     *                            název nebo souřadnice nejsou dvojice.
+     */
     private function stop(array $feature): array
     {
         $s = $feature['properties'] ?? [];
@@ -97,6 +160,14 @@ final class PidProvider implements ResourceProvider
         }
         return ['id' => $this->id('stop', $s['stop_id']),'name' => $s['stop_name'],'lat' => $xy[1],'lon' => $xy[0],'platform' => $s['platform_code'] ?? null,'timezone' => 'Europe/Prague'];
     }
+    /**
+     * Zakóduje veřejné ID zdroje PID.
+     *
+     * @param  string      $kind     Druh zdroje (`stop` nebo `trip`).
+     * @param  string      $external Externí ID u PID.
+     * @param  string|null $date     Datum platnosti instance spoje, nebo null.
+     * @return string                ID vhodné pro naše API.
+     */
     private function id(string $kind, string $external, ?string $date = null): string
     {
         return ResourceIdCodec::encode($this->definition->tenant, $this->definition->code, $kind, $external, $date);

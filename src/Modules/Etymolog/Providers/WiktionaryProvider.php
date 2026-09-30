@@ -9,21 +9,51 @@ use App\Modules\Etymolog\EtymologDiscoveryRepository;
 use App\Modules\Etymolog\NameNormalizer;
 use App\Modules\Http\Contracts\HttpClient;
 
-/** Fixed dictionary editions; preserve original language and source attribution. */
+/**
+ * Pevná vydání slovníků; původní jazyk a uvedení zdroje se zachovávají.
+ *
+ * Etymologie se přebírá jen ze sekce jazyka odpovídajícího jménu, jinak by se
+ * smíchaly cizí jazyky a homony. Pokud slovník etymologii neuvádí nebo ji uvádí
+ * vícekrát, položka se přeskočí — nikdy se nedoplní odhadem. Text se nechává
+ * v jazyce zdroje bez překladu a zůstává nepublikovaný.
+ */
 final class WiktionaryProvider implements BatchProvider
 {
+    /** Názvy jazyků v anglickém wydání. */
     private const LANGUAGES = ['cs' => 'Czech', 'sk' => 'Slovak', 'pl' => 'Polish', 'uk' => 'Ukrainian', 'de' => 'German', 'en' => 'English'];
+
+    /** Adresa textu licence CC BY-SA 4.0. */
     public const LICENSE_URL = 'https://creativecommons.org/licenses/by-sa/4.0/';
+
+    /**
+     * @param  HttpClient $http     Sdílený HTTP klient.
+     * @param  EtymologDiscoveryRepository $names Zdroj kandidátních jmen z databáze.
+     * @param  string $edition    Vydání slovníku: 'en', 'cs' nebo 'fr'.
+     * @return void
+     * @throws SyncException 'unsupported_dictionary_edition' pro jiné vydání.
+     */
     public function __construct(private readonly HttpClient $http, private readonly EtymologDiscoveryRepository $names, private readonly string $edition = 'en')
     {
         if (!in_array($edition, ['en', 'cs', 'fr'], true)) { throw new SyncException('unsupported_dictionary_edition'); }
     }
 
+    /**
+     * Vrátí názvy jazyků používané v nadpisech daného vydání.
+     *
+     * @return array<string, string> Jazyk podle kódu a jeho název v daném wydání.
+     */
     private function languages(): array
     {
         return match ($this->edition) { 'cs' => ['cs' => 'čeština'], 'fr' => ['cs' => 'Tchèque'], default => self::LANGUAGES };
     }
 
+    /**
+     * Vrátí kategorie, podle kterých se ověřuje, že stránka opravdu pojednává o jmeně.
+     *
+     * @param  string $language Jazyk jména.
+     * @param  string $kind     'given' nebo 'surname'.
+     * @return list<string>       Názvy kategorií v daném wydání.
+     */
     private function categories(string $language, string $kind): array
     {
         if ($this->edition === 'cs') {
@@ -34,11 +64,32 @@ final class WiktionaryProvider implements BatchProvider
             $kind === 'surname' ? ['surnames'] : ['male given names', 'female given names', 'unisex given names', 'given names']);
     }
 
+    /**
+     * Provede dotaz do API daného wydání Wiktionary.
+     *
+     * @param  array<string, mixed> $params Parametry akce.
+     * @return array<string, mixed>          Dekódovaná odpověď API.
+     * @throws SyncException                Při chybě upstreamu nebo neplatné odpovědi.
+     */
     private function api(array $params): array
     {
         return ProviderHttp::json($this->http, 'https://'.$this->edition.'.wiktionary.org/w/api.php?'.http_build_query($params + ['format' => 'json', 'maxlag' => 5]));
     }
 
+    /**
+     * Stáhne jednu dávku etymologií podle kurzoru.
+     *
+     * @param  string     $language Jazyk jména.
+     * @param  string     $kind     'given' nebo 'surname', případně s příponou '_priority' pro české přednosti.
+     * @param  string|null $cursor  Kurzor s pozicí v katalogu jmen.
+     * @param  int        $limit    Maximální počet jmen na dávku (1–3).
+     * @return array{items:list<array<string, mixed>>, scanned:int, cursor:?string, complete:bool} Dávka etymologií.
+     * @throws SyncException           'invalid_provider_configuration', 'invalid_provider_cursor',
+     *                                'upstream_license_changed', 'invalid_discovery_response',
+     *                                'invalid_etymology_response', 'etymology_language_missing',
+     *                                'etymology_markup_changed', 'etymology_body_out_of_bounds'
+     *                                nebo chyba upstreamu.
+     */
     public function batch(string $language, string $kind, ?string $cursor, int $limit): array
     {
         $priority = str_ends_with($kind, '_priority');
@@ -92,7 +143,16 @@ final class WiktionaryProvider implements BatchProvider
         return ['items' => $items, 'scanned' => $scanned, 'cursor' => $nextCursor, 'complete' => $complete];
     }
 
-    /** Require a name sense in the same etymology group; do not mix languages/homonyms. */
+    /**
+     * Vyžaduje význam jména ve stejné skupině etymologie; jazyky a homony se nemíchají.
+     *
+     * @param  string      $html     HTML stránky z Wiktionary.
+     * @param  string      $language Název jazyka v daném vydání.
+     * @param  string      $kind     'given' nebo 'surname'.
+     * @return string|null           Etymologie jako čistý text, nebo null pokud není jednoznačná.
+     * @throws SyncException         'invalid_etymology_html', 'etymology_markup_changed',
+     *                               'etymology_language_missing' nebo 'etymology_body_out_of_bounds'.
+     */
     private function extract(string $html, string $language, string $kind): ?string
     {
         $dom = new \DOMDocument();
@@ -106,7 +166,12 @@ final class WiktionaryProvider implements BatchProvider
         $root = $roots->item(0);
         foreach (iterator_to_array($xp->query('.//script|.//style|.//sup|.//span[contains(@class,"mw-editsection")]', $root)) as $node) { $node->parentNode?->removeChild($node); }
         $active = false; $found = false; $section = ''; $paragraphs = []; $validName = false; $groups = [];
-        $flush = static function () use (&$paragraphs, &$validName, &$groups): void {
+        $flush = static         /**
+         * Uloží právě přečtenou skupinu odstavců, pokud patří k hledanému významu.
+         *
+         * @return void Bez návratu; skupina se přidá do `$groups`.
+         */
+function () use (&$paragraphs, &$validName, &$groups): void {
             if ($validName && $paragraphs !== []) { $groups[] = implode("\n\n", $paragraphs); }
             $paragraphs = []; $validName = false;
         };

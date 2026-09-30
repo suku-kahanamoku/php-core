@@ -8,15 +8,46 @@ use App\Modules\Etymolog\SyncException;
 use App\Modules\Etymolog\EtymologDiscoveryRepository;
 use App\Modules\Http\Contracts\HttpClient;
 
-/** DB-driven search of a licensed collection; no manually selected names or chapters. */
+/**
+ * Vyhledávání v licencované sbírce řízené databází; žádná ručně vybraná jména
+ * ani kapitoly.
+ *
+ * Importuje se jen text, který obsahuje přesnou zmínku existujícího jména.
+ * Autor, veřejná doména a název kapitoly se ověřují z infoboxu; při změně se
+ * dávka zastaví. Vazba text–jméno zůstává nerevidovaná a zveřejnění čeká na
+ * kontrolu člověka.
+ */
 final class WikisourceProvider implements BatchProvider
 {
+    /** Kód licence veřejného domény (PD-old-70). */
     public const LICENSE = 'PD-old-70';
+
+    /** Adresa textu licence. */
     public const LICENSE_URL = 'https://cs.wikisource.org/wiki/Wikizdroje:Licence#PD_old_70';
+
+    /** Autor sbírky. */
     public const AUTHOR = 'Alois Jirásek';
+
+    /** Název knihy na Wikisource, ze které se texty čtou. */
     private const BOOK = 'Staré pověsti české (1959)';
+
+    /**
+     * @param  HttpClient $http  Sdílený HTTP klient.
+     * @param  EtymologDiscoveryRepository $names Zdroj kandidátních jmen z databáze.
+     * @return void
+     */
     public function __construct(private readonly HttpClient $http, private readonly EtymologDiscoveryRepository $names) {}
 
+    /**
+     * Stáhne jednu dávku příběhů podle kurzoru.
+     *
+     * @param  string     $language Musí být 'cs'.
+     * @param  string     $kind     Musí být 'stories'.
+     * @param  string|null $cursor  Kurzor objevování jmen.
+     * @param  int        $limit    Maximální počet kandidátů na dávku (1–4).
+     * @return array{items:list<array<string, mixed>>, scanned:int, cursor:?string, complete:bool} Dávka příběhů.
+     * @throws SyncException           Při chybě upstreamu nebo změně metadat stránky.
+     */
     public function batch(string $language, string $kind, ?string $cursor, int $limit): array
     {
         if ($language !== 'cs' || $kind !== 'stories' || $limit < 1 || $limit > 4) { throw new SyncException('invalid_provider_configuration'); }
@@ -42,6 +73,16 @@ final class WikisourceProvider implements BatchProvider
         return ['items'=>$items,'scanned'=>$result['scanned'],'cursor'=>$result['cursor'],'complete'=>$result['complete']];
     }
 
+    /**
+     * Převede HTML kapitoly na čistý text a bibliografický údaj.
+     *
+     * @param  string $html  HTML z Wikipedie API.
+     * @param  string $title Očekávaný název kapitoly (pro kontrolu infoboxu).
+     * @return array{body: string, bibliography: string} Čistý text a údaj „Zdroj“.
+     * @throws SyncException 'invalid_story_html', 'story_metadata_changed',
+     *                       'story_license_not_allowed', 'story_markup_changed'
+     *                       nebo 'story_body_out_of_bounds'.
+     */
     private function extract(string $html, string $title): array
     {
         $dom = new \DOMDocument();
@@ -85,6 +126,12 @@ final class WikisourceProvider implements BatchProvider
         return ['body' => $text, 'bibliography' => $metadata['Zdroj:']];
     }
 
+    /**
+     * Sjednotí bílé znaky a ořízne text.
+     *
+     * @param  string $text Vstupní text z HTML.
+     * @return string        Text s jedinými mezerami.
+     */
     private function normalize(string $text): string
     {
         return trim(preg_replace('/\s+/u', ' ', $text) ?? '');

@@ -10,16 +10,29 @@ use App\Modules\Database\Database;
 use App\Modules\Router\Response;
 use App\Utils\QueryPolicy;
 
+/**
+ * Aplikační služby číselníků (enumerací) – části, barvy, druhy vína, způsoby
+ * platby a dodání a další.
+ *
+ * Seznamy používají standardní dotazový kontrakt z `docs/query-filter-contract.md`
+ * (`q`, `sort`, `projection`, `page`, `limit`, řádky v klíči `data`). Allowlisty
+ * `PUBLIC_*` řídí, které typy, pole, filtry a sorty jsou veřejně přístupné; tím se
+ * zabrání přístupu k interním číselníkům a vytvoření vlastního SQL.
+ */
 class EnumerationService extends BaseService
 {
+    /** Typy číselníků, které jsou vyžadovány ve frontendu. */
     private const PUBLIC_TYPES = [
         'contact', 'taste', 'payment', 'shipping', 'wine_color',
         'wine_quality', 'wine_kind', 'country_code',
     ];
+    /** Pole, která lze vybrat v `projection`; ostatní jsou skrytá. */
     private const PUBLIC_FIELDS = [
         'id', 'type', 'syscode', 'label', 'value', 'position', 'published', 'data',
     ];
+    /** Sloupce povolené ve filtru `q` a jako parametry listu. */
     private const PUBLIC_FILTERS = ['id', 'type', 'syscode', 'label', 'value'];
+    /** Sloupce povolené v `sort`. */
     private const PUBLIC_SORTS = ['id', 'type', 'syscode', 'label', 'value', 'position'];
     private EnumerationRepository $_enum;
 

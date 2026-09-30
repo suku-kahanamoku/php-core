@@ -3,9 +3,20 @@
 declare(strict_types=1);
 namespace App\Modules\Etymolog;
 
+/**
+ * Normalizace zobrazeného jména do jednotné podoby.
+ *
+ * Diakritika ani interpunkce se nemění — mění se pouze velikost písmen, aby
+ * byly názvy s diakritikou (např. „Řeřicha“) porovnávané konzistentně.
+ */
 final class NameNormalizer
 {
-    /** One initial uppercase letter, the rest lowercase; keep accents and punctuation. */
+    /**
+     * Vrátí jméno s jedním počátečním velkým písmenem a zbytek malými.
+     *
+     * @param  string $name Vstupní jméno.
+     * @return string        Normalizovaná podoba pro zobrazení a porovnání.
+     */
     public static function display(string $name): string
     {
         $name = trim($name);

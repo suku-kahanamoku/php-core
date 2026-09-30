@@ -9,11 +9,38 @@ use App\Modules\Transport\Contracts\{JourneySearchProvider};
 use App\Modules\Transport\DTO\JourneyQuery;
 use App\Modules\Transport\Repositories\TransportRepository;
 
+/**
+ * Vyhledávání spojů napříč nakonfigurovanými poskytovateli.
+ *
+ * Nejdřív se dotazy vyřeší na místa a vyberou se jen poskytovatelé pokrývající
+ * oba konce trasy. Probihá se ve dvou fázích: primární zdroje a poté záložní
+ * pro ty, které selhaly nebo nemají platný jízdní řád. Odpovědi se deduplikují
+ * konzervativně (identita spoje, úsek a časy), výsledky se řadí podle času
+ * odjezdu nebo příjezdu a celé vyhledávání má časový rozpočet.
+ */
 final class JourneyService
 {
+    /**
+     * @param  ProviderRegistry      $registry    Poskytovatelé okurku.
+     * @param  HttpClient            $http        Sdílený HTTP klient.
+     * @param  TransportRepository   $repository  Uložení mezipaměti a stavu poskytovatelů.
+     * @param  ResourceService       $resources   Řešení míst na zastávky nebo souřadnice.
+     * @return void
+     */
     public function __construct(private readonly ProviderRegistry $registry, private readonly HttpClient $http, private readonly TransportRepository $repository, private readonly ResourceService $resources)
     {
     }
+
+    /**
+     * Vyhledá spojení pro dotaz a vrátí nejlepší výsledky i stav zdrojů.
+     *
+     * @param  JourneyQuery $query Normalizovaný dotaz.
+     * @return array{journeys: list<array<string, mixed>>, partial: bool, sources: list<array<string, mixed>>, warnings: list<string>}
+     *         Seřazená spojení, příznak částečných výsledků, stav zdrojů a varování.
+     * @throws TransportException 'unsupported_coverage' (422), pokud trasu nepokrývá
+     *                            žádný zdroj, nebo 'sources_unavailable' (503),
+     *                            pokud selhal všechen zdroj včetně záložních.
+     */
     public function search(JourneyQuery $query): array
     {
         $query = $query->withPlaces($this->resources->resolve($query->from), $this->resources->resolve($query->to));
@@ -91,7 +118,16 @@ final class JourneyService
             throw new TransportException('sources_unavailable', 'Journey search is unavailable; no valid fallback is ready.', 503, ['sources' => $sources]);
         }
         $journeys = array_values($journeys);
-        usort($journeys, static function ($a, $b) use ($query): int {
+        usort($journeys,
+            /**
+             * Seřadí spojení: pro příjezd sestupně podle času odjezdu, jinak vzestupně
+             * podle času příjezdu.
+             *
+             * @param  array<string, mixed> $a První spojení.
+             * @param  array<string, mixed> $b Druhé spojení.
+             * @return int                   Výsledek porovnání pro `usort()`.
+             */
+            static function ($a, $b) use ($query): int {
             if ($query->arriveBy) {
                 return strtotime($b['legs'][0]['expected_departure'] ?? $b['legs'][0]['scheduled_departure']) <=> strtotime($a['legs'][0]['expected_departure'] ?? $a['legs'][0]['scheduled_departure']);
             }

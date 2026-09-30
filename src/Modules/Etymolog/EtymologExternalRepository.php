@@ -5,9 +5,30 @@ namespace App\Modules\Etymolog;
 
 use App\Modules\BaseRepository;
 
-/** SQL for licensed etymology/statistics imports, called under tenant lock + transaction. */
+/**
+ * SQL pro importy licencovaných etymologických a statistických zdrojů;
+ * voláno pod zámkem okurku a v transakci.
+ *
+ * Repo zásadně nepřepisuje ruční editaci, citace ani stav publikace — při
+ * opakovaném importu jen aktualizuje snapshot a přesměruje vazby na cílové
+ * jméno. Pokud cílový záznam už neexistuje, import tiše skončí, aby nevznikaly
+ * osiřelé vazby.
+ */
 final class EtymologExternalRepository extends BaseRepository
 {
+    /**
+     * Uloží jednu položku z externího zdroje.
+     *
+     * Podle poskytovatele vytvoří buď výklad s citací (Wiktionary, Wikipedie)
+     * nebo statistický výskyt (PESEL, ČSÚ).
+     *
+     * @param  string $provider Klíč poskytovatele z podporované množiny.
+     * @param  array<string, mixed> $item Importovaná položka (jméno, zdroj, licence, payload, revize).
+     * @return void                     Vedlejší efekt: zápis záznamu, případně výkladu, citace a výskytu.
+     * @throws SyncException           'unsupported_external_provider' pro neznámého poskytovatele.
+     * @throws EtymologException       422 při požadavku na neznámý zdroj v `imports()`.
+     * @throws \JsonException         Pokud payload nelze serializovat nebo dekódovat.
+     */
     public function import(string $provider, array $item): void
     {
         if (!in_array($provider, ['wiktionary', 'wiktionary-cs', 'wiktionary-fr', 'wikipedia-names', 'poland-pesel', 'csu-baby-names'], true)) { throw new SyncException('unsupported_external_provider'); }
@@ -62,6 +83,15 @@ final class EtymologExternalRepository extends BaseRepository
             'external_id' => $item['external_id'], 'name_id' => $nameId, 'source_id' => $sourceId, 'entry_id' => $entryId, 'occurrence_id' => $occurrenceId]);
     }
 
+    /**
+     * Vrátí importní záznamy navázané na záznam daného zdroje.
+     *
+     * @param  string $resource Klíč zdroje ('names', 'entries', 'occurrences', 'calendar-days').
+     * @param  int    $id      ID záznamu, podle kterého se importy filtrují.
+     * @return list<array<string, mixed>> Záznamy s dekódovaným payloadem, seřazené podle ID.
+     * @throws EtymologException       422 'Invalid import resource' pro neznámý zdroj.
+     * @throws \JsonException         Pokud uložený payload není platný JSON.
+     */
     public function imports(string $resource, int $id): array
     {
         $column = ['names' => 'name_id', 'entries' => 'entry_id', 'occurrences' => 'occurrence_id', 'calendar-days' => 'calendar_day_id'][$resource] ?? throw new EtymologException('Invalid import resource');

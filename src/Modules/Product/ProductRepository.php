@@ -368,6 +368,16 @@ class ProductRepository extends BaseRepository
         }
     }
 
+    /**
+     * Nahradí pravděpodobnosti produktu vůči profilům zákazníka.
+     *
+     * Nejprve se smažou všechny vazby produktu, pak se vloží jen ty, které
+     * odkazují na existující profil daného okurku; hodnota se omezí na 0–100.
+     *
+     * @param  int                 $productId ID produktu okurku.
+     * @param  list<mixed>         $values    Vstupní vazby (`customer_profile_id` nebo `id`, `probability_percent`).
+     * @return void                             Vedlejší efekt: přepis vazeb `product_customer_profile_probability`.
+     */
     public function syncProfileProbabilities(int $productId, array $values): void
     {
         $this->_db->delete('product_customer_profile_probability', 'product_id = ? AND franchise_code = ?', [$productId, $this->_code]);
@@ -392,6 +402,12 @@ class ProductRepository extends BaseRepository
         }
     }
 
+    /**
+     * Doplní do výsledků seznamu pravděpodobnosti vůči profilům zákazníka.
+     *
+     * @param  list<array<string, mixed>> $products Produkty doplněné o klíč `profile_probabilities` (referencí).
+     * @return void                               Vedlejší efekt: úprava pole na místě.
+     */
     private function attachProfileProbabilities(array &$products): void
     {
         if (!$products) {
@@ -423,6 +439,12 @@ class ProductRepository extends BaseRepository
         unset($product);
     }
 
+    /**
+     * Doplní do výsledků seznamu alternativní produkty včetně základních údajů.
+     *
+     * @param  list<array<string, mixed>> $products Produkty doplněné o klíč `alternatives` (referencí).
+     * @return void                               Vedlejší efekt: úprava pole na místě.
+     */
     private function attachAlternatives(array &$products): void
     {
         if (!$products) {

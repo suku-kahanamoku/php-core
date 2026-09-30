@@ -5,9 +5,25 @@ namespace App\Modules\Etymolog\Readers;
 
 use App\Modules\Etymolog\SyncException;
 
-/** Minimal bounded XLSX reader for the reviewed CSU name/count/rank tables; no formulas or external links. */
+/**
+ * Minimální ohraničená čtečka XLSX pro revizně ověřené tabulky ČSÚ
+ * (jméno, počet, pořadí); žádné vzorce ani externí odkazy.
+ *
+ * Soubor se nikdy neprojeví jako výpočet — buňka s vzorcem je chyba — a vztahy
+ * mezi listy se ověřují místo předpokladu o pořadí souborů. entity a `DOCTYPE`
+ * jsou odmítnuty, aby se zabránilo rozkladu XML (XXE). Očekávaná jsou přesně dva
+ * listy „Chlapci“ a „Dívky“ s hlavičkou a 100 až 150 řádky.
+ */
 final class NameStatisticsXlsxReader
 {
+    /**
+     * Načte a ověří XLSX soubor se statistikou jmen.
+     *
+     * @param  string $bytes Obsah XLSX souboru (max. 2 MB).
+     * @return list<array{name: string, count: int, rank: string, sex: string}> Řádky obou pohlaví.
+     * @throws SyncException Při chybějící rozšíření zip, neplatném XLSX, vzorci,
+     *                       změně schématu nebo neúplném TOP 100.
+     */
     public function read(string $bytes): array
     {
         if (!class_exists(\ZipArchive::class)) { throw new SyncException('php_zip_required'); }
@@ -18,7 +34,15 @@ final class NameStatisticsXlsxReader
         try {
             if (file_put_contents($path, $bytes) !== strlen($bytes) || $zip->open($path) !== true) { throw new SyncException('invalid_xlsx'); }
             $opened = true;
-            $read = static function (string $name) use ($zip): \DOMXPath {
+            $read = static             /**
+             * Načte část XLSX jako XML s limitem velikosti.
+             *
+             * @param  string          $name Název části v archivu.
+             * @return \DOMXPath        XPath nad načtenou částí.
+             * @throws SyncException   'invalid_xlsx_part', pokud část chybí, je prázdná
+             *                          nebo překračuje 2 MB.
+             */
+function (string $name) use ($zip): \DOMXPath {
                 $stat = $zip->statName($name);
                 if (!$stat || $stat['size'] > 2000000) { throw new SyncException('invalid_xlsx_part'); }
                 $xml = $zip->getFromName($name);

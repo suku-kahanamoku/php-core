@@ -1,6 +1,22 @@
 <?php
 declare(strict_types=1);
-// A deliberately separate public mobile entrypoint. Other API modules still require InternalAuth.
+/**
+ * Veřejný vstupní bod mobilní aplikace modulu Sry.
+ *
+ * Záměrně samostatný soubor — ostatní API moduly stále vyžadují `InternalAuth`.
+ * Routing je zde ruční (`match` místo routeru), protože jde o malý, izolovaný
+ * povrch s vlastní autentizací a omezením vstupu.
+ *
+ * Vstupy: JSON tělo maximálně 32 KiB (i pro chunked požadavky), hlavičky
+ * `Authorization: Bearer <64 hex>` a `Accept-Language` pro jazyk e-mailu.
+ * Veřejné endpointy (přihlášení, registrace, pozvánky, reset hesla) jsou
+ * omezené `RateLimiter`em podle IP, ostatní podle člena.
+ *
+ * Výstupy: `Response::success()` s `{ success: true, data: ... }`; chyby mají
+ * tvar `{ success: false, code: <strojový kód> }` se stavem podle `SryError`
+ * (400/401/403/404/409/410/422/503). Chyby databáze se mapují na `conflict`
+ * (23000) nebo `failed`, neočekávané chyby se pouze zapíší do logu.
+ */
 require_once __DIR__ . "/../../bootstrap.php";
 use App\Modules\Database\Database;
 use App\Modules\Router\Request;
@@ -71,6 +87,16 @@ try {
                 str_starts_with($request->header("Accept-Language", "cs"), "en")
                     ? "en"
                     : "cs",
+                /**
+                 * Odešle e-mail s resetovacím odkazem přes `MailerService`; URL frontendu
+                 * musí být HTTPS, jinak je konfigurace chybná.
+                 *
+                 * @param  string $email    Adresa příjemce.
+                 * @param  string $token    Resetovací token (jde do URL).
+                 * @param  string $language Jazyk e-mailu ('cs' nebo 'en').
+                 * @return void            Vedlejší efekt: odeslání e-mailu.
+                 * @throws SryError        'notConfigured' (503), pokud `SRY_FRONTEND_URL` není HTTPS.
+                 */
                 static function ($email, $token, $language) {
                     $base = rtrim($_ENV["SRY_FRONTEND_URL"] ?? "", "/");
                     if (!str_starts_with($base, "https://")) {
@@ -113,7 +139,14 @@ try {
             : 0;
         $result = match (true) {
             $method === "GET" && $path === "/auth/me" => $actor,
-            $method === "POST" && $path === "/auth/logout" => (function () use (
+            $method === "POST" && $path === "/auth/logout" => (
+                /**
+             * Odhlásení: odebere push zařízení člena a zneplatní relaci.
+             * Vrátí `{ logged_out: true }`.
+             *
+             * @return array{logged_out: bool}  Potvrzení odhlášení.
+                 */
+                function () use (
                 $db,
                 $auth,
                 $actor,

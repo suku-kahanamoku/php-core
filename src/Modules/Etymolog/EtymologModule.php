@@ -7,8 +7,24 @@ use App\Modules\Database\Database;
 use App\Modules\Http\HttpModule;
 use App\Modules\Etymolog\Providers\{WikidataProvider, WikisourceProvider, WikipediaNamesProvider, WiktionaryProvider, PolandPeselProvider, CsuBabyNamesProvider, ErbenFolkloreProvider, CzechNamedaysProvider};
 
+/**
+ * Composition root modulu Etymolog: skládá synchronizační služby a poskytovatele.
+ *
+ * Všechny odchozí HTTP požadavky jdou přes `HttpModule::client()`, takže se
+ * používá sdílený klient s konfigurovanými timeouty a hlavičkami. Dekorátory se
+ * skládají v pevném pořadí: nejprve rozpočet HTTP kroku, pak Wikimedia pacing,
+ * jinak by pomalé dotazy krok překročily.
+ */
 final class EtymologModule
 {
+    /**
+     * Sestaví synchronizační služby pro daný okurk.
+     *
+     * @param  Database $db       Databazove pripojeni.
+     * @param  string   $tenant   Kod okurku; vsechny repozitare jsou jim omezene.
+     * @param  bool     $httpStep true pro workera, ktery kazdy krok omezuje rozpočtem.
+     * @return EtymologSyncService  Sluzby synchronizace se zaregistrovanymi zdroji.
+     */
     public static function sync(Database $db, string $tenant, bool $httpStep = false): EtymologSyncService
     {
         $http = HttpModule::client();
@@ -31,11 +47,30 @@ final class EtymologModule
         return new EtymologSyncService(new EtymologRepository($db, $tenant, 'sync-jobs'), new EtymologSyncRepository($db, $tenant), $registry, new EtymologStoryRepository($db, $tenant), new EtymologExternalRepository($db, $tenant), new EtymologCalendarRepository($db, $tenant));
     }
 
+    /**
+     * Sestaví služby workera pro dávky spouštěné jedním HTTP požadavkem.
+     *
+     * @param  Database $db     Databazove pripojeni.
+     * @param  string   $tenant Kod okurku.
+     * @return EtymologHttpWorkerService  Worker s dávkou v plne transakci.
+     */
     public static function httpWorker(Database $db, string $tenant): EtymologHttpWorkerService
     {
         return new EtymologHttpWorkerService(new EtymologBatchRepository($db, $tenant, 900, 900), self::sync($db, $tenant, true));
     }
 
+    /**
+     * Sestaví služby pro spuštění a průběh synchronizace na pozadí.
+     *
+     * Způsob spuštění volí proměnná `ETYMOLOG_SYNC_DISPATCH`: 'process' spouští
+     * CLI proces, 'cloudflare' volá workera přes HTTP a 'cron' běží v plánované
+     * úloze. Dlouhé čekání workera se u HTTP varianta prodlužuje, aby je
+     * nepřerušila vypršelá fronta.
+     *
+     * @param  Database $db     Databazove pripojeni.
+     * @param  string   $tenant Kod okurku.
+     * @return EtymologBackgroundService  Sluzby spusteni a prubehu synchronizace.
+     */
     public static function background(Database $db, string $tenant): EtymologBackgroundService
     {
         $dispatch = $_ENV['ETYMOLOG_SYNC_DISPATCH'] ?? 'process';

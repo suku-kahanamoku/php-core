@@ -7,17 +7,53 @@ use App\Modules\Etymolog\Contracts\BatchProvider;
 use App\Modules\Etymolog\{EtymologDiscoveryRepository, NameNormalizer, SyncException};
 use App\Modules\Http\Contracts\HttpClient;
 
-/** Discover Wikipedia evidence for ALL tenant names. One article per step; no invented associations. */
+/**
+ * Objevuje důkazy z Wikipedie pro VŠECHNA jména okurku; na jeden krok jeden článek,
+ * žádné vymyšlené vazby.
+ *
+ * Článek musí na stránku o jméně (přes infobox nebo kategorii, s výslovným
+ * rozlišením rodných jmen a příjmení) a každý úsek se zpracuje jen tehdy, když
+ * jeho nadpis odpovídá známému typu (etymologie, legenda, pranostika, tradice,
+ * mytologie, historie). Nic se nedoplňuje ani nepřekládá — zbožné příběhy zůstávají
+ * tradicí, ne potvrzenou historií, a zveřejnění nadále čeká na kontrolu člověka.
+ */
 final class WikipediaNamesProvider implements BatchProvider
 {
+    /** Adresa textu licence CC BY-SA 4.0. */
     public const LICENSE_URL = 'https://creativecommons.org/licenses/by-sa/4.0/';
+
+    /**
+     * @param  HttpClient $http  Sdílený HTTP klient.
+     * @param  EtymologDiscoveryRepository $names Zdroj kandidátních jmen z databáze.
+     * @return void
+     */
     public function __construct(private readonly HttpClient $http, private readonly EtymologDiscoveryRepository $names) {}
 
+    /**
+     * Provede dotaz do Wikipedie API včetně ochrany proti zpoždění replik.
+     *
+     * @param  array<string, mixed> $params Parametry akce.
+     * @return array<string, mixed>          Dekódovaná odpověď API.
+     * @throws SyncException                Při chybě upstreamu nebo neplatné odpovědi.
+     */
     private function api(array $params): array
     {
         return ProviderHttp::json($this->http, 'https://cs.wikipedia.org/w/api.php?'.http_build_query($params + ['format'=>'json','maxlag'=>5]));
     }
 
+    /**
+     * Stáhne jednu dávku důkazů podle kurzoru.
+     *
+     * @param  string     $language Musí být 'cs'.
+     * @param  string     $kind     'etymologies' pro původ jména, 'culture' pro navazující články.
+     * @param  string|null $cursor  Kurzor s pozicí v katalogu jmen, případně s rozpracovaným článkem.
+     * @param  int        $limit    Maximálně 3 články na dávku.
+     * @return array{items:list<array<string, mixed>>, scanned:int, cursor:?string, complete:bool} Dávka důkazů.
+     * @throws SyncException           'invalid_provider_configuration', 'invalid_provider_cursor',
+     *                                'upstream_license_changed', 'invalid_dossier_revision',
+     *                                'invalid_dossier_response', 'dossier_markup_changed',
+     *                                'culture_body_out_of_bounds' nebo chyba upstreamu.
+     */
     public function batch(string $language, string $kind, ?string $cursor, int $limit): array
     {
         if ($language !== 'cs' || !in_array($kind,['etymologies','culture'],true) || $limit < 1 || $limit > 3) { throw new SyncException('invalid_provider_configuration'); }
@@ -59,6 +95,14 @@ final class WikipediaNamesProvider implements BatchProvider
         return $this->result($items,$next,$kind);
     }
 
+    /**
+     * Sestaví výsledek dávky a rozhodne, zda je průchod dokončený.
+     *
+     * @param  list<array<string, mixed>> $items Nalezené položky před rozdělením podle druhu.
+     * @param  array<string, mixed>       $state Další stav kurzoru.
+     * @param  string                     $kind  'etymologies' nebo 'culture'.
+     * @return array{items:list<array<string, mixed>>, scanned:int, cursor:?string, complete:bool} Dávka odpovídající druhu.
+     */
     private function result(array $items,array $state,string $kind): array
     {
         $items=array_values(array_filter($items, static fn($item)=>$kind==='etymologies' ? in_array($item['entry']['type'],['etymology','history'],true) : !in_array($item['entry']['type'],['etymology','history'],true)));
@@ -66,6 +110,15 @@ final class WikipediaNamesProvider implements BatchProvider
         return ['items'=>$items,'scanned'=>1,'cursor'=>$complete ? null : json_encode($state,JSON_THROW_ON_ERROR),'complete'=>$complete];
     }
 
+    /**
+     * Najde stránku odpovídající jednomu z kandidátních názvů.
+     *
+     * @param  list<string>          $titles Kandidátní názvy v pořadí priority.
+     * @param  array<string, mixed>|null $name Jméno z databáze, nebo null při hledání kulturního článku.
+     * @return array<string, mixed>|null    Stránka z `action=parse`, nebo null pokud žádná nevyhovuje.
+     * @throws SyncException                'invalid_discovery_response', 'dossier_metadata_incomplete',
+     *                                     'invalid_dossier_revision' nebo chyba upstreamu.
+     */
     private function discover(array $titles,?array $name): ?array
     {
         $response=$this->api(['action'=>'query','titles'=>implode('|',$titles),'redirects'=>1,'prop'=>'categories|templates','cllimit'=>500,'tllimit'=>500]);
@@ -84,6 +137,13 @@ final class WikipediaNamesProvider implements BatchProvider
         return null;
     }
 
+    /**
+     * Načte stránku s textem, revizí, kategoriemi a šablonami.
+     *
+     * @param  array<string, mixed> $params Parametry (`pageid` nebo `oldid`).
+     * @return array<string, mixed>          Obsah stránky.
+     * @throws SyncException                'invalid_dossier_response' nebo chyba upstreamu.
+     */
     private function page(array $params): array
     {
         $response=$this->api(['action'=>'parse','prop'=>'text|revid|categories|templates']+$params);
@@ -92,11 +152,24 @@ final class WikipediaNamesProvider implements BatchProvider
         return $page;
     }
 
+    /**
+     * Vrátí názvy kategorií stránky bez předpony a s mezerami místo podtržítka.
+     *
+     * @param  array<string, mixed> $page Stránka z `action=parse`.
+     * @return list<string>               Názvy kategorií.
+     */
     private function categories(array $page): array
     {
         return array_map(static fn($c)=>str_replace('_',' ',preg_replace('/^Kategorie:/u','',$c['title'] ?? $c['*'] ?? '')),$page['categories'] ?? []);
     }
 
+    /**
+     * Ověří, že stránka skutečně pojednává o daném jméně, ne o osobě nebo místě.
+     *
+     * @param  array<string, mixed> $page Stránka z `action=parse`.
+     * @param  array<string, mixed> $name Jméno z databáze (`name`, `kind`).
+     * @return bool                     true, pokud stránka odpovídá jménu.
+     */
     private function isName(array $page,array $name): bool
     {
         $title=preg_replace('/ \((?:rodné jméno|jméno|příjmení)\)$/u','',$page['title'] ?? '');
@@ -109,6 +182,12 @@ final class WikipediaNamesProvider implements BatchProvider
         return false;
     }
 
+    /**
+     * Ověří, že stránka patří mezi kulturní (svatí, bohové, mytologické postavy).
+     *
+     * @param  array<string, mixed> $page Stránka z `action=parse`.
+     * @return bool                     true, pokud má stránka sjednocující kulturní kategorii.
+     */
     private function isCultural(array $page): bool
     {
         foreach ($this->categories($page) as $category) {
@@ -117,6 +196,14 @@ final class WikipediaNamesProvider implements BatchProvider
         return false;
     }
 
+    /**
+     * Rozdělí článek na úseky podle nadpisů a vytáhne z nich čistý text.
+     *
+     * @param  array<string, mixed> $page Stránka z `action=parse`.
+     * @return array{chunks:list<array<string, mixed>>, related:list<string>}
+     *         Úseky (`heading`, `anchor`, `paragraphs`) a názvy navazujících kulturních článků.
+     * @throws SyncException 'invalid_dossier_html' nebo 'dossier_markup_changed'.
+     */
     private function extract(array $page): array
     {
         $dom=new \DOMDocument(); $previous=libxml_use_internal_errors(true);
@@ -148,6 +235,21 @@ final class WikipediaNamesProvider implements BatchProvider
         return ['chunks'=>$chunks,'related'=>array_values($related)];
     }
 
+    /**
+     * Převede úseky článku na importní položky podle typu nadpisu.
+     *
+     * Odkazy na navazující články se sbírají jen v sekcích o svatých, patronech
+     * a mytologii, aby se nerozšiřovala o kódované tradice a vymyšlené vazby.
+     *
+     * @param  array<string, mixed>       $page        Stránka z `action=parse`.
+     * @param  array<string, mixed>       $data        Výstup `extract()`.
+     * @param  array<string, mixed>       $name        Jméno z databáze.
+     * @param  array<string, mixed>       $rights      Informace o licenci Wikipedie.
+     * @param  bool                       $related     true, jde-li o navazující kulturní článek.
+     * @param  array<string, mixed>       $association Popis vazby na výchozí článek.
+     * @return list<array<string, mixed>>              Importní položky (nepublikované, `unverified`).
+     * @throws SyncException                            'culture_body_out_of_bounds' nebo 'dossier_markup_changed'.
+     */
     private function items(array $page,array $data,array $name,array $rights,bool $related,array $association=[]): array
     {
         $items=[];

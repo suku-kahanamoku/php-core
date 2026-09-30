@@ -12,21 +12,51 @@ use App\Modules\Http\HttpRequest;
 use App\Modules\Http\HttpResponse;
 use App\Modules\Transport\{GeometryMapper,ResourceIdCodec,TransportException};
 
-/** Entur and OTP share a Transmodel contract, not their dataset or identifiers. */
+/**
+ * Poskytovatel nad GraphQL rozhraním Transmodel (Entur i OTP).
+ *
+ * Entur a OTP sdílejí smlouvu Transmodelu, nikoli data ani identifikátory, proto
+ * se ID zakódují vždy podle kódu poskytovatele. Klient identifikace se posílá
+ * hlavičkou `ET-Client-Name` v každém požadavku; přihlašovací údaje zůstávají
+ * na sdíleném HTTP klientu nedotčené. Živé údaje (`realtime`) se doplní jen tehdy,
+ * když je zdroj označí jako realtime, jinak se vrací pouze plánované časy.
+ */
 final class TransmodelProvider implements JourneySearchProvider, ResourceProvider
 {
+    /** @var string Fragment GraphQL pro odhady volání na zastávce. */
     private const CALL = 'aimedArrivalTime expectedArrivalTime aimedDepartureTime expectedDepartureTime realtime cancellation date quay { id name latitude longitude publicCode timeZone } serviceJourney { id line { id publicCode name } }';
+
+    /**
+     * @param  ProviderDefinition $definition Definice poskytovatele okurku.
+     * @return void
+     */
     public function __construct(private readonly ProviderDefinition $definition)
     {
     }
+
+    /**
+     * @return ProviderDefinition Definice poskytovatele.
+     */
     public function definition(): ProviderDefinition
     {
         return $this->definition;
     }
+
+    /**
+     * @return list<string> Podporované operace; `realtime` jen při mapovaném
+     *                   živém zdroji, `places` jen při nakonfigurovaném geocoderu.
+     */
     public function capabilities(): array
     {
         return array_merge(array_merge(['journeys','stop','departures','trip'], isset($this->definition->config['source_provider']) ? ['realtime'] : []), isset($this->definition->config['geocoder_url']) ? ['places'] : []);
     }
+    /**
+     * Sestaví GraphQL požadavek na koncový bod poskytovatele.
+     *
+     * @param  string               $query     Text dotazu.
+     * @param  array<string, mixed> $variables Proměnné dotazu.
+     * @return HttpRequest                     POST s případnou hlavičkou klienta.
+     */
     private function request(string $query, array $variables): HttpRequest
     {
         $headers = [];
@@ -35,6 +65,12 @@ final class TransmodelProvider implements JourneySearchProvider, ResourceProvide
         }
         return new HttpRequest($this->definition->config['url'], 'POST', $headers, ['query' => $query,'variables' => $variables]);
     }
+    /**
+     * Sestaví GraphQL dotaz na spojení.
+     *
+     * @param  JourneyQuery $query Normalizovaný dotaz na spojení.
+     * @return HttpRequest       Požadavek s `query` a `variables`.
+     */
     public function searchRequest(JourneyQuery $query): HttpRequest
     {
         $gql = <<<'GQL'
@@ -58,6 +94,15 @@ GQL;
             'date' => $query->time->format(DATE_RFC3339),'arrive' => $query->arriveBy,'limit' => $query->limit,'transfers' => $query->maxTransfers,
             'modes' => ['accessMode' => 'foot','egressMode' => 'foot','directMode' => 'foot','transportModes' => array_map(fn ($m) => ['transportMode' => $m], $modes)]]);
     }
+    /**
+     * Převede místo na vstup Transmodelu: vlastní ID zastávky nebo souřadnice.
+     *
+     * ID se použije pouze tehdy, když patří tomuto poskytovateli; cizí místa
+     * se hledají podle souřadnic.
+     *
+     * @param  array<string, mixed> $place Místo z dotazu.
+     * @return array<string, mixed>        `place` nebo `coordinates`.
+     */
     private function location(array $place): array
     {
         if (($place['provider'] ?? null) === $this->definition->code && isset($place['external'])) {
@@ -65,6 +110,14 @@ GQL;
         }
         return ['coordinates' => ['latitude' => $place['lat'],'longitude' => $place['lon']]];
     }
+    /**
+     * Převede odpověď s trip patterns na jednotná spojení.
+     *
+     * @param  HttpResponse $result    Odpověď GraphQL.
+     * @return list<array<string, mixed>> Spojení s úseky, přestupy a geometrií.
+     * @throws TransportException 'invalid_upstream' (502), pokud chybí vzory
+     *                            trasy, úseky nebo povinné pole úseku.
+     */
     public function searchResult(HttpResponse $result): array
     {
         $data = UpstreamResponseMapper::json($result);
@@ -98,6 +151,15 @@ GQL;
         }
         return $items;
     }
+    /**
+     * Sestaví požadavek pro jednotlivé operace (místa, zastávka, odjezdy, spoj).
+     *
+     * @param  string               $operation Jedna z podporovaných operací.
+     * @param  array<string, mixed> $input     Vstup operace (dotaz, ID, čas, limit).
+     * @return HttpRequest                     Geokódovací REST volání nebo GraphQL dotaz.
+     * @throws TransportException 'unsupported_capability' (422), pokud operace
+     *                            poskytovatel nepodporuje.
+     */
     public function resourceRequest(string $operation, array $input): HttpRequest
     {
         if ($operation === 'places' && isset($this->definition->config['geocoder_url'])) {
@@ -116,6 +178,20 @@ GQL;
         }
         throw new TransportException('unsupported_capability', 'Provider does not support this operation.', 422);
     }
+    /**
+     * Převede odpověď na jednotný výsledek operace.
+     *
+     * U geokódování se přeskakují prvky, které nejsou zastávkou (`StopPlace`),
+     * protože vracejí jen zastávky. Chybějící zastávka nebo spoj končí 404.
+     *
+     * @param  string               $operation Provedená operace.
+     * @param  HttpResponse         $result    Odpověď poskytovatele.
+     * @param  array<string, mixed> $input     Vstup operace (u spoje datum).
+     * @return array<string, mixed>           Místa, zastávka, odjezdy nebo spoj.
+     * @throws TransportException 'invalid_upstream' (502) při chybné odpovědi
+     *                            geokódování, 'not_found' (404), pokud zastávka
+     *                            nebo spoj neexistuje.
+     */
     public function resourceResult(string $operation, HttpResponse $result, array $input): array
     {
         $json = UpstreamResponseMapper::json($result);
@@ -155,6 +231,12 @@ GQL;
         }
         return ['id' => $this->id('trip', $trip['id'], $input['date']),'service_date' => $input['date'],'line' => $this->line($trip['line']),'stops' => array_map(fn ($c) => $this->call($c), $trip['estimatedCalls'] ?? [])];
     }
+    /**
+     * Převede jeden odhad volání na zastávce na jednotný tvar.
+     *
+     * @param  array<string, mixed> $call Prvek `estimatedCalls`.
+     * @return array<string, mixed>      Volání se zastávkou, linkou a časy.
+     */
     private function call(array $call): array
     {
         $realtime = (bool)($call['realtime'] ?? false);
@@ -164,6 +246,13 @@ GQL;
             'realtime' => $realtime,'cancelled' => (bool)($call['cancellation'] ?? false),'line' => $this->line($call['serviceJourney']['line'] ?? null), 'headsign' => null, 'external_trip_id' => $trip,
             'trip_id' => $trip && isset($call['date']) ? $this->id('trip', $trip, $call['date']) : null];
     }
+    /**
+     * Převede dopravní linku na jednotný tvar.
+     *
+     * @param  array<string, mixed>|null $line Linka z odpovědi.
+     * @param  string|null               $mode Dopravní mód, pokud je znám.
+     * @return array<string, mixed>|null        Linka s ID, názvem, kódem a módem.
+     */
     private function line(?array $line, ?string $mode = null): ?array
     {
         if ($line === null) {
@@ -173,18 +262,44 @@ GQL;
             'name' => $line['name'] ?? null,'code' => $line['publicCode'] ?? null,'mode' => $mode];
     }
 
+    /**
+     * Převede quay (nástupiště) na jednotnou zastávku.
+     *
+     * @param  array<string, mixed> $s Prvek `quay` z odpovědi.
+     * @return array<string, mixed>   Zastávka s veřejným ID.
+     */
     private function stop(array $s): array
     {
         return ['id' => $this->id('stop', $s['id']),'name' => $s['name'],'lat' => $s['latitude'],'lon' => $s['longitude'],'platform' => $s['publicCode'] ?? null,'timezone' => $s['timeZone'] ?? null];
     }
+    /**
+     * Převede místo z konce úseku na jednotný tvar se souřadnicemi.
+     *
+     * @param  array<string, mixed> $s Prvek `fromPlace` nebo `toPlace`.
+     * @return array<string, mixed>   Místo s volitelným ID zastávky.
+     */
     private function place(array $s): array
     {
         return ['id' => isset($s['quay']['id']) ? $this->id('stop', $s['quay']['id']) : null,'name' => $s['name'],'lat' => $s['latitude'],'lon' => $s['longitude'],'platform' => $s['quay']['publicCode'] ?? null,'timezone' => $s['quay']['timeZone'] ?? null];
     }
+    /**
+     * Zakóduje veřejné ID zdroje Transmodelu.
+     *
+     * @param  string      $kind     Druh zdroje (`stop`, `trip`, `line`).
+     * @param  string      $external ID v Transmodelu.
+     * @param  string|null $date     Datum platnosti instance spoje, nebo null.
+     * @return string                ID vhodné pro naše API.
+     */
     private function id(string $kind, string $external, ?string $date = null): string
     {
         return ResourceIdCodec::encode($this->definition->tenant, $this->definition->code, $kind, $external, $date);
     }
+    /**
+     * Převede mód Transmodelu na náš dopravní mód.
+     *
+     * @param  string $mode Mód z odpovědi (např. `rail`).
+     * @return string       Mód v našem tvaru (`train`, `walk`, ...).
+     */
     private static function mode(string $mode): string
     {
         return ['foot' => 'walk','rail' => 'train','cableway' => 'cable_car','water' => 'ferry','air' => 'airplane'][$mode] ?? $mode;

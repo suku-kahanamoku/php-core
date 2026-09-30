@@ -8,18 +8,55 @@ use App\Modules\Router\{Request,Response,Router};
 use App\Modules\Transport\DTO\JourneyQuery;
 use App\Modules\Transport\Repositories\TransportRepository;
 
+/**
+ * HTTP API dopravy: vyhledávání spojů, místa, cached spojení, geometrie a zdroje.
+ *
+ * Všechny odpovědi jsou jednotné (`Response::success`/`Response::error`) a
+ * chyby `TransportException` se překládají do tvaru `{code, ...details}` se
+ * stavem z výjimky. Identifikátory v cestě se předávají službám beze změny;
+ * okrsek se odvozuje z přihlášeného uživatele.
+ */
 final class TransportApi
 {
+    /**
+     * @param  JourneyService        $journeys   Vyhledávání a řazení spojů.
+     * @param  ResourceService       $resources  Místa a jednotlivé zdroje.
+     * @param  ProviderRegistry      $registry   Poskytovatelé okurku pro `/v1/coverage`.
+     * @param  TransportRepository   $repository Cached spojení a jejich geometrie.
+     * @return void
+     */
     public function __construct(private readonly JourneyService $journeys, private readonly ResourceService $resources, private readonly ProviderRegistry $registry, private readonly TransportRepository $repository)
     {
     }
+
+    /**
+     * Zaregistruje routy dopravy.
+     *
+     * - `POST /v1/journeys/search` – tělo dotazu dle `JourneyQuery::fromArray()`.
+     * - `GET /v1/coverage` – veřejné definice poskytovatelů s kapacitami.
+     * - `GET /v1/places?query=&limit=&state=` – vyhledání míst.
+     * - `GET /v1/journeys/:id` – uložené spojení.
+     * - `GET /v1/journeys/:id/geometry` – GeoJSON `FeatureCollection` úseků.
+     * - `GET /v1/stops/:id`, `/v1/stops/:id/departures`, `/v1/trips/:id`,
+     *   `/v1/trips/:id/realtime` – zdroje; odjezdy a poloha berou `at` a `limit`.
+     *
+     * @param  Router $router Router, do kterého se routy přidají.
+     * @return void
+     */
     public function registerRoutes(Router $router): void
     {
         $router->post('/v1/journeys/search', fn (Request $r) => $this->respond(fn () => $this->journeys->search(JourneyQuery::fromArray($r->body))));
         $router->get('/v1/coverage', fn () => $this->respond(fn () => ['providers' => array_values(array_map(fn ($p) => $p->definition()->publicData($p->capabilities()), $this->registry->all()))]));
         $router->get('/v1/places', fn (Request $r) => $this->respond(fn () => $this->resources->places($this->text($r, 'query'), JourneyQuery::integer($r->get('limit', 10), 1, 50), $r->get('state') !== null ? $this->text($r, 'state') : null)));
         $router->get('/v1/journeys/:id', fn (Request $r, array $p) => $this->respond(fn () => $this->repository->journey($p['id'])));
-        $router->get('/v1/journeys/:id/geometry', fn (Request $r, array $p) => $this->respond(function () use ($p) {
+        $router->get('/v1/journeys/:id/geometry', fn (Request $r, array $p) => $this->respond(
+            /**
+             * Poskládá geometrie všech úseků spojení do GeoJSON kolekce.
+             *
+             * @return array<string, mixed> Kolekce `Feature` s indexem úseku a jeho dopravním módem.
+             * @throws TransportException   Pokud spojení neexistuje nebo vypršelo.
+             */
+            function () use ($p) {
             $journey = $this->repository->journey($p['id']);
             $features = [];
             foreach ($journey['legs'] as $i => $leg) {
@@ -34,6 +71,14 @@ final class TransportApi
                 'at' => JourneyQuery::date($r->get('at', gmdate('Y-m-d\TH:i:s\Z')))->format(DATE_RFC3339),'limit' => JourneyQuery::integer($r->get('limit', 20), 1, 50)])));
         }
     }
+    /**
+     * Načte povinný textový parametr dotazu.
+     *
+     * @param  Request $r    Aktuální požadavek.
+     * @param  string  $key  Klíč parametru.
+     * @return string        Hodnota parametru, prázdný řetězec, pokud chybí.
+     * @throws TransportException 'invalid_query', pokud hodnota není řetězec.
+     */
     private function text(Request $r, string $key): string
     {
         $v = $r->get($key, '');
@@ -41,6 +86,12 @@ final class TransportApi
             throw new TransportException('invalid_query', 'Expected string: '.$key);
         } return $v;
     }
+    /**
+     * Provede akci a vrátí jednotnou odpověď; výjimka se přeloží na chybu API.
+     *
+     * @param  callable $action Akce vracící data pro úspěšnou odpověď.
+     * @return never            Volání končí odpovědí (úspěch nebo chyba).
+     */
     private function respond(callable $action): never
     {
         try {

@@ -3,26 +3,61 @@
 declare(strict_types=1);
 namespace App\Modules\Etymolog;
 
-/** Private, tenant-scoped immutable downloads. Providers own HTTP and licence validation. */
+/**
+ * Soukromé, omezené na okruk a neměnné kopie stažených souborů.
+ *
+ * Poskytovatelé si vlastní HTTP komunikaci a ověření licencí; tento repozitář
+ * je jen mezipaměť na disku. Každý soubor má v názvu SHA-256 svého obsahu a při
+ * čtení se hash znovu ověřuje, takže poškozená kopie se použije jen jako chybějící.
+ * Adresář se vytvoří s právy 0700 a staré snapshoty se po týdnu uklízejí.
+ */
 final class EtymologSnapshotRepository
 {
+    /** Adresář pro snapshoty daného okurku. */
     private readonly string $directory;
+
+    /** Zdroj aktuálního času (nahrazitelné v testech). */
     private readonly \Closure $clock;
+
+    /** Maximální velikost snapshotu v bajtech. */
     private const MAX_BYTES = 25000000;
+
+    /** Doba životnosti snapshotu v sekundách (7 dní). */
     private const TTL = 604800;
 
+    /**
+     * @param  string        $root   Kořenový adresář cache.
+     * @param  string        $tenant Kod okurku; podílí se na názvu podadresáře.
+     * @param  \Closure|null $clock  Zdroj Unix času; prázdná hodnota znamená `time()`.
+     * @return void
+     */
     public function __construct(string $root, string $tenant, ?\Closure $clock = null)
     {
         $this->directory = rtrim($root, '/').'/'.hash('sha256', $tenant);
         $this->clock = $clock ?? static fn (): int => time();
     }
 
+    /**
+     * Sestaví cestu snapshotu a ověří formát hashe.
+     *
+     * @param  string $key  Klíč zdroje (název souboru nebo URL).
+     * @param  string $hash SHA-256 obsahu ve tvaru 64 hex znaků.
+     * @return string       Absolutní cesta k souboru.
+     * @throws SyncException 'invalid_snapshot_hash' při neplatném formátu hashe.
+     */
     private function path(string $key, string $hash): string
     {
         if (!preg_match('/^[a-f0-9]{64}$/D', $hash)) { throw new SyncException('invalid_snapshot_hash'); }
         return $this->directory.'/'.hash('sha256', $key).'-'.$hash.'.snapshot';
     }
 
+    /**
+     * Načte snapshot, pokud existuje, není expirovaný a obsah souhlasí s hashem.
+     *
+     * @param  string $key  Klíč zdroje.
+     * @param  string $hash SHA-256 očekávaného obsahu.
+     * @return string|null Obsah souboru, nebo null pokud snapshot chybí, je starý, příliš velký nebo poškozený.
+     */
     public function get(string $key, string $hash): ?string
     {
         $path = $this->path($key, $hash);
@@ -33,6 +68,14 @@ final class EtymologSnapshotRepository
         return is_string($bytes) && hash_equals($hash, hash('sha256', $bytes)) ? $bytes : null;
     }
 
+    /**
+     * Uloží snapshot atomicky a uklidí expirované soubory.
+     *
+     * @param  string $key   Klíč zdroje.
+     * @param  string $bytes Obsah k uložení.
+     * @return void          Vedlejší efekt: zápis do mezipaměti a úklid starých souborů.
+     * @throws SyncException 'snapshot_too_large' nebo 'snapshot_cache_unavailable'.
+     */
     public function put(string $key, string $bytes): void
     {
         if (strlen($bytes) > self::MAX_BYTES) { throw new SyncException('snapshot_too_large'); }

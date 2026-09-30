@@ -225,6 +225,16 @@ class UserRepository extends BaseRepository
         return $user;
     }
 
+    /**
+     * Nahradí vazby uživatele na profily zákazníka zadaným seznamem.
+     *
+     * Staré vazby se smažou a nové se uloží v uvedeném pořadí; duplicitní
+     * pozice a neexistující či smazané profily okurku se přeskočí.
+     *
+     * @param  int                   $userId   ID uživatele v okurku.
+     * @param  list<mixed>           $profiles Záznamy profilů s `customer_profile_id` a volitelnou pozicí.
+     * @return void
+     */
     public function syncProfiles(int $userId, array $profiles): void
     {
         $this->_db->delete('user_customer_profile', 'user_id = ? AND franchise_code = ?', [$userId, $this->_code]);
@@ -255,6 +265,12 @@ class UserRepository extends BaseRepository
         }
     }
 
+    /**
+     * Doplní načtené uživatele o profily zákazníka včetně pozice.
+     *
+     * @param  list<array<string, mixed>> $users Uživatelé k doplnění (upraví se na místě).
+     * @return void
+     */
     private function attachProfiles(array &$users): void
     {
         if (!$users) {

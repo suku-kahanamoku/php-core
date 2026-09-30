@@ -8,9 +8,22 @@ use App\Modules\Router\Request;
 use App\Modules\Router\Response;
 use App\Utils\InternalAuth;
 
-/** Authenticates the calling application before any API service or database is created. */
+/**
+ * Ověří volající aplikaci dříve, než vznikne jakákoli API služba nebo DB připojení.
+ *
+ * Interní API (klíč v hlavičce) je výrazně oddělené od endpointů pro klienta
+ * (token v Authorization). Middleware běží jako první v globálním řetězci.
+ */
 final class InternalAuthMiddleware
 {
+    /**
+     * Provede interní autentizaci, případně ukončí request chybou 401.
+     *
+     * @param  Request $request Aktuální požadavek.
+     * @return void Vedlejší efekt: při úspěchu nastaví $request->internalAuthenticated,
+     *                při selhání ukončí request (401 nebo 204 pro preflight).
+     * @throws \Throwable Při chybě interní autentizace je request ukončen přes Response::unauthorized().
+     */
     public function __invoke(Request $request): void
     {
         // Preflight carries no credentials and never executes an API handler.
@@ -32,6 +45,12 @@ final class InternalAuthMiddleware
         $request->internalAuthenticated = true;
     }
 
+    /**
+     * Rozhodne, zda pozadavek směřuje na veřejné AI rozhraní pro klienta Rokid.
+     *
+     * @param  Request $request Aktualni pozadavek.
+     * @return bool true, pokud jde o entrypoint api/openai/index.php a cestu /realtime-session nebo /tool.
+     */
     private function isRokidEndpoint(Request $request): bool
     {
         // Match the actual entrypoint as well as the method and module-relative route.

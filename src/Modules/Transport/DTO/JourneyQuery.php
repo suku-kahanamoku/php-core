@@ -6,9 +6,31 @@ namespace App\Modules\Transport\DTO;
 
 use App\Modules\Transport\TransportException;
 
+/**
+ * Normalizovaný a zvalidovaný dotaz na spojení.
+ *
+ * Dotaz se sestavuje výhradně z povolených atributů (`from-dest`, `to-dest`,
+ * `from-date`, `to-date`, `state`, `city`, `modes`, `max-transfers`, `limit`);
+ * čas musí být RFC3339 s explicitním posunem a právě jeden z `from-date` a
+ * `to-date` určuje, zda se hledá odjezd, nebo příjezd.
+ */
 final class JourneyQuery
 {
+    /** Podporované způsoby dopravy. */
     public const MODES = ['bus','tram','train','metro','trolleybus','ferry','coach','airplane','cable_car','gondola','funicular','monorail'];
+
+    /**
+     * @param  array{type: string, id?: string, lat?: float, lon?: float} $from         Výchozí místo (zastávka nebo souřadnice).
+     * @param  array{type: string, id?: string, lat?: float, lon?: float} $to           Cílové místo.
+     * @param  \DateTimeImmutable                                          $time         Čas odjezdu nebo příjezdu.
+     * @param  bool                                                         $arriveBy    true, pokud `time` znamená čas příjezdu.
+     * @param  string|null                                                  $country      Kód země ISO 3166-1 alpha-2, nebo null.
+     * @param  string|null                                                  $city         Město jako volitelný hint.
+     * @param  list<string>                                                 $modes        Způsoby dopravy.
+     * @param  int                                                          $maxTransfers Maximální počet přestupů (0–10).
+     * @param  int                                                          $limit        Maximální počet výsledků (1–20).
+     * @return void
+     */
     public function __construct(
         public readonly array $from,
         public readonly array $to,
@@ -21,6 +43,15 @@ final class JourneyQuery
         public readonly int $limit,
     ) {
     }
+    /**
+     * Sestaví dotaz ze vstupu API a všechny hodnoty zvaliduje.
+     *
+     * @param  array<string, mixed> $input Vstup s povolenými atributy dotazu.
+     * @return self                        Normalizovaný dotaz.
+     * @throws TransportException          'invalid_query', 'invalid_date', 'invalid_country',
+     *                                    'invalid_city', 'invalid_modes', 'invalid_limit'
+     *                                    nebo 'invalid_place'.
+     */
     public static function fromArray(array $input): self
     {
         $allowed = ['from-dest','to-dest','from-date','to-date','state','city','modes','max-transfers','limit'];
@@ -54,6 +85,14 @@ final class JourneyQuery
             self::integer($input['limit'] ?? 10, 1, 20)
         );
     }
+    /**
+     * Načte čas ve formátu RFC3339 s povinným posunem.
+     *
+     * @param  mixed $value Hodnota z `from-date` nebo `to-date`.
+     * @return \DateTimeImmutable Čas jako neměnný objekt.
+     * @throws TransportException  'invalid_date', pokud formát nesedí nebo jde o
+     *                             neexistující datum v kalendáři.
+     */
     public static function date(mixed $value): \DateTimeImmutable
     {
         if (!is_string($value) || !preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/D', $value)) {
@@ -70,6 +109,16 @@ final class JourneyQuery
         }
         return $date;
     }
+    /**
+     * Načte celé číslo v zadaném rozsahu.
+     *
+     * @param  mixed $value Hodnota z dotazu.
+     * @param  int   $min   Nejmenší přípustná hodnota.
+     * @param  int   $max   Největší přípustná hodnota.
+     * @return int          Hodnota jako celé číslo.
+     * @throws TransportException 'invalid_limit', pokud hodnota není celé číslo
+     *                             nebo neleží v rozsahu.
+     */
     public static function integer(mixed $value, int $min, int $max): int
     {
         if (!(is_int($value) || (is_string($value) && ctype_digit($value))) || (int)$value < $min || (int)$value > $max) {
@@ -77,6 +126,14 @@ final class JourneyQuery
         }
         return (int)$value;
     }
+    /**
+     * Normalizuje místo na zastávku nebo na souřadnice.
+     *
+     * @param  mixed $value Hodnota z `from-dest` nebo `to-dest`.
+     * @return array{type: string, id?: string, lat?: float, lon?: float} Místo.
+     * @throws TransportException 'invalid_place', pokud není zastávka s ID do 2048 znaků
+     *                            ani platné souřadnice v rozsahu WGS84.
+     */
     private static function place(mixed $value): array
     {
         if (!is_array($value)) {
@@ -94,6 +151,13 @@ final class JourneyQuery
         }
         throw new TransportException('invalid_place', 'Invalid destination.');
     }
+    /**
+     * Vytvoří kopii dotazu s nahrazenými místy (např. po geokódování).
+     *
+     * @param  array{type: string, id?: string, lat?: float, lon?: float} $from Nové výchozí místo.
+     * @param  array{type: string, id?: string, lat?: float, lon?: float} $to   Nové cílové místo.
+     * @return self                                                     Kopie dotazu.
+     */
     public function withPlaces(array $from, array $to): self
     {
         return new self($from, $to, $this->time, $this->arriveBy, $this->country, $this->city, $this->modes, $this->maxTransfers, $this->limit);

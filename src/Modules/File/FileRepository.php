@@ -10,9 +10,18 @@ use App\Utils\Projection;
 
 /**
  * File – DB vrstva entity.
+ *
+ * Záznamy patří vždy jednomu okurku (`franchise_code`); veřejná dostupnost se
+ * odvozuje z vazby na zveřejněný produkt a vlastnictví i z faktury uživatele,
+ * aby se k souboru nedostal cizí účastník okurku.
  */
 class FileRepository extends BaseRepository
 {
+    /**
+     * @param  Database $db            Databázová vrstva pro daný okrsek.
+     * @param  string   $franchiseCode Kód okurku.
+     * @return void
+     */
     public function __construct(Database $db, string $franchiseCode)
     {
         parent::__construct($db, $franchiseCode);
@@ -131,6 +140,12 @@ class FileRepository extends BaseRepository
         return $this->findById($id, $projection);
     }
 
+    /**
+     * Najde nezrušený soubor podle jeho uložené cesty.
+     *
+     * @param  string $path Cesta v úložišti.
+     * @return array<string, mixed>|null Řádek souboru, nebo null.
+     */
     public function findByPath(string $path): ?array
     {
         $row = $this->_db->fetchOne(
@@ -140,6 +155,13 @@ class FileRepository extends BaseRepository
         return $row ?: null;
     }
 
+    /**
+     * Ověří, že soubor je veřejně dostupný: je veřejný a patří zveřejněnému
+     * produktu stejného okurku.
+     *
+     * @param  int $fileId ID souboru.
+     * @return bool         true, pokud je soubor veřejný v tomto okurku.
+     */
     public function isPubliclyAccessible(int $fileId): bool
     {
         $row = $this->_db->fetchOne(
@@ -154,6 +176,14 @@ class FileRepository extends BaseRepository
         return (bool) $row;
     }
 
+    /**
+     * Ověří vlastnictví souboru: buď ho nahrál daný uživatel, nebo je přiložen
+     * k jeho faktuře v témže okurku.
+     *
+     * @param  array<string, mixed> $file   Řádek souboru (musí obsahovat `id` a `user_id`).
+     * @param  int                   $userId ID uživatele.
+     * @return bool                           true, pokud uživatel smí soubor číst.
+     */
     public function belongsToUser(array $file, int $userId): bool
     {
         if ((int) ($file['user_id'] ?? 0) === $userId) {

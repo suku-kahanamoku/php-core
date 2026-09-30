@@ -10,6 +10,18 @@ use App\Modules\Router\Request;
 use App\Modules\Router\Response;
 use App\Modules\Router\Router;
 
+/**
+ * HTTP vrstva produktů.
+ *
+ * Routy (oprávnění kontroluje `Auth` uvnitř služby):
+ *   GET  /products        seznam produktů
+ *   GET  /products/:id    detail produktu
+ *   POST /products        vytvoření produktu
+ *   PATCH/DELETE /products/:id  úprava a zrušení
+ *
+ * Seznamy používají standardní dotazový kontrakt (`page`, `limit`, `sort`, `q`,
+ * `projection`, řádky v klici `data`) a vstupy se ověřují přes `VALIDATOR()`.
+ */
 class ProductApi
 {
     private ProductService $_service;

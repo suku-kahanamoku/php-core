@@ -6,9 +6,23 @@ namespace App\Modules\OpenAi;
 
 use RuntimeException;
 
-/** Inkrementalni synchronizace publikovanych produktu do tenantoveho Vector Store. */
+/**
+ * Inkrementální synchronizace publikovaných produktů do Vector Store okurku.
+ *
+ * Dokumenty se nahrávají jen při změně `source_hash`, takže opakovaná
+ * synchronizace zbytečně nezatěžuje OpenAI ani limity; produkty, které už
+ * nejsou publikované, se ze store odpojí a smaží.
+ */
 final class OpenAiVectorStoreSyncService
 {
+    /**
+     * @param  OpenAiCatalogGateway           $catalog       Čtení katalogu okurku.
+     * @param  OpenAiVectorStoreGateway       $repository    Perzistence stavu okurku.
+     * @param  OpenAiVectorStoreProvider      $client        Klient OpenAI (síť přes `HttpModule`).
+     * @param  OpenAiProductDocumentBuilder   $documents     Sestavení dokumentu produktu.
+     * @param  string                         $franchiseCode Kód synchronizovaného okurku.
+     * @return void
+     */
     public function __construct(
         private readonly OpenAiCatalogGateway $catalog,
         private readonly OpenAiVectorStoreGateway $repository,

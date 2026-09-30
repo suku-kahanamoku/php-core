@@ -3,19 +3,20 @@
 declare(strict_types=1);
 
 /**
- * Parses the `sort` query parameter into a SQL ORDER BY fragment.
+ * Parsuje query parametr `sort` na SQL fragment `ORDER BY`.
  *
- * Accepted formats:
- *   JSON array:  [{"col":1},{"other":-1}]   1 = ASC, -1 = DESC
- *   Legacy:      col ASC | col DESC           (backwards-compatible)
+ * Akceptované formáty:
+ *   JSON pole:  [{"col":1},{"other":-1}]   1 = ASC, -1 = DESC
+ *   Starší:     col ASC | col DESC         (zpětná kompatibilita)
  *
- * Column names are validated with /^[a-zA-Z_][a-zA-Z0-9_]*$/ to prevent SQL injection.
+ * Názvy sloupců se ověřují vzorem /^[a-zA-Z_][a-zA-Z0-9_]*$/, aby šlo zabránit
+ * SQL injekci přes parametr `sort`.
  *
- * @param string $sort    Raw query parameter value.
- * @param string $default Default ORDER BY expression used when sort is empty/invalid.
- *                        Must already contain the table prefix if needed (e.g. "u.created_at DESC").
- * @param string $prefix  Optional table alias prepended to every column (e.g. "u").
- * @return string         Ready-to-embed SQL ORDER BY clause (without the ORDER BY keyword).
+ * @param string $sort    Surová hodnota query parametru.
+ * @param string $default Výchozí výraz `ORDER BY` pro prázdný/neplatný vstup.
+ *                        Musí již obsahovat alias tabulky, pokud je potřeba (např. "u.created_at DESC").
+ * @param string $prefix  Volitelný alias tabulky předřazený každému sloupci (např. "u").
+ * @return string         Připravený výraz pro vložení do SQL (bez klíčového slova ORDER BY).
  */
 function SQL_SORT(string $sort, string $default, string $prefix = ''): string
 {

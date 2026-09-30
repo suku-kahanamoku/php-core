@@ -10,6 +10,18 @@ use App\Modules\Router\Request;
 use App\Modules\Router\Response;
 use App\Modules\Router\Router;
 
+/**
+ * HTTP vrstva objednávek.
+ *
+ * Routy (oprávnění kontroluje `Auth` uvnitř služby):
+ *   GET  /orders        seznam objednávek
+ *   GET  /orders/:id    detail objednávek
+ *   POST /orders        vytvoření objednávky
+ *   PATCH/DELETE /orders/:id  úprava a storno
+ *
+ * Seznamy používají standardní dotazový kontrakt (`page`, `limit`, `sort`, `q`,
+ * `projection`, řádky v klici `data`) a vstupy se ověřují přes `VALIDATOR()`.
+ */
 class OrderApi
 {
     private OrderService $_service;

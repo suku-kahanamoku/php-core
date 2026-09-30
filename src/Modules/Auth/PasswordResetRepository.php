@@ -6,10 +6,30 @@ namespace App\Modules\Auth;
 
 use App\Modules\Database\Database;
 
+/**
+ * Repozitar pozadavku na reset hesla.
+ *
+ * Ulozuji se pouze hashe tokenu, nikoli tokeny v plain textu. Kazdy novy
+ * pozadavek nejprve zneplatni predchozi nevyužite tokeny, takže uzivatel
+ * nemuze pouzit starsi e-mail.
+ */
 final class PasswordResetRepository
 {
+    /**
+     * @param  Database $db            Databazove pripojeni.
+     * @param  string   $franchiseCode Kod okurku, kteremu tokeny patri.
+     * @return void
+     */
     public function __construct(private readonly Database $db, private readonly string $franchiseCode) {}
 
+    /**
+     * Vytvoří nový požadavek na reset hesla a zneplatní staré tokeny.
+     *
+     * @param  int    $userId    ID uživatele, kterému se reset obnovuje.
+     * @param  string $tokenHash SHA-256 hash tokenu, ne token v plain textu.
+     * @param  string $expiresAt Čas vypršení ve formátu `Y-m-d H:i:s`.
+     * @return void              Vedlejší efekt: zneplatnění starých a vložení nového tokenu.
+     */
     public function create(int $userId, string $tokenHash, string $expiresAt): void
     {
         $this->db->query(
@@ -22,6 +42,18 @@ final class PasswordResetRepository
         ]);
     }
 
+    /**
+     * Spotrebuje token, nastavi nove heslo a odhlasi vsechny relace uzivatele.
+     *
+     * Cely prubeh bezi v jedne transakci s rademkovym zámkem, takže token
+     * nelze pouzit dvakrat soucasne.
+     *
+     * @param  string $tokenHash    SHA-256 hash tokenu z e-mailu.
+     * @param  string $passwordHash Novy hash hesla.
+     * @return bool                true pri uspesnem resetu, false pri neplatnem/nevyprselem tokenu
+     *                             nebo kdyz uzivatel uz neexistuje.
+     * @throws \Throwable          Chyba databaze se po rollbacku znovu vyhodi.
+     */
     public function consumeAndChangePassword(string $tokenHash, string $passwordHash): bool
     {
         $pdo = $this->db->getPdo();

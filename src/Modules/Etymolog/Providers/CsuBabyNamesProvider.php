@@ -9,14 +9,40 @@ use App\Modules\Etymolog\SyncException;
 use App\Modules\Etymolog\EtymologSnapshotRepository;
 use App\Modules\Http\Contracts\HttpClient;
 
-/** Reviewed fixed annual release; new years require adding a separately verified release. */
+/**
+ * Pevná, revizně ověřená roční publikace ČSÚ; nový rok vyžaduje samostatně
+ * ověřenou novou položku.
+ *
+ * Před importem se kontroluje, že podmínky ČSÚ stále obsahují licenci CC BY 4.0,
+ * a stažený soubor se ukládá do mezipaměti podle SHA-256. Pokud se soubor mezi
+ * dávkami změní, dávka skončí chybou, aby se neimportovaly smíšené ročníky.
+ */
 final class CsuBabyNamesProvider implements BatchProvider
 {
+    /** Přímá adresa XLSX souboru s daty. */
     public const FILE_URL = 'https://csu.gov.cz/docs/107508/0a6170f4-bc53-7d35-afe2-3d5fcd0acb47/data_detska_jmena_top_100_cesko_2025.xlsx?version=1.0';
+    /** Adresa publikační zprávy s tabulkou. */
     public const SOURCE_URL = 'https://csu.gov.cz/produkty/viktorie-byla-vubec-poprve-nejoblibenejsi-jakub-prvenstvi-obhajil-tesne';
+    /** Adresa podmínek pro využívání statistických údajů (důkaz licence). */
     public const TERMS_URL = 'https://csu.gov.cz/podminky_pro_vyuzivani_a_dalsi_zverejnovani_statistickych_udaju_csu';
+    /**
+     * @param  HttpClient $http      Sdílený HTTP klient.
+     * @param  EtymologSnapshotRepository|null $snapshots Mezipaměť na stažený XLSX soubor.
+     * @return void
+     */
     public function __construct(private readonly HttpClient $http, private readonly ?EtymologSnapshotRepository $snapshots = null) {}
 
+    /**
+     * Stáhne jednu dávku jmen z XLSX ČSÚ podle kurzoru.
+     *
+     * @param  string     $language Musí být 'cs'.
+     * @param  string     $kind     Musí být 'births_2025'.
+     * @param  string|null $cursor  Kurzor s offsetem a hashem souboru.
+     * @param  int        $limit    Maximální počet řádků v dávce (1–500).
+     * @return array{items:list<array<string, mixed>>, cursor:?string, complete:bool} Dávka statistik.
+     * @throws SyncException           'invalid_provider_configuration', 'invalid_provider_cursor',
+     *                                'upstream_license_changed' nebo 'statistics_snapshot_changed'.
+     */
     public function batch(string $language, string $kind, ?string $cursor, int $limit): array
     {
         if ($language !== 'cs' || $kind !== 'births_2025' || $limit < 1 || $limit > 500) { throw new SyncException('invalid_provider_configuration'); }

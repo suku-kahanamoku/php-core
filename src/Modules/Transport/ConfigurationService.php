@@ -7,8 +7,26 @@ namespace App\Modules\Transport;
 use App\Modules\Transport\DTO\ProviderDefinition;
 use App\Modules\Transport\Repositories\TransportRepository;
 
+/**
+ * Uplatní konfiguraci dopravců a feedů z konfigurace serveru.
+ *
+ * Konfigurace se nejdřív celá ověří a teprve potom se zapíše v jedné
+ * transakci, takže neúplná konfigurace nezanechá poloviční stav. Ověřují se
+ * jen známé adaptéry, jednoznačné kódy, platné adresy koncových bodů, explicitní
+ * pokrytí obdélníkem a oprávnění feedu skladovat data.
+ */
 final class ConfigurationService
 {
+    /**
+     * Ověří a uloží poskytnutou konfiguraci dopravců, feedů a způsobů dopravy.
+     *
+     * @param  TransportRepository $r       Repozitář daného okurku (včetně PDO).
+     * @param  array<string, mixed> $config Konfigurace: `providers`, volitelně `feeds`.
+     * @return void                       Vedlejší efekt: zápis do `transport_provider`,
+     *                                    `transport_feed` a `enumeration`.
+     * @throws TransportException          'invalid_configuration' nebo 'storage_not_allowed';
+     *                                    při chybě se transakce vrátí zpět.
+     */
     public static function apply(TransportRepository $r, array $config): void
     {
         if (empty($config['providers']) || !is_array($config['providers'])) {
@@ -82,6 +100,16 @@ final class ConfigurationService
             throw $e;
         }
     }
+    /**
+     * Ověří konfigurovanou koncovou adresu poskytovatele.
+     *
+     * @param  string $url      Adresa koncového bodu.
+     * @param  bool   $internal true pro vnitřní plánovače, kde je přípustné i HTTP.
+     * @return void            Bez návratu; při chybě vyhodí výjimku.
+     * @throws TransportException 'invalid_configuration', pokud adresa chybí, není
+     *                            `https` (případně `http` pro vnitřní), obsahuje
+     *                            přihlašovací údaje, fragment nebo zalomení řádku.
+     */
     public static function url(string $url, bool $internal = false): void
     {
         $p = parse_url($url);
@@ -89,6 +117,13 @@ final class ConfigurationService
             throw new TransportException('invalid_configuration', 'Invalid server-configured endpoint.');
         }
     }
+    /**
+     * Serializuje konfiguraci pro sloupec JSON.
+     *
+     * @param  array<array-key, mixed> $v Hodnota k uložení.
+     * @return string                   JSON bez escapovaných lomítek a Unicode.
+     * @throws \JsonException          Pokud nelze hodnotu serializovat.
+     */
     private static function json(array $v): string
     {
         return json_encode($v, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);

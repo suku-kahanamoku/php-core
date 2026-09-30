@@ -6,11 +6,25 @@ namespace App\Modules\Mailer;
 
 use App\Modules\Templater\TemplaterService;
 
+/**
+ * Odesílání e-mailů přes šablony.
+ *
+ * SMTP klient se získává z `HttpModule::smtp($franchiseCode)`, takže se
+ * nepřidává vlastní síťová vrstva; jde o sdílenou instanci pro daný okrsek.
+ */
 class MailerService
 {
+    /** Vykreslování šablon daného okurku. */
     private TemplaterService $_tpl;
+
+    /** SMTP klient z `HttpModule`. */
     private \App\Modules\Http\Contracts\MailClient $smtp;
 
+    /**
+     * @param  string                              $franchiseCode Kód okurku (určuje šablony a SMTP konfiguraci).
+     * @param  \App\Modules\Http\Contracts\MailClient|null $smtp Klient pro testy; jinak z `HttpModule::smtp()`.
+     * @return void
+     */
     public function __construct(string $franchiseCode = '', ?\App\Modules\Http\Contracts\MailClient $smtp = null)
     {
         $this->_tpl = new TemplaterService($franchiseCode);
@@ -62,6 +76,12 @@ class MailerService
 
     // ── Zkratka pro testovaci email ───────────────────────────────────────────
 
+    /**
+     * Zkrátka pro testovací e-mail se šablonou `test`.
+     *
+     * @param  string $to Adresa příjemce.
+     * @return bool        true, pokud se e-mail odeslal.
+     */
     public function sendTestMail(string $to): bool
     {
         return $this->sendMail(

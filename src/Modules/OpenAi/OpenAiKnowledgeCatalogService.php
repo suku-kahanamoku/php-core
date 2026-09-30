@@ -17,6 +17,11 @@ final class OpenAiKnowledgeCatalogService
     public const GET_PRODUCT = 'get_product';
     public const MAX_RECOMMENDATION_QUERY_LENGTH = 1000;
 
+    /**
+     * @param  OpenAiCatalogGateway         $catalog      Čtení aktuálního katalogu okurku.
+     * @param  OpenAiProductRecommender|null $recommender Doporučení produktů; null znamená, že se nedoporučují.
+     * @return void
+     */
     public function __construct(
         private OpenAiCatalogGateway $catalog,
         private ?OpenAiProductRecommender $recommender = null,

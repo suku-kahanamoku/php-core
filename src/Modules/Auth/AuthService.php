@@ -11,8 +11,17 @@ use App\Modules\User\UserRepository;
 use App\Modules\Mailer\MailerService;
 
 
+/**
+ * Aplikacni sluzby autentizace: prihlaseni, registrace, zmena a reset hesla,
+ * prihlaseni pres externiho poskytovatele (OAuth).
+ *
+ * Vsechny repozitare jsou vytvoreny s `franchiseCode` z constructoru, takze
+ * vsechny dotazy jsou automaticky omezene na jeden okurk. Chyby pro klienta
+ * se nevyhlašují výjimkou, ale přes `Response::error()`, ktera požadavek ukončí.
+ */
 class AuthService
 {
+    /** Repozitář uživatelů omezený na okrsek. */
     private UserRepository      $_users;
     private UserTokenRepository $_tokens;
     private RoleRepository      $_roles;
@@ -229,6 +238,15 @@ class AuthService
         return ['requested' => true];
     }
 
+    /**
+     * Dokončí reset hesla: ověří token, nastaví nové heslo a odhlásí všechny
+     * relace uživatele.
+     *
+     * @param  string $token       Token z e-mailu s odkazem na reset.
+     * @param  string $newPassword Nové heslo (min. 8 znaků).
+     * @return void                Vedlejší efekt: změna hesla, invalidace tokenu a relací.
+     * @throws \RuntimeException  Při neplatném nebo vypršelém tokenu (Response::error s 422).
+     */
     public function completePasswordReset(string $token, string $newPassword): void
     {
         VALIDATOR(['token' => $token, 'new_password' => $newPassword])

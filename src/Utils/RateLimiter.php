@@ -7,13 +7,35 @@ namespace App\Utils;
 use App\Modules\Database\Database;
 use App\Modules\Router\Response;
 
+/**
+ * Pomocná třída pro omezení počtu požadavků v pevném časovém okně.
+ *
+ * Stav ukládá do tabulky `api_rate_limit` v rámci jednoho okurku (franchise),
+ * aby limit platil i napříč více PHP procesy. Subjekt (např. e-mail) se do
+ * databáze ukládá pouze jako SHA-256 hash.
+ */
 final class RateLimiter
 {
+    /**
+     * @param  Database $db           Připojení k databázi (jediné PDO v projektu).
+     * @param  string   $franchiseCode Kód okurku, pro který limit platí.
+     * @return void
+     */
     public function __construct(
         private readonly Database $db,
         private readonly string $franchiseCode,
     ) {}
 
+    /**
+     * Zaznamená jeden pokus a při překročení limitu ukončí request s 429.
+     *
+     * @param  string $action        Název chráněné akce (např. 'login').
+     * @param  string $subject       Identifikátor omezovaného subjektu (IP, e-mail); hashuje se.
+     * @param  int    $limit         Maximální počet pokusů v okně.
+     * @param  int    $windowSeconds Délka časového okna v sekundách.
+     * @return void                  Vedlejší efekt: zvýší počítadlo a při překročení pošle hlavičku
+     *                              Retry-After a ukončí request přes Response::error(…, 429).
+     */
     public function hit(string $action, string $subject, int $limit, int $windowSeconds): void
     {
         $window = (int) (floor(time() / $windowSeconds) * $windowSeconds);

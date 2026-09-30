@@ -7,10 +7,31 @@ namespace App\Modules\Sry;
 use App\Modules\Http\{HttpModule, HttpRequest};
 use App\Modules\Http\Contracts\HttpClient;
 
-/** R2 and realtime secrets never leave this server. All tickets are scoped and short-lived. */
+/**
+ * Brána ke Cloudflare Workeru: podepsané tikety pro R2 (souborové úložiště)
+ * a realtime kanál.
+ *
+ * Tajné kódy pro R2 a realtime nikdy neopouštějí tento server — klient dostane
+ * jen krátce platný, okruhem (`tenant = sry`) omezený tiket. Odchozí volání jde
+ * výhradně přes `HttpModule::client()`, nikoli přímým cURLem.
+ */
 class CloudflareGateway
 {
+    /**
+     * @param  string            $url   Základní HTTPS URL workera.
+     * @param  string            $secret Podepisovací klíč pro tikety.
+     * @param  HttpClient|null   $http  Klient pro odchozí volání; prázdná hodnota znamená `HttpModule::client()`.
+     * @return void
+     */
     public function __construct(private string $url, private string $secret, private readonly ?HttpClient $http = null) {}
+
+    /**
+     * Vytvoří krátce platný podepsaný tiket pro workera.
+     *
+     * @param  array<string, mixed> $claims Claimy vložené do tiketu (např. `key`, `op`).
+     * @return string                   Tiket ve formátu `payload.signatura` (base64url).
+     * @throws SryError                  'notConfigured' (503), pokud URL není HTTPS nebo je klíč příliš krátký.
+     */
     public function ticket(array $claims): string
     {
         if (
@@ -42,6 +63,14 @@ class CloudflareGateway
                 "=",
             );
     }
+    /**
+     * Sestaví podepsanou URL koncového bodu workera.
+     *
+     * @param  string               $path   Cesta koncového bodu (např. '/media').
+     * @param  array<string, mixed> $claims Claimy pro tiket.
+     * @return string                      Absolutní URL s parametrem `ticket`.
+     * @throws SryError                    'notConfigured' (503), pokud je konfigurace neúplná.
+     */
     public function url(string $path, array $claims): string
     {
         return rtrim($this->url, "/") .
@@ -49,6 +78,16 @@ class CloudflareGateway
             "?ticket=" .
             rawurlencode($this->ticket($claims));
     }
+    /**
+     * Zavolá koncový bod workera přes sdílený HTTP klient a vrátí dekódovanou odpověď.
+     *
+     * @param  string                $path   Cesta koncového bodu.
+     * @param  array<string, mixed>  $claims Claimy pro tiket.
+     * @param  array|null            $body   Tělo JSON pro POST, nebo null pro GET.
+     * @return array<string, mixed>         Dekódovaná odpověď workera.
+     * @throws SryError                    'cloudUnavailable' (503) při chybě sítě nebo stavu mimo 2xx,
+     *                                    a při neplatné JSON odpovědi (`\JsonException`).
+     */
     public function call(
         string $path,
         array $claims,

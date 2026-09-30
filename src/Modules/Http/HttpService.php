@@ -12,22 +12,54 @@ use GuzzleHttp\Promise\{Create, PromiseInterface};
 use GuzzleHttp\Psr7\{Uri, UriResolver, Utils};
 use Psr\Http\Message\ResponseInterface;
 
-/** The sole HTTP transport: bounded concurrency, deadlines, TLS and safe error results. */
+/**
+ * Jediný HTTP transport modulu: omezená souběžnost, deadliny, TLS a bezpečné chybové výsledky.
+ *
+ * Tato implementace `HttpClient` je jediné místo, kde projekt sestavuje Guzzle
+ * klienta. Ostatní moduly získají instanci přes `HttpModule::client()` ve
+ * composition rootu a dostávají ji injekcí — nesmějí si klienta vytvářet samy.
+ * Přihlašovací údaje zůstávají v `HttpRequest` pro jediný požadavek a nikdy
+ * nejsou uloženy na sdíleném klientovi.
+ */
 final class HttpService implements HttpClient
 {
     private readonly ClientInterface $client;
 
+    /**
+     * Vytvoří transport s explicitně asynchronním handlerem.
+     *
+     * @param  ClientInterface|null $client Testovací klient; v produkci se použije interní Guzzle instance.
+     * @return void
+     */
     public function __construct(?ClientInterface $client = null)
     {
         // Explicit async-capable handler: a synchronous stream fallback would break batch deadlines.
         $this->client = $client ?? new Client(['handler' => HandlerStack::create(new CurlMultiHandler(['select_timeout' => 0.02]))]);
     }
 
+    /**
+     * Odešle jeden požadavek s jeho vlastním timeoutem jako limit.
+     *
+     * @param  HttpRequest   $request Popis požadavku včetně per-request limitů a přihlašovacích údajů.
+     * @return HttpResponse            Odpověď; chyby sítě a limitů jsou vráceny jako `error` s HTTP kódem 0.
+     */
     public function send(HttpRequest $request): HttpResponse
     {
         return $this->sendAll([$request], $request->timeoutMs, 1)[0];
     }
 
+    /**
+     * Odešle dávku požadavků paralelně se společným časovým rozpočtem.
+     *
+     * Chybějící odpověď se nikdy nevynechá — klíče i pořadí výsledků odpovídají vstupu.
+     * Chyby jednotlivých požadavků nemizí do výjimky, ale vracejí se jako `HttpResponse`.
+     *
+     * @param  array<array-key,HttpRequest> $requests    Požadavky k odeslání.
+     * @param  int                          $budgetMs    Společný časový rozpočet dávky v milisekundách.
+     * @param  int                          $concurrency Maximální počet souběžných spojení (1–32).
+     * @return array<array-key,HttpResponse>            Výsledky se stejnými klíči jako vstup.
+     * @throws \InvalidArgumentException Pokud jsou limity neplatné nebo položka není `HttpRequest`.
+     */
     public function sendAll(array $requests, int $budgetMs = 6000, int $concurrency = 4): array
     {
         if ($budgetMs < 1 || $concurrency < 1 || $concurrency > 32) {
@@ -40,17 +72,40 @@ final class HttpService implements HttpClient
         }
         $deadline = hrtime(true) / 1e9 + $budgetMs / 1000;
         $results = [];
-        $jobs = function () use ($requests, $deadline): \Generator {
+        $jobs =
+            /**
+             * Zdroj úloh pro pool; každý klíč je jeden požadavek.
+             *
+             * @return \Generator<string, callable> Dvojice klíč a přenos pro každý požadavek.
+             */
+            function () use ($requests, $deadline): \Generator {
             foreach ($requests as $key => $request) {
                 yield $key => fn () => $this->transfer($request, $request->url, min($deadline, hrtime(true) / 1e9 + $request->timeoutMs / 1000));
             }
         };
         $pool = new Pool($this->client, $jobs(), [
             'concurrency' => $concurrency,
-            'fulfilled' => static function (HttpResponse $response, $key) use (&$results): void {
+            'fulfilled' =>
+                /**
+                 * Úspěšný přenos se uloží pod původním klíčem.
+                 *
+                 * @param  HttpResponse $response Výsledek přenosu.
+                 * @param  string|int   $key       Klíč požadavku.
+                 * @return void                   Vedlejší efekt: zápis do výsledků.
+                 */
+                static function (HttpResponse $response, $key) use (&$results): void {
                 $results[$key] = $response;
             },
-            'rejected' => static function ($reason, $key) use (&$results): void {
+            'rejected' =>
+                /**
+                 * Odmítnutý přenos se nahradí syntetickou odpovědí, aby výsledek
+                 * zachoval stejné pořadí a klíče jako vstup.
+                 *
+                 * @param  mixed       $reason Důvod odmítnutí.
+                 * @param  string|int  $key    Klíč požadavku.
+                 * @return void                Vedlejší efekt: zápis `network_error` do výsledků.
+                 */
+                static function ($reason, $key) use (&$results): void {
                 $results[$key] = new HttpResponse(0, '', 'network_error');
             },
         ]);
@@ -59,6 +114,15 @@ final class HttpService implements HttpClient
         return array_replace(array_fill_keys(array_keys($requests), null), $results);
     }
 
+    /**
+     * Provede jeden přenos včetně ručního zpracování povolených přesměrování.
+     *
+     * @param  HttpRequest      $request   Popis požadavku (limity, hlavičky, případné redirect hosty).
+     * @param  string           $url       Aktuální cílová URL (může se změnit při přesměrování).
+     * @param  float            $deadline  Absolutní časový okamžik (hrtime) do kdy lze čekat.
+     * @param  int              $redirects Kolik přesměrování už proběhlo.
+     * @return PromiseInterface            Promise s `HttpResponse`; chyby jsou převedeny na `error` kód 0.
+     */
     private function transfer(HttpRequest $request, string $url, float $deadline, int $redirects = 0): PromiseInterface
     {
         $sink = null;
@@ -95,6 +159,13 @@ final class HttpService implements HttpClient
                 $options['multipart'] = $request->multipart;
             }
             return $this->client->requestAsync($request->method, $url, $options)->then(
+                /**
+                 * Zpracuje úspěšnou odpověď: limity, povolená přesměrování, tělo a `Retry-After`.
+                 *
+                 * @param  ResponseInterface $response Odpověď Guzzle.
+                 * @return HttpResponse|PromiseInterface  Výsledek, případně slíbení
+                 *                                 pro následné povolené přesměrování.
+                 */
                 function (ResponseInterface $response) use ($request, $url, $deadline, $redirects, $sink): HttpResponse|PromiseInterface {
                     try {
                         $status = $response->getStatusCode();
@@ -122,6 +193,13 @@ final class HttpService implements HttpClient
                         $sink->close();
                     }
                 },
+                /**
+                 * Převede selhání přenosu na `HttpResponse` s kódem chyby podle
+                 * příčiny (limit, deadline, síť).
+                 *
+                 * @param  mixed         $reason Důvod selhání.
+                 * @return HttpResponse           Odpověď se stavem 0 a kódem chyby.
+                 */
                 static function ($reason) use ($sink, $deadline): HttpResponse {
                     $error = $sink->exceeded ? 'response_too_large' : (hrtime(true) / 1e9 >= $deadline ? 'deadline_exceeded' : 'network_error');
                     $sink->close();

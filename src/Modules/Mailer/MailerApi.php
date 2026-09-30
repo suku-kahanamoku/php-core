@@ -11,13 +11,40 @@ use App\Modules\Router\Response;
 use App\Modules\Router\Router;
 use App\Utils\RateLimiter;
 
+/**
+ * HTTP vrstva odesílání e-mailů.
+ *
+ * Routy:
+ *   POST /mailer            kontaktní formulář (veřejné, omezené na IP)
+ *   POST /mailer/newsletter přihlášení do newsletteru (veřejné, omezené na IP)
+ *   POST /mailer/send       odeslání šablony (admin)
+ *   GET  /mailer/test       testovací e-mail (admin)
+ *   GET  /mailer/list       seznam šablon daného okurku (admin)
+ *
+ * Přílohy se berou jen ze složky `files/<okrsek>/` daného okurku, takže nelze
+ * přiložit soubor jiného okurku ani systémový soubor. Veřejné endpointy jsou
+ * omezené `RateLimiter`em podle e-mailu a IP.
+ */
 class MailerApi
 {
+    /** Služba odesílání e-mailů pro daný okrsek. */
     private MailerService $_service;
+
+    /** Kód okurku (předpona konfigurace a složka souborů). */
     private string        $_code;
+
+    /** Ověření identity a rolí pro administrativní endpointy. */
     private Auth          $_auth;
+
+    /** Omezení četnosti pro veřejné endpointy. */
     private RateLimiter   $_rateLimiter;
 
+    /**
+     * @param  Database $db            Databázová vrstva pro `RateLimiter`.
+     * @param  string   $franchiseCode Kód okurku.
+     * @param  Auth     $auth          Ověření identity a rolí.
+     * @return void
+     */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {
         $this->_code    = $franchiseCode;
@@ -26,6 +53,12 @@ class MailerApi
         $this->_rateLimiter = new RateLimiter($db, $franchiseCode);
     }
 
+    /**
+     * Zaregistruje routy modulu maileru; `GET /mailer` je odmítnut jako 405.
+     *
+     * @param  Router $router Router s base path modulu.
+     * @return void           Vedlejší efekt: přidá routy do routeru.
+     */
     public function registerRoutes(Router $router): void
     {
         $router->get('/', fn(Request $req) => Response::error('Method not allowed', 405));
@@ -36,6 +69,14 @@ class MailerApi
         $router->get('/list', fn(Request $req) => $this->listTemplates($req));
     }
 
+    /**
+     * Odešle e-mail podle šablony s přílohami z daného okurku.
+     *
+     * @param  Request $request Aktuální požadavek; povinná pole `to`, `subject`,
+     *                           `template`, `fromEmail`, `fromName` a `fromPhone`,
+     *                           volitelně `logoPath`, `bcc` a `attachments`.
+     * @return void             Vedlejší efekt: odeslání e-mailu; jinak 400, 422 nebo 500.
+     */
     private function send(Request $request): void
     {
         $requiredFields = [
@@ -122,6 +163,13 @@ class MailerApi
         Response::success($data, 'Email sent.');
     }
 
+    /**
+     * Zpracuje veřejný kontaktní formulář.
+     *
+     * @param  Request $request Aktuální požadavek; `name`, `email`, `project`,
+     *                           `message` a volitelně `phone`.
+     * @return void             Vedlejší efekt: odeslání e-mailu; jinak 400, 429 nebo 500.
+     */
     private function sendContactForm(Request $request): void
     {
         $name    = trim((string) $request->get('name', ''));
@@ -207,6 +255,12 @@ class MailerApi
         );
     }
 
+    /**
+     * Zapíše odběratele do newsletteru.
+     *
+     * @param  Request $request Aktuální požadavek; `email`.
+     * @return void             Vedlejší efekt: odeslání potvrzujícího e-mailu; jinak 400, 429 nebo 500.
+     */
     private function sendNewsletter(Request $request): void
     {
         $email = trim((string) $request->get('email', ''));
@@ -299,6 +353,12 @@ class MailerApi
         ];
     }
 
+    /**
+     * Odvodí předponu konfiguračních proměnných z kódu okurku
+     * (např. `fann` → `FANN_`).
+     *
+     * @return string Předpona s podtržítkem, nebo prázdný řetězec pro výchozí okrsek.
+     */
     private function resolveMailerEnvPrefix(): string
     {
         if ($this->_code === '') {
@@ -308,6 +368,12 @@ class MailerApi
         return trim(preg_replace('/[^A-Z0-9]+/', '_', strtoupper($this->_code)), '_') . '_';
     }
 
+    /**
+     * Odešle testovací e-mail na zadanou adresu.
+     *
+     * @param  Request $request Aktuální požadavek; `email`.
+     * @return void             Vedlejší efekt: `Response::success()`; jinak 400 nebo 500.
+     */
     private function sendTest(Request $request): void
     {
         $email = trim((string) $request->get('email', ''));
@@ -328,6 +394,12 @@ class MailerApi
         Response::success(['email' => $email], 'Test email sent.');
     }
 
+    /**
+     * Vypíše šablony e-mailů daného okurku ze složky `emails/<okrsek>`.
+     *
+     * @param  Request $request Aktuální požadavek.
+     * @return void             Vedlejší efekt: `Response::success()` se seznamem `{ template }`.
+     */
     private function listTemplates(Request $request): void
     {
         $dir       = dirname(__DIR__, 3) . '/emails/' . $this->_code;

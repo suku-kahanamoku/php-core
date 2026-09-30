@@ -8,11 +8,39 @@ use App\Modules\Http\Contracts\HttpClient;
 use App\Modules\Transport\Contracts\{ResourceProvider};
 use App\Modules\Transport\Repositories\TransportRepository;
 
+/**
+ * Čtení míst a jednotlivých zdrojů napříč poskytovateli.
+ *
+ * ID zdrojů je neprůhledné a kódované přes `ResourceIdCodec`, takže se vždy
+ * ověřuje okrsek i druh zdroje. Živé údaje se doplňují z API poskytovatele,
+ * ale při nedostupnosti se použije importovaný jízdní řád; výsledek pak nese
+ * `partial` a upozornění na neúplné pokrytí.
+ */
 final class ResourceService
 {
+    /**
+     * @param  ProviderRegistry    $registry   Poskytovatelé okurku.
+     * @param  HttpClient          $http       Sdílený HTTP klient.
+     * @param  TransportRepository $repository Importovaná data a stav poskytovatelů.
+     * @return void
+     */
     public function __construct(private readonly ProviderRegistry $registry, private readonly HttpClient $http, private readonly TransportRepository $repository)
     {
     }
+
+    /**
+     * Vyhledá místa u všech poskytovatelů a doplní je importovaným indexem.
+     *
+     * @param  string      $query   Hledaný název, 2–120 znaků.
+     * @param  int         $limit   Požadovaný počet výsledků.
+     * @param  string|null $country Kód země ISO 3166-1 alpha-2, nebo null.
+     * @return array{places: list<array<string, mixed>>, partial: bool, sources: list<array<string, mixed>>}
+     *         Místa, příznak neúplných výsledků a stav jednotlivých zdrojů.
+     * @throws TransportException 'invalid_query' či 'invalid_country' (bez
+     *                            stavového kódu) při chybném vstupu,
+     *                            'sources_unavailable' (503), pokud nelze
+     *                            žádný zdroj.
+     */
     public function places(string $query, int $limit, ?string $country): array
     {
         if (mb_strlen(trim($query)) < 2 || mb_strlen($query) > 120) {
@@ -63,6 +91,28 @@ final class ResourceService
         }
         return ['places' => array_slice(array_values($items), 0, $limit),'partial' => $partial,'sources' => $sources];
     }
+    /**
+     * Načte jeden zdroj (zastávku, spoj, odjezdy nebo polohu) podle ID.
+     *
+     * ID se nejprve ověří a rozloží; u spojů je povinné datum služby. Je-li
+     * živý zdroj nedostupný, použije se importovaný jízdní řád a u odjezdů
+     * plánovač nastavený jako `schedule_provider`; výsledek je pak označen jako
+     * `partial` s režimem `fallback`. Zdroj jiného okurku se tím způsobem
+     * otevřít nedá.
+     *
+     * @param  string               $operation `stop`, `trip`, `departures` nebo `realtime`.
+     * @param  string               $id        Neprůhledné ID zdroje z našeho API.
+     * @param  array<string, mixed> $input     Doplňující vstup (např. čas odjezdu).
+     * @param  int                  $depth     Aktuální hloubka přesměrování mezi poskytovateli.
+     * @return array{result: array<string, mixed>, source: array<string, mixed>, partial: bool}
+     *         Data, popis zdroje a příznak neúplnosti.
+     * @throws TransportException 'invalid_configuration' (500) při cyklickém
+     *                            přesměrování, 'missing_service_date',
+     *                            'not_found' (404), 'schedule_unavailable' (503),
+     *                            'unsupported_capability' (422) nebo
+     *                            'source_unavailable' (503), pokud živá data
+     *                            nejsou k dispozici.
+     */
     public function resource(string $operation, string $id, array $input = [], int $depth = 0): array
     {
         if ($depth > 2) {
@@ -126,6 +176,13 @@ final class ResourceService
         }
         throw new TransportException('unsupported_capability', 'This source does not provide the requested operation.', 422);
     }
+    /**
+     * Převede zvolené místo na souřadnice vhodné pro vyhledávání spojů.
+     *
+     * @param  array<string, mixed> $place Místo s `type` `coordinates`, nebo ID zastávky.
+     * @return array<string, mixed>        Místo doplněné o souřadnice a rozložené ID.
+     * @throws TransportException          Při neplatném ID či chybějících souřadnicích.
+     */
     public function resolve(array $place): array
     {
         if ($place['type'] === 'coordinates') {

@@ -10,17 +10,32 @@ use App\Modules\Router\Request;
 use App\Modules\Router\Response;
 use App\Modules\Router\Router;
 
+/**
+ * HTTP vrstva faktur.
+ *
+ * Routy (oprávnění kontroluje `Auth` uvnitř služby):
+ *   GET    /invoices        seznam faktur
+ *   GET    /invoices/:id    detail faktury
+ *   POST   /invoices        vytvoření faktury
+ *   GET    /invoices/:id/pdf  PDF faktury
+ *
+ * Seznamy používají standardní dotazový kontrakt (`page`, `limit`, `sort`, `q`,
+ * `projection`, řádky v klici `data`) a vstupy se ověřují přes `VALIDATOR()`.
+ */
 class InvoiceApi
 {
+    /** Aplikační služby faktur vázané na okrsek. */
     private InvoiceService $_service;
+
+    /** Ověření identity a rolí pro endpointy faktur. */
     private Auth $_auth;
 
     /**
-     * Konstruktor tridy InvoiceApi.
+     * Konstruktor třídy InvoiceApi.
      *
-     * @param Database $db
-     * @param string   $franchiseCode
-     * @param Auth     $auth
+     * @param Database $db            Databázová vrstva pro daný okrsek.
+     * @param string   $franchiseCode Kód okurku.
+     * @param Auth     $auth          Ověření identity a rolí.
      */
     public function __construct(Database $db, string $franchiseCode, Auth $auth)
     {

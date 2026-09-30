@@ -6,20 +6,56 @@ namespace App\Modules\Etymolog;
 
 use App\Modules\Auth\Auth;
 
+/**
+ * Aplikační služby modulu Etymolog: CRUD všech zdrojů, hromadné publikování
+ * a správa synchronizace.
+ *
+ * Každý zdroj má vlastní repozitář popsaný v `ResourceRegistry`, takže pole,
+ * povinné hodnoty a reference se neopisují. Zápisy běží výhradním zámkem
+ * a v transakci; pravidla publikace a důkazů se uplatňují i při hromadném
+ * publikování, které proto nevyhovující záznamy přeskočí s uvedením důvodu.
+ *
+ * Kulturní texty a dokumentovaná tvrzení lze zveřejnit jen s odkazem na původní
+ * zdroj a citací, která odpovídá textu — vymýšlené tvrzení se tak nepropírá.
+ */
 final class EtymologService
 {
-    /** @param array<string,EtymologRepository> $repositories */
+    /**
+     * @param  array<string, EtymologRepository> $repositories Repo podle klíče zdroje.
+     * @param  Auth              $auth       Autorizace v rámci požadavku.
+     * @param  EtymologSyncRepository  $sync   Běhy a importní záznamy synchronizace.
+     * @param  EtymologStoryRepository  $stories Kulturní texty.
+     * @param  EtymologExternalRepository $external Importy z externích zdrojů.
+     * @param  EtymologBackgroundService|null $background Služby synchronizace na pozadí.
+     * @return void
+     */
     public function __construct(private readonly array $repositories, private readonly Auth $auth, private readonly EtymologSyncRepository $sync, private readonly EtymologStoryRepository $stories, private readonly EtymologExternalRepository $external, private readonly ?EtymologBackgroundService $background = null)
     {
     }
 
-    /** Explicit admin action; normal publication/evidence rules apply to every draft. */
+    /**
+     * Zveřejní všechny koncepty napříč zdroji (výslovná akce administrátora).
+     *
+     * Platí běžná pravidla publikace a důkazů i pro jednotlivé koncepty — záznam,
+     * který pravidla nesplňuje, se přeskočí a důvod se vrátí v `skipped_records`.
+     *
+     * @param  array<string, mixed> $input Tělo požadavku; musí být prázdné.
+     * @return array<string, mixed> Počty zveřejněných a přeskočených záznamů po zdrojích.
+     * @throws EtymologException           403 bez role `admin`, 422 pokud tělo není prázdné.
+     */
     public function publishAll(array $input): array
     {
         $this->auth->requireRole('admin');
         if ($input !== []) { throw new EtymologException('Bulk publication accepts no parameters'); }
         $lock = $this->repositories['names'];
-        return $lock->exclusive(fn () => $lock->transaction(function () {
+        return $lock->exclusive(fn () => $lock->transaction(
+            /**
+             * Hromadné publikování běží v jedné transakci pod výhradním zámkem okurku.
+             *
+             * @return array<string, mixed> Počty zveřejněných a přeskočených záznamů.
+             * @throws \Throwable          Chyba databáze se po přepisu stavu vyhodí.
+             */
+            function () {
             $result = ['published' => 0, 'skipped' => 0, 'resources' => [], 'skipped_records' => []];
             foreach (['names', 'entries', 'calendar-days'] as $resource) {
                 $repo = $this->repositories[$resource];
@@ -46,6 +82,13 @@ final class EtymologService
         }));
     }
 
+    /**
+     * Spustí synchronizaci na pozadí (výslovná akce administrátora).
+     *
+     * @param  array<string, mixed> $input Tělo požadavku; musí být prázdné.
+     * @return array<string, mixed> Stav nově přijaté žádosti.
+     * @throws EtymologException 403 bez role `admin`, 422 při neprázdném těle, 503 bez workera.
+     */
     public function startSync(array $input): array
     {
         $this->auth->requireRole('admin');
@@ -53,45 +96,106 @@ final class EtymologService
         return ($this->background ?? throw new EtymologException('Worker unavailable', 503))->start($this->auth->id());
     }
 
+    /**
+     * Vrátí stav synchronizace pro zobrazení v UI.
+     *
+     * @return array<string, mixed>|null Stav běhu, nebo null pokud žádný není.
+     * @throws EtymologException 403 bez role `admin`, 503 bez workera.
+     */
     public function syncStatus(): ?array
     {
         $this->auth->requireRole('admin');
         return ($this->background ?? throw new EtymologException('Worker unavailable', 503))->status();
     }
 
+    /**
+     * Vrátí importní záznamy Wikidata pro jméno.
+     *
+     * @param  int $nameId ID jména.
+     * @return list<array<string, mixed>> Záznamy s dekódovaným payloadem.
+     * @throws EtymologException 404, pokud jméno v okurku neexistuje.
+     * @throws \JsonException    Pokud uložený payload není platný JSON.
+     */
     public function imports(int $nameId): array
     {
         $this->get('names', $nameId);
         return $this->sync->imports($nameId);
     }
 
+    /**
+     * Vrátí importní záznamy kulturního textu i externích zdrojů pro výklad.
+     *
+     * @param  int $entryId ID výkladu.
+     * @return list<array<string, mixed>> Sloučené záznamy obou typů importů.
+     * @throws EtymologException 404, pokud výklad neexistuje.
+     * @throws \JsonException    Pokud uložený payload není platný JSON.
+     */
     public function storyImports(int $entryId): array
     {
         $this->get('entries', $entryId);
         return [...$this->stories->imports($entryId), ...$this->external->imports('entries', $entryId)];
     }
 
+    /**
+     * Vrátí importní záznamy daného externího zdroje pro záznam.
+     *
+     * @param  string $resource Klíč zdroje ('names', 'entries', 'occurrences', 'calendar-days').
+     * @param  int    $id      ID záznamu.
+     * @return list<array<string, mixed>> Záznamy s dekódovaným payloadem.
+     * @throws EtymologException 404, pokud záznam neexistuje, 422 pro neznámý zdroj.
+     * @throws \JsonException    Pokud uložený payload není platný JSON.
+     */
     public function externalImports(string $resource, int $id): array
     {
         $this->get($resource, $id);
         return $this->external->imports($resource, $id);
     }
 
+    /**
+     * Resetuje kurzor zdroje, aby se znovu stáhlo vše od začátku.
+     *
+     * @param  int $id ID zdroje.
+     * @return array<string, mixed> Aktualizovaný záznam zdroje.
+     * @throws EtymologException 404, pokud zdroj neexistuje, 403 bez oprávnění ke zdroji.
+     */
     public function resetJob(int $id): array
     {
         $repo = $this->repository('sync-jobs');
-        return $repo->exclusive(fn () => $repo->transaction(function () use ($repo, $id) {
+        return $repo->exclusive(fn () => $repo->transaction(
+            /**
+             * Reset kurzoru úlohy běží v jedné transakci pod výhradním zámkem okurku.
+             *
+             * @return array<string, mixed> Aktualizovaná úloha synchronizace.
+             * @throws EtymologException     404, pokud úloha neexistuje; 409 při obsazeném zámku.
+             */
+            function () use ($repo, $id) {
             $this->get('sync-jobs', $id);
             return $repo->update($id, ['cursor' => null, 'next_run_at' => null, 'last_error' => null, 'last_status' => 'reset', 'updated_by' => $this->auth->id()]);
         }));
     }
 
+    /**
+     * Vrátí stránku historie běhů zdroje.
+     *
+     * @param  int $jobId ID zdroje.
+     * @param  int $page  Číslo stránky.
+     * @param  int $limit  Velikost stránky (omezena repozitářem na 1–100).
+     * @return array<string, mixed> Řádky a metadata stránky.
+     * @throws EtymologException 404, pokud zdroj neexistuje.
+     */
     public function runs(int $jobId, int $page, int $limit): array
     {
         $this->get('sync-jobs', $jobId);
         return $this->sync->runs($jobId, $page, $limit);
     }
 
+    /**
+     * Vrátí repozitář zdroje po ověření přihlášení a případné role administrátora.
+     *
+     * @param  string $resource Klíč zdroje z `ResourceRegistry`.
+     * @return EtymologRepository Repo zdroje.
+     * @throws EtymologException 401 bez přihlášení, 403 u zdrojů vyhrazených administrátorovi.
+     */
     private function repository(string $resource): EtymologRepository
     {
         $this->auth->require();
@@ -102,6 +206,22 @@ final class EtymologService
         return $this->repositories[$resource];
     }
 
+    /**
+     * Vrátí stránku záznamů zdroje podle standardního dotazového kontraktu.
+     *
+     * Filtr `q` se ověřuje zde: musí to být JSON objekt, hodnoty skalární a
+     * operátory jen ze známé množiny; pole mimo oddíl přidělené repozitáři
+     * omezí `QueryPolicy` uvnitř repozitáře.
+     *
+     * @param  string              $resource   Klíč zdroje.
+     * @param  int                 $page       Číslo stránky.
+     * @param  int                 $limit      Velikost stránky.
+     * @param  string              $sort       Řazení ve formátu `pole:směr`.
+     * @param  string              $filter     Filtr `q` jako JSON; prázdný řetězec bez filtru.
+     * @param  array<int, string>|null $projection Požadovaná pole, nebo null pro vše.
+     * @return array<string, mixed>            Řádky a metadata stránky.
+     * @throws EtymologException 401/403 při chybějícím oprávnění, 422 při neplatném filtru.
+     */
     public function list(string $resource, int $page, int $limit, string $sort, string $filter, ?array $projection): array
     {
         $repo = $this->repository($resource);
@@ -111,7 +231,15 @@ final class EtymologService
                 throw new EtymologException('q must be a JSON object');
             }
             // The shared filter supports arrays only as operator specifications/IN/range values.
-            array_walk_recursive($decoded, static function ($value): void {
+            array_walk_recursive($decoded, static             /**
+             * Kontrola, že filtr obsahuje jen skalární hodnoty; pole smí být
+             * pouze jako specifikace operátoru, hodnoty `IN` nebo rozsahu.
+             *
+             * @param  mixed $value Hodnota z filtru `q`.
+             * @return void          Bez návratu; při chybě vyhodí výjimku.
+             * @throws EtymologException 'Invalid filter' (400), pokud hodnota není skalární ani null.
+             */
+function ($value): void {
                 if (!is_scalar($value) && $value !== null) {
                     throw new EtymologException('Invalid filter');
                 }
@@ -142,15 +270,48 @@ final class EtymologService
         return $repo->findAll($page, $limit, $sort, $filter, $projection);
     }
 
+    /**
+     * Načte jeden záznam zdroje.
+     *
+     * @param  string                    $resource   Klíč zdroje.
+     * @param  int                       $id         ID záznamu.
+     * @param  array<int, string>|null   $projection Požadovaná pole, nebo null pro vše.
+     * @return array<string, mixed>                Záznam.
+     * @throws EtymologException 401/403 bez oprávnění, 404 pokud záznam neexistuje.
+     */
     public function get(string $resource, int $id, ?array $projection = null): array
     {
         return $this->repository($resource)->findById($id, $projection) ?? throw new EtymologException('Record not found', 404);
     }
 
+    /**
+     * Vytvoří nebo upraví záznam zdroje včetně všech validačních pravidel.
+     *
+     * Změna poskytovatele, jazyka nebo druhu u zdroje synchronizace resetuje
+     * kurzor, aby nové dotáání začalo od začátku. Zdroj s publikovanými
+     * důkazy se nedá upravit, dokud se dotčené záznamy nezruší publikování.
+     *
+     * @param  string               $resource Klíč zdroje.
+     * @param  int|null             $id       ID pro úpravu, nebo null pro vytvoření.
+     * @param  array<string, mixed> $input    Tělo požadavku.
+     * @param  bool                 $replace  true pro PUT — chybějící povinné pole je chyba,
+     *                                       false pro PATCH — chybějící pole převezme z existujícího záznamu.
+     * @return array<string, mixed> Vytvořený nebo upravený záznam.
+     * @throws EtymologException 401/403 bez oprávnění, 404 při neexistujícím ID,
+     *                           409 při konfliktu vazeb, 422 při chybných hodnotách.
+     */
     public function save(string $resource, ?int $id, array $input, bool $replace = false): array
     {
         $repo = $this->repository($resource);
-        return $repo->exclusive(fn () => $repo->transaction(function () use ($repo, $resource, $id, $input, $replace) {
+        return $repo->exclusive(fn () => $repo->transaction(
+            /**
+             * Uložení záznamu běží v jedné transakci pod výhradním zámkem okurku.
+             *
+             * @return array<string, mixed> Uložený záznam.
+             * @throws EtymologException     400 při neplatných datech, 404, 409 při kolizi
+             *                               reference nebo obsazeném zámku.
+             */
+            function () use ($repo, $resource, $id, $input, $replace) {
             $existing = $id === null ? [] : $this->get($resource, $id);
             $data = $this->validate($resource, $input, $existing, $id === null || $replace);
             if ($resource === 'sources' && $id !== null && $repo->hasPublishedEvidenceUse($id)) {
@@ -174,6 +335,20 @@ final class EtymologService
         }));
     }
 
+    /**
+     * Ověří a převede vstup na hodnoty pro záznam podle definice zdroje.
+     *
+     * Zkontroluje neznámá a jen pro čtení pole, povinné hodnoty, typy, reference
+     * v rámci okurku a pravidla specifická pro daný zdroj (kombinace poskytovatele,
+     * jazyka a druhu, konzistence dat, vazby text–jméno, důkazy pro publikaci).
+     *
+     * @param  string               $resource Klíč zdroje.
+     * @param  array<string, mixed> $input    Tělo požadavku.
+     * @param  array<string, mixed> $existing Existující záznam (prázdný při vytvoření).
+     * @param  bool                 $replace  true, pokud musí být dodány všechny povinné hodnoty.
+     * @return array<string, mixed>           Normalizované hodnoty pro uložení.
+     * @throws EtymologException 422 při neplatných polích, 409 při duplicitní vazbě.
+     */
     private function validate(string $resource, array $input, array $existing, bool $replace): array
     {
         $definition = ResourceRegistry::get($resource);
@@ -268,6 +443,21 @@ final class EtymologService
         return $data;
     }
 
+    /**
+     * Ověří a přetypuje jednu hodnotu podle typu pole z definice zdroje.
+     *
+     * Celočíselné typy mají pevné meze, řetězce musí být platné UTF-8 bez NUL,
+     * data a jazyky se kontrolují podle formátu a URL smí být jen http(s)
+     * bez přihlašovacích údajů.
+     *
+     * @param  string $field  Název pole (jen pro hlášku chyby).
+     * @param  string $type   Typ z definice: 'enum:...', 'id', 'year', 'count', 'batch',
+     *                        'interval', 'bool', 'month', 'day', 'date', 'language',
+     *                        'country', 'url' nebo 'max<limit>'.
+     * @param  mixed  $value  Vstupní hodnota.
+     * @return mixed           Normalizovaná hodnota.
+     * @throws EtymologException 422 'Invalid field: <pole>'.
+     */
     private function value(string $field, string $type, mixed $value): mixed
     {
         $fail = static fn () => throw new EtymologException('Invalid field: '.$field);
@@ -311,13 +501,33 @@ final class EtymologService
         return strlen($value) <= $max ? $value : $fail();
     }
 
+    /**
+     * Odstraní záznam zdroje — standardně měkce, s `force` natvrdo.
+     *
+     * Natvrdo smazání vyžaduje roli administrátora a zahrnuje i zrušené záznamy.
+     * Záznam, na kterém něco jiný závisí, smazat nelze; takovou chybu vrátí 409.
+     *
+     * @param  string $resource Klíč zdroje.
+     * @param  int    $id       ID záznamu.
+     * @param  bool   $force    true pro natvrdo smazání včetně zrušených záznamů.
+     * @return void            Vedlejší efekt: zrušení nebo odstranění záznamu.
+     * @throws EtymologException 401/403 bez oprávnění, 404 pokud záznam neexistuje,
+     *                           409 pokud na záznamu něco závisí nebo je zveřejněný důkaz.
+     */
     public function remove(string $resource, int $id, bool $force = false): void
     {
         $repo = $this->repository($resource);
         if ($force) {
             $this->auth->requireRole('admin');
         }
-        $repo->exclusive(fn () => $repo->transaction(function () use ($repo, $resource, $id, $force) {
+        $repo->exclusive(fn () => $repo->transaction(
+            /**
+             * Logické smazání běží v jedné transakci pod výhradním zámkem okurku.
+             *
+             * @return void               Bez návratu; změna se provede v transakci.
+             * @throws EtymologException 400, 403, 404 nebo 409 při obsazeném zámku.
+             */
+            function () use ($repo, $resource, $id, $force) {
             $item = $force
                 ? ($repo->findIncludingDeleted($id) ?? throw new EtymologException('Record not found', 404))
                 : $this->get($resource, $id);
@@ -333,7 +543,14 @@ final class EtymologService
         }));
     }
 
-    /** Preserve published evidence when removing a citation. Unpublish the entry first. */
+    /**
+     * Zachová zveřejněné důkazy při mazání citace — nejprve je nutné zrušit publikování výkladu.
+     *
+     * @param  string               $resource Klíč zdroje, v němž se citace upravuje nebo maže.
+     * @param  array<string, mixed> $item     Existující záznam citace.
+     * @return void                         Vedlejší efekt: nic; při porušení pravidla vyhodí 409.
+     * @throws EtymologException 409, pokud výklad s důkazem je zveřejněný.
+     */
     private function guardCitation(string $resource, array $item): void
     {
         if ($resource === 'citations') {

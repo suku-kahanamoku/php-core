@@ -1,9 +1,34 @@
 <?php
 declare(strict_types=1);
 namespace App\Modules\Sry;
+/**
+ * Autentizace a životní cyklus účtů modulu Sry (přihlášení, registrace, pozvánky, reset hesla).
+ *
+ * Tokeny se nikdy neukládají v čitelné podobě — do databáze jde pouze SHA-256
+ * hash. Každý dotaz navíc ověřuje, že účet i rodina patří okurku `sry` a jsou aktivní,
+ * takže se tokenem nedá dostat do jiného okurku ani k deaktivovanému účtu.
+ *
+ * Třída zároveň sdílí statické validační helpery (`text()`, `password()`, `email()`)
+ * s `SryInput`, aby byla validace vstupů jednotná.
+ */
 final class SryAuth
 {
+    /**
+     * @param  SrySqlRepository $db Úzký SQL přístupový bod modulu Sry.
+     * @return void
+     */
     public function __construct(private SrySqlRepository $db) {}
+
+    /**
+     * Načte a zvaliduje textový parametr z těla požadavku.
+     *
+     * @param  array<string, mixed> $body     Tělo požadavku.
+     * @param  string               $key      Klíč parametru.
+     * @param  int                  $max      Maximální délka v multibyte znacích.
+     * @param  bool                 $required true, pokud nesmí být prázdný.
+     * @return string                        Oříznutá hodnota.
+     * @throws SryError                      'invalidInput' (422), pokud hodnota chybí, není řetězec nebo je příliš dlouhá.
+     */
     public static function text(
         array $body,
         string $key,
@@ -20,6 +45,13 @@ final class SryAuth
         }
         return $value;
     }
+    /**
+     * Zvaliduje heslo z těla požadavku.
+     *
+     * @param  array<string, mixed> $body Tělo požadavku s klíčem `password`.
+     * @return string                    Heslo v původní podobě (před hashováním).
+     * @throws SryError                  'passwordInvalid' (422), pokud délka není mezi 10 a 72 znaky.
+     */
     public static function password(array $body): string
     {
         $p = $body["password"] ?? null;
@@ -28,6 +60,14 @@ final class SryAuth
         }
         return $p;
     }
+
+    /**
+     * Načte a zvaliduje e-mailovou adresu (normalizovanou na malá písmena).
+     *
+     * @param  array<string, mixed> $body Tělo požadavku s klíčem `email`.
+     * @return string                    E-mail v malých písmenech.
+     * @throws SryError                  'invalidInput' (422), pokud adresa chybí nebo není platná.
+     */
     public static function email(array $body): string
     {
         $e = strtolower(self::text($body, "email", 254));
@@ -36,6 +76,13 @@ final class SryAuth
         }
         return $e;
     }
+    /**
+     * Vytvoří novou relaci pro člena a vrátí jeho identitu.
+     *
+     * @param  int $member ID člena rodiny.
+     * @return array{token: string, expires_at: string, member: array<string, mixed>}
+     *                  Token, čas vypršení (ISO 8601) a identita člena.
+     */
     public function session(int $member): array
     {
         $token = bin2hex(random_bytes(32));
@@ -51,6 +98,13 @@ final class SryAuth
             "member" => $this->identity($token),
         ];
     }
+    /**
+     * Vyhledá člena podle session tokenu a ověří všechny podmínky platnosti.
+     *
+     * @param  string $token Session token z hlavičky `Authorization`.
+     * @return array<string, mixed>  `{ id, family_id, name, role, ... }`.
+     * @throws SryError              'unauthorized' (401), pokud token neexistuje, vypršel nebo nesplňuje podmínky okurku/aktivnosti.
+     */
     public function identity(string $token): array
     {
         $row = $this->db->one(
@@ -64,6 +118,16 @@ final class SryAuth
         $row["family_id"] = (int) $row["family_id"];
         return $row;
     }
+    /**
+     * Přihlásí uživatele e-mailem a heslem.
+     *
+     * I pro neexistující účet probíhá kontrola hesla se stejnou cenou, aby nebylo
+     * možné zjistit existující účty podle doby odezvy.
+     *
+     * @param  array<string, mixed> $body Tělo požadavku: `email` a `password`.
+     * @return array<string, mixed>      Nová relace (token, vypršení, identita člena).
+     * @throws SryError                  'invalidInput' (422) nebo 'credentials' (401) při chybných údajích.
+     */
     public function login(array $body): array
     {
         $email = self::email($body);
@@ -85,12 +149,28 @@ final class SryAuth
         }
         return $this->session((int) $user["id"]);
     }
+    /**
+     * Zaregistruje nového rodiče: vytvoří účet, rodinu a člena s rolí `admin`.
+     *
+     * @param  array<string, mixed> $body Tělo požadavku: `name`, `email`, `password` povinné.
+     * @return array<string, mixed>      Relace nově vzniklého člena.
+     * @throws SryError                  'invalidInput' (422), 'passwordInvalid' (422),
+     *                                  'accountExists' (409) nebo 'notConfigured' (503), pokud chybí role `user`.
+     */
     public function signup(array $body): array
     {
         $name = self::text($body, "name");
         $email = self::email($body);
         $password = self::password($body);
-        return $this->db->transaction(function () use (
+        return $this->db->transaction(
+            /**
+             * Tělo operace běží v jedné transakci nad databází okurku.
+             *
+             * @return mixed                    Výsledek, který transakce vrátí.
+             * @throws SryError                 Chyba domény; transakce se vrátí zpět.
+             * @throws \PDOException           Chyba databáze; transakce se vrátí zpět.
+             */
+            function () use (
             $name,
             $email,
             $password,
@@ -132,12 +212,27 @@ final class SryAuth
             return $this->session($member);
         });
     }
+    /**
+     * Zneplatní relaci odpovídající tokenu.
+     *
+     * @param  string $token Session token.
+     * @return void          Vedlejší efekt: smaže řádek z `sry_session`.
+     */
     public function logout(string $token): void
     {
         $this->db->execute("DELETE FROM sry_session WHERE token_hash=?", [
             hash("sha256", $token),
         ]);
     }
+    /**
+     * Vytvoří pozvánku pro dítě do rodiny (platnost 10 minut).
+     *
+     * @param  array<string, mixed> $actor Kontext aktéra; musí mít roli `admin`.
+     * @param  array<string, mixed> $body  Tělo požadavku: volitelné `child_id` pro konkrétní dítě,
+     *                                     jinak se pozvánka vytvoří pro nového člena.
+     * @return array{token: string, expires_at: string}  Token pozvánky a čas vypršení.
+     * @throws SryError                               'forbidden' (403) nebo 'notFound' (404).
+     */
     public function invitation(array $actor, array $body): array
     {
         if ($actor["role"] !== "admin") {
@@ -167,11 +262,27 @@ final class SryAuth
             "expires_at" => str_replace(" ", "T", $expires) . "Z",
         ];
     }
+    /**
+     * Přijme pozvánku, vytvoří člena dítěte a vrátí jeho relaci.
+     *
+     * @param  array<string, mixed> $body Tělo požadavku: `token` povinné, `name` pro nového člena.
+     * @return array<string, mixed>      Relace člena.
+     * @throws SryError                  'invalidInput' (422) nebo 'invitationInvalid' (410),
+     *                                  pokud pozvánka vypršela, byla spotřebována nebo neplatí pro dané dítě.
+     */
     public function join(array $body): array
     {
         $token = self::text($body, "token", 64);
         $name = self::text($body, "name");
-        return $this->db->transaction(function () use ($token, $name) {
+        return $this->db->transaction(
+            /**
+             * Tělo operace běží v jedné transakci nad databází okurku.
+             *
+             * @return mixed                    Výsledek, který transakce vrátí.
+             * @throws SryError                 Chyba domény; transakce se vrátí zpět.
+             * @throws \PDOException           Chyba databáze; transakce se vrátí zpět.
+             */
+            function () use ($token, $name) {
             $invite = $this->db->one(
                 "SELECT i.* FROM sry_invitation i JOIN sry_family f ON f.id=i.family_id JOIN user u ON u.id=f.owner_user_id WHERE i.token_hash=? AND i.consumed_at IS NULL AND i.expires_at>? AND f.franchise_code='sry' AND u.deleted=0 AND u.status='active'" .
                     $this->db->lock(),
@@ -215,6 +326,17 @@ final class SryAuth
             return $this->session((int) $child);
         });
     }
+    /**
+     * Vytvoří požadavek na reset hesla a odešle e-mail s tokenem.
+     *
+     * Odpověď je vždy stejná, aby nebylo možné zjistit existující účet.
+     *
+     * @param  array<string, mixed> $body     Tělo požadavku: `email`.
+     * @param  string               $language Jazyk e-mailu ('cs' nebo 'en').
+     * @param  callable             $send     Odesílací callback (email, token, language).
+     * @return array{requested: true}         Potvrzení `{ requested: true }`.
+     * @throws SryError                       'invalidInput' (422), pokud e-mail není platný.
+     */
     public function reset(array $body, string $language, callable $send): array
     {
         $email = self::email($body);
@@ -233,11 +355,27 @@ final class SryAuth
         }
         return ["requested" => true];
     }
+    /**
+     * Nastaví nové heslo a zneplatní všechny relace daného uživatele.
+     *
+     * @param  array<string, mixed> $body Tělo požadavku: `token` a `password` povinné.
+     * @return array{updated: true}       Potvrzení `{ updated: true }`.
+     * @throws SryError                   'passwordInvalid' (422) nebo 'invitationInvalid' (410),
+     *                                   pokud token vypršel nebo byl použit.
+     */
     public function completeReset(array $body): array
     {
         $token = self::text($body, "token", 64);
         $password = self::password($body);
-        return $this->db->transaction(function () use ($token, $password) {
+        return $this->db->transaction(
+            /**
+             * Tělo operace běží v jedné transakci nad databází okurku.
+             *
+             * @return mixed                    Výsledek, který transakce vrátí.
+             * @throws SryError                 Chyba domény; transakce se vrátí zpět.
+             * @throws \PDOException           Chyba databáze; transakce se vrátí zpět.
+             */
+            function () use ($token, $password) {
             $r = $this->db->one(
                 "SELECT r.* FROM sry_password_reset r JOIN user u ON u.id=r.user_id WHERE r.token_hash=? AND r.expires_at>? AND u.franchise_code='sry' AND u.deleted=0 AND u.status='active'" .
                     $this->db->lock(),

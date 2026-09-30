@@ -10,13 +10,25 @@ use App\Modules\Database\Database;
 use App\Modules\Router\Response;
 use App\Utils\QueryPolicy;
 
+/**
+ * Aplikační služby kategorií produktů včetně stromového zobrazení.
+ *
+ * Seznamy používají standardní dotazový kontrakt (`q`, `sort`, `projection`,
+ * `page`, `limit`, řádky v klici `data`) a whitelisty `PUBLIC_*`, které brání
+ * přístupu k interním sloupcům. Kategorii, kterou používají produkty, nelze
+ * smazat.
+ */
 class CategoryService extends BaseService
 {
+    /** Pole, která lze vybrat v `projection`; ostatní jsou skryta. */
     private const PUBLIC_FIELDS = [
         'id', 'created_at', 'updated_at', 'syscode', 'name', 'description',
         'position', 'published', 'parent_id', 'products', 'children',
     ];
+    /** Sloupce povolené ve filtru `q` a jako parametry listu. */
     private const PUBLIC_FILTERS = ['id', 'syscode', 'name', 'parent_id'];
+
+    /** Sloupce povolené v `sort`. */
     private const PUBLIC_SORTS = ['id', 'created_at', 'updated_at', 'syscode', 'name', 'position'];
     private CategoryRepository $_category;
 
@@ -236,6 +248,16 @@ class CategoryService extends BaseService
         return $this->_category->softDelete($id);
     }
 
+    /**
+     * Rekurzivne slozi z plneho seznamu kategorii vetsi podstrom.
+     *
+     * Vsechny polozky jsou prosourany pri kazdem volani, proto je vhodne
+     * zavolat metodu az nad finálním výsledkem filtru, ne průběžně.
+     *
+     * @param  list<array<string, mixed>> $items   Vsechny kategorie, na ktere se filtruje.
+     * @param  int|null                    $parentId ID rodičske kategorie, nebo null pro kořen.
+     * @return list<array<string, mixed>>           Větev včetně klíče `children` u listu s potomky.
+     */
     private function buildTree(array $items, ?int $parentId = null): array
     {
         $branch = [];
