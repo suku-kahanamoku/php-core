@@ -35,7 +35,11 @@ final class SpojenkaMapper
         $external = $this->text($data['persistentId'] ?? null);
         $lat = $data['latitude'] ?? null; $lon = $data['longitude'] ?? null;
         if (!(($lat === null && $lon === null) || (is_numeric($lat) && is_numeric($lon) && is_finite((float)$lat) && is_finite((float)$lon) && abs((float)$lat) <= 90 && abs((float)$lon) <= 180))) { $this->invalid(); }
-        return ['id'=>$this->id('stop', $external),'name'=>$this->text($data['name'] ?? null),
+        $city = null;
+        foreach ($data['placeHierarchy'] ?? [] as $place) {
+            if (($place['type'] ?? null) === 'MUNICIPALITY' && is_string($place['name'] ?? null)) { $city = $place['name']; break; }
+        }
+        return ['city'=>$city,'id'=>$this->id('stop', $external),'name'=>$this->text($data['name'] ?? null),
             'lat'=>$lat === null ? null : (float)$lat,'lon'=>$lon === null ? null : (float)$lon,'platform'=>null,'timezone'=>'Europe/Prague'];
     }
 

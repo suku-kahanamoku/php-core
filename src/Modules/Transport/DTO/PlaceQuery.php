@@ -31,6 +31,6 @@ final class PlaceQuery
         if ($projection !== null && !is_string($projection)) { throw new TransportException('invalid_query','Invalid projection.'); }
         return ['query'=>trim($name),'country'=>$country,'city'=>$city === null ? null : trim($city),'location'=>$location,
             'limit'=>JourneyQuery::integer($body['limit']??20,1,50),'sort'=>$sort,
-            'projection'=>QueryPolicy::projection($projection===null?null:explode(',',$projection),['id','name','lat','lon','platform','timezone','source_mode'])];
+            'projection'=>QueryPolicy::projection($projection===null?null:explode(',',$projection),['id','name','city','lat','lon','platform','timezone','source_mode'])];
     }
 }

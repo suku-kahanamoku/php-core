@@ -187,7 +187,7 @@ final class JourneyService
         if ($query->location !== null) { JourneyQuery::assertFreshLocation($query->location); }
         return ['journeys' => array_map(fn ($journey) => $this->repository->cacheJourney($journey,
             publicStopsOnly: $original->from['type'] === 'stop' && $original->to['type'] === 'stop'), $selectedJourneys),
-            'resolved_places' => $resolvedPlaces, 'partial' => $unavailable || $limited || $locationPartial,'sources' => $sources,'warnings' => $warnings];
+            'area' => ['city'=>JourneyAreaService::city($query, $selectedJourneys)], 'resolved_places' => $resolvedPlaces, 'partial' => $unavailable || $limited || $locationPartial,'sources' => $sources,'warnings' => $warnings];
     }
 
 }

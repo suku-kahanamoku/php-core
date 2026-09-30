@@ -70,3 +70,11 @@ $fixtureResponse['journeySets'][0]['journeys'][0]['journey']['trips'][0]['connec
 fails(fn ()=>$mapper->journeys($fixtureResponse,$nativeQuery),'invalid_upstream');
 check(array_keys($selector->select('places','CZ',null,$fix))===['national','brno'], 'explicit country can combine with GPS city-area selection');
 check(array_keys($selector->select('places','NO',null,$fix))===['norway'], 'explicit foreign country overrides conflicting device position');
+check($mapper->station($stations[0])['city']==='Brno', 'municipality is mapped from structured station hierarchy');
+$cityQuery = $nativeQuery->withPlaces(['city'=>'Brno','id'=>'a'],['city'=>'Brno','id'=>'b']);
+$cityJourneys = [['legs'=>[['from'=>['id'=>'a'],'to'=>['id'=>'b']]]]];
+check(\App\Modules\Transport\JourneyAreaService::city($cityQuery,$cityJourneys)==='Brno', 'local journey infers municipality from verified stops');
+check(\App\Modules\Transport\JourneyAreaService::city($cityQuery->withPlaces(['city'=>'Praha','id'=>'a'],['city'=>'Brno','id'=>'b']),$cityJourneys)===null, 'intercity journey uses all timetables');
+$outsideCity = [['legs'=>[['from'=>['id'=>'a'],'to'=>['id'=>'x','name'=>'Kuřim, nádraží']],['from'=>['id'=>'x','name'=>'Kuřim, nádraží'],'to'=>['id'=>'b']]]]];
+check(\App\Modules\Transport\JourneyAreaService::city($cityQuery,$outsideCity)===null, 'journey via another municipality does not infer a city scope');
+check(\App\Modules\Transport\JourneyAreaService::city($nativeQuery,$cityJourneys)===null, 'coordinates without verified city do not fabricate a municipality');

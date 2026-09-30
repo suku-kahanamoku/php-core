@@ -230,6 +230,6 @@ final class ResourceService
         if ((!is_numeric($stop['lat'] ?? null) || !is_numeric($stop['lon'] ?? null)) && !($this->registry->get($actual['provider'])->definition()->config['native_stop_search'] ?? false)) {
             throw new TransportException('missing_coordinates', 'Selected stop has no coordinates.');
         }
-        return array_merge($place, $actual, ['id' => $stop['id'],'name' => $stop['name'],'lat' => isset($stop['lat']) ? (float)$stop['lat'] : null,'lon' => isset($stop['lon']) ? (float)$stop['lon'] : null]);
+        return array_merge($place, $actual, ['id' => $stop['id'],'name' => $stop['name'],'city' => $stop['city'] ?? null,'lat' => isset($stop['lat']) ? (float)$stop['lat'] : null,'lon' => isset($stop['lon']) ? (float)$stop['lon'] : null]);
     }
 }

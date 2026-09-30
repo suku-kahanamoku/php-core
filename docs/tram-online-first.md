@@ -228,3 +228,22 @@ Pouze po výpadku zdroje lze sáhnout do jeho platného importovaného katalogu.
 GPS fix se znovu ověří i po odpovědi; původní soukromý charakter dotazu se
 zachová při sanitizaci cache. `resolved_places` ani měření polohy se neukládá.
 Po refreshi se použije nový fix a provede nový výběr zastávky.
+
+## Země a město ve formuláři TRAM
+
+Frontend začíná jedinou záložkou Česká republika. Výběr města nad Odkud/Kam
+má výchozí volbu Všechny jízdní řády. Nabízí Prahu a Brno a další obce dohledává
+přes existující online `places` s `q.name.$regex` a `q.state`; nepřidává čtení DB
+za zdravého provozu. Spojenka mapuje obec do `city` ze strukturovaného
+`placeHierarchy` typu `MUNICIPALITY`, pole je povolené v projekci seznamu míst.
+
+`JourneyAreaService` vrací pro výsledky společné město v `area.city`. Oba
+vyřešené konce cesty musí mít shodnou obec a konce všech zobrazených úseků
+musí odpovídat této obci (ověřená ID konců, metadata obce nebo kvalifikovaný
+název zastávky). Mezíměstská cesta či neznámá obec znamená `null`. Kontrola
+neověřuje přesnou geometrii ani skryté průjezdní zastávky. Platí také pro
+aktuální GPS rozlišenou na zastávku; její poloha se nadále neukládá.
+
+Frontend upraví město a URL bez opakování dotazu a bez dalšího požadavku na
+GPS. Refresh obnoví oblast, detail a mapu. Prázdné či neúspěšné hledání
+ponechá původní volbu města.

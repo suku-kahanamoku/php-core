@@ -299,3 +299,11 @@ v okruhu 2 km před hledáním cesty. Používá schopnost `nearby_stops`, sdíl
 HttpModule a tenantový fallback pouze při výpadku. Odpověď vrací veřejný název
 zastávky v `resolved_places`; GPS ani toto rozlišení se nepersistuje.
 Čas cesty začíná/končí na zastávce, bez pěší cesty od/k GPS bodu.
+
+Výsledky míst mohou obsahovat `city` (obec z ověřených metadat poskytovatele;
+u Spojenky `placeHierarchy.MUNICIPALITY`). Vyhledání spojení přidává
+`area: {city: string|null}` pro automatický výběr oblasti ve frontendu.
+`JourneyAreaService` ověřuje společnou obec koncových zastávek a konců
+zobrazených úseků; neověřuje celou geometrii ani průjezdní zastávky.
+Meziměstská cesta, prázdný výsledek či chybějící metadata vrací `null`.
+Jde o odvozená metadata odpovědi, nikoli nový zdroj plánování nebo GPS cache.
