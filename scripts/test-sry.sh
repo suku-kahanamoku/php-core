@@ -17,3 +17,5 @@ done
 export SRY_TEST_DSN="mysql:unix_socket=$sry_temp/mysql.sock;dbname=sry_test;charset=utf8mb4"
 php "$sry_root/src/Modules/Sry/tests/provision.php"
 php "$sry_root/src/Modules/Sry/tests/integration.php"
+export SRY_TEST_LOG="$sry_temp/http.log"
+php "$sry_root/src/Modules/Sry/tests/http-contract.php"

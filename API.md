@@ -2165,3 +2165,7 @@ archive the shared runner first imports Czech calendar/CSU names, then Wikidata
 names, then text enrichment. Populated archives retain text-first scheduling.
 `migrations/etymolog_reset_cz.sql` is an explicit destructive tenant-only reset,
 not an automatic migration; it preserves users and removes foreign source jobs.
+
+### Etymolog: dnešní jmeniny
+
+`GET /etymolog/public/today` vrací jediný denní přehled `{date, timezone: "Europe/Prague", items}` v obálce `data`. Datum určuje server podle Prahy, endpoint nemá filtry ani stránkování. Položky obsahují `name_id,name,source_url,source_title,source_fallback_url,calendar_title`. Všechny JOINy jsou omezené tenantem; vrací jen publikované nesmazané jmenné dny a jména s aktivním zdrojem a českým gregoriánským kalendářem platným v daném roce. Nepublikované záznamy se nevracejí. Zachovává interní klíč a validaci tenanta, nevyžaduje uživatelský bearer. Odpověď je `no-store`. Migrace není potřeba.

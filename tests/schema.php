@@ -50,7 +50,7 @@ foreach ($seeds as $file) { apply($file); }
 foreach (['role'=>12, 'user'=>13, 'product'=>88, 'category'=>37, 'enumeration'=>60,
           'customer_profile'=>20, 'product_category'=>107, 'product_alternative'=>27,
           'product_customer_profile_probability'=>338, 'user_customer_profile'=>10,
-          'etymolog_sync_job'=>10] as $table=>$count) {
+          'etymolog_sync_job'=>11] as $table=>$count) {
     verify((int)$pdo->query('SELECT COUNT(*) FROM `'.$table.'`')->fetchColumn() === $count, $table.' final seed coverage');
 }
 verify((int)$pdo->query("SELECT COUNT(*) FROM product_category pc JOIN product p ON p.id=pc.product_id JOIN category c ON c.id=pc.category_id WHERE p.franchise_code<>c.franchise_code")->fetchColumn() === 0, 'seed links preserve tenants with nonhistorical IDs');

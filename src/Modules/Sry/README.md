@@ -45,7 +45,7 @@ Odpověď: `{success:true,data:...}`; chyba: `{success:false,code:"..."}` s odpo
 
 ## Testy a provoz
 
-`bash scripts/test-sry.sh` vytvoří vlastní dočasný MySQL server bez TCP listeneru, sestaví potřebné základní tabulky, aplikuje migraci dvakrát, provede integrační scénáře a server i data uklidí. Nepoužívá `.env` ani existující DB. Potřebuje `mysqld`, `mysqladmin`, PHP PDO MySQL a Composer autoload.
+`bash scripts/test-sry.sh` vytvoří vlastní dočasný MySQL server bez TCP listeneru, sestaví potřebné základní tabulky, aplikuje migraci dvakrát, provede integrační scénáře i lokální HTTP kontrakt proti izolované databázi a server i data uklidí. Nepoužívá `.env` ani existující DB. Potřebuje `mysqld`, `mysqladmin`, PHP PDO MySQL a Composer autoload.
 
 `php scripts/sry-outbox.php --watch` je serverová doručovací služba. Nepouštět před nastavením Cloudflare. Backend neposílá OpenAI žádné požadavky; `ManualReview` je vědomě vypnutá implementace budoucího portu.
 

@@ -105,8 +105,14 @@ try {
     throw new LogicException('Expected external FK failure');
 } catch (RuntimeException $e) {check($e->getPrevious() instanceof PDOException, 'external FK independently blocks foreign tenant');}
 $sourceSeed = file_get_contents($root.'/migrations/etymolog_seed.sql');
+$beforeWiktSeed = (int)$db->fetchOne("SELECT COUNT(*) n FROM etymolog_sync_job WHERE franchise_code='etymolog' AND provider='wiktionary' AND language='cs' AND kind='surname'")['n'];
 $db->getPdo()->exec($sourceSeed); $db->getPdo()->exec($sourceSeed);
-check((int)$db->fetchOne("SELECT COUNT(*) n FROM etymolog_sync_job WHERE franchise_code='etymolog' AND provider='wiktionary'")['n'] === 1, 'Czech seed adds no foreign dictionary jobs alongside explicit fixture');
+check((int)$db->fetchOne("SELECT COUNT(*) n FROM etymolog_sync_job WHERE franchise_code='etymolog' AND provider='wiktionary' AND language='cs' AND kind='surname'")['n'] === $beforeWiktSeed, 'seed leaves existing Czech-surname Wiktionary tasks untouched');
+$sourceSeedIsolated = str_replace("'etymolog'", "'surname-seed-fixture'", $sourceSeed);
+$db->getPdo()->exec($sourceSeedIsolated); $db->getPdo()->exec($sourceSeedIsolated);
+$seededSurname = $db->fetchOne("SELECT provider,language,kind,batch_size,enabled,`cursor`,last_status FROM etymolog_sync_job WHERE franchise_code='surname-seed-fixture' AND provider='wiktionary'");
+check($seededSurname['language'] === 'cs' && $seededSurname['kind'] === 'surname' && (int)$seededSurname['batch_size'] === 3 && (int)$seededSurname['enabled'] === 1 && $seededSurname['cursor'] === null && $seededSurname['last_status'] === null, 'seed creates a due English Wiktionary source only for Czech surnames');
+check((int)$db->fetchOne("SELECT COUNT(*) n FROM etymolog_sync_job WHERE franchise_code='surname-seed-fixture' AND provider='wiktionary'")['n'] === 1, 'repeating surname source seed creates no duplicate job');
 check((int)$db->fetchOne("SELECT COUNT(*) n FROM etymolog_sync_job WHERE franchise_code='etymolog' AND provider='poland-pesel'")['n'] === 1, 'Czech seed adds no PESEL jobs alongside explicit fixture');
 
 $csu = new App\Modules\Etymolog\Providers\CsuBabyNamesProvider($fake);

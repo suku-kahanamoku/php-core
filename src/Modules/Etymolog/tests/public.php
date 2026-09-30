@@ -93,3 +93,25 @@ for ($n=1;$n<=22;++$n) {
 $firstGroups=status(api('GET','etymolog/public/names?'.$pubQ('grouppage').'&page=1'),200,'first grouped search page');
 $lastGroups=status(api('GET','etymolog/public/names?'.$pubQ('grouppage').'&page=2'),200,'second grouped search page');
 check($firstGroups['total']===22 && count($firstGroups['items'])===20 && count($lastGroups['items'])===2,'pagination counts dossiers before applying page limits');
+
+// Daily overview uses a deterministic date for repository checks and Prague date over HTTP.
+$dailyRepo = new \App\Modules\Etymolog\EtymologPublicRepository($db, 'etymolog');
+$dailyDate = new DateTimeImmutable('2040-02-29', new DateTimeZone('Europe/Prague'));
+$dailyBase = ['franchise_code'=>'etymolog','calendar_id'=>$calendar,'name_id'=>$storyAnna,'source_id'=>$publicSource,'title'=>'Leap nameday','source_url'=>'https://example.org/calendar','month'=>2,'day'=>29,'published'=>1];
+$dailyId = $db->insert('etymolog_calendar_day', $dailyBase);
+$db->insert('etymolog_calendar_day', array_replace($dailyBase, ['published'=>0]));
+$db->insert('etymolog_calendar_day', array_replace($dailyBase, ['deleted'=>1]));
+$db->insert('etymolog_calendar_day', array_replace($dailyBase, ['name_id'=>$draftName]));
+$db->insert('etymolog_calendar_day', array_replace($dailyBase, ['kind'=>'holiday']));
+$daily = $dailyRepo->today($dailyDate);
+check($daily['date']==='2040-02-29' && count($daily['items'])===1 && (int)$daily['items'][0]['name_id']===$storyAnna, 'daily overview filters publication and kind on leap day');
+check((new \App\Modules\Etymolog\EtymologPublicRepository($db, 'other'))->today($dailyDate)['items']===[], 'daily overview isolates tenants');
+$db->query('UPDATE etymolog_calendar SET year_to=2039 WHERE id=?', [$calendar]);
+check($dailyRepo->today($dailyDate)['items']===[], 'daily overview excludes expired calendar editions');
+$db->query('UPDATE etymolog_calendar SET year_to=NULL WHERE id=?', [$calendar]);
+$db->query('UPDATE etymolog_source SET deleted=1 WHERE id=?', [$publicSource]);
+check($dailyRepo->today($dailyDate)['items']===[], 'daily overview excludes deleted sources');
+$db->query('UPDATE etymolog_source SET deleted=0 WHERE id=?', [$publicSource]);
+$dailyHttp = status(api('GET','etymolog/public/today'),200,'daily overview without user bearer');
+check($dailyHttp['date']===(new DateTimeImmutable('now',new DateTimeZone('Europe/Prague')))->format('Y-m-d'), 'daily endpoint uses current Prague date');
+status(api('GET','etymolog/public/today',null,null,'ety.test',false),401,'daily endpoint requires internal key');

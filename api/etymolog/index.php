@@ -1,7 +1,7 @@
 <?php
 
 declare(strict_types=1);
-require_once __DIR__.'/../bootstrap.php';
+require_once __DIR__ . '/../bootstrap.php';
 
 use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
@@ -13,7 +13,7 @@ if ($request->method === 'POST' && $request->uri === '/sync/worker') {
     (new \App\Modules\Etymolog\EtymologWorkerApi(\App\Modules\Etymolog\EtymologModule::httpWorker($db, $request->franchiseCode)))->handle($request);
 }
 // Only these GET routes omit user authentication; bootstrap still requires the internal key and a known tenant.
-if ($request->method === 'GET' && preg_match('~^/public/names(?:/[1-9][0-9]*)?$~D', $request->uri)) {
+if ($request->method === 'GET' && preg_match('~^/public/(?:names(?:/[1-9][0-9]*)?|today)$~D', $request->uri)) {
     $public = new \App\Modules\Etymolog\EtymologPublicApi(new \App\Modules\Etymolog\EtymologPublicService(new \App\Modules\Etymolog\EtymologPublicRepository($db, $request->franchiseCode)));
     $router = new Router();
     $public->registerRoutes($router);

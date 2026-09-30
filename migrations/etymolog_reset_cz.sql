@@ -87,6 +87,7 @@ DELETE FROM etymolog_sync_job
 WHERE franchise_code = @ety_reset_tenant AND @ety_reset_allowed = 1
   AND NOT (language = 'cs' AND (
     (provider IN ('wikidata','wiktionary-cs') AND kind IN ('given','surname'))
+    OR (provider = 'wiktionary' AND kind = 'surname')
     OR (provider = 'wikipedia-names' AND kind IN ('etymologies','culture'))
     OR (provider = 'wikisource' AND kind = 'stories')
     OR (provider = 'erben-folklore' AND kind = 'folklore')

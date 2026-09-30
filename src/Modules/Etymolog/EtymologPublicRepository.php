@@ -21,6 +21,21 @@ final class EtymologPublicRepository
      */
     public function __construct(private readonly Database $db, private readonly string $tenant) {}
 
+    /** Fixed daily overview; only published Czech Gregorian name days with active sources. */
+    public function today(\DateTimeImmutable $date): array
+    {
+        $items = $this->db->fetchAll("SELECT DISTINCT n.id AS name_id,n.name,d.source_url,s.title AS source_title,s.url AS source_fallback_url,c.title AS calendar_title
+            FROM etymolog_calendar_day d
+            JOIN etymolog_name n ON n.id=d.name_id AND n.franchise_code=d.franchise_code AND n.deleted=0 AND n.published=1
+            JOIN etymolog_calendar c ON c.id=d.calendar_id AND c.franchise_code=d.franchise_code AND c.deleted=0
+            JOIN etymolog_source s ON s.id=d.source_id AND s.franchise_code=d.franchise_code AND s.deleted=0
+            WHERE d.franchise_code=? AND d.deleted=0 AND d.published=1 AND d.kind='name_day' AND d.date_kind='fixed'
+            AND c.country_code='CZ' AND c.system='gregorian' AND d.month=? AND d.day=?
+            AND (c.year_from IS NULL OR c.year_from<=?) AND (c.year_to IS NULL OR c.year_to>=?)
+            ORDER BY n.name,n.id", [$this->tenant, (int)$date->format('n'), (int)$date->format('j'), (int)$date->format('Y'), (int)$date->format('Y')]);
+        return ['date' => $date->format('Y-m-d'), 'timezone' => 'Europe/Prague', 'items' => $items];
+    }
+
     /**
      * Vyhledá zveřejněná jména a seskupí varianty pravopisu.
      *

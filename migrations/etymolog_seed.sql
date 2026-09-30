@@ -28,6 +28,11 @@ WHERE NOT EXISTS (SELECT 1 FROM `etymolog_sync_job` WHERE `franchise_code`='etym
 INSERT INTO `etymolog_sync_job` (`franchise_code`,`deleted`,`title`,`provider`,`language`,`kind`,`batch_size`,`interval_seconds`,`enabled`)
 SELECT 'etymolog',0,'Český Wikislovník – příjmení','wiktionary-cs','cs','surname',3,300,1
 WHERE NOT EXISTS (SELECT 1 FROM `etymolog_sync_job` WHERE `franchise_code`='etymolog' AND `provider`='wiktionary-cs' AND `language`='cs' AND `kind`='surname');
+-- Additional CC BY-SA evidence for Czech surnames already present in the tenant DB.
+-- The source text is English; no name is created from a fixed list or translated.
+INSERT INTO `etymolog_sync_job` (`franchise_code`,`deleted`,`title`,`provider`,`language`,`kind`,`batch_size`,`interval_seconds`,`enabled`)
+SELECT 'etymolog',0,'Anglický Wiktionary – etymologie českých příjmení','wiktionary','cs','surname',3,300,1
+WHERE NOT EXISTS (SELECT 1 FROM `etymolog_sync_job` WHERE `franchise_code`='etymolog' AND `provider`='wiktionary' AND `language`='cs' AND `kind`='surname');
 INSERT INTO `etymolog_sync_job` (`franchise_code`,`deleted`,`title`,`provider`,`language`,`kind`,`batch_size`,`interval_seconds`,`enabled`)
 SELECT 'etymolog',0,'Český Wikislovník – rodná jména','wiktionary-cs','cs','given',3,300,1
 WHERE NOT EXISTS (SELECT 1 FROM `etymolog_sync_job` WHERE `franchise_code`='etymolog' AND `provider`='wiktionary-cs' AND `language`='cs' AND `kind`='given');

@@ -28,7 +28,7 @@ class CorsMiddleware
         // Authentication uses explicit tokens, not cross-origin cookies.
         header('Access-Control-Allow-Origin: *');
         header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
-        $allowedHeaders = 'Content-Type, Authorization, X-Requested-With';
+        $allowedHeaders = 'Content-Type, Authorization, Accept-Language, X-Requested-With';
         header("Access-Control-Allow-Headers: {$allowedHeaders}");
     }
 }

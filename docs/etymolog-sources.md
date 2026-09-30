@@ -17,6 +17,11 @@ z pouhé shody názvu ani neodvozuje národnost nositele jména.
 
 ### Wiktionary: původ slov, nikoli automaticky ověřený fakt
 
+Aktuální český seed zapíná anglické vydání **pouze pro česká příjmení uložená
+v DB**; český Wikislovník a česká Wikipedie zůstávají samostatnými zdroji.
+Přidání seeda je idempotentní a žádné dávky samo nespouští. Etymologický text
+anglického Wiktionary je v originále, nikoli automaticky přeložený.
+
 Příklad skutečně existující etymologie: [Novák](https://en.wiktionary.org/wiki/Novák).
 Česká a anglická jazyková edice nejsou obsahově stejné; české heslo nemusí mít
 etymologii, kterou anglická edice uvádí pro češtinu. Proto provider používá

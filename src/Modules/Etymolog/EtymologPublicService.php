@@ -26,6 +26,12 @@ final class EtymologPublicService
      */
     public function __construct(private readonly EtymologPublicRepository $repository) {}
 
+    /** Today's overview uses the calendar date in Prague, independent of server timezone. */
+    public function today(): array
+    {
+        return $this->repository->today(new \DateTimeImmutable('now', new \DateTimeZone('Europe/Prague')));
+    }
+
     /**
      * Vyhledá zveřejněná jména podle filtru.
      *

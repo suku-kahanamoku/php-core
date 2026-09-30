@@ -24,8 +24,8 @@ verify($czReset()['result']==='RESET','CZ content reset succeeds');
 foreach(array_merge($resetTables,['source']) as $suffix){
  verify(rows("SELECT * FROM etymolog_$suffix WHERE franchise_code='etymolog'")===[],'CZ reset removes all '.$suffix.' content');
 }
-verify((int)$pdo->query("SELECT COUNT(*) FROM etymolog_sync_job WHERE franchise_code='etymolog'")->fetchColumn()===13,'ten Czech seed definitions and three valid existing Czech fixtures remain');
-verify(rows("SELECT id FROM etymolog_sync_job WHERE franchise_code='etymolog' AND (language<>'cs' OR provider IN ('wiktionary','wiktionary-fr','poland-pesel') OR kind LIKE '%priority')")===[],'foreign jobs and duplicate aliases removed entirely');
+verify((int)$pdo->query("SELECT COUNT(*) FROM etymolog_sync_job WHERE franchise_code='etymolog'")->fetchColumn()===14,'eleven Czech seed definitions and three valid existing Czech fixtures remain');
+verify(rows("SELECT id FROM etymolog_sync_job WHERE franchise_code='etymolog' AND (language<>'cs' OR provider IN ('wiktionary-fr','poland-pesel') OR (provider='wiktionary' AND kind<>'surname') OR kind LIKE '%priority')")===[],'foreign jobs and duplicate aliases removed entirely');
 $czAfter=snapshot();
 foreach(['user','role','etymolog_sync_schedule'] as $t){verify($czAfter[$t]===$czBefore[$t],'CZ reset preserves '.$t);}
 foreach($beforeOther as $suffix=>$data){verify(rows("SELECT * FROM etymolog_$suffix WHERE franchise_code='reset-other' ORDER BY 1")===$data,'CZ reset preserves other tenant '.$suffix);}

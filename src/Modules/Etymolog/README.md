@@ -2,15 +2,35 @@
 
 ## Aktuální provoz: pouze česká jména a příjmení
 
-Výchozí `etymolog_seed.sql` obsahuje deset českých úloh: Wikidata s doloženým
-jazykem `cs` (rodná jména/příjmení), český Wikislovník (oba druhy), českou
-Wikipedii (etymologie/kultura), Wikizdroje, Erbena, český kalendář a ČSÚ.
-Polský PESEL, další jazykové mutace, anglická/francouzská edice slovníku ani
+Výchozí `etymolog_seed.sql` obsahuje jedenáct úloh pro česká jména a příjmení: Wikidata s doloženým
+jazykem `cs` (rodná jména/příjmení), český Wikislovník (oba druhy),
+anglický Wiktionary (jen etymologie českých příjmení), českou Wikipedii (etymologie/kultura), Wikizdroje, Erbena, český kalendář a ČSÚ.
+Polský PESEL, další jazykové mutace jmen, francouzská edice slovníku ani
 historické `*_priority` duplicity se již neseedují. Implementace providerů
 zůstávají k dispozici pro případné budoucí rozšíření; níže uvedený katalog
 popisuje jejich možnosti, nikoli současné aktivní úlohy.
 České zaměření znamená doložené užívání v češtině/ČR, ne český jazykový původ:
 například převzatá rodná jména z českého kalendáře a statistiky zůstávají součástí.
+
+### Doplnění etymologií příjmení
+
+Opakované spuštění `migrations/etymolog_seed.sql` přidá chybějící úlohu
+`wiktionary / cs / surname`, ale nesmaže ani neresetuje dosavadní úlohy a
+nespustí import. Již existující stejnojmennou úlohu včetně stavu `deleted`
+neobnoví. Po nasazení souboru spusťte seed a pak administrátorské tlačítko
+**Spustit synchronizaci**. Nová úloha postupně projde pouze příjmení, která již
+existují v tenantové DB, a pro každé ověří český oddíl anglického Wiktionary.
+Kategorie příjmení a skutečný význam musí souhlasit; chybějící či nejednoznačný
+výklad se přeskočí. `Novák` má ve zdroji doložený výklad, zatímco u `Svobody`
+je důležitý stávající český článek Wikipedie. Anglický text se nepřekládá a
+ukládá se jako koncept s revizí, licencí CC BY-SA 4.0 a odkazem na autory.
+Po průchodu je třeba zkontrolovat výsledek a **Publikovat vše** nebo schválit
+jednotlivé výklady; pouhé spuštění synchronizace je na webu nezveřejní.
+
+Žádný otevřený zdroj nemá výklad každého příjmení. Import proto z prázdného
+hesla nevyrábí domnělou etymologii a nelze zaručit, že jeden běh doplní všechny
+publikované názvy. Český rozhlas má kvalitní seriál „O původu příjmení“, ale
+[bez souhlasu nepovoluje přebírání textů](https://informace.rozhlas.cz/podminky-uziti-obsahu-ceskeho-rozhlasu-8197077).
 
 `migrations/etymolog_reset_cz.sql` je **destruktivní, ručně spouštěný** reset
 výhradně tenantu `etymolog`. Odstraní všechna hesla, výklady, příběhy, vazby,
@@ -87,7 +107,7 @@ Na nové i existující databázi aplikovat postupně (lze i v Admineru):
 1. `migrations/schema.sql` – společné tabulky včetně auth, bez výchozích dat.
 2. `migrations/etymolog_schema.sql` – všech 16 tabulek modulu, chybějící sloupce,
    indexy a vazby; zahrnuje příběhy, externí zdroje, kalendáře i HTTP worker/retry.
-3. `migrations/etymolog_seed.sql` – dvě role a 30 synchronizačních úloh. Spuštění
+3. `migrations/etymolog_seed.sql` – dvě role a 11 synchronizačních úloh. Spuštění
    seedu samo nespouští žádnou synchronizaci.
 
 Všechny soubory jsou opakovatelné. Schémata nemažou tabulky ani data.
@@ -555,8 +575,9 @@ Frontend `astro/astro-etymolog` používá oddělený read-only kontrakt:
 
 - `GET /api/etymolog/public/names?q=Novak&kind=surname&page=1` — hledání, `kind` může být prázdné, `given` nebo `surname`; 2–100 znaků, doslovné LIKE s escapovanými `%`/`_`, 20 výsledků na stránku. Data obsahují `items,total,page,limit`.
 - `GET /api/etymolog/public/names/:id` — `name,entries,citations,variants,occurrences,calendar_days,sources`.
+- `GET /api/etymolog/public/today` — dnešní publikované jmeniny podle data v Praze. Vrací `date`, `timezone` a `items` s ID a názvem jména, kalendářem a odkazem na pramen. Bere jen aktivní český gregoriánský kalendář a platnou edici; nemá klientský filtr ani stránkování.
 
-Tyto dvě přesně vymezené GET trasy nepotřebují uživatelský bearer. Stále procházejí bootstrapem s interním API klíčem a známým tenantem. CRUD, importní payloady a synchronizace zůstávají za stávajícím Auth. Ostatní metody v `/public` nepovolují anonymní zápis.
+Tyto tři přesně vymezené GET trasy nepotřebují uživatelský bearer. Stále procházejí bootstrapem s interním API klíčem a známým tenantem. CRUD, importní payloady a synchronizace zůstávají za stávajícím Auth. Ostatní metody v `/public` nepovolují anonymní zápis.
 
 `EtymologPublicRepository` obsahuje veškeré SQL, `EtymologPublicService` validaci a `EtymologPublicApi` HTTP kontrakt. Projekce je pevná a ignoruje klientské `projection`/`factory`. Nevrací poznámky redakce, importní metadata, auditní aktéry ani tenant. Vyhledávání i detail vyžadují `published=1 AND deleted=0`. Sdílené texty vyžadují aktivní `reviewed=1` vazbu; samotné texty a kalendářní dny musejí být publikované. Zdroje a rodičovské kalendáře musejí být aktivní. Varianty neodkazují na neveřejná cílová hesla. Veřejný detail nepublikovaného, smazaného nebo cizího hesla je 404.
 
@@ -569,8 +590,9 @@ Migrace `migrations/etymolog_schema.sql` přidává
 `etymolog_sync_batch`: poslední společný běh pro každého tenanta, neprůhledné
 `request_id`, stav, zadavatel, počty úloh/položek/chyb a časové značky.
 Historie jednotlivých úloh zůstává v `etymolog_sync_run`.
-Migrace `migrations/etymolog_seed.sql` připravuje
-všech 30 úloh včetně 10 nových slovníkových idempotentně; neimportuje obsah, nepřepisuje nastavení starých úloh.
+Tato historická verze seedu připravovala 30 úloh včetně 10 tehdy nových
+slovníkových. Současný český seed má 11 úloh; neimportuje obsah a nepřepisuje
+nastavení starých úloh.
 
 | Provider | Zdroj | Jazyk textu | Pravidla |
 | --- | --- | --- | --- |

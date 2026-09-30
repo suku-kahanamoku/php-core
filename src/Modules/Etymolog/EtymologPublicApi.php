@@ -26,6 +26,7 @@ final class EtymologPublicApi
      */
     public function registerRoutes(Router $router): void
     {
+        $router->get('/public/today', fn (Request $r) => $this->respond(fn () => $this->service->today()));
         $router->get('/public/names', fn (Request $r) => $this->respond(fn () => $this->service->search($r->get('q', ''), $r->get('kind', ''), $r->get('page', 1))));
         $router->get('/public/names/:id', fn (Request $r, array $p) => $this->respond(fn () => $this->service->detail($p['id'])));
     }

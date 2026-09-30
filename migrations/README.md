@@ -11,7 +11,7 @@ SQL je určené pro MySQL 8 a lze jej vložit do Admineru nebo spustit klientem
 
 | Projekt | Struktura po společném schématu | Výchozí data |
 | --- | --- | --- |
-| Etymolog | `etymolog_schema.sql`, 16 tabulek | `etymolog_seed.sql`, 2 role a 30 synchronizačních úloh |
+| Etymolog | `etymolog_schema.sql`, 16 tabulek | `etymolog_seed.sql`, 2 role a 11 synchronizačních úloh |
 | TRAM | `tram_schema.sql`, 15 tabulek `transport_*` | `tram_seed.sql`, 12 druhů dopravy; poskytovatele nastavuje `scripts/transport-configure.php` |
 | SRY | `sry_schema.sql`, 16 tabulek | `sry_seed.sql`, role a kategorie |
 | Zoo | `zoo_schema.sql`, používá společné tabulky | `zoo_seed.sql`, účty, katalog, profily a vazby |

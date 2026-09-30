@@ -76,6 +76,39 @@ $parentB = $auth->signup([
     "password" => "a-long-password",
 ]);
 $b = $parentB["member"];
+$db->insert("category", [
+    "franchise_code" => "sry",
+    "syscode" => "hidden",
+    "name" => "Hidden category",
+    "published" => 0,
+]);
+$db->insert("category", [
+    "franchise_code" => "other",
+    "syscode" => "foreign",
+    "name" => "Other tenant category",
+    "published" => 1,
+]);
+$db->insert("enumeration", [
+    "franchise_code" => "sry",
+    "type" => "task_kind",
+    "syscode" => "daily",
+    "label" => "Daily",
+    "published" => 1,
+]);
+$db->insert("enumeration", [
+    "franchise_code" => "sry",
+    "type" => "task_kind",
+    "syscode" => "private",
+    "label" => "Private",
+    "published" => 0,
+]);
+$catalog = $s->catalog();
+check(
+    count($catalog["categories"]) === 4 &&
+        count($catalog["enumerations"]) === 1 &&
+        $catalog["enumerations"][0]["syscode"] === "daily",
+    "catalog retains only published records from sry tenant",
+);
 check($p["role"] === "admin", "parent membership is admin");
 check(
     $auth->login([
