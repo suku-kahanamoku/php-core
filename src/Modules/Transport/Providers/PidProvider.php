@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Modules\Transport\Providers;
 
-use App\Modules\Transport\Contracts\ResourceProvider;
+use App\Modules\Transport\Contracts\{OnlineJourneySearchProvider,ResourceProvider};
+use App\Modules\Http\Contracts\HttpClient;
+use App\Modules\Transport\DTO\JourneyQuery;
 use App\Modules\Transport\DTO\ProviderDefinition;
 use App\Modules\Http\{HttpRequest,HttpResponse};
-use App\Modules\Transport\{ResourceIdCodec,TransportException};
+use App\Modules\Transport\{PidOnlineJourneyService,ResourceIdCodec,TransportException};
+use App\Modules\Transport\Import\ServiceTimeService;
 
 /**
  * Živý poskytovatel dat z PID (Golemio).
@@ -17,7 +20,7 @@ use App\Modules\Transport\{ResourceIdCodec,TransportException};
  * ověřují přes `UpstreamResponseMapper` a chybějící nebo neočekávaná data
  * končí chybou `invalid_upstream`.
  */
-final class PidProvider implements ResourceProvider
+final class PidProvider implements ResourceProvider, OnlineJourneySearchProvider
 {
     /**
      * @param  ProviderDefinition $definition Definice poskytovatele okurku.
@@ -36,12 +39,32 @@ final class PidProvider implements ResourceProvider
         return $this->definition;
     }
 
+    public function token(): string
+    {
+        return $this->token;
+    }
+
+    public function supportsQuery(JourneyQuery $query): bool
+    {
+        foreach ([$query->from, $query->to] as $place) {
+            if (($place['type'] ?? null) !== 'stop' || ($place['provider'] ?? null) !== $this->definition->code) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public function searchOnline(JourneyQuery $query, HttpClient $http, int $budgetMs): array
+    {
+        return (new PidOnlineJourneyService($this))->search($query, $http, $budgetMs);
+    }
+
     /**
-     * @return list<string> Podporované operace: `places`, `stop`, `departures`, `realtime`.
+     * @return list<string> Podporované operace: `places`, `stop`, `trip`, `departures`, `realtime`.
      */
     public function capabilities(): array
     {
-        return ['places','stop','departures','realtime'];
+        return ['journeys','places','stop','trip','departures','realtime'];
     }
     /**
      * Sestaví požadavek na Golemio pro danou operaci.
@@ -57,12 +80,33 @@ final class PidProvider implements ResourceProvider
         $path = match($operation) {
             'places' => '/v2/gtfs/stops?'.http_build_query(['names' => [$input['query']],'limit' => $input['limit']]),
             'stop' => '/v2/gtfs/stops/'.rawurlencode($input['external']),
+            'trip' => '/v2/gtfs/trips/'.rawurlencode($input['external']).'?'.http_build_query(['date' => $input['date'],'includeStopTimes' => 'true','includeStops' => 'true','includeRoute' => 'true']),
             'departures' => '/v2/pid/departureboards?'.http_build_query(['ids' => [$input['external']],'timeFrom' => $input['at'],'limit' => $input['limit'],'mode' => 'departures']),
             'realtime' => '/v2/vehiclepositions/'.rawurlencode($input['external']),
             default => throw new TransportException('unsupported_capability', 'PID does not support this operation.', 422)
         };
         return new HttpRequest(rtrim($this->definition->config['url'], '/').$path, headers:['X-Access-Token: '.$this->token]);
     }
+    /**
+     * Jeden hromadný dotaz na odjezdy zastávek nalezených ve výsledcích cest.
+     *
+     * @param  list<string> $stopIds Externí GTFS ID zastávek (nejvýše 8).
+     * @param  string       $at      Začátek sledovaného intervalu RFC3339.
+     * @return HttpRequest           Autentizovaný požadavek s krátkým deadlinem.
+     */
+    public function departuresBatchRequest(array $stopIds, string $at): HttpRequest
+    {
+        if (!$stopIds || count($stopIds) > 8) {
+            throw new TransportException('invalid_query', 'Invalid PID departure batch.', 422);
+        }
+        $path = '/v2/pid/departureboards?'.http_build_query([
+            'ids' => array_values($stopIds),'timeFrom' => $at,'minutesBefore' => 5,
+            'minutesAfter' => 180,'limit' => 100,'mode' => 'departures',
+        ]);
+        return new HttpRequest(rtrim($this->definition->config['url'], '/').$path,
+            headers:['X-Access-Token: '.$this->token],timeoutMs:1500);
+    }
+
     /**
      * Převede odpověď Golemio na jednotný tvar výsledku.
      *
@@ -90,6 +134,9 @@ final class PidProvider implements ResourceProvider
         }
         if ($operation === 'stop') {
             return $this->stop($data);
+        }
+        if ($operation === 'trip') {
+            return $this->trip($data, (string)$input['external'], (string)$input['date']);
         }
         if ($operation === 'departures') {
             if (!isset($data['departures']) || !is_array($data['departures'])) {
@@ -143,6 +190,56 @@ final class PidProvider implements ResourceProvider
             'stale' => !$fresh,'cancelled' => $last['is_canceled'] ?? null,'delay_seconds' => $fresh ? ($last['delay']['actual'] ?? null) : null,
             'bearing' => $last['bearing'] ?? null,'speed_kmh' => $last['speed'] ?? null];
     }
+    /**
+     * Převede online GTFS detail spoje; plánované časy nejsou GPS telemetrie.
+     *
+     * @param  array<string, mixed> $data     Odpověď Golemio trips/{id}.
+     * @param  string               $external GTFS identifikátor spoje.
+     * @param  string               $date     Provozní den.
+     * @return array<string, mixed>           Detail v jednotném tvaru.
+     */
+    private function trip(array $data, string $external, string $date): array
+    {
+        if (($data['trip_id'] ?? null) !== $external || !isset($data['stop_times']) || !is_array($data['stop_times'])) {
+            throw new TransportException('invalid_upstream', 'Invalid PID trip detail.', 502);
+        }
+        $times = $data['stop_times'];
+        usort($times, static fn (array $a, array $b): int => ((int)($a['stop_sequence'] ?? 0)) <=> ((int)($b['stop_sequence'] ?? 0)));
+        $stops = [];
+        foreach ($times as $call) {
+            if (!is_string($call['stop_id'] ?? null)) {
+                throw new TransportException('invalid_upstream', 'PID trip stop is missing.', 502);
+            }
+            $stop = $call['stop'] ?? [];
+            $coordinates = $stop['geometry']['coordinates'] ?? [];
+            $properties = $stop['properties'] ?? [];
+            $clock = static function (mixed $value) use ($date): ?string {
+                if (!is_string($value) || $value === '') {
+                    return null;
+                }
+                return ServiceTimeService::instant($date, ServiceTimeService::seconds($value), 'Europe/Prague')->format(DATE_RFC3339);
+            };
+            $stops[] = ['stop' => ['id' => $this->id('stop', $call['stop_id']),
+                'name' => $properties['stop_name'] ?? null,
+                'lat' => isset($coordinates[1]) ? (float)$coordinates[1] : null,
+                'lon' => isset($coordinates[0]) ? (float)$coordinates[0] : null,
+                'platform' => $properties['platform_code'] ?? null,'timezone' => 'Europe/Prague'],
+                'scheduled_arrival' => $clock($call['arrival_time'] ?? null),
+                'scheduled_departure' => $clock($call['departure_time'] ?? null),
+                'expected_arrival' => null,'expected_departure' => null,
+                'realtime' => false,'cancelled' => null];
+        }
+        if (!$stops) {
+            throw new TransportException('invalid_upstream', 'PID trip has no stops.', 502);
+        }
+        $route = $data['route'] ?? [];
+        $mode = isset($route['route_type']) ? \App\Modules\Transport\Import\GtfsImportService::mode((string)$route['route_type']) : null;
+        return ['id' => $this->id('trip', $external, $date),'service_date' => $date,
+            'line' => ['id' => isset($data['route_id']) ? $this->id('line', (string)$data['route_id']) : null,
+                'name' => $route['route_long_name'] ?? null,'code' => $route['route_short_name'] ?? null,'mode' => $mode],
+            'stops' => $stops,'frequency_based' => false,'source_mode' => 'live'];
+    }
+
     /**
      * Převede GeoJSON prvek na zastávku.
      *

@@ -39,7 +39,7 @@ final class WikisourceDiscoveryProvider
         $state=$cursor===null ? ['after'=>0] : json_decode($cursor,true);
         if (is_int($state) && $state>=0) { $state=['after'=>0]; } // Retired catalog offset.
         if (!is_array($state) || !is_int($state['after'] ?? null) || $state['after']<0 || (array_key_exists('name_id',$state) && (!is_int($state['name_id']) || $state['name_id']<=$state['after'] || !is_int($state['offset'] ?? null) || $state['offset']<1)) || (isset($state['offset']) && !isset($state['name_id']))) { throw new SyncException('invalid_provider_cursor'); }
-        $name=isset($state['name_id']) ? $this->names->find($state['name_id'],'') : $this->names->next('',$state['after']);
+        $name=isset($state['name_id']) ? $this->names->findIncomplete($state['name_id'],'') : $this->names->nextIncomplete('',$state['after']);
         if (!$name) {
             if (isset($state['name_id'])) { return $this->finish(null,null,['after'=>$state['name_id']]); }
             return ['page'=>null,'name'=>null,'cursor'=>null,'complete'=>true,'scanned'=>0];
@@ -72,7 +72,7 @@ final class WikisourceDiscoveryProvider
      */
     private function finish(?array $page,?array $name,array $state): array
     {
-        $complete=!isset($state['name_id']) && $this->names->next('',$state['after'])===null;
+        $complete=!isset($state['name_id']) && $this->names->nextIncomplete('',$state['after'])===null;
         return ['page'=>$page,'name'=>$name,'cursor'=>$complete ? null : json_encode($state,JSON_THROW_ON_ERROR),'complete'=>$complete,'scanned'=>1];
     }
 

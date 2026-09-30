@@ -33,7 +33,130 @@ final class EtymologPublicRepository
             AND c.country_code='CZ' AND c.system='gregorian' AND d.month=? AND d.day=?
             AND (c.year_from IS NULL OR c.year_from<=?) AND (c.year_to IS NULL OR c.year_to>=?)
             ORDER BY n.name,n.id", [$this->tenant, (int)$date->format('n'), (int)$date->format('j'), (int)$date->format('Y'), (int)$date->format('Y')]);
-        return ['date' => $date->format('Y-m-d'), 'timezone' => 'Europe/Prague', 'items' => $items];
+        $proverb = $this->datedProverb($date) ?? $this->namedayProverb($date) ?? $this->upcomingProverb($date);
+        if ($proverb !== null && !isset($proverb['date'])) { $proverb['date'] = $date->format('Y-m-d'); }
+        return ['date' => $date->format('Y-m-d'), 'timezone' => 'Europe/Prague', 'items' => $items, 'proverb' => $proverb];
+    }
+
+
+    /** Prefer a sourced proverb attached to this exact Czech calendar date. */
+    private function datedProverb(\DateTimeImmutable $date): ?array
+    {
+        return $this->db->fetchOne("SELECT e.body,COALESCE(NULLIF(e.source_url,''),NULLIF(d.source_url,''),s.url) AS source_url,s.title AS source_title,NULL AS name_id
+            FROM etymolog_calendar_day d
+            JOIN etymolog_entry e ON e.id=d.entry_id AND e.franchise_code=d.franchise_code AND e.deleted=0 AND e.published=1 AND e.type='proverb' AND TRIM(e.body)<>''
+            JOIN etymolog_calendar c ON c.id=d.calendar_id AND c.franchise_code=d.franchise_code AND c.deleted=0
+            JOIN etymolog_source s ON s.id=d.source_id AND s.franchise_code=d.franchise_code AND s.deleted=0
+            WHERE d.franchise_code=? AND d.deleted=0 AND d.published=1 AND d.date_kind='fixed' AND d.month=? AND d.day=?
+            AND c.country_code='CZ' AND c.system='gregorian'
+            AND (c.year_from IS NULL OR c.year_from<=?) AND (c.year_to IS NULL OR c.year_to>=?)
+            ORDER BY d.id LIMIT 1", [$this->tenant, (int)$date->format('n'), (int)$date->format('j'), (int)$date->format('Y'), (int)$date->format('Y')]) ?: null;
+    }
+
+    /** Select the next published proverb, whether attached to a date or a coming name day. */
+    private function upcomingProverb(\DateTimeImmutable $date): ?array
+    {
+        $dated = $this->upcomingDatedProverb($date);
+        $named = $this->upcomingNamedayProverb($date);
+        if ($dated === null) { return $named; }
+        if ($named === null || $dated['date'] <= $named['date']) { return $dated; }
+        return $named;
+    }
+
+    private function upcomingDatedProverb(\DateTimeImmutable $date): ?array
+    {
+        $rows = $this->db->fetchAll("SELECT d.id,d.month,d.day,c.year_from,c.year_to,e.body,
+                COALESCE(NULLIF(e.source_url,''),NULLIF(d.source_url,''),s.url) AS source_url,s.title AS source_title,NULL AS name_id
+            FROM etymolog_calendar_day d
+            JOIN etymolog_entry e ON e.id=d.entry_id AND e.franchise_code=d.franchise_code AND e.deleted=0 AND e.published=1 AND e.type='proverb' AND TRIM(e.body)<>''
+            JOIN etymolog_calendar c ON c.id=d.calendar_id AND c.franchise_code=d.franchise_code AND c.deleted=0
+            JOIN etymolog_source s ON s.id=d.source_id AND s.franchise_code=d.franchise_code AND s.deleted=0
+            WHERE d.franchise_code=? AND d.deleted=0 AND d.published=1 AND d.date_kind='fixed' AND d.entry_id IS NOT NULL
+            AND d.month BETWEEN 1 AND 12 AND d.day BETWEEN 1 AND 31
+            AND c.country_code='CZ' AND c.system='gregorian' AND (c.year_to IS NULL OR c.year_to>=?)", [$this->tenant, (int)$date->format('Y')]);
+        return self::nearestFutureRow($rows, $date);
+    }
+
+    private function upcomingNamedayProverb(\DateTimeImmutable $date): ?array
+    {
+        $best = null;
+        foreach ([false, true] as $linked) {
+            $entryJoin = $linked
+                ? "JOIN etymolog_entry_name link ON link.franchise_code=member.franchise_code AND link.name_id=member.id AND link.deleted=0 AND link.reviewed=1
+                   JOIN etymolog_entry e ON e.franchise_code=link.franchise_code AND e.id=link.entry_id"
+                : 'JOIN etymolog_entry e ON e.franchise_code=member.franchise_code AND e.name_id=member.id';
+            $rows = $this->db->fetchAll("SELECT d.id,d.month,d.day,c.year_from,c.year_to,e.body,
+                    COALESCE(NULLIF(citation.url,''),NULLIF(e.source_url,''),s.url) AS source_url,s.title AS source_title,n.id AS name_id
+                FROM etymolog_calendar_day d
+                JOIN etymolog_name n ON n.id=d.name_id AND n.franchise_code=d.franchise_code AND n.deleted=0 AND n.published=1
+                JOIN etymolog_calendar c ON c.id=d.calendar_id AND c.franchise_code=d.franchise_code AND c.deleted=0
+                JOIN etymolog_source day_source ON day_source.id=d.source_id AND day_source.franchise_code=d.franchise_code AND day_source.deleted=0
+                JOIN etymolog_name member ON member.franchise_code=n.franchise_code AND member.kind=n.kind AND member.normalized_name=n.normalized_name AND member.deleted=0 AND member.published=1
+                ".$entryJoin." AND e.deleted=0 AND e.published=1 AND e.type='proverb' AND TRIM(e.body)<>''
+                JOIN etymolog_citation citation ON citation.entry_id=e.id AND citation.franchise_code=e.franchise_code AND citation.deleted=0
+                JOIN etymolog_source s ON s.id=citation.source_id AND s.franchise_code=citation.franchise_code AND s.deleted=0
+                WHERE d.franchise_code=? AND d.deleted=0 AND d.published=1 AND d.kind='name_day' AND d.date_kind='fixed'
+                AND d.month BETWEEN 1 AND 12 AND d.day BETWEEN 1 AND 31
+                AND c.country_code='CZ' AND c.system='gregorian' AND (c.year_to IS NULL OR c.year_to>=?)", [$this->tenant, (int)$date->format('Y')]);
+            $candidate = self::nearestFutureRow($rows, $date);
+            if ($candidate !== null && ($best === null || $candidate['date'] < $best['date'])) { $best = $candidate; }
+        }
+        return $best;
+    }
+
+    /** Calendar years can be bounded; February 29 may need the next leap year. */
+    private static function nearestFutureRow(array $rows, \DateTimeImmutable $date): ?array
+    {
+        $year = (int)$date->format('Y');
+        $today = $date->format('Y-m-d');
+        $todayMonthDay = (int)$date->format('n') * 100 + (int)$date->format('j');
+        $best = null;
+        $bestDate = null;
+        foreach ($rows as $row) {
+            $month = (int)$row['month'];
+            $day = (int)$row['day'];
+            $candidateYear = max($year, (int)($row['year_from'] ?? $year));
+            if ($candidateYear === $year && $month * 100 + $day <= $todayMonthDay) { ++$candidateYear; }
+            // Eight years cover the longest gap between Gregorian leap days across a non-leap century.
+            $lastYear = min(9999, $candidateYear + 8, (int)($row['year_to'] ?? 9999));
+            for (; $candidateYear <= $lastYear && !checkdate($month, $day, $candidateYear); ++$candidateYear) {}
+            if ($candidateYear > $lastYear) { continue; }
+            $candidateDate = sprintf('%04d-%02d-%02d', $candidateYear, $month, $day);
+            if ($candidateDate <= $today) { continue; }
+            if ($bestDate === null || $candidateDate < $bestDate || ($candidateDate === $bestDate && (int)$row['id'] < (int)$best['id'])) {
+                $best = $row;
+                $bestDate = $candidateDate;
+            }
+        }
+        if ($best === null) { return null; }
+        return ['body'=>$best['body'], 'source_url'=>$best['source_url'], 'source_title'=>$best['source_title'], 'name_id'=>$best['name_id'], 'date'=>$bestDate];
+    }
+
+    /** Fall back to a cited proverb belonging to any published name celebrating today. */
+    private function namedayProverb(\DateTimeImmutable $date): ?array
+    {
+        $params = [$this->tenant, (int)$date->format('n'), (int)$date->format('j'), (int)$date->format('Y'), (int)$date->format('Y')];
+        foreach ([false, true] as $linked) {
+            $entryJoin = $linked
+                ? "JOIN etymolog_entry_name link ON link.franchise_code=member.franchise_code AND link.name_id=member.id AND link.deleted=0 AND link.reviewed=1
+                   JOIN etymolog_entry e ON e.franchise_code=link.franchise_code AND e.id=link.entry_id"
+                : 'JOIN etymolog_entry e ON e.franchise_code=member.franchise_code AND e.name_id=member.id';
+            $result = $this->db->fetchOne("SELECT e.body,COALESCE(NULLIF(citation.url,''),NULLIF(e.source_url,''),s.url) AS source_url,s.title AS source_title,n.id AS name_id
+            FROM etymolog_calendar_day d
+            JOIN etymolog_name n ON n.id=d.name_id AND n.franchise_code=d.franchise_code AND n.deleted=0 AND n.published=1
+            JOIN etymolog_calendar c ON c.id=d.calendar_id AND c.franchise_code=d.franchise_code AND c.deleted=0
+            JOIN etymolog_source day_source ON day_source.id=d.source_id AND day_source.franchise_code=d.franchise_code AND day_source.deleted=0
+            JOIN etymolog_name member ON member.franchise_code=n.franchise_code AND member.kind=n.kind AND member.normalized_name=n.normalized_name AND member.deleted=0 AND member.published=1
+            ".$entryJoin." AND e.deleted=0 AND e.published=1 AND e.type='proverb' AND TRIM(e.body)<>''
+            JOIN etymolog_citation citation ON citation.entry_id=e.id AND citation.franchise_code=e.franchise_code AND citation.deleted=0
+            JOIN etymolog_source s ON s.id=citation.source_id AND s.franchise_code=citation.franchise_code AND s.deleted=0
+            WHERE d.franchise_code=? AND d.deleted=0 AND d.published=1 AND d.kind='name_day' AND d.date_kind='fixed'
+            AND d.month=? AND d.day=? AND c.country_code='CZ' AND c.system='gregorian'
+            AND (c.year_from IS NULL OR c.year_from<=?) AND (c.year_to IS NULL OR c.year_to>=?)
+            ORDER BY n.name,n.id,e.id LIMIT 1", $params);
+            if ($result) { return $result; }
+        }
+        return null;
     }
 
     /**

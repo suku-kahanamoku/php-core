@@ -6,6 +6,7 @@ namespace App\Modules\Transport;
 
 use App\Modules\Http\Contracts\HttpClient;
 use App\Modules\Transport\Contracts\{ResourceProvider};
+use App\Modules\Transport\Providers\PidProvider;
 use App\Modules\Transport\Repositories\TransportRepository;
 
 /**
@@ -29,7 +30,7 @@ final class ResourceService
     }
 
     /**
-     * Vyhledá místa u všech poskytovatelů a doplní je importovaným indexem.
+     * Vyhledá místa online; importovaný index čte jen pro selhané zdroje.
      *
      * @param  string      $query   Hledaný název, 2–120 znaků.
      * @param  int         $limit   Požadovaný počet výsledků.
@@ -53,6 +54,7 @@ final class ResourceService
         $selected = [];
         $sources = [];
         $items = [];
+        $failed = [];
         foreach ($this->registry->all() as $code => $provider) {
             if (!$provider instanceof ResourceProvider || !in_array('places', $provider->capabilities(), true)) {
                 continue;
@@ -60,8 +62,12 @@ final class ResourceService
             if ($country !== null && !in_array($country, array_column($provider->definition()->coverage, 'country'), true)) {
                 continue;
             }
-            if (!$this->repository->acquireProvider($code, (int)($provider->definition()->config['min_interval_ms'] ?? 0))) {
-                $sources[] = ['provider' => $code,'status' => 'unavailable'];
+            if (!$this->repository->acquireProviderAfterInterval($code, (int)($provider->definition()->config['min_interval_ms'] ?? 0))) {
+                $outage = $this->repository->providerOutage($code);
+                $sources[] = ['provider' => $code,'status' => $outage ? 'unavailable' : 'throttled'];
+                if ($outage) {
+                    $failed[] = $code;
+                }
                 continue;
             }
             $requests[$code] = $provider->resourceRequest('places', ['query' => $query,'limit' => $limit]);
@@ -79,11 +85,14 @@ final class ResourceService
             } catch (\Throwable) {
                 $this->repository->providerFailure($code, $response->retryAfter);
                 $sources[] = ['provider' => $code,'status' => 'unavailable'];
+                $failed[] = $code;
             }
         }
-        // Imported place index is a useful offline lookup; fresh API values win for identical IDs.
-        foreach ($this->repository->places($query, $limit, $country) as $item) {
-            $items[$item['id']] ??= $item;
+        if ($failed) {
+            foreach ($this->repository->places($query, $limit, $country, $failed) as $item) {
+                $item['source_mode'] = 'fallback';
+                $items[$item['id']] ??= $item;
+            }
         }
         $partial = (bool)array_filter($sources, fn ($s) => $s['status'] !== 'ok');
         if (!$items && $partial && !array_filter($sources, fn ($s) => $s['status'] === 'ok')) {
@@ -126,22 +135,32 @@ final class ResourceService
         }
         $provider = $this->registry->get($ref['provider']);
         $config = $provider->definition()->config;
-        if ($operation === 'realtime' && isset($config['source_provider'],$config['otp_feed_id'])) {
+        if (in_array($operation, ['stop','trip','departures','realtime'], true) && isset($config['source_provider'],$config['otp_feed_id'])) {
             $prefix = $config['otp_feed_id'].':';
             if (!str_starts_with($ref['external'], $prefix)) {
                 throw new TransportException('not_found', 'Trip is outside the configured feed.', 404);
             }
-            $mapped = ResourceIdCodec::encode($this->repository->tenant, $config['source_provider'], 'trip', substr($ref['external'], strlen($prefix)), $ref['date']);
-            return $this->resource('realtime', $mapped, [], $depth + 1);
-        }
-        $local = $kind === 'stop' ? $this->repository->stop($ref['provider'], $ref['external']) : $this->repository->trip($ref['provider'], $ref['external'], $ref['date']);
-        if ($operation === 'realtime' && $local && !$local['frequency_based']) {
-            $input['expected_start'] = $local['stops'][0]['scheduled_arrival'] ?? null;
+            $mapped = ResourceIdCodec::encode($this->repository->tenant, $config['source_provider'], $kind, substr($ref['external'], strlen($prefix)), $ref['date']);
+            return $this->resource($operation, $mapped, $input, $depth + 1);
         }
         if ($provider instanceof ResourceProvider && in_array($operation, $provider->capabilities(), true) && ($config['graph_ready'] ?? true)) {
-            if ($this->repository->acquireProvider($ref['provider'], (int)($provider->definition()->config['min_interval_ms'] ?? 0))) {
-                $result = $this->http->sendAll(['resource' => $provider->resourceRequest($operation, $input)])['resource'];
+            $attempted = false;
+            if ($this->repository->acquireProviderAfterInterval($ref['provider'], (int)($config['min_interval_ms'] ?? 0))) {
+                $attempted = true;
+                $retryAfter = null;
                 try {
+                    if ($operation === 'realtime' && $provider instanceof PidProvider) {
+                        // Verify the service instance against the provider's current online schedule.
+                        $tripResponse = $this->http->sendAll(['trip' => $provider->resourceRequest('trip', $input)])['trip'];
+                        $retryAfter = $tripResponse->retryAfter;
+                        $trip = $provider->resourceResult('trip', $tripResponse, $input);
+                        if ($trip['frequency_based'] || empty($trip['stops'][0]['scheduled_arrival']) && empty($trip['stops'][0]['scheduled_departure'])) {
+                            throw new TransportException('instance_unverified', 'Trip service day cannot be verified online.', 503);
+                        }
+                        $input['expected_start'] = $trip['stops'][0]['scheduled_arrival'] ?? $trip['stops'][0]['scheduled_departure'];
+                    }
+                    $result = $this->http->sendAll(['resource' => $provider->resourceRequest($operation, $input)])['resource'];
+                    $retryAfter = $result->retryAfter;
                     $data = $provider->resourceResult($operation, $result, $input);
                     $this->repository->providerSuccess($ref['provider']);
                     return ['result' => $data,'source' => ['provider' => $ref['provider'],'mode' => $provider->definition()->adapter === 'otp_transmodel' ? 'schedule' : 'live','fetched_at' => gmdate(DATE_RFC3339)],'partial' => false];
@@ -149,11 +168,17 @@ final class ResourceService
                     if ($e instanceof TransportException && $e->status === 404) {
                         throw $e;
                     }
-                    $this->repository->providerFailure($ref['provider'], $result->retryAfter);
+                    $this->repository->providerFailure($ref['provider'], $retryAfter);
                 }
             }
-            if (in_array($operation, ['stop','trip'], true) && $local) {
-                return ['result' => $local,'source' => ['provider' => $ref['provider'],'mode' => 'fallback','realtime' => false],'partial' => true];
+            if (!$attempted && !$this->repository->providerOutage($ref['provider'])) {
+                throw new TransportException('source_unavailable', 'Provider request was throttled.', 503);
+            }
+            if (in_array($operation, ['stop','trip'], true)) {
+                $local = $kind === 'stop' ? $this->repository->stop($ref['provider'], $ref['external']) : $this->repository->trip($ref['provider'], $ref['external'], $ref['date']);
+                if ($local) {
+                    return ['result' => $local,'source' => ['provider' => $ref['provider'],'mode' => 'fallback','realtime' => false],'partial' => true];
+                }
             }
             if ($operation === 'departures' && isset($config['schedule_provider'],$config['otp_feed_id'])) {
                 $fallback = $this->registry->get($config['schedule_provider']);
@@ -167,9 +192,6 @@ final class ResourceService
                 return $data;
             }
             throw new TransportException('source_unavailable', 'Requested live data are unavailable.', 503);
-        }
-        if (in_array($operation, ['stop','trip'], true) && $local) {
-            return ['result' => $local,'source' => ['provider' => $ref['provider'],'mode' => 'schedule','realtime' => false],'partial' => false];
         }
         if (!($config['graph_ready'] ?? true)) {
             throw new TransportException('schedule_unavailable', 'No verified graph is active for this source.', 503);

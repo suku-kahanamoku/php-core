@@ -55,7 +55,8 @@
       "code": "pid-otp",
       "adapter": "otp_transmodel",
       "published": true,
-      "role": "primary",
+      "role": "fallback",
+      "fallback_for": ["pid"],
       "coverage": [
         {
           "country": "CZ",

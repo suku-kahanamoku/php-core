@@ -12,6 +12,24 @@ popisuje jejich možnosti, nikoli současné aktivní úlohy.
 České zaměření znamená doložené užívání v češtině/ČR, ne český jazykový původ:
 například převzatá rodná jména z českého kalendáře a statistiky zůstávají součástí.
 
+### Omezení zbytečných dotazů na úplná hesla
+
+Textové zdroje (Wikipedie, všechny slovníky, Wikizdroje a Erben) před dotazem
+zjišťují, zda už má heslo zveřejněnou etymologii, mytologii a tradici po alespoň
+50 znacích a neprázdnou pranostiku. Započítají se pouze aktivní publikované
+výklady ve veřejném detailu, včetně redakčně schválených vazeb a historických
+duplicit stejného druhu jména. Kompletní heslo se v těchto úlohách přeskočí;
+rozpracovaný kurzor se zachová. Nová jména a neúplné koncepty se procházejí dál.
+Soupisy jmen, statistiky a jmenný kalendář běží dál podle svých vlastních pravidel.
+
+Veřejný dnešní přehled vrací `proverb`: nejdříve publikovaný výklad typu
+`proverb` připojený k publikovanému pevně datovanému dnešnímu dni českého
+gregoriánského kalendáře, jinak publikovanou citovanou pranostiku dnešního
+jména, nakonec nejbližší budoucí pranostiku u kalendářního dne či
+nadcházejících jmenin. Vrácené `date` je
+skutečné datum pranostiky; pokud není žádná, vrátí `null`. Datované Erbenovy folklorní texty se nevydávají za
+pranostiky, pokud jejich výklad není výslovně typu `proverb`.
+
 ### Doplnění etymologií příjmení
 
 Opakované spuštění `migrations/etymolog_seed.sql` přidá chybějící úlohu

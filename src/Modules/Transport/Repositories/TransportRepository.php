@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Transport\Repositories;
 
-use App\Modules\Transport\{TransportException,ResourceIdCodec};
+use App\Modules\Transport\{TransportException,ResourceIdCodec,JourneyCacheMapper};
 use App\Modules\Transport\Import\ServiceTimeService;
 
 /**
@@ -96,6 +96,29 @@ final class TransportRepository
         ) === 1;
     }
     /**
+     * U navazujícího volání stejného zdroje jednou vyčká krátký konfigurovaný
+     * odstup. Otevřený circuit se tím neobchází; druhá rezervace stále musí uspět.
+     */
+    public function acquireProviderAfterInterval(string $code, int $minIntervalMs = 0): bool
+    {
+        if ($this->acquireProvider($code, $minIntervalMs)) {
+            return true;
+        }
+        if ($minIntervalMs <= 0 || $minIntervalMs > 500) {
+            return false;
+        }
+        usleep(($minIntervalMs + 5) * 1000);
+        return $this->acquireProvider($code, $minIntervalMs);
+    }
+
+    /** Circuit is open after upstream failures or a Retry-After response. */
+    public function providerOutage(string $code): bool
+    {
+        $rows = $this->rows('SELECT (open_until>UTC_TIMESTAMP() OR (failure_count>=3 AND probe_until>UTC_TIMESTAMP())) AS unavailable FROM transport_provider WHERE franchise_code=? AND code=?', [$this->tenant,$code]);
+        return !empty($rows[0]['unavailable']);
+    }
+
+    /**
      * Resetuje stav poskytovatele po úspěšném požadavku.
      *
      * @param  string $code Kód poskytovatele.
@@ -125,17 +148,22 @@ final class TransportRepository
      *
      * @param  array<string, mixed> $journey Spojení k uložení.
      * @param  int                   $ttl     Doba platnosti v sekundách.
+     * @param  bool                  $publicStopsOnly true pouze pro dotaz mezi veřejnými zastávkami.
      * @return array<string, mixed>          Spojení s přidaným `id` a `expires_at`.
      * @throws \JsonException               Pokud spojení nelze serializovat.
      */
-    public function cacheJourney(array $journey, int $ttl = 900): array
+    public function cacheJourney(array $journey, int $ttl = 900, bool $publicStopsOnly = false): array
     {
+        $publicJourney = $journey;
+        $journey = JourneyCacheMapper::sanitize($journey, $publicStopsOnly);
         $id = bin2hex(random_bytes(16));
         $expires = gmdate('Y-m-d H:i:s', time() + $ttl);
         $journey['id'] = $id;
         $journey['expires_at'] = gmdate('Y-m-d\TH:i:s\Z', time() + $ttl);
         $this->execute('INSERT INTO transport_journey_cache (franchise_code,id,payload,expires_at) VALUES (?,?,?,?)', [$this->tenant,$id,json_encode($journey, JSON_THROW_ON_ERROR),$expires]);
-        return $journey;
+        $publicJourney['id'] = $id;
+        $publicJourney['expires_at'] = $journey['expires_at'];
+        return $publicJourney;
     }
     /**
      * Načte spojení z mezipaměti okurku.
@@ -176,16 +204,25 @@ final class TransportRepository
      *
      * @param  string      $query   Hledaný začátek názvu; `%` a `_` jsou escapovány.
      * @param  int         $limit   Maximální počet výsledků (1–50).
-     * @param  string|null $country Kód země ISO 3166-1 alpha-2, nebo null.
+     * @param  string|null       $country   Kód země ISO 3166-1 alpha-2, nebo null.
+     * @param  list<string>|null $providers Jen poskytovatelé, jejichž online katalog selhal;
+     *                                      null dovoluje přímý katalogový dotaz.
      * @return list<array<string, mixed>> Zastávky s veřejným ID.
      */
-    public function places(string $query, int $limit, ?string $country): array
+    public function places(string $query, int $limit, ?string $country, ?array $providers = null): array
     {
+        if ($providers === []) {
+            return [];
+        }
         $sql = "SELECT s.*,f.provider_code,f.timezone FROM transport_feed f JOIN transport_feed_version v ON v.franchise_code=f.franchise_code AND v.id=f.active_version_id JOIN transport_stop s ON s.franchise_code=v.franchise_code AND s.version_id=v.id JOIN transport_provider p ON p.franchise_code=f.franchise_code AND p.code=f.provider_code WHERE f.franchise_code=? AND v.status='active' AND v.valid_until>=UTC_DATE() AND s.name LIKE ? ESCAPE '!'";
         $params = [$this->tenant,str_replace(['!','%','_'], ['!!','!%','!_'], $query).'%'];
         if ($country !== null) {
             $sql .= " AND JSON_CONTAINS(p.coverage,JSON_OBJECT('country',?))";
             $params[] = $country;
+        }
+        if ($providers !== null) {
+            $sql .= ' AND f.provider_code IN ('.implode(',', array_fill(0, count($providers), '?')).')';
+            array_push($params, ...$providers);
         }
         $sql .= ' ORDER BY s.name,s.external_id LIMIT '.max(1, min(50, $limit));
         return array_map(fn ($s) => $this->stopRow($s), $this->rows($sql, $params));

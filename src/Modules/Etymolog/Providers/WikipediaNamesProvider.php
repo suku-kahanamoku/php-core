@@ -62,7 +62,7 @@ final class WikipediaNamesProvider implements BatchProvider
         if (!is_array($state) || !is_int($state['after'] ?? null) || $state['after'] < 0) { throw new SyncException('invalid_provider_cursor'); }
         $related = array_key_exists('name_id',$state);
         if ($related && (!is_int($state['name_id']) || $state['name_id'] <= $state['after'] || !is_int($state['revision'] ?? null) || $state['revision'] < 1 || !is_int($state['page_id'] ?? null) || $state['page_id'] < 1 || !is_int($state['related'] ?? null) || $state['related'] < 0)) { throw new SyncException('invalid_provider_cursor'); }
-        $name = $related ? $this->names->find($state['name_id'],'') : $this->names->next('',$state['after']);
+        $name = $related ? $this->names->findIncomplete($state['name_id'],'') : $this->names->nextIncomplete('',$state['after']);
         if (!$name) {
             return $related ? $this->result([], ['after'=>$state['name_id']], $kind) : ['items'=>[],'scanned'=>0,'cursor'=>null,'complete'=>true];
         }
@@ -106,7 +106,7 @@ final class WikipediaNamesProvider implements BatchProvider
     private function result(array $items,array $state,string $kind): array
     {
         $items=array_values(array_filter($items, static fn($item)=>$kind==='etymologies' ? in_array($item['entry']['type'],['etymology','history'],true) : !in_array($item['entry']['type'],['etymology','history'],true)));
-        $complete=!isset($state['name_id']) && $this->names->next('',$state['after'])===null;
+        $complete=!isset($state['name_id']) && $this->names->nextIncomplete('',$state['after'])===null;
         return ['items'=>$items,'scanned'=>1,'cursor'=>$complete ? null : json_encode($state,JSON_THROW_ON_ERROR),'complete'=>$complete];
     }
 

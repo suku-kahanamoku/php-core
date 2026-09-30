@@ -131,3 +131,34 @@ check((int)$db->fetchOne("SELECT COUNT(*) n FROM etymolog_sync_job WHERE franchi
 $wikiCleanSeed = str_replace("'etymolog'", "'wikipedia-seed-fixture'", $wikiSeed);
 $db->getPdo()->exec($wikiCleanSeed); $db->getPdo()->exec($wikiCleanSeed);
 check((int)$db->fetchOne("SELECT COUNT(*) n FROM etymolog_sync_job WHERE franchise_code='wikipedia-seed-fixture' AND provider='wikipedia-names' AND enabled=1 AND next_run_at IS NULL AND last_status IS NULL")['n'] === 2, 'Wikipedia seed creates exactly two due tasks without running them');
+
+
+// Enrichment skips only dossiers with all four visible types; drafts and short texts still need sources.
+$coverageTenant='coverage-fixture';
+$coverageRepo=new EtymologDiscoveryRepository($db,$coverageTenant);
+$covered=$db->insert('etymolog_name',['franchise_code'=>$coverageTenant,'name'=>'Pokryté','kind'=>'given','published'=>1]);
+$uncovered=$db->insert('etymolog_name',['franchise_code'=>$coverageTenant,'name'=>'Nedokončené','kind'=>'given','published'=>1]);
+$etymology=$db->insert('etymolog_entry',['franchise_code'=>$coverageTenant,'name_id'=>$covered,'type'=>'etymology','title'=>'Origin','body'=>str_repeat('ž',49),'published'=>1]);
+foreach (['mythology','tradition'] as $type) {
+    $db->insert('etymolog_entry',['franchise_code'=>$coverageTenant,'name_id'=>$covered,'type'=>$type,'title'=>'Source','body'=>str_repeat('č',50),'published'=>1]);
+}
+$db->insert('etymolog_entry',['franchise_code'=>$coverageTenant,'name_id'=>$covered,'type'=>'proverb','title'=>'Saying','body'=>'Krátká pranostika.','published'=>1]);
+check((int)$coverageRepo->nextIncomplete('',0)['id']===$covered,'49 Unicode characters do not complete a dossier');
+$db->query('UPDATE etymolog_entry SET body=? WHERE id=?',[str_repeat('ž',50),$etymology]);
+check((int)$coverageRepo->nextIncomplete('',0)['id']===$uncovered && $coverageRepo->findIncomplete($covered,'')===null,'complete published dossier is skipped before external lookup');
+$db->query("UPDATE etymolog_entry SET published=0 WHERE franchise_code=? AND name_id=? AND type='mythology'",[$coverageTenant,$covered]);
+check((int)$coverageRepo->nextIncomplete('',0)['id']===$covered,'unpublished evidence cannot mark a dossier complete');
+check($coverageRepo->nextIncomplete('surname',0)===null,'completion lookup keeps name kinds separate');
+
+
+$completeOnlyTenant='coverage-only-fixture';
+$completeOnly=$db->insert('etymolog_name',['franchise_code'=>$completeOnlyTenant,'name'=>'Hotové','kind'=>'surname','published'=>1]);
+foreach (['etymology','mythology','tradition','proverb'] as $type) {
+    $db->insert('etymolog_entry',['franchise_code'=>$completeOnlyTenant,'name_id'=>$completeOnly,'type'=>$type,'title'=>'Evidence','body'=>str_repeat('A',$type==='proverb' ? 1 : 50),'published'=>1]);
+}
+$completeRepo=new EtymologDiscoveryRepository($db,$completeOnlyTenant);
+$beforeRequests=count($fake->requests);$fake->responses=[];
+$skipWiktionary=(new \App\Modules\Etymolog\Providers\WiktionaryProvider($fake,$completeRepo))->batch('cs','surname',null,1);
+$skipWikipedia=(new WikipediaNamesProvider($fake,$completeRepo))->batch('cs','etymologies',null,1);
+$skipWikisource=(new \App\Modules\Etymolog\Providers\WikisourceDiscoveryProvider($fake,$completeRepo))->page('Staré pověsti české (1959)',null);
+check($skipWiktionary['complete'] && $skipWikipedia['complete'] && $skipWikisource['complete'] && count($fake->requests)===$beforeRequests,'complete dossier causes no Wiktionary, Wikipedia or Wikisource HTTP requests');

@@ -4,6 +4,11 @@ Transport je tenantový modul php-core. Poskytuje jedno API pro web a mobil, ada
 externích zdrojů a verzovaný import jízdních řádů pro vlastní OpenTripPlanner (OTP).
 Jízdenky, platby a frontend nejsou součástí této první etapy.
 
+**Požadovaná architektura je online-first:** TRAM čte dopravní data z online API
+a může v PHP spojovat online získané úseky. Na importovaný katalog se obrací
+až při výpadku relevantní služby. Současný PID prototyp toto pravidlo ještě
+nesplňuje; přesný stav a další kroky uvádí [online-first návrh](../../../docs/tram-online-first.md).
+
 ## Co je implementováno
 
 - `TransportApi` používá stávající Router, Response a `X-Internal-Key` middleware.
@@ -148,9 +153,11 @@ zastávce. PID realtime se naváže pouze při shodě skutečného začátku jí
 U intervalových spojů tato verze vazbu na konkrétní vozidlo neodhaduje.
 Poloha starší než 90 sekund má `stale: true` a `realtime: false`.
 
-Krátkodobý cache výsledků umožňuje detail/geometrii bez ukládání historie hledání.
-Neobsahuje uživatele ani původní dotaz; při čtení se vždy kontroluje tenant a expirace.
-U zdrojů musí být dovoleno i toto krátkodobé uložení výsledku.
+Krátkodobý cache výsledků nyní umožňuje detail/geometrii bez původního textu
+hledání. Ukládá však celý výsledek do MySQL, a ten může obsahovat souřadnice
+počátku/cíle uživatelské cesty. Proto zatím **nelze tvrdit, že TRAM neukládá
+polohu uživatele**. Požadovaná architektura ukládání takových souřadnic i
+aktuálních poloh vozidel zakazuje; viz [online-first návrh](../../../docs/tram-online-first.md).
 
 ## Další poskytovatelé a provoz
 
@@ -164,7 +171,10 @@ odpovědích i proti dostupnému API. Endpointy pocházejí pouze ze serverové 
 
 `role: primary` se volá běžně; `role: fallback` s `fallback_for: ["provider-code"]`
 se volá pouze při selhání daného relevantního primárního zdroje. U PID je OTP
-primární plánovač, protože Golemio zde neposkytuje kompletní hledání cest.
+v aktuálním příkladu stále primární plánovač, což je známý nesoulad s
+požadovaným režimem. Golemio adaptér dnes nabízí zastávky, odjezdy a polohy;
+pro cestu s přestupy je potřeba další online plánovač nebo PHP skládání z
+dostatečných online dat. Poté lze OTP nastavit jako skutečnou zálohu.
 Více tenantů může používat stejné tabulky, jejich konfigurace, snapshoty, výsledky
 ani stav výpadků se ale nesdílejí. Globální deduplikace feedů mezi tenanty není zapnutá.
 

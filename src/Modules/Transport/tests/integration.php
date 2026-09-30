@@ -93,6 +93,7 @@ check($r->rows('SELECT status FROM transport_sync_run WHERE franchise_code=? ORD
 final class FakeHttp implements HttpClient
 {
     public array $requests = [];
+    public array $urlResponses = [];
     public function __construct(public array $responses)
     {
     }
@@ -105,7 +106,7 @@ final class FakeHttp implements HttpClient
         $out = [];
         foreach ($requests as $k => $q) {
             $this->requests[] = $k;
-            $out[$k] = $this->responses[$k] ?? new HttpResponse(503, '');
+            $out[$k] = $this->urlResponses[$q->url] ?? $this->responses[$k] ?? new HttpResponse(503, '');
         }return $out;
     }
 }
@@ -124,6 +125,20 @@ check(count($r->trip('pid', 'TX', '2026-10-05')['stops']) === 2, 'calendar addit
 check($r->trip('pid', 'Tnight', '2026-10-06')['stops'][0]['scheduled_departure'] === '2026-10-07T00:05:00+02:00', 'trip service day survives midnight');
 $cache = $r->cacheJourney(['legs' => []]);
 check($r->journey($cache['id'])['id'] === $cache['id'], 'journey detail cache');
+$privateJourney = $r->cacheJourney(['source' => ['provider' => 'entur','position' => [14.42,50.075]],'position' => [14.42,50.075], 'legs' => [[
+    'mode' => 'walk','from' => ['id' => null,'name' => 'Private origin','lat' => 50.075,'lon' => 14.42],
+    'to' => ['id' => null,'name' => 'Private destination','lat' => 50.082,'lon' => 14.44],
+    'geometry' => ['type' => 'LineString','coordinates' => [[14.42,50.075],[14.44,50.082]]],
+    'position' => [14.43,50.076],
+]]]);
+$storedPrivate = $r->journey($privateJourney['id']);
+check($storedPrivate['legs'][0]['from']['lat'] === null && $storedPrivate['legs'][0]['geometry'] === null && !str_contains(json_encode($storedPrivate), '50.075') && !str_contains(json_encode($storedPrivate), 'Private origin'), 'journey detail excludes request and vehicle positions');
+$publicJourney = $r->cacheJourney(['legs' => [[
+    'mode' => 'tram','from' => ['id' => 'public-stop-a','name' => 'A','lat' => 50.1,'lon' => 14.1],
+    'to' => ['id' => 'public-stop-b','name' => 'B','lat' => 50.2,'lon' => 14.2],
+    'geometry' => ['type' => 'LineString','coordinates' => [[14.1,50.1],[14.2,50.2]]],
+]]], publicStopsOnly: true);
+check($r->journey($publicJourney['id'])['legs'][0]['geometry']['type'] === 'LineString', 'public-stop journey keeps planned transit geometry');
 fails(fn () => $other->journey($cache['id']), 'expired_journey');
 $r->execute('UPDATE transport_journey_cache SET expires_at=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 1 SECOND) WHERE franchise_code=?', ['tram']);
 fails(fn () => $r->journey($cache['id']), 'expired_journey');
@@ -135,6 +150,22 @@ check(!$r->acquireProvider('pid'), 'circuit opens after repeated failures');
 check($other->acquireProvider('pid'), 'provider circuit isolated by tenant');
 $r->execute('UPDATE transport_provider SET open_until=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 1 SECOND),next_request_at=NULL WHERE franchise_code=? AND code=?', ['tram','pid']);
 check($r->acquireProvider('pid') && !$r->acquireProvider('pid'), 'single half-open recovery probe');
+$r->providerSuccess('pid');
+// A working place API must not be mixed with the imported catalogue.
+$pidPlaces = new App\Modules\Transport\Providers\PidProvider(
+    new ProviderDefinition('tram', 'pid', 'pid', ['url' => 'https://api.golemio.cz'], [['country' => 'CZ','bbox' => [12,48,19,52]]]),
+    'fixture-only-token',
+);
+$placesHttp = new FakeHttp(['pid' => new HttpResponse(200, json_encode(['features' => [
+    ['properties' => ['stop_id' => 'REMOTE','stop_name' => 'Station'], 'geometry' => ['coordinates' => [14.42,50.075]]],
+]]))]);
+$placesService = new ResourceService(new ProviderRegistry([$pidPlaces]), $placesHttp, $r);
+$livePlaces = $placesService->places('St', 10, 'CZ');
+check(count($livePlaces['places']) === 1 && $livePlaces['places'][0]['name'] === 'Station' && $livePlaces['places'][0]['source_mode'] === 'live', 'successful online places exclude imported catalogue');
+$placesHttp->responses['pid'] = new HttpResponse(503, '');
+$r->execute('UPDATE transport_provider SET next_request_at=NULL WHERE franchise_code=? AND code=?', ['tram','pid']);
+$fallbackPlaces = $placesService->places('St', 10, 'CZ');
+check(count($fallbackPlaces['places']) === 1 && $fallbackPlaces['places'][0]['name'] === 'Start' && $fallbackPlaces['places'][0]['source_mode'] === 'fallback', 'failed online places use only matching provider catalogue');
 $r->providerSuccess('pid');
 // Complete journey orchestration: primary outage, backup result, empty result, all unavailable.
 $coverage = [['country' => 'CZ','bbox' => [12,48,19,52]]];
@@ -168,9 +199,102 @@ $position = ['geometry' => ['type' => 'Point','coordinates' => [14.42,50.075]],'
     'trip' => ['start_timestamp' => '2026-10-06T08:00:00Z'],
     'last_position' => ['origin_timestamp' => gmdate('Y-m-d\TH:i:s\Z'),'tracking' => true,'is_canceled' => false,'delay' => ['actual' => 30]],
 ]];
+$enrichmentHttp = new FakeHttp(['pid-departures' => new HttpResponse(200, json_encode([
+    'stops' => [['stop_id' => 'S1','stop_name' => 'Start','stop_lat' => 50.075,'stop_lon' => 14.42]],
+    'departures' => [[
+        'stop' => ['id' => 'S1'],'trip' => ['id' => 'T1','is_canceled' => false],
+        'route' => ['type' => 0,'short_name' => '22'],
+        'departure_timestamp' => ['scheduled' => '2026-10-06T10:00:00+02:00','predicted' => '2026-10-06T10:03:00+02:00'],
+        'arrival_timestamp' => ['scheduled' => null,'predicted' => null],
+        'delay' => ['is_available' => true],
+    ]],
+]))]);
+$pidEnrichmentProvider = new App\Modules\Transport\Providers\PidProvider(
+    new ProviderDefinition('tram', 'pid', 'pid', ['url' => 'https://api.golemio.cz'], [['country' => 'CZ','bbox' => [12,48,19,52]]]),
+    'fixture-only-token',
+);
+$otpEnrichmentProvider = new TransmodelProvider(new ProviderDefinition('tram', 'pid-otp', 'otp_transmodel',
+    ['url' => 'http://127.0.0.1','source_provider' => 'pid','otp_feed_id' => 'pid'], [['country' => 'CZ','bbox' => [12,48,19,52]]], 'fallback', ['pid']));
+$enrichmentJourney = ['source' => ['provider' => 'pid-otp','mode' => 'fallback'],'legs' => [[
+    'trip_id' => ResourceIdCodec::encode('tram','pid-otp','trip','pid:T1','2026-10-06'),
+    'from' => ['id' => ResourceIdCodec::encode('tram','pid-otp','stop','pid:S1')],
+    'scheduled_departure' => '2026-10-06T10:00:00+02:00','expected_departure' => null,'realtime' => false,
+]]];
+$r->execute('UPDATE transport_provider SET next_request_at=NULL WHERE franchise_code=? AND code=?', ['tram','pid']);
+$enriched = (new App\Modules\Transport\PidJourneyEnrichmentService(
+    new ProviderRegistry([$pidEnrichmentProvider,$otpEnrichmentProvider]), $enrichmentHttp, $r,
+))->enrich([$enrichmentJourney]);
+check($enriched[0]['legs'][0]['expected_departure'] === '2026-10-06T10:03:00+02:00' && $enriched[0]['source']['realtime_provider'] === 'pid', 'PID board enriches matched journey leg online');
+check(!isset(App\Modules\Transport\JourneyCacheMapper::sanitize($enriched[0])['source']['realtime_provider']) && App\Modules\Transport\JourneyCacheMapper::sanitize($enriched[0])['legs'][0]['expected_departure'] === null, 'cached detail excludes transient realtime data');
+$pidTripPayload = [
+    'trip_id' => 'T1','route_id' => 'R1','route' => ['route_type' => 0,'route_short_name' => '22','route_long_name' => 'Test tram'],
+    'stop_times' => [
+        ['trip_id' => 'T1','stop_id' => 'S1','stop_sequence' => 1,'arrival_time' => '10:00:00','departure_time' => '10:00:00'],
+        ['trip_id' => 'T1','stop_id' => 'S2','stop_sequence' => 2,'arrival_time' => '10:10:00','departure_time' => '10:10:00'],
+    ],
+];
+$pidOnlineTimes = [['trip_id' => 'T1','stop_id' => 'S1','stop_sequence' => 1,
+    'arrival_time' => '10:00:00','departure_time' => '10:00:00']];
+$onlineHttp = new FakeHttp([
+    '2026-10-06' => new HttpResponse(200, json_encode($pidOnlineTimes)),
+    '2026-10-05' => new HttpResponse(200, '[]'),
+    '2026-10-06|T1' => new HttpResponse(200, json_encode($pidTripPayload)),
+    'pid-departures' => new HttpResponse(200, '{"departures":[],"stops":[]}'),
+    'pid-otp' => new HttpResponse(200, json_encode($payload)),
+]);
+foreach (['S1' => [14.42,50.075], 'S2' => [14.44,50.082]] as $stopId => $coordinates) {
+    $url = $pid->resourceRequest('stop', ['external' => $stopId])->url;
+    $onlineHttp->urlResponses[$url] = new HttpResponse(200, json_encode([
+        'properties' => ['stop_id' => $stopId,'stop_name' => $stopId],
+        'geometry' => ['coordinates' => $coordinates],
+    ]));
+}
+$stopQuery = JourneyQuery::fromArray([
+    'from-dest' => ['type' => 'stop','id' => ResourceIdCodec::encode('tram','pid','stop','S1')],
+    'to-dest' => ['type' => 'stop','id' => ResourceIdCodec::encode('tram','pid','stop','S2')],
+    'from-date' => '2026-10-06T09:00:00+02:00','state' => 'CZ',
+]);
+$onlineRegistry = new ProviderRegistry([$pid,$otpEnrichmentProvider]);
+$onlineResources = new ResourceService($onlineRegistry, $onlineHttp, $r);
+$onlineJourneys = new JourneyService($onlineRegistry, $onlineHttp, $r, $onlineResources);
+$r->execute('UPDATE transport_provider SET next_request_at=NULL WHERE franchise_code=?', ['tram']);
+$onlineResult = $onlineJourneys->search($stopQuery);
+check(count($onlineResult['journeys']) === 1 && $onlineResult['journeys'][0]['source']['provider'] === 'pid'
+    && $onlineResult['journeys'][0]['source']['mode'] === 'live' && $onlineResult['partial']
+    && !in_array('pid-otp', $onlineHttp->requests, true), 'PID stop-to-stop search composes online direct trip without OTP');
+$onlineHttp->responses['2026-10-06'] = new HttpResponse(200, '[]');
+$onlineHttp->requests = [];
+$r->execute('UPDATE transport_provider SET next_request_at=NULL WHERE franchise_code=?', ['tram']);
+$onlineEmpty = $onlineJourneys->search($stopQuery);
+check($onlineEmpty['journeys'] === [] && !in_array('pid-otp', $onlineHttp->requests, true), 'empty PID online result never triggers local OTP');
+$onlineHttp->responses['2026-10-06'] = new HttpResponse(503, '');
+$onlineHttp->requests = [];
+$r->execute('UPDATE transport_provider SET next_request_at=NULL WHERE franchise_code=?', ['tram']);
+$onlineFallback = $onlineJourneys->search($stopQuery);
+check(count($onlineFallback['journeys']) === 1 && $onlineFallback['journeys'][0]['source']['mode'] === 'fallback'
+    && in_array('pid-otp', $onlineHttp->requests, true), 'PID API failure invokes local OTP fallback');
+$r->providerSuccess('pid');
+$pidTrip = $pid->resourceResult('trip', new HttpResponse(200, json_encode($pidTripPayload)), ['external' => 'T1','date' => '2026-10-06']);
+check($pidTrip['stops'][0]['scheduled_arrival'] === '2026-10-06T10:00:00+02:00', 'PID online trip uses scheduled service-day times');
+$pidHttp = new FakeHttp(['resource' => new HttpResponse(200, json_encode($pidTripPayload)), 'trip' => new HttpResponse(200, json_encode($pidTripPayload))]);
+$pidResources = new ResourceService(new ProviderRegistry([$pid]), $pidHttp, $r);
+$pidTripId = ResourceIdCodec::encode('tram', 'pid', 'trip', 'T1', '2026-10-06');
+$r->execute('UPDATE transport_provider SET next_request_at=NULL WHERE franchise_code=? AND code=?', ['tram','pid']);
+check($pidResources->resource('trip', $pidTripId)['source']['mode'] === 'live', 'PID trip detail reads online before imported catalogue');
+$pidHttp->responses['resource'] = new HttpResponse(503, '');
+$r->execute('UPDATE transport_provider SET next_request_at=NULL WHERE franchise_code=? AND code=?', ['tram','pid']);
+check($pidResources->resource('trip', $pidTripId)['source']['mode'] === 'fallback', 'PID trip detail uses catalogue only after online failure');
+$r->providerSuccess('pid');
 $args = ['expected_start' => '2026-10-06T10:00:00+02:00'];
 $live = $pid->resourceResult('realtime', new HttpResponse(200, json_encode($position)), $args);
 check($live['realtime'] && !$live['stale'] && $live['delay_seconds'] === 30, 'PID current position is marked realtime');
+$pidHttp->responses['resource'] = new HttpResponse(200, json_encode($position));
+$r->execute('UPDATE transport_provider SET next_request_at=NULL WHERE franchise_code=? AND code=?', ['tram','pid']);
+check($pidResources->resource('realtime', $pidTripId)['result']['realtime'], 'PID realtime verifies service instance using online trip detail');
+$pidHttp->responses['trip'] = new HttpResponse(503, '');
+$r->execute('UPDATE transport_provider SET next_request_at=NULL WHERE franchise_code=? AND code=?', ['tram','pid']);
+fails(fn () => $pidResources->resource('realtime', $pidTripId), 'source_unavailable');
+$r->providerSuccess('pid');
 $position['properties']['last_position']['origin_timestamp'] = gmdate('Y-m-d\TH:i:s\Z', time() - 600);
 $stale = $pid->resourceResult('realtime', new HttpResponse(200, json_encode($position)), $args);
 check(!$stale['realtime'] && $stale['stale'] && $stale['delay_seconds'] === null, 'PID stale observation is not a live delay');

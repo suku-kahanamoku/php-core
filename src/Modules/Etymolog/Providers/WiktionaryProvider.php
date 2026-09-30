@@ -103,12 +103,12 @@ final class WiktionaryProvider implements BatchProvider
         if (!is_array($state) || !is_int($state['after'] ?? null) || $state['after']<0) { throw new SyncException('invalid_provider_cursor'); }
         $selected=[]; $scanned=0; $after=$state['after'];
         for ($i=0;$i<$limit;++$i) {
-            $record=$this->names->next($kind,$after);
+            $record=$this->names->nextIncomplete($kind,$after);
             if (!$record) { break; }
             $after=(int)$record['id']; ++$scanned;
             if (!preg_match('/[|:#\x00-\x1f]/u', $record['name'])) { $selected[]=NameNormalizer::display($record['name']); }
         }
-        $complete=$this->names->next($kind,$after)===null;
+        $complete=$this->names->nextIncomplete($kind,$after)===null;
         $nextCursor=$complete ? null : json_encode(['after'=>$after],JSON_THROW_ON_ERROR);
         if (!$selected) { return ['items'=>[],'scanned'=>$scanned,'cursor'=>$nextCursor,'complete'=>$complete]; }
         $rights = $this->api(['action' => 'query', 'meta' => 'siteinfo', 'siprop' => 'rightsinfo']);
