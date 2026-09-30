@@ -3,13 +3,22 @@
 declare(strict_types=1);
 require dirname(__DIR__, 4).'/vendor/autoload.php';
 require __DIR__.'/fixtures.php';
-use App\Modules\Transport\{ConfigurationService,TransportException,ResourceIdCodec,ProviderRegistry,ResourceService,JourneyService,GeometryMapper};
+use App\Modules\Transport\Core\ConfigurationService;
+use App\Modules\Transport\Model\TransportException;
+use App\Modules\Transport\Model\ResourceIdCodec;
+use App\Modules\Transport\Core\ProviderRegistry;
+use App\Modules\Transport\Core\ResourceService;
+use App\Modules\Transport\Core\JourneyService;
+use App\Modules\Transport\Model\GeometryMapper;
 use App\Modules\Http\Contracts\HttpClient;
-use App\Modules\Transport\DTO\{JourneyQuery,ProviderDefinition};
+use App\Modules\Transport\Model\JourneyQuery;
+use App\Modules\Transport\Model\ProviderDefinition;
 use App\Modules\Http\HttpResponse;
-use App\Modules\Transport\Import\{FeedSyncService,ServiceTimeService,GraphService};
-use App\Modules\Transport\Repositories\TransportRepository;
-use App\Modules\Transport\Providers\TransmodelProvider;
+use App\Modules\Transport\Import\FeedSyncService;
+use App\Modules\Transport\Import\ServiceTimeService;
+use App\Modules\Transport\Integrations\OpenTripPlanner\GraphService;
+use App\Modules\Transport\Persistence\TransportRepository;
+use App\Modules\Transport\Protocols\Transmodel\TransmodelProvider;
 
 error_reporting(E_ALL);
 set_error_handler(static function (int $n, string $s, string $f, int $l): bool {
@@ -44,7 +53,7 @@ $server->exec('CREATE DATABASE transport_test CHARACTER SET utf8mb4');
 $db = new PDO($dsn, 'root', '', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,PDO::ATTR_EMULATE_PREPARES => false]);
 $db->exec("SET time_zone='+00:00'");
 $root = dirname(__DIR__, 4);
-foreach (['schema', 'tram_schema', 'tram_seed'] as $file) {
+foreach (['schema', 'tram_schema', 'tram_modularity', 'tram_seed'] as $file) {
     $sql = file_get_contents($root.'/migrations/'.$file.'.sql');
     $db->exec($sql);
     $db->exec($sql);
@@ -53,9 +62,9 @@ check(true, 'consolidated schemas and seed apply twice');
 $r = new TransportRepository($db, 'tram');
 $other = new TransportRepository($db, 'other');
 $config = json_decode(file_get_contents($root.'/config/transport.example.json'), true);
-ConfigurationService::apply($r, $config);
-ConfigurationService::apply($r, $config);
-ConfigurationService::apply($other, $config);
+ConfigurationService::apply($r, $config, \App\Modules\Transport\TransportModule::integrations(), \App\Modules\Transport\TransportModule::importers($r));
+ConfigurationService::apply($r, $config, \App\Modules\Transport\TransportModule::integrations(), \App\Modules\Transport\TransportModule::importers($r));
+ConfigurationService::apply($other, $config, \App\Modules\Transport\TransportModule::integrations(), \App\Modules\Transport\TransportModule::importers($other));
 check(count($r->providers()) === 3, 'provider configuration is idempotent');
 check((int)$r->rows("SELECT COUNT(*) n FROM enumeration WHERE franchise_code='tram' AND type='transport_mode'")[0]['n'] === 12, 'transport modes use existing enumeration');
 $input = ['from-dest' => ['type' => 'coordinates','lat' => 50.075,'lon' => 14.42],'to-dest' => ['type' => 'coordinates','lat' => 50.082,'lon' => 14.44],'from-date' => '2026-10-06T09:00:00+02:00'];
@@ -98,7 +107,7 @@ check(count(GeometryMapper::polyline('_p~iF~ps|U_ulLnnqC_mqNvxq`@')['coordinates
 fails(fn () => GeometryMapper::polyline('~'), 'invalid_geometry');
 $dir = getenv('TRANSPORT_TEST_DIR');
 gtfsFixture($dir.'/feed.zip');
-$sync = new FeedSyncService($r, $dir.'/archives');
+$sync = \App\Modules\Transport\TransportModule::feedSync($r, $dir.'/archives', \App\Modules\Http\HttpModule::client());
 $import = $sync->sync('pid', $dir.'/feed.zip');
 $version = $import['version_id'];
 check($import['status'] === 'ready' && $r->activeFeed('pid') === null, 'import is staged before graph activation');
@@ -156,8 +165,8 @@ check($r->stop('pid', 'S1')['name'] === 'Start' && $other->stop('pid', 'S1') ===
 $snapshotStop = $r->stop('pid', 'S1');
 check($snapshotStop['snapshot_version'] === $version && str_ends_with($snapshotStop['snapshot_at'], 'Z'),
     'fallback catalogue identifies its UTC import snapshot');
-$otpRow = array_values(array_filter($r->providers(), static fn ($row) => $row['code'] === 'pid-otp'))[0];
-check(str_ends_with(json_decode($otpRow['config'], true)['snapshot_at'], 'Z'),
+$otpDefinition = \App\Modules\Transport\TransportModule::registry($r, [])->get('pid-otp')->definition();
+check(str_ends_with($otpDefinition->config['snapshot_at'], 'Z'),
     'OTP fallback configuration exposes UTC snapshot age');
 
 check(count($r->places('st', 10, 'CZ')) === 1, 'local autocomplete uses coverage and prefix');
@@ -195,7 +204,7 @@ $r->execute('UPDATE transport_provider SET open_until=DATE_SUB(UTC_TIMESTAMP(),I
 check($r->acquireProvider('pid') && !$r->acquireProvider('pid'), 'single half-open recovery probe');
 $r->providerSuccess('pid');
 // A working place API must not be mixed with the imported catalogue.
-$pidPlaces = new App\Modules\Transport\Providers\PidProvider(
+$pidPlaces = new App\Modules\Transport\Integrations\Golemio\PidProvider(
     new ProviderDefinition('tram', 'pid', 'pid', ['url' => 'https://api.golemio.cz'], [['country' => 'CZ','bbox' => [12,48,19,52]]]),
     'fixture-only-token',
 );
@@ -213,7 +222,7 @@ $r->providerSuccess('pid');
 // Complete journey orchestration: primary outage, backup result, empty result, all unavailable.
 $coverage = [['country' => 'CZ','bbox' => [12,48,19,52]]];
 $primary = new TransmodelProvider(new ProviderDefinition('tram', 'entur', 'entur', ['url' => 'https://example.test'], $coverage));
-$backup = new TransmodelProvider(new ProviderDefinition('tram', 'pid-otp', 'otp_transmodel', ['url' => 'http://localhost','graph_ready' => true], $coverage, 'fallback', ['entur']));
+$backup = new \App\Modules\Transport\Integrations\OpenTripPlanner\OtpProvider(new ProviderDefinition('tram', 'pid-otp', 'otp_transmodel', ['url' => 'http://localhost','graph_ready' => true], $coverage, 'fallback', ['entur']));
 $payload = ['data' => ['trip' => ['tripPatterns' => [['duration' => 600,'legs' => [['mode' => 'tram','distance' => 2000,'realtime' => false,'serviceDate' => '2026-10-06','aimedStartTime' => '2026-10-06T10:00:00+02:00','aimedEndTime' => '2026-10-06T10:10:00+02:00','fromPlace' => ['name' => 'Start','latitude' => 50.075,'longitude' => 14.42],'toPlace' => ['name' => 'End','latitude' => 50.082,'longitude' => 14.44],'serviceJourney' => ['id' => 'pid:T1']]]]]]]];
 $http = new FakeHttp(['entur' => new HttpResponse(503, ''),'pid-otp' => new HttpResponse(200, json_encode($payload))]);
 $registry = new ProviderRegistry([$primary,$backup]);
@@ -234,7 +243,7 @@ gtfsFixture($dir.'/backwards.zip', ['stop_times.txt' => "trip_id,arrival_time,de
 fails(fn () => $sync->sync('pid', $dir.'/backwards.zip'), 'invalid_gtfs_relations');
 check((int)$r->activeFeed('pid')['id'] === $version, 'invalid chronology preserves active data');
 // Source-specific realtime correctness and cross-process import lock.
-$pid = new App\Modules\Transport\Providers\PidProvider(
+$pid = new App\Modules\Transport\Integrations\Golemio\PidProvider(
     new ProviderDefinition('tram', 'pid', 'pid', ['url' => 'https://api.golemio.cz','realtime_max_age' => 90], $coverage),
     'fixture-only-token',
 );
@@ -252,11 +261,11 @@ $enrichmentHttp = new FakeHttp(['pid-departures' => new HttpResponse(200, json_e
         'delay' => ['is_available' => true],
     ]],
 ]))]);
-$pidEnrichmentProvider = new App\Modules\Transport\Providers\PidProvider(
+$pidEnrichmentProvider = new App\Modules\Transport\Integrations\Golemio\PidProvider(
     new ProviderDefinition('tram', 'pid', 'pid', ['url' => 'https://api.golemio.cz'], [['country' => 'CZ','bbox' => [12,48,19,52]]]),
     'fixture-only-token',
 );
-$otpEnrichmentProvider = new TransmodelProvider(new ProviderDefinition('tram', 'pid-otp', 'otp_transmodel',
+$otpEnrichmentProvider = new \App\Modules\Transport\Integrations\OpenTripPlanner\OtpProvider(new ProviderDefinition('tram', 'pid-otp', 'otp_transmodel',
     ['url' => 'http://127.0.0.1','source_provider' => 'pid','otp_feed_id' => 'pid'], [['country' => 'CZ','bbox' => [12,48,19,52]]], 'fallback', ['pid']));
 $enrichmentJourney = ['source' => ['provider' => 'pid-otp','mode' => 'fallback'],'legs' => [[
     'trip_id' => ResourceIdCodec::encode('tram','pid-otp','trip','pid:T1','2026-10-06'),
@@ -264,11 +273,11 @@ $enrichmentJourney = ['source' => ['provider' => 'pid-otp','mode' => 'fallback']
     'scheduled_departure' => '2026-10-06T10:00:00+02:00','expected_departure' => null,'realtime' => false,
 ]]];
 $r->execute('UPDATE transport_provider SET next_request_at=NULL WHERE franchise_code=? AND code=?', ['tram','pid']);
-$enriched = (new App\Modules\Transport\PidJourneyEnrichmentService(
-    new ProviderRegistry([$pidEnrichmentProvider,$otpEnrichmentProvider]), $enrichmentHttp, $r,
+$enriched = (new App\Modules\Transport\Integrations\Golemio\PidJourneyEnrichmentService(
+    $pidEnrichmentProvider, new ProviderRegistry([$pidEnrichmentProvider,$otpEnrichmentProvider]), $enrichmentHttp,
 ))->enrich([$enrichmentJourney]);
 check($enriched[0]['legs'][0]['expected_departure'] === '2026-10-06T10:03:00+02:00' && $enriched[0]['source']['realtime_provider'] === 'pid', 'PID board enriches matched journey leg online');
-check(!isset(App\Modules\Transport\JourneyCacheMapper::sanitize($enriched[0])['source']['realtime_provider']) && App\Modules\Transport\JourneyCacheMapper::sanitize($enriched[0])['legs'][0]['expected_departure'] === null, 'cached detail excludes transient realtime data');
+check(!isset(App\Modules\Transport\Model\JourneyCacheMapper::sanitize($enriched[0])['source']['realtime_provider']) && App\Modules\Transport\Model\JourneyCacheMapper::sanitize($enriched[0])['legs'][0]['expected_departure'] === null, 'cached detail excludes transient realtime data');
 $pidTripPayload = [
     'trip_id' => 'T1','route_id' => 'R1','route' => ['route_type' => 0,'route_short_name' => '22','route_long_name' => 'Test tram'],
     'stops' => [
@@ -538,4 +547,5 @@ if ($realFeed = getenv('TRANSPORT_TEST_PID_ARCHIVE')) {
 }
 require __DIR__.'/online-selection.php';
 require __DIR__.'/nearest-stop.php';
+require __DIR__.'/modularity.php';
 echo "PASS $checks checks on isolated MySQL\n";

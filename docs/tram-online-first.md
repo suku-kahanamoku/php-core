@@ -98,6 +98,17 @@ předstírat ani stahovat HTML výsledky jako API.
 - [Ministerstvo dopravy: CIS JŘ](https://md.gov.cz/Dokumenty/Verejna-doprava/Jizdni-rady,-kalendare-pro-jizdni-rady,-metodi-(1)/Jizdni-rady-verejne-dopravy)
 - [PID: otevřená data](https://pid.cz/o-systemu/opendata/)
 
+## Aktualizace modularity
+
+Transport nyní používá integrační moduly a společný executor pro vícekrokové
+souběžné dotazy, jeden rozpočet od rozlišení míst a kvótu každého externího requestu.
+Golemio sdílí kvótu podle credential scope napříč tenanty. Země se skládají pomocí
+konfiguračních presetů. Pokrytí cesty určují koncové body, stát/město UI ji
+neomezují; geografický filtr našeptávače zůstává zachovaný. Detail návrhu a
+přesné implementované hranice jsou v
+[Transport/ARCHITECTURE.md](../src/Modules/Transport/ARCHITECTURE.md).
+Níže uvedená historická měření nejsou novým produkčním ověřením.
+
 ## Stav aktuálního kódu (30. 9. 2026)
 
 ### Sdílený výběr oblasti a online našeptávač
@@ -195,8 +206,8 @@ vyhledání Grohova → Václavská včetně pěšího dokončení a detailu spo
   online/ephemerálním úložištěm vyžaduje samostatné řešení pro více PHP
   instancí; endpointy detailu a geometrie zůstaly funkční.
 - Záložní výsledky uvádějí verzi snapshotu a UTC čas dokončeného importu.
-  Výchozí limit Golemio je 20 požadavků za 8 sekund na klíč; při souběžném
-  provozu je potřeba sdíleně hlídat kvótu nebo domluvit vyšší limit.
+  Výchozí limit Golemio je 20 požadavků za 8 sekund na klíč; sdílenou
+  kvótu nyní hlídá transportní executor. Vyšší kapacita vyžaduje odpovídající limit zdroje.
 - Import PID GTFS je verzovaný a ručně spustitelný. Plánování nočních úloh,
   importy dalších zdrojů a produkční ověření nejsou dokončené. Lokální
   Golemio token byl ověřen přímým online čtením zastávek. Neexistuje oprávněné výsledkové API IDOS

@@ -2,9 +2,14 @@
 
 declare(strict_types=1);
 
-use App\Modules\Transport\{NearestStopService,ProviderRegistry,ResourceService,JourneyService,ResourceIdCodec};
-use App\Modules\Transport\DTO\{ProviderDefinition,JourneyQuery};
-use App\Modules\Transport\Providers\SpojenkaProvider;
+use App\Modules\Transport\Core\NearestStopService;
+use App\Modules\Transport\Core\ProviderRegistry;
+use App\Modules\Transport\Core\ResourceService;
+use App\Modules\Transport\Core\JourneyService;
+use App\Modules\Transport\Model\ResourceIdCodec;
+use App\Modules\Transport\Model\ProviderDefinition;
+use App\Modules\Transport\Model\JourneyQuery;
+use App\Modules\Transport\Integrations\Spojenka\SpojenkaProvider;
 use App\Modules\Http\HttpResponse;
 
 $nearProvider = new SpojenkaProvider(new ProviderDefinition('tram','pid','spojenka',
@@ -68,10 +73,10 @@ check(array_column($nearby['places'],'name')===['Nearest online stop','Farther o
 $resetNearest();
 check(count($nearService->search($gps,1)['places'])===1, 'nearby dropdown respects limit');
 $filter = ['q'=>['latitude'=>$gps['lat'],'longitude'=>$gps['lon'],'observed_at'=>$gps['observed_at']]];
-$nearQuery = \App\Modules\Transport\DTO\PlaceQuery::parse($filter);
+$nearQuery = \App\Modules\Transport\Model\PlaceQuery::parse($filter);
 check($nearQuery['query']===null && $nearQuery['location']['type']==='current_location', 'places filter accepts GPS-only nearby search');
-fails(fn()=>\App\Modules\Transport\DTO\PlaceQuery::parse(['q'=>['state'=>'CZ']]),'invalid_query');
-fails(fn()=>\App\Modules\Transport\DTO\PlaceQuery::parse(['q'=>['name'=>['$regex'=>'']]+$filter['q']]),'invalid_query');
+fails(fn()=>\App\Modules\Transport\Model\PlaceQuery::parse(['q'=>['state'=>'CZ']]),'invalid_query');
+fails(fn()=>\App\Modules\Transport\Model\PlaceQuery::parse(['q'=>['name'=>['$regex'=>'']]+$filter['q']]),'invalid_query');
 $resetNearest();
 $nearHttp->responses['pid'] = new HttpResponse(200,'[]');
 check($nearService->search($gps)['places']===[], 'successful empty nearby search does not mix in local catalogue');

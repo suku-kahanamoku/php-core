@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Transport\Import;
 
-use App\Modules\Transport\TransportException;
+use App\Modules\Transport\Model\TransportException;
 
 /**
  * Převod časů a dat GTFS.

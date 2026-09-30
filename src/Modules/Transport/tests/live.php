@@ -2,13 +2,15 @@
 
 declare(strict_types=1);
 require dirname(__DIR__, 4).'/vendor/autoload.php';
-use App\Modules\Transport\DTO\{ProviderDefinition,JourneyQuery};
-use App\Modules\Transport\Providers\TransmodelProvider;
+use App\Modules\Transport\Model\ProviderDefinition;
+use App\Modules\Transport\Model\JourneyQuery;
+use App\Modules\Transport\Protocols\Transmodel\TransmodelProvider;
 use App\Modules\Http\HttpService;
 
 $otp = getenv('TRANSPORT_TEST_OTP_URL');
 $http = new HttpService();
-$provider = new TransmodelProvider(new ProviderDefinition('tram', $otp ? 'pid-otp' : 'entur', $otp ? 'otp_transmodel' : 'entur', [
+$providerClass = $otp ? \App\Modules\Transport\Integrations\OpenTripPlanner\OtpProvider::class : \App\Modules\Transport\Integrations\Entur\EnturProvider::class;
+$provider = new $providerClass(new ProviderDefinition('tram', $otp ? 'pid-otp' : 'entur', $otp ? 'otp_transmodel' : 'entur', [
     'url' => $otp ?: 'https://api.entur.io/journey-planner/v3/graphql','client_name' => 'collega-tram','geocoder_url' => 'https://api.entur.io/geocoder/v1/autocomplete',
 ], []));
 $input = ['from-dest' => ['type' => 'coordinates','lat' => $otp ? 50.075 : 59.911,'lon' => $otp ? 14.42 : 10.752],
@@ -38,7 +40,7 @@ if (!$transit) {
 }
 echo 'PASS '.($otp ? 'OTP' : 'Entur').' live journey search: '.count($journeys).' journeys, '.count($transit)." transit legs\n";
 $leg = $transit[0];
-$stop = App\Modules\Transport\ResourceIdCodec::decode($leg['from']['id'], 'tram', 'stop');
+$stop = App\Modules\Transport\Model\ResourceIdCodec::decode($leg['from']['id'], 'tram', 'stop');
 foreach (['stop','departures'] as $operation) {
     $args = $stop + ['at' => $input['from-date'],'limit' => 10];
     $result = $http->sendAll(['resource' => $provider->resourceRequest($operation, $args)])['resource'];
@@ -52,7 +54,7 @@ foreach (['stop','departures'] as $operation) {
         throw new RuntimeException('No '.$operation.' returned.');
     }echo "PASS live $operation\n";
 }
-$trip = App\Modules\Transport\ResourceIdCodec::decode($leg['trip_id'], 'tram', 'trip');
+$trip = App\Modules\Transport\Model\ResourceIdCodec::decode($leg['trip_id'], 'tram', 'trip');
 $result = $http->sendAll(['resource' => $provider->resourceRequest('trip', $trip)])['resource'];
 $data = $provider->resourceResult('trip', $result, $trip);
 if (count($data['stops']) < 2) {

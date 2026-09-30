@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\Transport\Import;
 
-use App\Modules\Transport\Repositories\TransportRepository;
-use App\Modules\Transport\TransportException;
+use App\Modules\Transport\Persistence\TransportRepository;
+use App\Modules\Transport\Model\TransportException;
 
 /**
- * Synchronizace importovaného feedu (GTFS) včetně verze a platnosti.
+ * Synchronizace importovaného feedu přes ImporterRegistry včetně verze a platnosti.
  *
  * Běh drží databázový zámek `GET_LOCK`, takže dva souběžné importy téhož feedu
  * se nepotkají. Nejprve se stáhne archiv do dočasného souboru a porovná se
@@ -21,10 +21,10 @@ final class FeedSyncService
     /**
      * @param  TransportRepository                     $repository Repozitář daného okurku.
      * @param  string                                  $storage   Adresář pro archivy (právo 0700, soubory 0600).
-     * @param  \App\Modules\Http\Contracts\HttpClient|null $http      Klient pro testy; jinak `HttpModule::client()`.
+     * @param  \App\Modules\Http\Contracts\HttpClient      $http      Sdílený klient předaný composition rootem.
      * @return void
      */
-    public function __construct(private readonly TransportRepository $repository, private readonly string $storage, private readonly ?\App\Modules\Http\Contracts\HttpClient $http = null)
+    public function __construct(private readonly TransportRepository $repository, private readonly string $storage, private readonly \App\Modules\Http\Contracts\HttpClient $http, private readonly ImporterRegistry $importers)
     {
     }
 
@@ -32,7 +32,7 @@ final class FeedSyncService
      * Stáhne a naimportuje feed, nebo potvrdí, že se nezměnil.
      *
      * @param  string      $feedCode     Kód feedu okurku.
-     * @param  string|null $localArchive Místní GTFS archiv místo stahování (testy), max. 500 MB.
+     * @param  string|null $localArchive Místní archiv feedu místo stahování (testy), max. 500 MB.
      * @return array{version_id: int, status: string, checksum?: string, counts?: array<string, int>, valid_from?: string, valid_until?: string}
      *         Identifikátor nové verze a její stav.
      * @throws TransportException 'not_found' (404), 'sync_locked' (409), 'invalid_feed_url',
@@ -43,6 +43,9 @@ final class FeedSyncService
         $r = $this->repository;
         $db = $r->db;
         $feed = $r->rows('SELECT * FROM transport_feed WHERE franchise_code=? AND code=?', [$r->tenant,$feedCode])[0] ?? throw new TransportException('not_found', 'Feed not configured.', 404);
+        $config = json_decode($feed['config'], true, 32, JSON_THROW_ON_ERROR);
+        $importer = $this->importers->get($config['format'] ?? 'gtfs');
+        if (empty($config['storage_allowed'])) { throw new TransportException('storage_not_allowed', 'Feed storage has not been authorized.'); }
         $lock = 'tram:'.substr(hash('sha256', $r->tenant.':'.$feedCode), 0, 50);
         if ((int)$r->rows('SELECT GET_LOCK(?,0) acquired', [$lock])[0]['acquired'] !== 1) {
             throw new TransportException('sync_locked', 'Feed synchronization is already running.', 409);
@@ -58,7 +61,7 @@ final class FeedSyncService
             $temp = tempnam($this->storage, 'download-');
             if ($localArchive !== null) {
                 if (!is_file($localArchive) || filesize($localArchive) > 500000000 || !copy($localArchive, $temp)) {
-                    throw new TransportException('download_failed', 'Cannot read local GTFS archive.');
+                    throw new TransportException('download_failed', 'Cannot read local feed archive.');
                 }
             } else {
                 $this->download($feed['url'], $temp);
@@ -77,7 +80,7 @@ final class FeedSyncService
             $db->beginTransaction();
             $r->execute('INSERT INTO transport_feed_version(franchise_code,feed_code,checksum,archive_path) VALUES (?,?,?,?)', [$r->tenant,$feedCode,$hash,$archive]);
             $version = (int)$db->lastInsertId();
-            $counts = (new GtfsImportService($db, $r->tenant))->import($archive, $version);
+            $counts = $importer->import($archive, $version);
             $dates = $r->rows('SELECT MIN(start_date) valid_from,MAX(end_date) valid_until FROM (SELECT start_date,end_date FROM transport_service WHERE franchise_code=? AND version_id=? UNION ALL SELECT service_date,service_date FROM transport_service_exception WHERE franchise_code=? AND version_id=? AND exception_type=1) d', [$r->tenant,$version,$r->tenant,$version])[0];
             if (!$dates['valid_from'] || !$dates['valid_until']) {
                 throw new TransportException('empty_calendar', 'No valid service dates.');
@@ -102,7 +105,7 @@ final class FeedSyncService
         }
     }
     /**
-     * Stáhne GTFS archiv přímo do souboru přes sdílený HTTP klient.
+     * Stáhne archiv feedu přímo do souboru přes sdílený HTTP klient.
      *
      * @param  string $url    Adresa feedu; musí být HTTPS.
      * @param  string $target Cílový soubor (`sink`).
@@ -115,7 +118,7 @@ final class FeedSyncService
         if (parse_url($url, PHP_URL_SCHEME) !== 'https') {
             throw new TransportException('invalid_feed_url', 'Feed URLs must use HTTPS.');
         }
-        $response = ($this->http ?? \App\Modules\Http\HttpModule::client())->send(new \App\Modules\Http\HttpRequest(
+        $response = $this->http->send(new \App\Modules\Http\HttpRequest(
             $url,
             timeoutMs: 180000,
             maxBytes: 500000000,
@@ -123,7 +126,7 @@ final class FeedSyncService
             sink: $target,
         ));
         if ($response->error !== null || $response->status !== 200) {
-            throw new TransportException('download_failed', 'GTFS download failed; previous data remain active.', 503);
+            throw new TransportException('download_failed', 'Feed download failed; previous data remain active.', 503);
         }
     }
 }

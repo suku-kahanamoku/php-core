@@ -13,17 +13,39 @@ Podmínky použití vývojového endpointu Spojenky, chybějící národní fall
 přesnost geografického výběru a zbývající nesoulad cache popisuje
 [online-first návrh](../../../docs/tram-online-first.md).
 
+## Modularita a postup pro další implementace
+
+Transport je modulární monolit: společné `Core`, samostatné `Integrations`,
+sdílené `Protocols`/`Import` a konfigurační balíčky `Countries`.
+**Před přidáním země, adaptéru nebo providera přečti
+[ARCHITECTURE.md](ARCHITECTURE.md) a [lokální pravidla pro AI](AGENTS.md).**
+
+[ARCHITECTURE.md](ARCHITECTURE.md) přesně popisuje registraci modulů, kontrakty,
+složení zemí, politiku operací, identity, souběžné vícekrokové volání, kvóty,
+migraci i aktuální hranice škálování. Není potřeba přidávat větev pro novou zemi
+do společných služeb. Jediný seznam instalovaných implementací je
+[TransportModule.php](TransportModule.php).
+
+- Nové pokrytí existujícího API: konfigurace instance/preset země.
+- Nové API: vlastní `Integrations/<Service>` a jedna registrace modulu.
+- Nový formát feedu: `FeedImporter` a továrna v registru importérů.
+- Propojování zdrojových ID: explicitní kontrakt; názvy zastávek nejsou identita.
+
+Příklad kombinace zemí je v `config/transport.countries.example.json`.
+Starší kompletní JSON konfigurace fungují dál. CZ preset odpovídá českým online
+zdrojům; automaticky nevytváří lokální OTP zálohu. NO preset zapíná Entur.
+
 ## Co je implementováno
 
 - `TransportApi` používá stávající Router, Response a `X-Internal-Key` middleware.
-- `JourneyService` vybírá poskytovatele pokrývající oba konce cesty, volá je souběžně,
+- `JourneyService` vybírá poskytovatele pokrývající oba konce cesty, provádí jejich jedno- i vícekroková volání přes `ProviderExecutionService`,
   sjednocuje výsledky, řadí je a při výpadku oslovuje nakonfigurované zálohy.
-- `ProviderRegistry` obsahuje explicitně povolené adaptéry; konfigurace neurčuje PHP třídy.
+- `TransportModule` registruje integrační moduly; stejný registr používá konfigurátor i `ProviderRegistry`. Konfigurace neurčuje PHP třídy.
 - `SpojenkaProvider` a `SpojenkaMapper` implementují české online zastávky, cesty a detaily spojů.
-- `TransmodelProvider` implementuje Entur a OTP 2.9 Transmodel GraphQL.
+- `EnturProvider` a `OtpProvider` používají sdílený `Protocols/Transmodel`; Entur geokodér a OTP identita/graf zůstávají ve svých integracích.
 - `PidProvider` implementuje online Golemio zastávky, odjezdy, detaily spojů a polohy vozidel.
 - `PidOnlineJourneyService` skládá časově ověřené přímé jízdy a jeden přestup z online stop times a detailů jízd.
-- `ResourceService` řeší detaily, živé zdroje, lokální zastávky a propojení OTP/PID ID.
+- `ResourceService` řeší detaily přes obecné kontrakty; specifické mapování OTP/PID ID a ověření realtime zajišťují integrace.
 - `HttpModule` poskytuje společný Guzzle transport s omezenou paralelizací, velikostí odpovědi a deadlinem; Transport vlastní HTTP implementaci nemá.
 - `TransportRepository` odděluje tenanty i provozní stav poskytovatelů.
 - `FeedSyncService` a `GtfsImportService` streamují ZIP/CSV do odděleného snapshotu.
@@ -37,7 +59,7 @@ Linky, spoje a jízdní řády používají `transport_*`; tabulky produktů se 
 PHP 8.1+ s PDO MySQL, curl, zip a mbstring; MySQL 8. OTP běží zvlášť v Dockeru/JVM.
 PHP nemusí obsahovat Java knihovny. Spustit `composer install` podle lockfile (společný HttpModule používá Guzzle).
 
-1. Aplikovat `migrations/schema.sql`, potom `migrations/tram_schema.sql` a
+1. Aplikovat `migrations/schema.sql`, potom `migrations/tram_schema.sql`, `migrations/tram_modularity.sql` a
    volitelně `migrations/tram_seed.sql` (12 druhů dopravy). Schémata jsou
    opakovatelná a pouze doplňují chybějící strukturu. Neobsahují data ani veřejné hosty.
 2. Pro zvolený TRAM host přidat mapování `host:tram` do stávajících `FRANCHISE_CODES`.
@@ -186,13 +208,15 @@ pravidla „DB jen záložní katalog“ popsaná v [návrhu](../../../docs/tram
 
 ## Další poskytovatelé a provoz
 
-Známý protokol: přidat provider do serverového JSON, nastavit schopnosti daného
-adaptéru a skutečné bbox pokrytí. Bbox je konzervativní výběr zdrojů, ne záruka,
-že jede spoj mezi každými dvěma body. Jeden poskytovatel může mít více regionů.
-Nový protokol: implementovat `JourneySearchProvider` a/nebo `ResourceProvider`,
-přidat továrnu do `ProviderRegistry` a allowlist `ConfigurationService`. `JourneyService`
-ani veřejný JSON kontrakt se kvůli tomu nemění. Testovat nový adaptér na uložených
-odpovědích i proti dostupnému API. Endpointy pocházejí pouze ze serverové konfigurace.
+Kompatibilní existující integrace: přidat instanci do serverového JSON nebo preset
+do `Countries/<ISO2>`. Nové API: vlastní `IntegrationModule`, provider a případné
+mappery v `Integrations/<Service>`, jedna registrace v `TransportModule`.
+Stejný název protokolu sám nepotvrzuje kompatibilitu autentizace, verzí a polí.
+Přesný postup a kontrakty jsou v [ARCHITECTURE.md](ARCHITECTURE.md).
+
+Konfigurace může přepsat roli, prioritu, zapnutí a vazbu záloh pro jednotlivé
+operace přes `config.operations`. Nemůže deklarovat neimplementovanou schopnost.
+Endpointy a credentials pocházejí jen ze serverové konfigurace.
 
 `role: primary` se volá běžně; `role: fallback` s `fallback_for: ["provider-code"]`
 se volá pouze při selhání daného relevantního primárního zdroje. V příkladu
@@ -204,12 +228,20 @@ je nutný další online plánovač; úspěšná prázdná odpověď nespouští
 Více tenantů může používat stejné tabulky, jejich konfigurace, snapshoty, výsledky
 ani stav výpadků se ale nesdílejí. Globální deduplikace feedů mezi tenanty není zapnutá.
 
-HTTP paralelizace je 4, timeout zdroje 4 s, limit těla 4 MB. Hledání má po rozlišení
-zastávek rozpočet 5 s pro primární zdroje a 3 s pro zálohy. Rozlišení dvou zastávek
-může přidat dva zdrojové dotazy. Tři chyby otevírají circuit na 30 s, HTTP Retry-After
-se respektuje (nejvýše hodina); zotavení dovolí jedinou ověřovací žádost.
-`min_interval_ms` chrání zdroj napříč PHP procesy pomocí atomického DB zápisu.
-Neúspěšné HTTP požadavky se v jednom uživatelském dotazu automaticky neopakují.
+Síťové volání používá sdílený HttpModule, souběh nejvýše 4, běžný timeout zdroje
+4 s a limit těla 4 MB. Hledání předává jeden monotónní rozpočet 8 s už od rozlišení
+koncových míst až po enrichment. Primární fáze má nejvýše 5 s, zálohy 3 s,
+vždy omezené skutečně zbývajícím časem. Vícekrokové integrace executor skládá
+do společných HTTP kol přes PHP Fibers. CPU/SQL/serializace nejsou tímto časovačem
+preemptivně omezené; nejde o celkové produkční SLA.
+
+Tři chyby otevírají tenant/provider circuit na 30 s; zotavení dovolí jediný probe.
+Každý HTTP request včetně přípravných dávek a enrichmentu spotřebuje atomickou
+kvótu v MySQL. Golemio modul nastavuje výchozí 20 requestů v klouzavém okně 8 s
+a scope sdílený podle tokenu. `Retry-After` blokuje sdílený scope nejvýše hodinu.
+Podrobnosti a konfigurace jsou v [ARCHITECTURE.md](ARCHITECTURE.md#7-kvóty-chyby-a-fallback).
+Místní kvóta ani vyčerpání rozpočtu před odesláním nejsou výpadek zdroje.
+Neúspěšné HTTP requesty se automaticky neopakují.
 
 Import: limit ZIP 500 MB, rozbalených dat 4 GB, 200 souborů, 10 milionů řádků na CSV.
 Soubory se neextrahují do cest dodaných archivem. Nový snapshot má vlastní záznamy,
@@ -247,7 +279,7 @@ Live test OTP používá syntetickou síť, nikoli kompletní produkční síť 
 Golemio realtime i online skládání spojů vyžadují platný token a jejich
 produkční ověření je samostatný krok. Výchozí limit Golemio je 20 požadavků
 za 8 sekund na klíč; současná omezení počtu kandidátů omezují jeden dotaz,
-ale vyšší souběh vyžaduje sdílené řízení kvóty nebo smluvně vyšší limit.
+sdílené řízení kvóty nyní poskytuje `ProviderQuotaRepository`; vyšší dostupná kapacita stále závisí na limitu poskytovatele.
 
 Primární dokumentace:
 - https://developer.entur.org/pages-journeyplanner-journeyplanner/
@@ -333,3 +365,18 @@ a `route_km` (nezáporná konečná hodnota nebo null). Zdroje jsou
 hodnotou; chybějící nebo neplatná kilometráž se nepřepočítává z GPS ani
 nedoplňuje z jiných zdrojů. Údaje jsou součástí online detailu jízdy,
 bez nové migrace.
+
+
+### Refaktor modularity
+
+Implementace nyní obsahuje integrační moduly, presety CZ/NO, registr importérů,
+politiky operací a společný executor s deadline/kvótou každého requestu.
+`tests/modularity.php` ověřuje registraci cizího adaptéru bez změny Core,
+skládání zemí, tenantové přepisy, souběžné vícekrokové integrace, kolize request ID,
+kvóty napříč spojeními/tenanty, oddělení lokálního omezení a výpadku i hranice závislostí.
+Integrační fixtures Enturu a Spojenky jsou ve složkách příslušných integrací.
+
+Pro stávající instalaci je před nasazením kódu nutná aditivní migrace
+`migrations/tram_modularity.sql`. Přesné kroky, pravidla cleanup a zbývající
+omezení (jeden feed na OTP graf, sanitizovaná cache detailů, žádné obecné skládání
+mezinárodních přestupů) jsou v [ARCHITECTURE.md](ARCHITECTURE.md#11-migrace-a-aktuální-hranice).

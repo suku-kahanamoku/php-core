@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Transport\Contracts;
 
 use App\Modules\Http\Contracts\HttpClient;
-use App\Modules\Transport\DTO\JourneyQuery;
+use App\Modules\Transport\Model\JourneyQuery;
 
 /** Provider composing journeys from several bounded live API requests. */
 interface OnlineJourneySearchProvider extends Provider

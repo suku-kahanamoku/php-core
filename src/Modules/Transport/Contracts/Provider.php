@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Transport\Contracts;
 
-use App\Modules\Transport\DTO\ProviderDefinition;
+use App\Modules\Transport\Model\ProviderDefinition;
 
 /**
  * Základní kontrakt dopravního poskytovatele.
