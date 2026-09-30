@@ -24,6 +24,16 @@ $wikiQueue=static function(string $kind='given',int $revision=11) use($wikiRight
     $p=$wikiPage($kind,$revision);
     return array_map($jsonResponse,[$wikiRights,['query'=>['pages'=>[(string)$p['pageid']=>$p]]],['parse'=>$p]]);
 };
+// A batch of three scans both distinct name kinds while checking source rights once.
+$givenPage=$wikiPage(); $surnamePage=$wikiPage('surname');
+$fake->responses=array_map($jsonResponse,[$wikiRights,
+    ['query'=>['pages'=>['101'=>$givenPage]]],['parse'=>$givenPage],
+    ['query'=>['pages'=>['102'=>$surnamePage]]],['parse'=>$surnamePage]]);
+$requestStart=count($fake->requests);
+$wikiBatch=$wiki->batch('cs','etymologies',null,3);
+check($wikiBatch['complete'] && $wikiBatch['cursor']===null && $wikiBatch['scanned']===2
+    && count($wikiBatch['items'])===2 && count($fake->requests)-$requestStart===5,
+    'Wikipedia batch scans three cursor positions, retains both name kinds and checks rights once');
 foreach ([['sk','culture',null,1],['cs','surname',null,1],['cs','culture',null,4],['cs','culture','-1',1],['cs','culture','{"after":0,"name_id":1}',1]] as $args) {
     $fake->responses=[];
     try {$wiki->batch(...$args);throw new LogicException('Expected invalid configuration');}

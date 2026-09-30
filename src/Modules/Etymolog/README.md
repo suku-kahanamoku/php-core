@@ -709,8 +709,10 @@ včetně rozlišovače `(jméno)` / `(rodné jméno)` / `(příjmení)` a ověř
   biografie není automaticky legenda. Vazba na jméno i revize výchozího
   článku zůstávají ve zdrojovém snapshotu.
 
-Jeden krok Wikipedie zpracuje nejvýše jeden článek (i když kompatibilní
-konfigurace povoluje `batch_size=1..3`), aby se vešel do HTTP workeru.
+Jeden krok Wikipedie nyní zpracuje až `batch_size=1..3` články za sebou
+a ověření licence sdílí v rámci dávky. Kurzor se posune až po úspěšném
+zpracování celé dávky; při chybě se žádná její část neuloží. Požadavky na
+Wikimedia zůstávají sekvenční a nadále pod časovým rozpočtem HTTP workeru.
 Kurzor `after` pokračuje podle ID; kulturní větev navíc uchovává `name_id`,
 `page_id`, `revision` a index navazujícího článku. Wikizdroje ukládají také
 `offset` stránkovaného hledání. Prázdný výsledek posune průchod dál; vadná
@@ -796,7 +798,10 @@ sdílený HttpClient. Automatický cron zařadí denní požadavek. Worker volá
 `X-Etymolog-Worker-Key` a tenant Etymolog. Strojový endpoint není veřejným
 spouštěčem; nezpřístupňuje CRUD. Akce `health` pouze ověří připravenost,
 `nightly` přijímá dnešní pražské datum jen mezi 03:00–03:59 a `step` zpracuje
-jednu dávku jedné úlohy. Ostatní API zůstává za uživatelským přihlášením.
+jednu dávku jedné úlohy. Jedna zpráva Cloudflare Queue může postupně zavolat
+až osm těchto kroků během nejvýše 90 sekund, pak zařadí jediné pokračování;
+při čekání na zdroj zařadí odložené pokračování. Ostatní API zůstává za
+uživatelským přihlášením.
 
 První krok zmrazí seznam splatných zapnutých úloh. Nejdříve jsou importy jmen
 (`wikidata`, statistiky a kalendář), poté textové zdroje, aby používaly doplněnou DB.
@@ -844,7 +849,7 @@ nevytváří synchronizační běh a nestahuje zdrojová data. `/dispatch` přij
 ID již vytvořeného požadavku. Tajemství ani těla odpovědí se nezapisují do logů.
 
 Ověření této verze: 460 PHP integračních kontrol s jednorázovou DB a falešnými
-providery; šest testů Workeru včetně obou změn času, autentizace, fronty a retry.
+providery; testy Workeru včetně obou změn času, autentizace, dávkování fronty a retry.
 
 Živě ověřeno 28. 9. 2026: Cloudflare → PHP health 200/ready, chybějící klíče
 401/403, fronta potvrdila `etymolog_probe_ok` a PHP → Cloudflare přijalo neexistující
@@ -858,7 +863,8 @@ běh. Produkční importy nebyly součástí testovacího nasazení.
 Před nasazením aktuálního HTTP workeru aplikujte také idempotentní migraci
 `etymolog_schema.sql` (`retry_at`, `retry_count` v tabulce běhu).
 Požadavky používají identifikaci Etymolog s kontaktní URL a mezi požadavky na
-Wikimedia drží odstup alespoň jedné sekundy; mezi kroky fronty jsou dvě sekundy.
+Wikimedia drží odstup alespoň jedné sekundy; dvě sekundy platí mezi zprávami
+fronty, nikoli mezi kroky zpracovanými v jedné zprávě.
 HTTP 429 a API `ratelimited`/`maxlag` zachovají kurzor, uloží chybu do historie a
 odloží tentýž krok podle `Retry-After` (nejméně 300 s). U HTTP workeru proběhnou
 nejvýše dva další pokusy. Teprve po jejich vyčerpání se úloha započítá jako

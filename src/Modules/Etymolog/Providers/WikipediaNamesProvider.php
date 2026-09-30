@@ -8,7 +8,7 @@ use App\Modules\Etymolog\{EtymologDiscoveryRepository, NameNormalizer, SyncExcep
 use App\Modules\Http\Contracts\HttpClient;
 
 /**
- * Objevuje důkazy z Wikipedie pro VŠECHNA jména okurku; na jeden krok jeden článek,
+ * Objevuje důkazy z Wikipedie pro VŠECHNA jména okurku; v dávce až tři články,
  * žádné vymyšlené vazby.
  *
  * Článek musí na stránku o jméně (přes infobox nebo kategorii, s výslovným
@@ -57,6 +57,22 @@ final class WikipediaNamesProvider implements BatchProvider
     public function batch(string $language, string $kind, ?string $cursor, int $limit): array
     {
         if ($language !== 'cs' || !in_array($kind,['etymologies','culture'],true) || $limit < 1 || $limit > 3) { throw new SyncException('invalid_provider_configuration'); }
+        $items = []; $scanned = 0; $rights = null; $complete = false;
+        for ($i = 0; $i < $limit; ++$i) {
+            $part = $this->batchOne($kind, $cursor, $rights);
+            array_push($items, ...$part['items']);
+            $scanned += $part['scanned'];
+            $complete = $part['complete'];
+            if ($complete) { $cursor = null; break; }
+            if ($part['cursor'] === $cursor) { throw new SyncException('provider_cursor_stalled'); }
+            $cursor = $part['cursor'];
+        }
+        return ['items' => $items, 'scanned' => $scanned, 'cursor' => $cursor, 'complete' => $complete];
+    }
+
+    /** One source page and its cursor; the parent batch reuses the licence check. */
+    private function batchOne(string $kind, ?string $cursor, ?array &$rights): array
+    {
         if ($cursor !== null && preg_match('/^[0-9]+$/D',$cursor)) { $cursor=null; } // Retired fixed-catalog offset.
         $state = $cursor === null ? ['after'=>0] : json_decode($cursor,true);
         if (!is_array($state) || !is_int($state['after'] ?? null) || $state['after'] < 0) { throw new SyncException('invalid_provider_cursor'); }
@@ -67,7 +83,7 @@ final class WikipediaNamesProvider implements BatchProvider
             return $related ? $this->result([], ['after'=>$state['name_id']], $kind) : ['items'=>[],'scanned'=>0,'cursor'=>null,'complete'=>true];
         }
         if (preg_match('/[|:#\x00-\x1f]/u', $name['name'])) { return $this->result([], ['after'=>(int)$name['id']], $kind); }
-        $rights=$this->api(['action'=>'query','meta'=>'siteinfo','siprop'=>'rightsinfo']);
+        $rights ??= $this->api(['action'=>'query','meta'=>'siteinfo','siprop'=>'rightsinfo']);
         $license=WikipediaNamesProvider::LICENSE_URL;
         if (!in_array($rights['query']['rightsinfo']['url'] ?? '',[$license,$license.'deed.cs',$license.'deed.en'],true)) { throw new SyncException('upstream_license_changed'); }
         if ($related) {
