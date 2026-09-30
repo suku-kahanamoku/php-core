@@ -57,9 +57,9 @@ final class WikipediaNamesProvider implements BatchProvider
     public function batch(string $language, string $kind, ?string $cursor, int $limit): array
     {
         if ($language !== 'cs' || !in_array($kind,['etymologies','culture'],true) || $limit < 1 || $limit > 3) { throw new SyncException('invalid_provider_configuration'); }
-        $items = []; $scanned = 0; $rights = null; $complete = false;
+        $items = []; $scanned = 0; $complete = false;
         for ($i = 0; $i < $limit; ++$i) {
-            $part = $this->batchOne($kind, $cursor, $rights);
+            $part = $this->batchOne($kind, $cursor);
             array_push($items, ...$part['items']);
             $scanned += $part['scanned'];
             $complete = $part['complete'];
@@ -70,8 +70,8 @@ final class WikipediaNamesProvider implements BatchProvider
         return ['items' => $items, 'scanned' => $scanned, 'cursor' => $cursor, 'complete' => $complete];
     }
 
-    /** One source page and its cursor; the parent batch reuses the licence check. */
-    private function batchOne(string $kind, ?string $cursor, ?array &$rights): array
+    /** One source page and its cursor. */
+    private function batchOne(string $kind, ?string $cursor): array
     {
         if ($cursor !== null && preg_match('/^[0-9]+$/D',$cursor)) { $cursor=null; } // Retired fixed-catalog offset.
         $state = $cursor === null ? ['after'=>0] : json_decode($cursor,true);
@@ -83,16 +83,14 @@ final class WikipediaNamesProvider implements BatchProvider
             return $related ? $this->result([], ['after'=>$state['name_id']], $kind) : ['items'=>[],'scanned'=>0,'cursor'=>null,'complete'=>true];
         }
         if (preg_match('/[|:#\x00-\x1f]/u', $name['name'])) { return $this->result([], ['after'=>(int)$name['id']], $kind); }
-        $rights ??= $this->api(['action'=>'query','meta'=>'siteinfo','siprop'=>'rightsinfo']);
-        $license=WikipediaNamesProvider::LICENSE_URL;
-        if (!in_array($rights['query']['rightsinfo']['url'] ?? '',[$license,$license.'deed.cs',$license.'deed.en'],true)) { throw new SyncException('upstream_license_changed'); }
+        $rights=null;
         if ($related) {
             $parent=$this->page(['oldid'=>$state['revision']]);
             if ($parent['pageid'] !== $state['page_id'] || $parent['revid'] !== $state['revision'] || !$this->isName($parent,$name)) { throw new SyncException('invalid_dossier_revision'); }
             $parentData=$this->extract($parent);
             $titles=$parentData['related'];
             if (!isset($titles[$state['related']])) { throw new SyncException('invalid_provider_cursor'); }
-            $page=$this->discover([$titles[$state['related']]],null);
+            $page=$this->discover([$titles[$state['related']]],null,$rights);
             $items=[];
             if ($page && $this->isCultural($page)) {
                 $items=$this->items($page,$this->extract($page),$name,$rights,true, ['page_id'=>$parent['pageid'],'revision'=>$parent['revid'],'url'=>'https://cs.wikipedia.org/w/index.php?oldid='.$parent['revid']]);
@@ -103,7 +101,7 @@ final class WikipediaNamesProvider implements BatchProvider
         $title=NameNormalizer::display($name['name']);
         // Explicit suffixes resolve a name/surname collision; untyped people or places are rejected.
         $titles=$name['kind']==='given' ? [$title.' (jméno)',$title.' (rodné jméno)',$title] : [$title.' (příjmení)',$title];
-        $page=$this->discover($titles,$name);
+        $page=$this->discover($titles,$name,$rights);
         if (!$page) { return $this->result([],['after'=>(int)$name['id']],$kind); }
         $data=$this->extract($page);
         $items=$this->items($page,$data,$name,$rights,false);
@@ -131,13 +129,17 @@ final class WikipediaNamesProvider implements BatchProvider
      *
      * @param  list<string>          $titles Kandidátní názvy v pořadí priority.
      * @param  array<string, mixed>|null $name Jméno z databáze, nebo null při hledání kulturního článku.
+     * @param  array<string, mixed>|null $rights Práva vrácená ve stejném požadavku jako stránky.
      * @return array<string, mixed>|null    Stránka z `action=parse`, nebo null pokud žádná nevyhovuje.
      * @throws SyncException                'invalid_discovery_response', 'dossier_metadata_incomplete',
      *                                     'invalid_dossier_revision' nebo chyba upstreamu.
      */
-    private function discover(array $titles,?array $name): ?array
+    private function discover(array $titles,?array $name,?array &$rights): ?array
     {
-        $response=$this->api(['action'=>'query','titles'=>implode('|',$titles),'redirects'=>1,'prop'=>'categories|templates','cllimit'=>500,'tllimit'=>500]);
+        $response=$this->api(['action'=>'query','titles'=>implode('|',$titles),'redirects'=>1,'prop'=>'categories|templates','cllimit'=>500,'tllimit'=>500,'meta'=>'siteinfo','siprop'=>'rightsinfo']);
+        $license=self::LICENSE_URL;
+        if (!in_array($response['query']['rightsinfo']['url'] ?? '',[$license,$license.'deed.cs',$license.'deed.en'],true)) { throw new SyncException('upstream_license_changed'); }
+        $rights=['query'=>['rightsinfo'=>$response['query']['rightsinfo']]];
         if (!is_array($response['query']['pages'] ?? null)) { throw new SyncException('invalid_discovery_response'); }
         if (isset($response['continue'])) { throw new SyncException('dossier_metadata_incomplete'); }
         $pages=array_values($response['query']['pages']);

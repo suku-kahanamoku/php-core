@@ -710,7 +710,7 @@ včetně rozlišovače `(jméno)` / `(rodné jméno)` / `(příjmení)` a ověř
   článku zůstávají ve zdrojovém snapshotu.
 
 Jeden krok Wikipedie nyní zpracuje až `batch_size=1..3` články za sebou
-a ověření licence sdílí v rámci dávky. Kurzor se posune až po úspěšném
+a licenci ověřuje v téže odpovědi API, kterou používá pro nalezení článku. Kurzor se posune až po úspěšném
 zpracování celé dávky; při chybě se žádná její část neuloží. Požadavky na
 Wikimedia zůstávají sekvenční a nadále pod časovým rozpočtem HTTP workeru.
 Kurzor `after` pokračuje podle ID; kulturní větev navíc uchovává `name_id`,
