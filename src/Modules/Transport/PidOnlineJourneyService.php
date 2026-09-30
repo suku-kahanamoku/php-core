@@ -87,6 +87,7 @@ final class PidOnlineJourneyService
             } else {
                 asort($times, SORT_NUMERIC);
             }
+            $candidateTimes[$side] = $times;
             foreach (array_slice(array_keys($times), 0, self::TRIPS_PER_SIDE) as $key) {
                 [$date,$trip] = explode('|', $key, 2);
                 $tripRequests[$key] ??= $this->provider->resourceRequest('trip', ['external' => $trip,'date' => $date]);
@@ -94,7 +95,7 @@ final class PidOnlineJourneyService
         }
         $trips = [];
         if ($tripRequests) {
-            foreach ($http->sendAll($tripRequests, max(500, $budgetMs - 2500)) as $key => $response) {
+            foreach ($http->sendAll($tripRequests, max(1, $budgetMs - 2500)) as $key => $response) {
                 [$date,$trip] = explode('|', $key, 2);
                 $trips[$key] = $this->provider->resourceResult('trip', $response, ['external' => $trip,'date' => $date]);
             }
@@ -113,7 +114,7 @@ final class PidOnlineJourneyService
                     if (self::stopId($exit, $definition->tenant) === $to['external']) {
                         $this->add($journeys, $query, [$this->leg($originTrip, $board, $exit, $query)]);
                     }
-                    if ($query->maxTransfers < 1 || count($journeys) >= 80) {
+                    if ($query->maxTransfers < 1 || count($journeys) >= 80 || self::stopId($exit, $definition->tenant) === $to['external']) {
                         continue;
                     }
                     foreach (array_slice(array_keys($candidateTimes['destination']), 0, self::TRIPS_PER_SIDE) as $destinationKey) {
@@ -151,8 +152,13 @@ final class PidOnlineJourneyService
     /** @param list<array<string,mixed>> $journeys @param list<array<string,mixed>> $legs */
     private function add(array &$journeys, JourneyQuery $query, array $legs): void
     {
-        $departure = strtotime($legs[0]['scheduled_departure']);
-        $arrival = strtotime($legs[count($legs) - 1]['scheduled_arrival']);
+        $firstTime = $legs[0]['scheduled_departure'] ?? null;
+        $lastTime = $legs[count($legs) - 1]['scheduled_arrival'] ?? null;
+        if (!$firstTime || !$lastTime) {
+            return;
+        }
+        $departure = strtotime($firstTime);
+        $arrival = strtotime($lastTime);
         if (!$departure || !$arrival || $arrival <= $departure || (!$query->arriveBy && $departure < $query->time->getTimestamp())
             || ($query->arriveBy && $arrival > $query->time->getTimestamp())) {
             return;

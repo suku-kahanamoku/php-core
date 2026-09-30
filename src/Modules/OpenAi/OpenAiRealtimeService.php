@@ -141,7 +141,7 @@ final class OpenAiRealtimeService
 # Role and objective
 You are a silent product-selection assistant supporting a salesperson during a live Czech conversation with a customer.
 Continuously infer the active purchase need and delegate the final catalog selection to recommend_product, which uses an OpenAI Responses model with hosted Vector Store file_search.
-Every response must call exactly one available tool. Your only visible outcome is one product ID returned by recommend_product and then loaded through get_product. continue_listening makes no UI update.
+Every response must call exactly one available tool. Your visible outcomes are the salesperson checklist updated by continue_listening and one product ID returned by recommend_product and then loaded through get_product.
 Never ask the customer a question. Never produce spoken responses, sales arguments, persuasion, upsell, cross-sell, or other conversational text.
 
 # Conversation evidence
@@ -167,7 +167,8 @@ Do not call recommend_product or get_product until both gate conditions are sati
 First, the concrete product category must be explicit or unambiguously entailed by the customer's need, for example perfume, eau de parfum, makeup remover, face cream, eye cream, serum, mascara, lipstick, shampoo, or body lotion. The generic words product, item, cosmetics, something, recommendation, or gift are not product categories. Gift is an intent or occasion; even for a gift, wait until the actual product category is known.
 Second, the selection context must contain either a confirmed price intent or a normalized customer profile supplied by trusted application context. Price intent may be an exact budget, maximum, interval, qualitative price tier such as inexpensive, mid-range, premium or luxury, or an explicit statement that price is unrestricted.
 Never invent or infer a normalized customer profile from ordinary conversation. This session currently has no profile catalog or profile tool, so unless trusted context explicitly supplies a normalized profile, the second condition can only be satisfied by confirmed price intent.
-If either condition is missing, call continue_listening without recommendation, text, or UI changes. Never ask for the missing value; keep listening until the conversation supplies it.
+If either condition is missing, call continue_listening without recommendation or text. Pass the current confirmed category and price_intent; use an empty string for each still-unknown value. Never ask for the missing value; keep listening until the conversation supplies it.
+On every continue_listening call, preserve previously confirmed values for the active need unless later explicit evidence corrects them. Never invent a checklist value.
 
 # Product interpretation
 For fragrance, consider character, liked and rejected notes, projection, longevity, occasion, recipient, format, and budget. Keep projection and longevity separate and do not treat notes as verified ingredients.
@@ -257,10 +258,22 @@ PROMPT;
             [
                 'type' => 'function',
                 'name' => self::CONTINUE_LISTENING_TOOL,
-                'description' => 'End this response without text or UI changes only when there is no usable purchase signal, recommendation is unavailable, or nothing relevant changed.',
+                'description' => 'End this response without free text and update only the salesperson checklist with the current confirmed recommendation-gate evidence.',
                 'parameters' => [
                     'type' => 'object',
-                    'properties' => new \stdClass(),
+                    'properties' => [
+                        'category' => [
+                            'type' => 'string',
+                            'maxLength' => 120,
+                            'description' => 'Current confirmed concrete Czech product category, or an empty string while it is unknown.',
+                        ],
+                        'price_intent' => [
+                            'type' => 'string',
+                            'maxLength' => 240,
+                            'description' => 'Current confirmed Czech price intent, or an empty string while it is unknown.',
+                        ],
+                    ],
+                    'required' => ['category', 'price_intent'],
                     'additionalProperties' => false,
                 ],
             ],

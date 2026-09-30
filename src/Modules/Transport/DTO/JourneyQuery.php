@@ -130,9 +130,9 @@ final class JourneyQuery
      * Normalizuje místo na zastávku nebo na souřadnice.
      *
      * @param  mixed $value Hodnota z `from-dest` nebo `to-dest`.
-     * @return array{type: string, id?: string, lat?: float, lon?: float} Místo.
-     * @throws TransportException 'invalid_place', pokud není zastávka s ID do 2048 znaků
-     *                            ani platné souřadnice v rozsahu WGS84.
+     * @return array{type: string, id?: string, lat?: float, lon?: float, observed_at?: string} Místo.
+     * @throws TransportException 'invalid_place' pro neplatnou zastávku/bod;
+     *                            'stale_location' pro starý GPS fix uživatele.
      */
     private static function place(mixed $value): array
     {
@@ -142,15 +142,41 @@ final class JourneyQuery
         if (($value['type'] ?? '') === 'stop' && is_string($value['id'] ?? null) && strlen($value['id']) <= 2048) {
             return ['type' => 'stop','id' => $value['id']];
         }
-        if (($value['type'] ?? '') === 'coordinates' && is_numeric($value['lat'] ?? null) && is_numeric($value['lon'] ?? null)) {
+        $type = $value['type'] ?? null;
+        if (in_array($type, ['coordinates','current_location'], true) && is_numeric($value['lat'] ?? null) && is_numeric($value['lon'] ?? null)) {
             $lat = (float)$value['lat'];
             $lon = (float)$value['lon'];
             if (is_finite($lat) && is_finite($lon) && abs($lat) <= 90 && abs($lon) <= 180) {
-                return ['type' => 'coordinates','lat' => $lat,'lon' => $lon];
+                if ($type === 'coordinates') {
+                    if (isset($value['observed-at'])) {
+                        throw new TransportException('invalid_place', 'Use current_location for a device GPS fix.');
+                    }
+                    return ['type' => 'coordinates','lat' => $lat,'lon' => $lon];
+                }
+                try {
+                    $observed = self::date($value['observed-at'] ?? null);
+                } catch (TransportException) {
+                    throw new TransportException('invalid_place', 'Current location requires observed-at in RFC3339 format.');
+                }
+                $place = ['type' => 'current_location','lat' => $lat,'lon' => $lon,'observed_at' => $observed->format(DATE_RFC3339)];
+                self::assertFreshLocation($place);
+                return $place;
             }
         }
         throw new TransportException('invalid_place', 'Invalid destination.');
     }
+    /** Require a new device fix if the request waited long enough to become stale. */
+    public static function assertFreshLocation(array $place): void
+    {
+        if (($place['type'] ?? null) !== 'current_location') {
+            return;
+        }
+        $observed = is_string($place['observed_at'] ?? null) ? strtotime($place['observed_at']) : false;
+        if ($observed === false || time() - $observed > 30 || $observed - time() > 5) {
+            throw new TransportException('stale_location', 'Get a fresh device location before searching.');
+        }
+    }
+
     /**
      * Vytvoří kopii dotazu s nahrazenými místy (např. po geokódování).
      *

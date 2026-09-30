@@ -99,7 +99,8 @@ final class JourneyService
                 $config = $selected[$code]->definition()->config;
                 $mode = $phase === 'fallback' ? 'fallback' : ($selected[$code]->definition()->adapter === 'otp_transmodel' ? 'schedule' : 'live');
                 $source = ['provider' => $code,'status' => 'ok','mode' => $mode,'fetched_at' => gmdate(DATE_RFC3339),
-                    'graph_version' => $config['graph_version'] ?? null,'valid_until' => $config['valid_until'] ?? null,
+                    'graph_version' => $config['graph_version'] ?? null,'snapshot_at' => $config['snapshot_at'] ?? null,
+                    'valid_until' => $config['valid_until'] ?? null,
                     'attribution' => $config['attribution'] ?? null];
                 if ($sourceLimited) {
                     $source['limited'] = true;
@@ -168,8 +169,10 @@ final class JourneyService
             $warnings[] = 'Some sources were unavailable; coverage may be incomplete.';
         }
         if ($limited) {
-            $warnings[] = 'PID online search currently covers direct trips within three hours; transfers and later trips may be missing.';
+            $warnings[] = 'Some online journey sources use a bounded search window; additional trips may be missing.';
         }
+        JourneyQuery::assertFreshLocation($query->from);
+        JourneyQuery::assertFreshLocation($query->to);
         return ['journeys' => array_map(fn ($journey) => $this->repository->cacheJourney($journey,
             publicStopsOnly: $query->from['type'] === 'stop' && $query->to['type'] === 'stop'), $selectedJourneys),
             'partial' => $unavailable || $limited,'sources' => $sources,'warnings' => $warnings];

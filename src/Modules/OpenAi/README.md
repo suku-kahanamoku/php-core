@@ -32,6 +32,8 @@ právě generované argumenty function callu. Relace používá textový výstup
 512 output tokenu pro bezpečné dokončení strukturovaných argumentů.
 Povinné volání nástroje dovoluje pouze `recommend_product`, `get_product` a lokální
 `continue_listening`; model proto nemůže místo výběru produktu vrátit volný text.
+`continue_listening` vždy nese aktuálně potvrzenou kategorii a cenový záměr;
+prázdný string označuje neznámou hodnotu a Android z něj aktualizuje checklist.
 Katalogové nástroje mobil vykoná přes následující backendový endpoint.
 
 ```http
@@ -81,7 +83,7 @@ konkrétní kategorie produktu a současně cenový záměr nebo důvěryhodný
 normalizovaný profil. Obecné „produkt“, „kosmetika“ ani účel „dárek“ nejsou
 kategorií. Profilový kontext zatím Realtime relaci není zpřístupněný, takže v
 aktuálním kontraktu musí být potvrzená kategorie i cena. Do té doby relace volá
-`continue_listening`. Responses model z `file_search` dokumentů vybere jediný produkt a PHP
+`continue_listening` se stavem obou bodů pro checklist obchodníka. Responses model z `file_search` dokumentů vybere jediný produkt a PHP
 pro něj pouze načte aktuální katalogový detail. Nespokojenost nebo žádost o jiný,
 další či lepší produkt vede bezprostředně k preferenci jiné vhodné varianty,
 ale žádné dříve zobrazené ID se trvale nevyloučí. Zákazník se k němu může později

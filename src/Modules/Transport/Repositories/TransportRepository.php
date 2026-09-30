@@ -75,6 +75,7 @@ final class TransportRepository
                 $c['valid_from'] = $v['valid_from'] ?? null;
                 $c['valid_until'] = $v['valid_until'] ?? null;
                 $c['graph_version'] = $v['id'] ?? null;
+                $c['snapshot_at'] = isset($v['snapshot_at']) ? str_replace(' ', 'T', $v['snapshot_at']).'Z' : null;
                 $r['config'] = json_encode($c, JSON_THROW_ON_ERROR);
             }
         }
@@ -194,7 +195,7 @@ final class TransportRepository
      */
     public function activeFeed(string $code): ?array
     {
-        return $this->rows('SELECT v.*,f.provider_code,f.timezone FROM transport_feed f JOIN transport_feed_version v ON v.franchise_code=f.franchise_code AND v.id=f.active_version_id AND v.feed_code=f.code WHERE f.franchise_code=? AND f.code=? AND v.status=\'active\'', [$this->tenant,$code])[0] ?? null;
+        return $this->rows("SELECT v.*,f.provider_code,f.timezone,(SELECT MAX(sr.finished_at) FROM transport_sync_run sr WHERE sr.franchise_code=v.franchise_code AND sr.version_id=v.id AND sr.status='ready') snapshot_at FROM transport_feed f JOIN transport_feed_version v ON v.franchise_code=f.franchise_code AND v.id=f.active_version_id AND v.feed_code=f.code WHERE f.franchise_code=? AND f.code=? AND v.status='active'", [$this->tenant,$code])[0] ?? null;
     }
     /**
      * Vyhledá zastávky v aktivních feedech okurku podle začátku názvu.
@@ -214,7 +215,7 @@ final class TransportRepository
         if ($providers === []) {
             return [];
         }
-        $sql = "SELECT s.*,f.provider_code,f.timezone FROM transport_feed f JOIN transport_feed_version v ON v.franchise_code=f.franchise_code AND v.id=f.active_version_id JOIN transport_stop s ON s.franchise_code=v.franchise_code AND s.version_id=v.id JOIN transport_provider p ON p.franchise_code=f.franchise_code AND p.code=f.provider_code WHERE f.franchise_code=? AND v.status='active' AND v.valid_until>=UTC_DATE() AND s.name LIKE ? ESCAPE '!'";
+        $sql = "SELECT s.*,f.provider_code,f.timezone,(SELECT MAX(sr.finished_at) FROM transport_sync_run sr WHERE sr.franchise_code=v.franchise_code AND sr.version_id=v.id AND sr.status='ready') snapshot_at FROM transport_feed f JOIN transport_feed_version v ON v.franchise_code=f.franchise_code AND v.id=f.active_version_id JOIN transport_stop s ON s.franchise_code=v.franchise_code AND s.version_id=v.id JOIN transport_provider p ON p.franchise_code=f.franchise_code AND p.code=f.provider_code WHERE f.franchise_code=? AND v.status='active' AND v.valid_until>=UTC_DATE() AND s.name LIKE ? ESCAPE '!'";
         $params = [$this->tenant,str_replace(['!','%','_'], ['!!','!%','!_'], $query).'%'];
         if ($country !== null) {
             $sql .= " AND JSON_CONTAINS(p.coverage,JSON_OBJECT('country',?))";
@@ -236,7 +237,7 @@ final class TransportRepository
      */
     public function stop(string $provider, string $external): ?array
     {
-        $rows = $this->rows("SELECT s.*,f.provider_code,f.timezone FROM transport_feed f JOIN transport_feed_version v ON v.franchise_code=f.franchise_code AND v.id=f.active_version_id JOIN transport_stop s ON s.franchise_code=v.franchise_code AND s.version_id=v.id WHERE f.franchise_code=? AND f.provider_code=? AND s.external_id=? AND v.status='active' AND v.valid_until>=UTC_DATE()", [$this->tenant,$provider,$external]);
+        $rows = $this->rows("SELECT s.*,f.provider_code,f.timezone,(SELECT MAX(sr.finished_at) FROM transport_sync_run sr WHERE sr.franchise_code=v.franchise_code AND sr.version_id=v.id AND sr.status='ready') snapshot_at FROM transport_feed f JOIN transport_feed_version v ON v.franchise_code=f.franchise_code AND v.id=f.active_version_id JOIN transport_stop s ON s.franchise_code=v.franchise_code AND s.version_id=v.id WHERE f.franchise_code=? AND f.provider_code=? AND s.external_id=? AND v.status='active' AND v.valid_until>=UTC_DATE()", [$this->tenant,$provider,$external]);
         return isset($rows[0]) ? $this->stopRow($rows[0]) : null;
     }
     /**
@@ -247,7 +248,8 @@ final class TransportRepository
      */
     private function stopRow(array $s): array
     {
-        return ['id' => ResourceIdCodec::encode($this->tenant, $s['provider_code'], 'stop', $s['external_id']),'name' => $s['name'],'lat' => $s['lat'] !== null ? (float)$s['lat'] : null,'lon' => $s['lon'] !== null ? (float)$s['lon'] : null,'platform' => $s['platform'],'timezone' => $s['timezone'],'source_mode' => 'schedule'];
+        return ['id' => ResourceIdCodec::encode($this->tenant, $s['provider_code'], 'stop', $s['external_id']),'name' => $s['name'],'lat' => $s['lat'] !== null ? (float)$s['lat'] : null,'lon' => $s['lon'] !== null ? (float)$s['lon'] : null,'platform' => $s['platform'],'timezone' => $s['timezone'],'source_mode' => 'schedule','snapshot_version' => (int)$s['version_id'],
+            'snapshot_at' => isset($s['snapshot_at']) ? str_replace(' ', 'T', $s['snapshot_at']).'Z' : null];
     }
     /**
      * Načte spoj včetně zastávek, pokud v daném datu skutečně jede.
@@ -263,7 +265,7 @@ final class TransportRepository
      */
     public function trip(string $provider, string $external, string $date): ?array
     {
-        $rows = $this->rows("SELECT t.*,r.name line,r.mode,r.data route_data,o.timezone FROM transport_feed f JOIN transport_feed_version v ON v.franchise_code=f.franchise_code AND v.id=f.active_version_id JOIN transport_trip t ON t.franchise_code=v.franchise_code AND t.version_id=v.id JOIN transport_route r ON r.franchise_code=t.franchise_code AND r.version_id=t.version_id AND r.external_id=t.route_id JOIN transport_operator o ON o.franchise_code=r.franchise_code AND o.version_id=r.version_id AND o.external_id=r.operator_id WHERE f.franchise_code=? AND f.provider_code=? AND t.external_id=? AND v.status='active' AND v.valid_from<=? AND v.valid_until>=?", [$this->tenant,$provider,$external,$date,$date]);
+        $rows = $this->rows("SELECT t.*,r.name line,r.mode,r.data route_data,o.timezone,(SELECT MAX(sr.finished_at) FROM transport_sync_run sr WHERE sr.franchise_code=v.franchise_code AND sr.version_id=v.id AND sr.status='ready') snapshot_at FROM transport_feed f JOIN transport_feed_version v ON v.franchise_code=f.franchise_code AND v.id=f.active_version_id JOIN transport_trip t ON t.franchise_code=v.franchise_code AND t.version_id=v.id JOIN transport_route r ON r.franchise_code=t.franchise_code AND r.version_id=t.version_id AND r.external_id=t.route_id JOIN transport_operator o ON o.franchise_code=r.franchise_code AND o.version_id=r.version_id AND o.external_id=r.operator_id WHERE f.franchise_code=? AND f.provider_code=? AND t.external_id=? AND v.status='active' AND v.valid_from<=? AND v.valid_until>=?", [$this->tenant,$provider,$external,$date,$date]);
         if (!$rows) {
             return null;
         } $trip = $rows[0];
@@ -291,6 +293,7 @@ final class TransportRepository
                 'scheduled_arrival' => $clock($s['arrival_seconds']),'scheduled_departure' => $clock($s['departure_seconds']),'expected_arrival' => null,'expected_departure' => null,'realtime' => false,'cancelled' => null];
         }
         $frequency = (bool)$this->rows('SELECT 1 FROM transport_frequency WHERE franchise_code=? AND version_id=? AND trip_id=? LIMIT 1', [$this->tenant,$version,$external]);
-        return ['id' => ResourceIdCodec::encode($this->tenant, $provider, 'trip', $external, $date),'service_date' => $date,'line' => ['id' => ResourceIdCodec::encode($this->tenant, $provider, 'line', $trip['route_id']),'name' => $trip['line'],'code' => json_decode($trip['route_data'], true)['route_short_name'] ?? null,'mode' => $trip['mode']],'stops' => $calls,'frequency_based' => $frequency,'source_mode' => 'schedule'];
+        return ['id' => ResourceIdCodec::encode($this->tenant, $provider, 'trip', $external, $date),'service_date' => $date,'line' => ['id' => ResourceIdCodec::encode($this->tenant, $provider, 'line', $trip['route_id']),'name' => $trip['line'],'code' => json_decode($trip['route_data'], true)['route_short_name'] ?? null,'mode' => $trip['mode']],'stops' => $calls,'frequency_based' => $frequency,'source_mode' => 'schedule',
+            'snapshot_version' => (int)$version,'snapshot_at' => isset($trip['snapshot_at']) ? str_replace(' ', 'T', $trip['snapshot_at']).'Z' : null];
     }
 }

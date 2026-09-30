@@ -125,8 +125,8 @@ model uses hosted `file_search`, evaluates requirements, preferences and budget,
 and returns one evidence-backed product ID. PHP neither filters nor ranks
 candidates and never chooses a recommended product. The model never asks clarification questions or
 generates sales, upsell or cross-sell arguments; while the gate is incomplete,
-the required `continue_listening` tool ends the turn without free text or a UI
-change. Previously displayed products are not permanently excluded and may be
+the required `continue_listening` tool ends the turn without free text and updates only
+the salesperson checklist with the confirmed category and price intent. Previously displayed products are not permanently excluded and may be
 selected again when the customer returns to them. After Responses chooses an ID
 from file-search evidence, Realtime calls `get_product`; PHP only loads its current published
 catalog detail for Android. `migrations/fann_seed.sql` contains the consolidated

@@ -178,17 +178,31 @@ final class PidProvider implements ResourceProvider, OnlineJourneySearchProvider
             throw new TransportException('invalid_upstream', 'Missing vehicle position.', 502);
         }
         $last = $properties['last_position'];
+        if (!is_array($last)) {
+            throw new TransportException('invalid_upstream', 'Invalid vehicle position.', 502);
+        }
         $observed = $last['origin_timestamp'] ?? null;
         $timestamp = is_string($observed) ? strtotime($observed) : false;
-        $fresh = $timestamp !== false && $timestamp <= time() + 30 && time() - $timestamp <= ($this->definition->config['realtime_max_age'] ?? 90);
-        // Golemio trip IDs identify a schedule. Check the operating date using the imported first-stop time supplied by the service.
+        $maxAge = max(1, min(30, (int)($this->definition->config['realtime_max_age'] ?? 30)));
+        $fresh = $timestamp !== false && $timestamp <= time() + 5 && time() - $timestamp <= $maxAge;
+        // A GTFS trip ID is a schedule ID. Match the reported vehicle to its online service-day start.
         $start = $properties['trip']['start_timestamp'] ?? null;
         if (empty($input['expected_start']) || !$start || strtotime($start) !== strtotime($input['expected_start'])) {
             throw new TransportException('instance_unverified', 'Vehicle position cannot be matched to this service day.', 503);
         }
-        return ['position' => $data['geometry'] ?? null,'observed_at' => $observed,'realtime' => $fresh && ($last['tracking'] ?? false),
-            'stale' => !$fresh,'cancelled' => $last['is_canceled'] ?? null,'delay_seconds' => $fresh ? ($last['delay']['actual'] ?? null) : null,
-            'bearing' => $last['bearing'] ?? null,'speed_kmh' => $last['speed'] ?? null];
+        $geometry = $data['geometry'] ?? null;
+        $coordinates = is_array($geometry) ? ($geometry['coordinates'] ?? null) : null;
+        $validPoint = is_array($geometry) && ($geometry['type'] ?? null) === 'Point'
+            && is_array($coordinates) && array_is_list($coordinates) && count($coordinates) === 2
+            && is_numeric($coordinates[0]) && is_numeric($coordinates[1])
+            && is_finite((float)$coordinates[0]) && is_finite((float)$coordinates[1])
+            && abs((float)$coordinates[0]) <= 180 && abs((float)$coordinates[1]) <= 90;
+        $live = $fresh && ($last['tracking'] ?? false) === true && $validPoint;
+        // Never expose a last-known coordinate or movement telemetry as a usable position.
+        return ['position' => $live ? $geometry : null,'observed_at' => $live ? $observed : null,'realtime' => $live,
+            'stale' => !$fresh,'cancelled' => $live ? ($last['is_canceled'] ?? null) : null,
+            'delay_seconds' => $live ? ($last['delay']['actual'] ?? null) : null,
+            'bearing' => $live ? ($last['bearing'] ?? null) : null,'speed_kmh' => $live ? ($last['speed'] ?? null) : null];
     }
     /**
      * Převede online GTFS detail spoje; plánované časy nejsou GPS telemetrie.
@@ -205,14 +219,21 @@ final class PidProvider implements ResourceProvider, OnlineJourneySearchProvider
         }
         $times = $data['stop_times'];
         usort($times, static fn (array $a, array $b): int => ((int)($a['stop_sequence'] ?? 0)) <=> ((int)($b['stop_sequence'] ?? 0)));
+        $stopDetails = [];
+        foreach ($data['stops'] ?? [] as $detail) {
+            $properties = $detail['properties'] ?? $detail;
+            if (is_array($properties) && is_string($properties['stop_id'] ?? null)) {
+                $stopDetails[$properties['stop_id']] = $detail;
+            }
+        }
         $stops = [];
         foreach ($times as $call) {
             if (!is_string($call['stop_id'] ?? null)) {
                 throw new TransportException('invalid_upstream', 'PID trip stop is missing.', 502);
             }
-            $stop = $call['stop'] ?? [];
+            $stop = $call['stop'] ?? $stopDetails[$call['stop_id']] ?? [];
             $coordinates = $stop['geometry']['coordinates'] ?? [];
-            $properties = $stop['properties'] ?? [];
+            $properties = $stop['properties'] ?? $stop;
             $clock = static function (mixed $value) use ($date): ?string {
                 if (!is_string($value) || $value === '') {
                     return null;
@@ -221,8 +242,8 @@ final class PidProvider implements ResourceProvider, OnlineJourneySearchProvider
             };
             $stops[] = ['stop' => ['id' => $this->id('stop', $call['stop_id']),
                 'name' => $properties['stop_name'] ?? null,
-                'lat' => isset($coordinates[1]) ? (float)$coordinates[1] : null,
-                'lon' => isset($coordinates[0]) ? (float)$coordinates[0] : null,
+                'lat' => isset($coordinates[1]) ? (float)$coordinates[1] : (isset($properties['stop_lat']) ? (float)$properties['stop_lat'] : null),
+                'lon' => isset($coordinates[0]) ? (float)$coordinates[0] : (isset($properties['stop_lon']) ? (float)$properties['stop_lon'] : null),
                 'platform' => $properties['platform_code'] ?? null,'timezone' => 'Europe/Prague'],
                 'scheduled_arrival' => $clock($call['arrival_time'] ?? null),
                 'scheduled_departure' => $clock($call['departure_time'] ?? null),

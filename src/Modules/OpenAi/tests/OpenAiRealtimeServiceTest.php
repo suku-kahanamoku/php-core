@@ -78,6 +78,17 @@ assert_test(
         && array_keys($captured['payload']['session']['tools'][1]['parameters']['properties']) === ['product_id'],
 );
 assert_test(
+    'reports current gate evidence through the local checklist tool',
+    $captured['payload']['session']['tools'][2]['parameters']['required'] === [
+        'category',
+        'price_intent',
+    ]
+        && array_keys($captured['payload']['session']['tools'][2]['parameters']['properties']) === [
+            'category',
+            'price_intent',
+        ],
+);
+assert_test(
     'does not offer profile probability as a primary search input',
     !isset($captured['payload']['session']['tools'][0]['parameters']['properties']['profile_id']),
 );
@@ -97,6 +108,11 @@ assert_test(
         && str_contains($captured['payload']['session']['instructions'], 'both gate conditions are satisfied')
         && str_contains($captured['payload']['session']['instructions'], 'Gift is an intent or occasion')
         && str_contains($captured['payload']['session']['instructions'], 'can only be satisfied by confirmed price intent'),
+);
+assert_test(
+    'keeps the salesperson checklist factual while waiting',
+    str_contains($captured['payload']['session']['instructions'], 'Pass the current confirmed category and price_intent')
+        && str_contains($captured['payload']['session']['instructions'], 'Never invent a checklist value.'),
 );
 assert_test(
     'assigns eligibility and ranking exclusively to OpenAI Responses',

@@ -6,6 +6,7 @@ namespace App\Modules\Transport;
 
 use App\Modules\Http\Contracts\HttpClient;
 use App\Modules\Transport\Contracts\{ResourceProvider};
+use App\Modules\Transport\DTO\JourneyQuery;
 use App\Modules\Transport\Providers\PidProvider;
 use App\Modules\Transport\Repositories\TransportRepository;
 
@@ -177,7 +178,8 @@ final class ResourceService
             if (in_array($operation, ['stop','trip'], true)) {
                 $local = $kind === 'stop' ? $this->repository->stop($ref['provider'], $ref['external']) : $this->repository->trip($ref['provider'], $ref['external'], $ref['date']);
                 if ($local) {
-                    return ['result' => $local,'source' => ['provider' => $ref['provider'],'mode' => 'fallback','realtime' => false],'partial' => true];
+                    return ['result' => $local,'source' => ['provider' => $ref['provider'],'mode' => 'fallback','realtime' => false,
+                        'snapshot_version' => $local['snapshot_version'] ?? null,'snapshot_at' => $local['snapshot_at'] ?? null],'partial' => true];
                 }
             }
             if ($operation === 'departures' && isset($config['schedule_provider'],$config['otp_feed_id'])) {
@@ -201,20 +203,33 @@ final class ResourceService
     /**
      * Převede zvolené místo na souřadnice vhodné pro vyhledávání spojů.
      *
-     * @param  array<string, mixed> $place Místo s `type` `coordinates`, nebo ID zastávky.
+     * @param  array<string, mixed> $place Místo s `type` `coordinates`/`current_location`, nebo ID zastávky.
      * @return array<string, mixed>        Místo doplněné o souřadnice a rozložené ID.
      * @throws TransportException          Při neplatném ID či chybějících souřadnicích.
      */
     public function resolve(array $place): array
     {
-        if ($place['type'] === 'coordinates') {
+        if (in_array($place['type'], ['coordinates','current_location'], true)) {
+            JourneyQuery::assertFreshLocation($place);
             return $place;
         }
-        $ref = ResourceIdCodec::decode($place['id'], $this->repository->tenant, 'stop');
+        $requested = ResourceIdCodec::decode($place['id'], $this->repository->tenant, 'stop');
         $stop = $this->resource('stop', $place['id'])['result'];
+        $actual = ResourceIdCodec::decode((string)($stop['id'] ?? ''), $this->repository->tenant, 'stop');
+        $expectedProvider = $requested['provider'];
+        $expectedExternal = $requested['external'];
+        $config = $this->registry->get($requested['provider'])->definition()->config;
+        $prefix = ($config['otp_feed_id'] ?? '').':';
+        if (isset($config['source_provider']) && str_starts_with($expectedExternal, $prefix)) {
+            $expectedProvider = $config['source_provider'];
+            $expectedExternal = substr($expectedExternal, strlen($prefix));
+        }
+        if ($actual['provider'] !== $expectedProvider || $actual['external'] !== $expectedExternal) {
+            throw new TransportException('invalid_upstream', 'Resolved stop identity does not match the request.', 502);
+        }
         if (!is_numeric($stop['lat'] ?? null) || !is_numeric($stop['lon'] ?? null)) {
             throw new TransportException('missing_coordinates', 'Selected stop has no coordinates.');
         }
-        return array_merge($place, $ref, ['lat' => (float)$stop['lat'],'lon' => (float)$stop['lon']]);
+        return array_merge($place, $actual, ['id' => $stop['id'],'lat' => (float)$stop['lat'],'lon' => (float)$stop['lon']]);
     }
 }

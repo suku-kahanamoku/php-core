@@ -4,10 +4,11 @@ Transport je tenantový modul php-core. Poskytuje jedno API pro web a mobil, ada
 externích zdrojů a verzovaný import jízdních řádů pro vlastní OpenTripPlanner (OTP).
 Jízdenky, platby a frontend nejsou součástí této první etapy.
 
-**Požadovaná architektura je online-first:** TRAM čte dopravní data z online API
-a může v PHP spojovat online získané úseky. Na importovaný katalog se obrací
-až při výpadku relevantní služby. Současný PID prototyp toto pravidlo ještě
-nesplňuje; přesný stav a další kroky uvádí [online-first návrh](../../../docs/tram-online-first.md).
+**Online-first:** TRAM čte dopravní data z online API a v PID umí z Golemio
+složit přímou jízdu nebo jeden přestup mezi vybranými zastávkami. OTP se
+používá pouze při výpadku PID API. Úplnost podobná IDOS ani hledání PID od
+souřadnic zatím hotové nejsou; přesný rozsah a zbývající nesoulad cache uvádí
+[online-first návrh](../../../docs/tram-online-first.md).
 
 ## Co je implementováno
 
@@ -16,7 +17,8 @@ nesplňuje; přesný stav a další kroky uvádí [online-first návrh](../../..
   sjednocuje výsledky, řadí je a při výpadku oslovuje nakonfigurované zálohy.
 - `ProviderRegistry` obsahuje explicitně povolené adaptéry; konfigurace neurčuje PHP třídy.
 - `TransmodelProvider` implementuje Entur a OTP 2.9 Transmodel GraphQL.
-- `PidProvider` implementuje Golemio zastávky, odjezdy a polohy vozidel.
+- `PidProvider` implementuje online Golemio zastávky, odjezdy, detaily spojů a polohy vozidel.
+- `PidOnlineJourneyService` skládá časově ověřené přímé jízdy a jeden přestup z online stop times a detailů jízd.
 - `ResourceService` řeší detaily, živé zdroje, lokální zastávky a propojení OTP/PID ID.
 - `HttpModule` poskytuje společný Guzzle transport s omezenou paralelizací, velikostí odpovědi a deadlinem; Transport vlastní HTTP implementaci nemá.
 - `TransportRepository` odděluje tenanty i provozní stav poskytovatelů.
@@ -51,6 +53,9 @@ Konfigurátor upsertuje pouze uvedené poskytovatele a feedy daného tenantu.
 Vynechání z konfigurace existujícího poskytovatele neodstraní; vypnout jej pomocí
 `published: false`. Existující překlady/upravené číselníky nepřepisuje.
 `storage_allowed: true` u feedu musí odpovídat ověřenému oprávnění data ukládat.
+Při přechodu ze starší konfigurace znovu spustit `transport-configure.php`, aby
+se uložená role `pid-otp` změnila z `primary` na `fallback`. Samotná úprava
+vzorového JSON běžící tenant nepřepne.
 
 `TRANSPORT_STORAGE_DIR` může určit soukromý adresář pro ZIP snapshoty. Výchozí
 `temp/transport` je blokovaný existujícím Apache pravidlem pro `/temp/`.
@@ -107,7 +112,7 @@ omezena na 120 požadavků za minutu/tenant; za serverovou proxy jde o společn�
 | --- | --- |
 | `POST /journeys/search` | Vyhledání spojení |
 | `GET /coverage` | Poskytovatelé, schopnosti a konfigurované pokrytí |
-| `GET /places?query=Oslo&state=NO&limit=10` | Výběr zastávky; u PID názvový filtr Golemio a prefix lokálního indexu |
+| `GET /places?query=Oslo&state=NO&limit=10` | Výběr zastávky; u PID názvový filtr Golemio; lokální index pouze po výpadku |
 | `GET /stops/{id}` | Detail zastávky |
 | `GET /stops/{id}/departures?at=...&limit=20` | Odjezdy; `at` je RFC3339, implicitně nyní |
 | `GET /journeys/{id}` | Snapshot výsledku, platný 15 minut |
@@ -128,6 +133,12 @@ omezena na 120 požadavků za minutu/tenant; za serverovou proxy jde o společn�
 ```
 
 Alternativní destinace: `{"type":"stop","id":"<id z /places nebo výsledku>"}`.
+`type: coordinates` označuje bod vybraný pro plánování cesty, nikoli tvrzení
+že jde o aktuální polohu člověka. Pro GPS polohu uživatele má klient poslat
+`{"type":"current_location","lat":50.075,"lon":14.42,"observed-at":"2026-09-30T10:00:00Z"}`
+s časem pořízení skutečného měření. Backend přijme jen fix starý nejvýše
+30 sekund a při dalším hledání potřebuje nové měření. Tuto polohu neukládá
+ani ji nevydává z historie. Příklad času je ilustrační; v požadavku musí být aktuální.
 Právě jeden z `from-date` (odjezd nejdříve) a `to-date` (příjezd nejpozději) je
 povinný. Neznámé atributy a režimy jsou odmítnuty. `state` znamená ISO kód země;
 `city` je kontext klienta, nikoli zákaz překročení hranice. Vlastní výběr plánovače
@@ -140,7 +151,10 @@ odřeknutí, zastávky, linku a dostupnou geometrii. Chybějící údaje jsou `n
 `live` označuje dotaz na API, ne automaticky aktuální GPS měření.
 
 - Úspěšné API bez cest: HTTP 200 s prázdným seznamem; nespouští fallback.
-- Výpadek některého zdroje: částečný výsledek a `partial: true`.
+- Výpadek některého zdroje: částečný výsledek a `partial: true`; lokální
+  záloha nese verzi snapshotu a UTC čas dokončeného importu.
+- Omezené PID online skládání: `partial: true` a `source.limited: true`
+  i při úspěšném API; vyhledání nemusí být úplné.
 - Nedostupné všechny vhodné zdroje a zálohy: HTTP 503 `sources_unavailable`.
 - Nepokrytá cesta: HTTP 422 `unsupported_coverage`.
 - Chybějící schopnost: HTTP 422 `unsupported_capability`.
@@ -149,15 +163,22 @@ odřeknutí, zastávky, linku a dostupnou geometrii. Chybějící údaje jsou `n
 ID jsou neprůhledná, URL-safe a obsahují namespace tenantu/zdroje/druhu objektu.
 `trip_id` zahrnuje provozní datum. U PID odjezdů endpoint provozní den neposkytuje,
 proto vrací `external_trip_id` a `trip_id: null`; nevymýšlí se datum podle hodin na
-zastávce. PID realtime se naváže pouze při shodě skutečného začátku jízdy s importem.
+zastávce. PID realtime se naváže pouze při shodě začátku jízdy s online detailem provozního dne.
 U intervalových spojů tato verze vazbu na konkrétní vozidlo neodhaduje.
-Poloha starší než 90 sekund má `stale: true` a `realtime: false`.
+Souřadnice vozidla se vracejí pouze při ověřené instanci spoje, aktivním
+sledování, platném bodu a měření starém nejvýše 30 sekund. V ostatních
+případech jsou `position`, `bearing`, `speed_kmh` a `observed_at` `null`
+a `realtime: false`; stará poloha se nesmí ukazovat jako poslední známá.
+Endpoint poskytuje jednu aktuální observaci na vyžádání; pro průběžnou mapu musí
+klient posílat další požadavky a znovu vyhodnocovat `realtime` a `observed_at`.
+Běžná statická poloha zastávky a plánovaná geometrie trasy nejsou polohou vozidla.
 
-Krátkodobý cache výsledků nyní umožňuje detail/geometrii bez původního textu
-hledání. Ukládá však celý výsledek do MySQL, a ten může obsahovat souřadnice
-počátku/cíle uživatelské cesty. Proto zatím **nelze tvrdit, že TRAM neukládá
-polohu uživatele**. Požadovaná architektura ukládání takových souřadnic i
-aktuálních poloh vozidel zakazuje; viz [online-first návrh](../../../docs/tram-online-first.md).
+Krátkodobá cache detailu má whitelist polí: z odpovědi pro souřadnicový dotaz
+odstraňuje názvy a souřadnice bodů, pěší geometrii, predikce i telemetrii.
+U dotazu mezi veřejnými zastávkami zachovává jejich statické polohy a
+plánovanou geometrii linky. Cache nicméně stále ukládá omezený plánovaný
+výsledek do MySQL a detail jej čte; to je zbývající odchylka od cílového
+pravidla „DB jen záložní katalog“ popsaná v [návrhu](../../../docs/tram-online-first.md).
 
 ## Další poskytovatelé a provoz
 
@@ -170,11 +191,12 @@ ani veřejný JSON kontrakt se kvůli tomu nemění. Testovat nový adaptér na 
 odpovědích i proti dostupnému API. Endpointy pocházejí pouze ze serverové konfigurace.
 
 `role: primary` se volá běžně; `role: fallback` s `fallback_for: ["provider-code"]`
-se volá pouze při selhání daného relevantního primárního zdroje. U PID je OTP
-v aktuálním příkladu stále primární plánovač, což je známý nesoulad s
-požadovaným režimem. Golemio adaptér dnes nabízí zastávky, odjezdy a polohy;
-pro cestu s přestupy je potřeba další online plánovač nebo PHP skládání z
-dostatečných online dat. Poté lze OTP nastavit jako skutečnou zálohu.
+se volá pouze při selhání daného relevantního primárního zdroje. V příkladu
+je `pid` primární online zdroj a `pid-otp` záloha při jeho výpadku.
+PID online skládání používá čtyřhodinové okno a nejvýše jeden přestup na
+identické zastávce. Vrací `partial: true` a varování, protože omezený počet
+kandidátů nemůže dokázat úplnost výsledků. Pro souřadnice a složitější trasy
+je nutný další online plánovač; úspěšná prázdná odpověď nespouští OTP.
 Více tenantů může používat stejné tabulky, jejich konfigurace, snapshoty, výsledky
 ani stav výpadků se ale nesdílejí. Globální deduplikace feedů mezi tenanty není zapnutá.
 
@@ -218,11 +240,14 @@ Testy pokrývají opakovatelnou migraci/konfiguraci/import, tenanty, rollback im
 kalendáře, půlnoc/DST, aktivaci grafu, cache, circuit breaker, fallback, rozdíl mezi
 výpadkem a prázdnou odpovědí, HTTP autentizaci a HTTP timeout/size/redirect limity.
 Live test OTP používá syntetickou síť, nikoli kompletní produkční síť PID.
-Golemio realtime vyžaduje platný token a jeho produkční ověření je samostatný krok.
+Golemio realtime i online skládání spojů vyžadují platný token a jejich
+produkční ověření je samostatný krok. Výchozí limit Golemio je 20 požadavků
+za 8 sekund na klíč; současná omezení počtu kandidátů omezují jeden dotaz,
+ale vyšší souběh vyžaduje sdílené řízení kvóty nebo smluvně vyšší limit.
 
 Primární dokumentace:
 - https://developer.entur.org/pages-journeyplanner-journeyplanner/
-- https://api.golemio.cz/pid/docs/openapi/
+- https://api.golemio.cz/docs/static/vp-output-gateway/openapi.json
 - https://gtfs.org/documentation/schedule/reference/
 - https://docs.opentripplanner.org/en/v2.9.0/apis/TransmodelApi/
 - https://docs.opentripplanner.org/en/v2.9.0/GTFS-RT-Config/
@@ -238,3 +263,10 @@ Primární dokumentace:
   přibližně 175 s. Jde o lokální měření konkrétního feedu, nikoli produkční SLA.
 - Živá Golemio API s autentizačním tokenem ani plný PID routing graf nejsou
   produkčně ověřeny. Produkční DB, hosty a běžící služby nebyly změněny.
+
+### Ověřeno po přepnutí na online-first (30. 9. 2026)
+
+- Izolované MySQL testy: 92 kontrol včetně přímé jízdy, jednoho přestupu,
+  tříminutové návaznosti, příchodu do času, půlnoci, prázdné online odpovědi,
+  výpadku API a UTC stáří záložního snapshotu.
+- Živé PID API nebylo voláno; token ani produkční tenant nejsou v testech.

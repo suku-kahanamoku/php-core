@@ -45,7 +45,7 @@
         "url": "https://api.golemio.cz",
         "token_env": "TRANSPORT_PID_TOKEN",
         "min_interval_ms": 100,
-        "realtime_max_age": 90,
+        "realtime_max_age": 30,
         "attribution": "PID / Golemio",
         "schedule_provider": "pid-otp",
         "otp_feed_id": "pid"

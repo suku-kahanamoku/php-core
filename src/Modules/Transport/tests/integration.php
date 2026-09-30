@@ -60,6 +60,29 @@ check(count($r->providers()) === 3, 'provider configuration is idempotent');
 check((int)$r->rows("SELECT COUNT(*) n FROM enumeration WHERE franchise_code='tram' AND type='transport_mode'")[0]['n'] === 12, 'transport modes use existing enumeration');
 $input = ['from-dest' => ['type' => 'coordinates','lat' => 50.075,'lon' => 14.42],'to-dest' => ['type' => 'coordinates','lat' => 50.082,'lon' => 14.44],'from-date' => '2026-10-06T09:00:00+02:00'];
 $q = JourneyQuery::fromArray($input);
+$liveLocationInput = array_replace($input, ['from-dest' => [
+    'type' => 'current_location','lat' => 50.075,'lon' => 14.42,
+    'observed-at' => gmdate('Y-m-d\TH:i:s\Z'),
+]]);
+$liveLocationQuery = JourneyQuery::fromArray($liveLocationInput);
+check($liveLocationQuery->from['type'] === 'current_location' && isset($liveLocationQuery->from['observed_at']),
+    'fresh user GPS fix is accepted only as current_location');
+fails(fn () => JourneyQuery::fromArray(array_replace($input, ['from-dest' => [
+    'type' => 'current_location','lat' => 50.075,'lon' => 14.42,
+    'observed-at' => gmdate('Y-m-d\TH:i:s\Z', time() - 60),
+]])), 'stale_location');
+fails(fn () => JourneyQuery::fromArray(array_replace($input, ['from-dest' => [
+    'type' => 'current_location','lat' => 50.075,'lon' => 14.42,
+    'observed-at' => gmdate('Y-m-d\TH:i:s\Z', time() + 60),
+]])), 'stale_location');
+fails(fn () => JourneyQuery::fromArray(array_replace($input, ['from-dest' => [
+    'type' => 'current_location','lat' => 50.075,'lon' => 14.42,
+]])), 'invalid_place');
+fails(fn () => JourneyQuery::fromArray(array_replace($input, ['from-dest' => [
+    'type' => 'coordinates','lat' => 50.075,'lon' => 14.42,
+    'observed-at' => gmdate('Y-m-d\TH:i:s\Z'),
+]])), 'invalid_place');
+
 fails(fn () => JourneyQuery::fromArray($input + ['to-date' => '2026-10-06T10:00:00+02:00']), 'invalid_date');
 fails(fn () => JourneyQuery::fromArray(array_replace($input, ['from-date' => '2026-02-30T10:00:00Z'])), 'invalid_date');
 fails(fn () => JourneyQuery::fromArray(array_replace($input, ['modes' => ['spaceship']])), 'invalid_modes');
@@ -110,6 +133,15 @@ final class FakeHttp implements HttpClient
         }return $out;
     }
 }
+$locationResources = new ResourceService(new ProviderRegistry([]), new FakeHttp([]), $r);
+$freshFix = JourneyQuery::fromArray(array_replace($input, ['from-dest' => [
+    'type' => 'current_location','lat' => 50.075,'lon' => 14.42,
+    'observed-at' => gmdate('Y-m-d\TH:i:s\Z'),
+]]))->from;
+check($locationResources->resolve($freshFix) === $freshFix, 'fresh user location resolves without a catalogue read');
+fails(fn () => $locationResources->resolve(array_replace($freshFix, [
+    'observed_at' => gmdate('Y-m-d\TH:i:s\Z', time() - 60),
+])), 'stale_location');
 $probe = new FakeHttp(['0' => new HttpResponse(200, json_encode(['data' => ['quay' => ['latitude' => 50.075,'longitude' => 14.42]]])),'1' => new HttpResponse(200, json_encode(['data' => ['quay' => ['latitude' => 50.082,'longitude' => 14.44]]]))]);
 $manager = new GraphService($r, $probe);
 $manager->export($version, $dir.'/graph');
@@ -119,6 +151,13 @@ fails(fn () => (new GraphService($other, $probe))->activate($version, $dir.'/gra
 $manager->activate($version, $dir.'/graph/manifest.json', 'http://127.0.0.1:19991/otp/transmodel/v3');
 check((int)$r->activeFeed('pid')['id'] === $version, 'graph activation switches feed pointer');
 check($r->stop('pid', 'S1')['name'] === 'Start' && $other->stop('pid', 'S1') === null, 'stop reads are tenant isolated');
+$snapshotStop = $r->stop('pid', 'S1');
+check($snapshotStop['snapshot_version'] === $version && str_ends_with($snapshotStop['snapshot_at'], 'Z'),
+    'fallback catalogue identifies its UTC import snapshot');
+$otpRow = array_values(array_filter($r->providers(), static fn ($row) => $row['code'] === 'pid-otp'))[0];
+check(str_ends_with(json_decode($otpRow['config'], true)['snapshot_at'], 'Z'),
+    'OTP fallback configuration exposes UTC snapshot age');
+
 check(count($r->places('st', 10, 'CZ')) === 1, 'local autocomplete uses coverage and prefix');
 check($r->trip('pid', 'T1', '2026-10-05') === null, 'calendar removal excludes trip');
 check(count($r->trip('pid', 'TX', '2026-10-05')['stops']) === 2, 'calendar addition includes trip');
@@ -130,9 +169,11 @@ $privateJourney = $r->cacheJourney(['source' => ['provider' => 'entur','position
     'to' => ['id' => null,'name' => 'Private destination','lat' => 50.082,'lon' => 14.44],
     'geometry' => ['type' => 'LineString','coordinates' => [[14.42,50.075],[14.44,50.082]]],
     'position' => [14.43,50.076],
+    'line' => ['name' => 'Test','position' => [14.43,50.076]],
+    'operator' => ['name' => 'Operator','position' => [14.43,50.076]],
 ]]]);
 $storedPrivate = $r->journey($privateJourney['id']);
-check($storedPrivate['legs'][0]['from']['lat'] === null && $storedPrivate['legs'][0]['geometry'] === null && !str_contains(json_encode($storedPrivate), '50.075') && !str_contains(json_encode($storedPrivate), 'Private origin'), 'journey detail excludes request and vehicle positions');
+check($storedPrivate['legs'][0]['from']['lat'] === null && $storedPrivate['legs'][0]['geometry'] === null && !str_contains(json_encode($storedPrivate), '50.075') && !str_contains(json_encode($storedPrivate), '50.076') && !str_contains(json_encode($storedPrivate), 'Private origin'), 'journey detail excludes request and vehicle positions');
 $publicJourney = $r->cacheJourney(['legs' => [[
     'mode' => 'tram','from' => ['id' => 'public-stop-a','name' => 'A','lat' => 50.1,'lon' => 14.1],
     'to' => ['id' => 'public-stop-b','name' => 'B','lat' => 50.2,'lon' => 14.2],
@@ -197,7 +238,7 @@ $pid = new App\Modules\Transport\Providers\PidProvider(
 );
 $position = ['geometry' => ['type' => 'Point','coordinates' => [14.42,50.075]],'properties' => [
     'trip' => ['start_timestamp' => '2026-10-06T08:00:00Z'],
-    'last_position' => ['origin_timestamp' => gmdate('Y-m-d\TH:i:s\Z'),'tracking' => true,'is_canceled' => false,'delay' => ['actual' => 30]],
+    'last_position' => ['origin_timestamp' => gmdate('Y-m-d\TH:i:s\Z'),'tracking' => true,'is_canceled' => false,'delay' => ['actual' => 30],'bearing' => 180,'speed' => 32],
 ]];
 $enrichmentHttp = new FakeHttp(['pid-departures' => new HttpResponse(200, json_encode([
     'stops' => [['stop_id' => 'S1','stop_name' => 'Start','stop_lat' => 50.075,'stop_lon' => 14.42]],
@@ -228,6 +269,10 @@ check($enriched[0]['legs'][0]['expected_departure'] === '2026-10-06T10:03:00+02:
 check(!isset(App\Modules\Transport\JourneyCacheMapper::sanitize($enriched[0])['source']['realtime_provider']) && App\Modules\Transport\JourneyCacheMapper::sanitize($enriched[0])['legs'][0]['expected_departure'] === null, 'cached detail excludes transient realtime data');
 $pidTripPayload = [
     'trip_id' => 'T1','route_id' => 'R1','route' => ['route_type' => 0,'route_short_name' => '22','route_long_name' => 'Test tram'],
+    'stops' => [
+        ['stop_id' => 'S1','stop_name' => 'Start','stop_lat' => 50.075,'stop_lon' => 14.42],
+        ['stop_id' => 'S2','stop_name' => 'End','stop_lat' => 50.082,'stop_lon' => 14.44],
+    ],
     'stop_times' => [
         ['trip_id' => 'T1','stop_id' => 'S1','stop_sequence' => 1,'arrival_time' => '10:00:00','departure_time' => '10:00:00'],
         ['trip_id' => 'T1','stop_id' => 'S2','stop_sequence' => 2,'arrival_time' => '10:10:00','departure_time' => '10:10:00'],
@@ -236,8 +281,12 @@ $pidTripPayload = [
 $pidOnlineTimes = [['trip_id' => 'T1','stop_id' => 'S1','stop_sequence' => 1,
     'arrival_time' => '10:00:00','departure_time' => '10:00:00']];
 $onlineHttp = new FakeHttp([
-    '2026-10-06' => new HttpResponse(200, json_encode($pidOnlineTimes)),
-    '2026-10-05' => new HttpResponse(200, '[]'),
+    'origin|2026-10-06' => new HttpResponse(200, json_encode($pidOnlineTimes)),
+    'destination|2026-10-06' => new HttpResponse(200, json_encode([
+        ['trip_id' => 'T1','stop_id' => 'S2','stop_sequence' => 2,'arrival_time' => '10:10:00','departure_time' => '10:10:00'],
+    ])),
+    'origin|2026-10-05' => new HttpResponse(200, '[]'),
+    'destination|2026-10-05' => new HttpResponse(200, '[]'),
     '2026-10-06|T1' => new HttpResponse(200, json_encode($pidTripPayload)),
     'pid-departures' => new HttpResponse(200, '{"departures":[],"stops":[]}'),
     'pid-otp' => new HttpResponse(200, json_encode($payload)),
@@ -258,16 +307,92 @@ $onlineRegistry = new ProviderRegistry([$pid,$otpEnrichmentProvider]);
 $onlineResources = new ResourceService($onlineRegistry, $onlineHttp, $r);
 $onlineJourneys = new JourneyService($onlineRegistry, $onlineHttp, $r, $onlineResources);
 $r->execute('UPDATE transport_provider SET next_request_at=NULL WHERE franchise_code=?', ['tram']);
+$otpStop = ResourceIdCodec::encode('tram','pid-otp','stop','pid:S1');
+$resolvedOtpStop = $onlineResources->resolve(['type' => 'stop','id' => $otpStop]);
+check($resolvedOtpStop['provider'] === 'pid' && $resolvedOtpStop['external'] === 'S1',
+    'old OTP stop ID resolves through current online PID source');
 $onlineResult = $onlineJourneys->search($stopQuery);
 check(count($onlineResult['journeys']) === 1 && $onlineResult['journeys'][0]['source']['provider'] === 'pid'
     && $onlineResult['journeys'][0]['source']['mode'] === 'live' && $onlineResult['partial']
     && !in_array('pid-otp', $onlineHttp->requests, true), 'PID stop-to-stop search composes online direct trip without OTP');
-$onlineHttp->responses['2026-10-06'] = new HttpResponse(200, '[]');
+$arriveQuery = JourneyQuery::fromArray([
+    'from-dest' => ['type' => 'stop','id' => ResourceIdCodec::encode('tram','pid','stop','S1')],
+    'to-dest' => ['type' => 'stop','id' => ResourceIdCodec::encode('tram','pid','stop','S2')],
+    'to-date' => '2026-10-06T10:30:00+02:00','state' => 'CZ',
+]);
+$r->execute('UPDATE transport_provider SET next_request_at=NULL WHERE franchise_code=?', ['tram']);
+$arriveResult = $onlineJourneys->search($arriveQuery);
+check(count($arriveResult['journeys']) === 1 && $arriveResult['journeys'][0]['legs'][0]['scheduled_arrival'] === '2026-10-06T10:10:00+02:00',
+    'PID online search supports arrive-by time');
+fails(fn () => $onlineJourneys->search($q), 'unsupported_capability');
+$directOriginTimes = $onlineHttp->responses['origin|2026-10-06'];
+$directDestinationTimes = $onlineHttp->responses['destination|2026-10-06'];
+$directTrip = $onlineHttp->responses['2026-10-06|T1'];
+$transferOrigin = [
+    'trip_id' => 'Ttransfer1','route_id' => 'R1','route' => ['route_type' => 0,'route_short_name' => '22'],
+    'stop_times' => [
+        ['trip_id' => 'Ttransfer1','stop_id' => 'S1','stop_sequence' => 1,'arrival_time' => '10:00:00','departure_time' => '10:00:00'],
+        ['trip_id' => 'Ttransfer1','stop_id' => 'SX','stop_sequence' => 2,'arrival_time' => '10:10:00','departure_time' => '10:10:00'],
+    ],
+];
+$transferDestination = [
+    'trip_id' => 'Ttransfer2','route_id' => 'R1','route' => ['route_type' => 0,'route_short_name' => '24'],
+    'stop_times' => [
+        ['trip_id' => 'Ttransfer2','stop_id' => 'SX','stop_sequence' => 1,'arrival_time' => '10:15:00','departure_time' => '10:15:00'],
+        ['trip_id' => 'Ttransfer2','stop_id' => 'S2','stop_sequence' => 2,'arrival_time' => '10:25:00','departure_time' => '10:25:00'],
+    ],
+];
+$onlineHttp->responses['origin|2026-10-06'] = new HttpResponse(200, json_encode([
+    ['trip_id' => 'Ttransfer1','stop_id' => 'S1','stop_sequence' => 1,'arrival_time' => '10:00:00','departure_time' => '10:00:00'],
+]));
+$onlineHttp->responses['destination|2026-10-06'] = new HttpResponse(200, json_encode([
+    ['trip_id' => 'Ttransfer2','stop_id' => 'S2','stop_sequence' => 2,'arrival_time' => '10:25:00','departure_time' => '10:25:00'],
+]));
+$onlineHttp->responses['2026-10-06|Ttransfer1'] = new HttpResponse(200, json_encode($transferOrigin));
+$onlineHttp->responses['2026-10-06|Ttransfer2'] = new HttpResponse(200, json_encode($transferDestination));
+$r->execute('UPDATE transport_provider SET next_request_at=NULL WHERE franchise_code=?', ['tram']);
+$transferResult = $onlineJourneys->search($stopQuery);
+check(count($transferResult['journeys']) === 1 && $transferResult['journeys'][0]['transfers'] === 1
+    && count($transferResult['journeys'][0]['legs']) === 2 && $transferResult['journeys'][0]['source']['mode'] === 'live',
+    'PID online search composes verified one-stop transfer');
+$transferDestination['stop_times'][0]['departure_time'] = '10:12:00';
+$onlineHttp->responses['2026-10-06|Ttransfer2'] = new HttpResponse(200, json_encode($transferDestination));
+$r->execute('UPDATE transport_provider SET next_request_at=NULL WHERE franchise_code=?', ['tram']);
+$tooShortTransfer = $onlineJourneys->search($stopQuery);
+check($tooShortTransfer['journeys'] === [], 'PID rejects transfer shorter than three minutes');
+$onlineHttp->responses['origin|2026-10-06'] = $directOriginTimes;
+$onlineHttp->responses['destination|2026-10-06'] = $directDestinationTimes;
+$onlineHttp->responses['2026-10-06|T1'] = $directTrip;
+$nightTrip = [
+    'trip_id' => 'Tnight','route_id' => 'R1','route' => ['route_type' => 0,'route_short_name' => '22'],
+    'stop_times' => [
+        ['trip_id' => 'Tnight','stop_id' => 'S1','stop_sequence' => 1,'arrival_time' => '24:05:00','departure_time' => '24:05:00'],
+        ['trip_id' => 'Tnight','stop_id' => 'S2','stop_sequence' => 2,'arrival_time' => '24:15:00','departure_time' => '24:15:00'],
+    ],
+];
+$onlineHttp->responses['origin|2026-10-06'] = new HttpResponse(200, json_encode([$nightTrip['stop_times'][0]]));
+$onlineHttp->responses['destination|2026-10-06'] = new HttpResponse(200, json_encode([$nightTrip['stop_times'][1]]));
+$onlineHttp->responses['origin|2026-10-07'] = new HttpResponse(200, '[]');
+$onlineHttp->responses['destination|2026-10-07'] = new HttpResponse(200, '[]');
+$onlineHttp->responses['2026-10-06|Tnight'] = new HttpResponse(200, json_encode($nightTrip));
+$nightQuery = JourneyQuery::fromArray([
+    'from-dest' => ['type' => 'stop','id' => ResourceIdCodec::encode('tram','pid','stop','S1')],
+    'to-dest' => ['type' => 'stop','id' => ResourceIdCodec::encode('tram','pid','stop','S2')],
+    'from-date' => '2026-10-07T00:00:00+02:00','state' => 'CZ',
+]);
+$r->execute('UPDATE transport_provider SET next_request_at=NULL WHERE franchise_code=?', ['tram']);
+$nightResult = $onlineJourneys->search($nightQuery);
+check(count($nightResult['journeys']) === 1 && $nightResult['journeys'][0]['legs'][0]['service_date'] === '2026-10-06'
+    && $nightResult['journeys'][0]['legs'][0]['scheduled_departure'] === '2026-10-07T00:05:00+02:00',
+    'PID online search preserves previous service day after midnight');
+$onlineHttp->responses['origin|2026-10-06'] = $directOriginTimes;
+$onlineHttp->responses['destination|2026-10-06'] = $directDestinationTimes;
+$onlineHttp->responses['origin|2026-10-06'] = new HttpResponse(200, '[]');
 $onlineHttp->requests = [];
 $r->execute('UPDATE transport_provider SET next_request_at=NULL WHERE franchise_code=?', ['tram']);
 $onlineEmpty = $onlineJourneys->search($stopQuery);
 check($onlineEmpty['journeys'] === [] && !in_array('pid-otp', $onlineHttp->requests, true), 'empty PID online result never triggers local OTP');
-$onlineHttp->responses['2026-10-06'] = new HttpResponse(503, '');
+$onlineHttp->responses['origin|2026-10-06'] = new HttpResponse(503, '');
 $onlineHttp->requests = [];
 $r->execute('UPDATE transport_provider SET next_request_at=NULL WHERE franchise_code=?', ['tram']);
 $onlineFallback = $onlineJourneys->search($stopQuery);
@@ -275,7 +400,9 @@ check(count($onlineFallback['journeys']) === 1 && $onlineFallback['journeys'][0]
     && in_array('pid-otp', $onlineHttp->requests, true), 'PID API failure invokes local OTP fallback');
 $r->providerSuccess('pid');
 $pidTrip = $pid->resourceResult('trip', new HttpResponse(200, json_encode($pidTripPayload)), ['external' => 'T1','date' => '2026-10-06']);
-check($pidTrip['stops'][0]['scheduled_arrival'] === '2026-10-06T10:00:00+02:00', 'PID online trip uses scheduled service-day times');
+check($pidTrip['stops'][0]['scheduled_arrival'] === '2026-10-06T10:00:00+02:00'
+    && $pidTrip['stops'][0]['stop']['name'] === 'Start' && $pidTrip['stops'][0]['stop']['lat'] === 50.075,
+    'PID online trip maps stop details and scheduled service-day times');
 $pidHttp = new FakeHttp(['resource' => new HttpResponse(200, json_encode($pidTripPayload)), 'trip' => new HttpResponse(200, json_encode($pidTripPayload))]);
 $pidResources = new ResourceService(new ProviderRegistry([$pid]), $pidHttp, $r);
 $pidTripId = ResourceIdCodec::encode('tram', 'pid', 'trip', 'T1', '2026-10-06');
@@ -283,11 +410,14 @@ $r->execute('UPDATE transport_provider SET next_request_at=NULL WHERE franchise_
 check($pidResources->resource('trip', $pidTripId)['source']['mode'] === 'live', 'PID trip detail reads online before imported catalogue');
 $pidHttp->responses['resource'] = new HttpResponse(503, '');
 $r->execute('UPDATE transport_provider SET next_request_at=NULL WHERE franchise_code=? AND code=?', ['tram','pid']);
-check($pidResources->resource('trip', $pidTripId)['source']['mode'] === 'fallback', 'PID trip detail uses catalogue only after online failure');
+$fallbackTrip = $pidResources->resource('trip', $pidTripId);
+check($fallbackTrip['source']['mode'] === 'fallback' && $fallbackTrip['source']['snapshot_version'] === $version
+    && str_ends_with($fallbackTrip['source']['snapshot_at'], 'Z'), 'PID trip detail uses timestamped catalogue only after online failure');
 $r->providerSuccess('pid');
 $args = ['expected_start' => '2026-10-06T10:00:00+02:00'];
 $live = $pid->resourceResult('realtime', new HttpResponse(200, json_encode($position)), $args);
-check($live['realtime'] && !$live['stale'] && $live['delay_seconds'] === 30, 'PID current position is marked realtime');
+check($live['realtime'] && !$live['stale'] && $live['position'] !== null && $live['delay_seconds'] === 30
+    && $live['bearing'] === 180 && $live['speed_kmh'] === 32, 'PID current position is marked realtime');
 $pidHttp->responses['resource'] = new HttpResponse(200, json_encode($position));
 $r->execute('UPDATE transport_provider SET next_request_at=NULL WHERE franchise_code=? AND code=?', ['tram','pid']);
 check($pidResources->resource('realtime', $pidTripId)['result']['realtime'], 'PID realtime verifies service instance using online trip detail');
@@ -295,9 +425,36 @@ $pidHttp->responses['trip'] = new HttpResponse(503, '');
 $r->execute('UPDATE transport_provider SET next_request_at=NULL WHERE franchise_code=? AND code=?', ['tram','pid']);
 fails(fn () => $pidResources->resource('realtime', $pidTripId), 'source_unavailable');
 $r->providerSuccess('pid');
+$position['properties']['last_position']['origin_timestamp'] = gmdate('Y-m-d\TH:i:s\Z', time() + 15);
+$futurePoint = $pid->resourceResult('realtime', new HttpResponse(200, json_encode($position)), $args);
+check(!$futurePoint['realtime'] && $futurePoint['position'] === null,
+    'vehicle observation with a future timestamp is unavailable');
+$position['properties']['last_position']['origin_timestamp'] = gmdate('Y-m-d\TH:i:s\Z', time() - 31);
+$overLimit = $pid->resourceResult('realtime', new HttpResponse(200, json_encode($position)), $args);
+check(!$overLimit['realtime'] && $overLimit['position'] === null,
+    'vehicle observation older than 30 seconds is unavailable even with a higher provider setting');
 $position['properties']['last_position']['origin_timestamp'] = gmdate('Y-m-d\TH:i:s\Z', time() - 600);
 $stale = $pid->resourceResult('realtime', new HttpResponse(200, json_encode($position)), $args);
-check(!$stale['realtime'] && $stale['stale'] && $stale['delay_seconds'] === null, 'PID stale observation is not a live delay');
+check(!$stale['realtime'] && $stale['stale'] && $stale['position'] === null
+    && $stale['observed_at'] === null && $stale['delay_seconds'] === null
+    && $stale['bearing'] === null && $stale['speed_kmh'] === null,
+    'PID stale observation exposes no last-known vehicle position');
+$pidHttp->responses['trip'] = new HttpResponse(200, json_encode($pidTripPayload));
+$pidHttp->responses['resource'] = new HttpResponse(200, json_encode($position));
+$r->execute('UPDATE transport_provider SET next_request_at=NULL WHERE franchise_code=? AND code=?', ['tram','pid']);
+check($pidResources->resource('realtime', $pidTripId)['result']['position'] === null,
+    'public realtime endpoint never returns stale vehicle coordinates');
+$position['properties']['last_position']['origin_timestamp'] = gmdate('Y-m-d\TH:i:s\Z');
+$position['properties']['last_position']['tracking'] = false;
+$untracked = $pid->resourceResult('realtime', new HttpResponse(200, json_encode($position)), $args);
+check(!$untracked['realtime'] && $untracked['position'] === null && $untracked['speed_kmh'] === null,
+    'untracked vehicle has no usable position despite recent timestamp');
+$position['properties']['last_position']['tracking'] = true;
+$position['geometry']['coordinates'] = [190,50.075];
+$invalidPoint = $pid->resourceResult('realtime', new HttpResponse(200, json_encode($position)), $args);
+check(!$invalidPoint['realtime'] && $invalidPoint['position'] === null,
+    'invalid vehicle coordinates are never returned as realtime');
+
 fails(fn () => $pid->resourceResult('realtime', new HttpResponse(200, json_encode($position)), ['expected_start' => '2026-10-07T10:00:00+02:00']), 'instance_unverified');
 $second = new PDO($dsn, 'root', '', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 $lock = 'tram:'.substr(hash('sha256', 'tram:pid'), 0, 50);

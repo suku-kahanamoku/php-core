@@ -60,7 +60,8 @@ CREATE TABLE IF NOT EXISTS `transport_sync_run` (
   `started_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `finished_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `idx_transport_sync` (`franchise_code`,`feed_code`,`started_at`)
+  KEY `idx_transport_sync` (`franchise_code`,`feed_code`,`started_at`),
+  KEY `idx_transport_sync_version` (`franchise_code`,`version_id`,`status`,`finished_at`)
   -- deferred CONSTRAINT `fk_transport_sync_feed` FOREIGN KEY (`franchise_code`, `feed_code`) REFERENCES `transport_feed` (`franchise_code`, `code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
@@ -840,6 +841,11 @@ EXECUTE schema_stmt;
 DEALLOCATE PREPARE schema_stmt;
 
 SET @schema_ddl = IF((SELECT COUNT(*)=0 FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='transport_sync_run' AND INDEX_NAME='idx_transport_sync'), 'ALTER TABLE `transport_sync_run` ADD KEY `idx_transport_sync` (`franchise_code`,`feed_code`,`started_at`)', 'DO 0');
+PREPARE schema_stmt FROM @schema_ddl;
+EXECUTE schema_stmt;
+DEALLOCATE PREPARE schema_stmt;
+
+SET @schema_ddl = IF((SELECT COUNT(*)=0 FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='transport_sync_run' AND INDEX_NAME='idx_transport_sync_version'), 'ALTER TABLE `transport_sync_run` ADD KEY `idx_transport_sync_version` (`franchise_code`,`version_id`,`status`,`finished_at`)', 'DO 0');
 PREPARE schema_stmt FROM @schema_ddl;
 EXECUTE schema_stmt;
 DEALLOCATE PREPARE schema_stmt;

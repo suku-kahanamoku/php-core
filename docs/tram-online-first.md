@@ -48,8 +48,13 @@ nebo ze záložního katalogu až při výpadku.
 **Zakázáno ukládat:** GPS polohy vozidel a historii jejich pohybu, polohu
 uživatele, souřadnice z jeho hledání a surové realtime odpovědi. Živá poloha
 může existovat pouze v paměti po dobu vyřízení požadavku a odejít v odpovědi.
-Při výpadku jejího API ji TRAM označí jako nedostupnou. Noční synchronizace
-nemá co „zálohovat“ pro polohu jedoucího spoje.
+Při výpadku jejího API ji TRAM označí jako nedostupnou. Stará souřadnice
+vozidla se nevrací ani s příznakem `stale`; místo ní je `position: null`.
+Noční synchronizace nemá co „zálohovat“ pro polohu jedoucího spoje.
+GPS poloha uživatele se přijímá pouze jako `current_location` s časem měření
+starým nejvýše 30 sekund. Ručně vybraný bod `coordinates` je cíl či počátek
+plánování, nikoli údaj o pohybu uživatele. Backend uživatele nesleduje a
+neukládá ani jedno hledání s jeho souřadnicemi do katalogu.
 
 ## Rozdělení schopností
 
@@ -59,12 +64,13 @@ nemá co „zálohovat“ pro polohu jedoucího spoje.
 | Hledání zastávek a detail | Online katalogy / geokodéry | Importovaný katalog zastávek |
 | Odjezdy a detail spoje | Online API pro provozní den | Plánované časy ze snapshotu |
 | Poloha vozidla | Čerstvé realtime API | Žádná uložená poloha; při výpadku je nedostupná |
+| Poloha uživatele | Čerstvý GPS fix klienta s časem měření | Žádná uložená poloha ani poslední známý bod |
 | Zpoždění a výluky | Aktuální API | Jen plánované změny, pokud jsou součástí synchronizovaného jízdního řádu; jinak nedostupné |
 
-Každý adaptér deklaruje své skutečné schopnosti. Golemio dnes v TRAM dodává
-zastávky, odjezdy a polohy PID; jeho adaptér není plánovač celé cesty.
-Online PHP skládání proto potřebuje také ověřený zdroj posloupnosti zastávek,
-časů a provozních dnů konkrétních jízd. Propojení více dopravců vyžaduje
+Každý adaptér deklaruje své skutečné schopnosti. Golemio poskytuje zastávky,
+časy, detaily spojů, odjezdy a polohy PID; samo nevrací hotové itineráře.
+TRAM z jeho online GTFS stop times a posloupností zastávek nyní skládá omezené
+cesty v PHP. Širší plánování potřebuje další online zdroje a algoritmy. Propojení více dopravců vyžaduje
 normalizaci ID, souřadnic, časových pásem, přestupních časů a spárování
 spojů na tentýž provozní den. Nelze spojovat úseky pouze podle podobného
 názvu zastávky. Algoritmus musí mít hranice počtu požadavků, času, počtu
@@ -92,25 +98,47 @@ předstírat ani stahovat HTML výsledky jako API.
 - [Ministerstvo dopravy: CIS JŘ](https://md.gov.cz/Dokumenty/Verejna-doprava/Jizdni-rady,-kalendare-pro-jizdni-rady,-metodi-(1)/Jizdni-rady-verejne-dopravy)
 - [PID: otevřená data](https://pid.cz/o-systemu/opendata/)
 
-## Stav aktuálního kódu
+## Stav aktuálního kódu (30. 9. 2026)
 
-- `pid-otp` je v `config/transport.example.json` stále primární plánovač.
-  Praha proto běžně hledá nad naším importem. To odporuje tomuto návrhu.
-- `ResourceService::places()` přimíchává importované zastávky i po úspěchu
-  online API. `resource()` čte importovanou zastávku/spoj před online pokusem.
-- Golemio se nevolá z `JourneyService::search()` a jeho realtime údaje se
-  nespojují do výsledku hledání. Existuje jen samostatný dotaz na polohu
-  svázaný s OTP ID.
-- `TransportRepository::cacheJourney()` ukládá na 15 minut celý výsledek
-  do MySQL pro následný detail/geometrii. Ten může zahrnovat souřadnice
-  počátku/cíle uživatelského hledání nebo geometrii pěšího úseku. To je
-  další nesoulad: cache je nutné odstranit či nahradit řešením, které
-  souřadnice uživatele neukládá; detail se má číst online.
-- Noční synchronizace všech poskytovatelů není naplánována. Hotový je
-  verzovaný import GTFS pro PID, ale ne importy všech budoucích online zdrojů.
+- Entur poskytuje online plánování pro své pokrytí. PID má jako primární zdroj
+  Golemio: PHP z jeho online stop times a detailů jízd skládá přímé spojení
+  a jeden přestup na **identické zastávce** s minimálně třemi minutami.
+  Zahrnuje provozní den a časy přes půlnoc. Hledání je omezené na čtyři hodiny,
+  nejvýše 16 stop times na zastávku/den a čtyři kandidátní jízdy z každého
+  konce. Výsledek proto nese `partial: true`, `source.limited: true` a varování.
+  Prázdný úspěšný výsledek z tohoto omezeného hledání není důkaz, že cesta
+  neexistuje, a nespouští záložní plánovač.
+- Příklad konfigurace nastavuje `pid-otp` jako `fallback_for: ["pid"]`.
+  OTP nad importovaným jízdním řádem se použije při výpadku PID online služby,
+  nikoli jako primární český plánovač. Hledání od souřadnic v PID a více než
+  jeden přestup zatím online adaptér nepokrývá; místo skrytého čtení katalogu
+  vrací nepodporovanou schopnost. Chybí i přestup mezi blízkými, ale odlišnými
+  zastávkami, chůze a záruka úplnosti podobná IDOS.
+- Našeptávač používá online místa při úspěchu zdroje. Importovaný katalog
+  čte jen po selhání relevantního zdroje nebo při otevřeném circuit breakeru;
+  běžné omezení frekvence volání není důvod k lokálnímu fallbacku. Detail
+  zastávky i spoje se nejprve čte online. Staré ID z OTP se u podporovaných
+  PID zdrojů mapuje zpět na online Golemio.
+- Golemio doplňuje vyhledané úseky o online predikce odjezdu a odřeknutí
+  pouze po shodě ID zastávky, ID jízdy a plánovaného času. Živá poloha se
+  poskytuje jen online, po ověření konkrétního provozního dne; nikdy se
+  nesynchronizuje ani neukládá do katalogu. Souřadnice uživatelského dotazu,
+  pěší geometrie a telemetrie jsou odstraněné i z krátkodobého detailu.
+- **Zbývající nesoulad:** `transport_journey_cache` stále uchovává na 15 minut
+  omezený plánovaný výsledek a `GET /journeys/{id}` jej čte z MySQL, přestože
+  požadovaný cílový stav používá DB jen jako záložní katalog. Cache už
+  neukládá polohy uživatelů ani vozidel. Náhrada detailového kontraktu
+  online/ephemerálním úložištěm vyžaduje samostatné řešení pro více PHP
+  instancí; endpointy detailu a geometrie zůstaly funkční.
+- Záložní výsledky uvádějí verzi snapshotu a UTC čas dokončeného importu.
+  Výchozí limit Golemio je 20 požadavků za 8 sekund na klíč; při souběžném
+  provozu je potřeba sdíleně hlídat kvótu nebo domluvit vyšší limit.
+- Import PID GTFS je verzovaný a ručně spustitelný. Plánování nočních úloh,
+  importy dalších zdrojů, ostrý Golemio token a integrační test proti jeho
+  živému API nejsou dokončené. Neexistuje oprávněné výsledkové API IDOS
+  zapojené do TRAM.
 
-Aby mohl být PID režim označen jako hotový, je třeba doplnit online plánovač
-nebo PHP skládání z dostatečně úplných online PID API, napojit Golemio na
-výsledek, přesunout OTP do záložní role a opravit čtení lokálního katalogu.
-Ostatní země/dopravci potřebují totéž pravidlo s vlastními adaptéry a
-importéry. Pokrytí se nesmí odvozovat pouze z existence záložního feedu.
+Další rozšíření plánovače musí zachovat online zdroj dat, přesný identifikátor
+zastávky a provozní den i pevný rozpočet požadavků. Pro úplné celosvětové
+vyhledávání je nutné přidávat skutečné online plánovače a importéry podle
+licencí konkrétních provozovatelů.

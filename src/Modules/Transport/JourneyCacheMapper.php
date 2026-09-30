@@ -18,13 +18,19 @@ final class JourneyCacheMapper
     public static function sanitize(array $journey, bool $publicStopsOnly = false): array
     {
         $result = array_intersect_key($journey, array_flip(['duration_seconds','transfers']));
-        $result['source'] = array_intersect_key($journey['source'] ?? [], array_flip(['provider','status','mode','fetched_at','graph_version','valid_until','attribution']));
+        $result['source'] = array_intersect_key($journey['source'] ?? [], array_flip(['provider','status','mode','fetched_at','graph_version','snapshot_at','valid_until','attribution','limited']));
         $result['legs'] = [];
         foreach ($journey['legs'] ?? [] as $leg) {
             $item = array_intersect_key($leg, array_flip([
                 'mode','scheduled_departure','scheduled_arrival',
                 'trip_id','service_date','line','operator','distance_m',
             ]));
+            if (isset($item['line'])) {
+                $item['line'] = is_array($item['line']) ? array_intersect_key($item['line'], array_flip(['id','name','code','mode'])) : null;
+            }
+            if (isset($item['operator'])) {
+                $item['operator'] = is_array($item['operator']) ? array_intersect_key($item['operator'], array_flip(['id','name'])) : null;
+            }
             $item['expected_departure'] = null;
             $item['expected_arrival'] = null;
             $item['realtime'] = false;
