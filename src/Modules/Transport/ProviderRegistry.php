@@ -6,7 +6,7 @@ namespace App\Modules\Transport;
 
 use App\Modules\Transport\Contracts\Provider;
 use App\Modules\Transport\DTO\ProviderDefinition;
-use App\Modules\Transport\Providers\{TransmodelProvider,PidProvider};
+use App\Modules\Transport\Providers\{TransmodelProvider,PidProvider,SpojenkaProvider};
 
 /**
  * Registry dopravních poskytovatelů jednoho okurku.
@@ -50,6 +50,7 @@ final class ProviderRegistry
             $definition = new ProviderDefinition($tenant, $row['code'], $row['adapter'], json_decode($row['config'], true, 32, JSON_THROW_ON_ERROR), json_decode($row['coverage'], true, 32, JSON_THROW_ON_ERROR), $row['role'], json_decode($row['fallback_for'], true, 32, JSON_THROW_ON_ERROR));
             $providers[] = match($definition->adapter) {
                 'entur','otp_transmodel' => new TransmodelProvider($definition),
+                'spojenka' => new SpojenkaProvider($definition),
                 'pid' => new PidProvider($definition, (string)($env[$definition->config['token_env'] ?? 'TRANSPORT_PID_TOKEN'] ?? '')),
                 default => throw new TransportException('invalid_adapter', 'Unknown transport adapter.', 500)
             };

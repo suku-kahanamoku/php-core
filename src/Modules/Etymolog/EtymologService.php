@@ -96,6 +96,16 @@ final class EtymologService
         return ($this->background ?? throw new EtymologException('Worker unavailable', 503))->start($this->auth->id());
     }
 
+    /** Zastaví zadaný běh, pouze pro administrátora. */
+    public function stopSync(array $input): array
+    {
+        $this->auth->requireRole('admin');
+        if (array_keys($input) !== ['request_id'] || !is_string($input['request_id']) || !preg_match('/^[a-f0-9]{32}$/D', $input['request_id'])) {
+            throw new EtymologException('Invalid synchronization request');
+        }
+        return ($this->background ?? throw new EtymologException('Worker unavailable', 503))->stop($input['request_id']);
+    }
+
     /**
      * Vrátí stav synchronizace pro zobrazení v UI.
      *

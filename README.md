@@ -122,7 +122,7 @@ request, cosmetics, or gift intent is not a category. The current session has
 no trusted profile input, so category plus price intent is the effective gate.
 Realtime passes the structured active need to an OpenAI Responses model. That
 model uses hosted `file_search`, evaluates requirements, preferences and budget,
-and returns one evidence-backed product ID. PHP neither filters nor ranks
+and returns one evidence-backed product ID. It marks an exact match as `exact`; otherwise it returns the closest `nearest` product with a short Czech reason, so a completed gate never produces an empty business result. PHP neither filters nor ranks
 candidates and never chooses a recommended product. The model never asks clarification questions or
 generates sales, upsell or cross-sell arguments; while the gate is incomplete,
 the required `continue_listening` tool ends the turn without free text and updates only

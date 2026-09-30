@@ -50,7 +50,7 @@ final class OpenAiKnowledgeCatalogService
      * nevybírá vítěze. Vrací pouze ID zvolené a doložené OpenAI Vector Store.
      *
      * @param array<string, mixed> $arguments Dotaz, kategorie a cenový záměr.
-     * @return array{status:string,product_id:int|null}
+     * @return array{status:string,product_id:int|null,match_quality?:string,reason?:string}
      */
     private function recommendProduct(array $arguments): array
     {

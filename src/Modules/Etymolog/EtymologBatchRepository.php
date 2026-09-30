@@ -73,6 +73,20 @@ final class EtymologBatchRepository extends BaseRepository
     public function status(): ?array
     {
         $row = $this->_db->fetchOne('SELECT * FROM etymolog_sync_batch WHERE franchise_code=?', [$this->_code]) ?: null;
+        if ($row && $row['status'] === 'stopping' && (int)($this->_db->fetchOne('SELECT IS_FREE_LOCK(?) available', ['ety-worker:'.substr(hash('sha256', $this->_code), 0, 48)])['available'] ?? 0) === 1) {
+            try {
+                $this->lock('worker', function () use (&$row) {
+                    $fresh = $this->_db->fetchOne('SELECT request_id,status FROM etymolog_sync_batch WHERE franchise_code=?', [$this->_code]);
+                    if ($fresh && $fresh['request_id'] === $row['request_id'] && $fresh['status'] === 'stopping') {
+                        $this->update($row['request_id'], ['status' => 'stopped', 'finished_at' => gmdate('Y-m-d H:i:s')]);
+                        $row['status'] = 'stopped';
+                        $row['finished_at'] = gmdate('Y-m-d H:i:s');
+                    }
+                });
+            } catch (EtymologException $e) {
+                if ($e->status !== 409) { throw $e; }
+            }
+        }
         if ($row && in_array($row['status'], ['queued', 'running'], true)) {
             if ($this->expired($row) && (int)($this->_db->fetchOne('SELECT IS_FREE_LOCK(?) available', ['ety-worker:'.substr(hash('sha256', $this->_code), 0, 48)])['available'] ?? 0) === 1) {
                 try {
@@ -120,10 +134,34 @@ function () use (&$row) {
          */
 function () use ($actor) {
             $current = $this->status();
-            if ($current && in_array($current['status'], ['queued', 'running'], true)) { return $current + ['accepted' => false]; }
+            if ($current && in_array($current['status'], ['queued', 'running', 'stopping'], true)) { return $current + ['accepted' => false]; }
             $id = bin2hex(random_bytes(16));
             $this->_db->query("INSERT INTO etymolog_sync_batch (franchise_code,request_id,status,requested_by,created_at,heartbeat_at) VALUES (?,?,'queued',?,UTC_TIMESTAMP(),UTC_TIMESTAMP()) ON DUPLICATE KEY UPDATE request_id=VALUES(request_id),status='queued',requested_by=VALUES(requested_by),total=0,completed=0,failed=0,processed=0,error_code=NULL,pending_jobs=NULL,retry_at=NULL,retry_count=0,created_at=UTC_TIMESTAMP(),heartbeat_at=UTC_TIMESTAMP(),finished_at=NULL", [$this->_code, $id, $actor]);
             return $this->status() + ['accepted' => true];
+        });
+    }
+
+    /**
+     * Zastaví přesně požadovaný běh; aktivní dávka se smí dokončit.
+     *
+     * Pokud worker zámek nedrží, běh skončí ihned. Jinak stav stopping
+     * zabrání dalším dávkám a worker jej po dokončení aktuální převede na stopped.
+     */
+    public function stop(string $id): array
+    {
+        return $this->lock('request', function () use ($id) {
+            $current = $this->status();
+            if (!$current || $current['request_id'] !== $id) { throw new EtymologException('Synchronization request changed', 409); }
+            if (!in_array($current['status'], ['queued', 'running'], true)) { return $current; }
+            try {
+                $this->lock('worker', function () use ($id) {
+                    $this->_db->query("UPDATE etymolog_sync_batch SET status='stopped',finished_at=UTC_TIMESTAMP(),retry_at=NULL,heartbeat_at=UTC_TIMESTAMP() WHERE franchise_code=? AND request_id=? AND status IN ('queued','running')", [$this->_code, $id]);
+                });
+            } catch (EtymologException $e) {
+                if ($e->status !== 409) { throw $e; }
+                $this->_db->query("UPDATE etymolog_sync_batch SET status='stopping',retry_at=NULL,heartbeat_at=UTC_TIMESTAMP() WHERE franchise_code=? AND request_id=? AND status IN ('queued','running')", [$this->_code, $id]);
+            }
+            return $this->status();
         });
     }
 
@@ -260,11 +298,16 @@ function () use ($actor) {
      */
     public function finishStep(array $batch, array $result, bool $retryLimited = true): void
     {
+        // Lock the batch row inside the import transaction so a concurrent stop
+        // cannot be overwritten by a stale running snapshot.
+        $current = $this->_db->fetchOne('SELECT status FROM etymolog_sync_batch WHERE franchise_code=? AND request_id=? FOR UPDATE', [$this->_code, $batch['request_id']]);
+        if (!$current || $current['status'] === 'stopped') { return; }
+        $stopping = $current['status'] === 'stopping';
         $error = $result['error_code'] ?? null;
         $retryable = in_array($error, ['upstream_rate_limited', 'worker_time_budget_exceeded'], true);
         $minimumDelay = $error === 'upstream_rate_limited' ? 300 : 60;
         $retryAt = $retryable ? gmdate('Y-m-d H:i:s', time() + max($minimumDelay, min(604800, (int)($result['retry_after'] ?? $minimumDelay)))) : null;
-        if ($retryLimited && $retryable && (int)$batch['retry_count'] < 2) {
+        if (!$stopping && $retryLimited && $retryable && (int)$batch['retry_count'] < 2) {
             // No advancement until this source batch succeeds or exhausts its retry budget.
             $this->update($batch['request_id'], ['retry_at' => $retryAt, 'retry_count' => (int)$batch['retry_count'] + 1]);
             return;
@@ -290,8 +333,8 @@ function () use ($actor) {
         $this->update($batch['request_id'], ['completed' => $completed, 'failed' => $failed, 'retry_count' => 0, 'retry_at' => $done || !$retryLimited ? null : $retryAt,
             'pending_jobs' => json_encode($state, JSON_THROW_ON_ERROR),
             'processed' => (int)$batch['processed'] + $result['processed'],
-            'status' => $done ? ($failed ? 'partial' : 'complete') : 'running',
-            'finished_at' => $done ? gmdate('Y-m-d H:i:s') : null]);
+            'status' => $stopping ? 'stopped' : ($done ? ($failed ? 'partial' : 'complete') : 'running'),
+            'finished_at' => ($done || $stopping) ? gmdate('Y-m-d H:i:s') : null]);
     }
 
     /**

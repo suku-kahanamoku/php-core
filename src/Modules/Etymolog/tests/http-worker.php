@@ -36,6 +36,33 @@ check($repo->lock('worker',fn()=>$repo->nightly('2026-09-28'))['request_id']===$
 $service->step($daily['request_id'],0);
 check($repo->lock('worker',fn()=>$repo->nightly('2026-09-28'))['request_id']===$daily['request_id'],'daily schedule does not enqueue another pass after completion');
 
+// Stopping is scoped to one request and never discards a source cursor.
+$stopTenant='http-stop-fixture';
+$stopRepo=new EtymologBatchRepository($db,$stopTenant,900,900);
+$stopJob=$db->insert('etymolog_sync_job',['franchise_code'=>$stopTenant,'title'=>'Stop fixture','provider'=>'ok']);
+$stopWorker=new EtymologHttpWorkerService($stopRepo,new EtymologSyncService(new EtymologRepository($db,$stopTenant,'sync-jobs'),new EtymologSyncRepository($db,$stopTenant),new ProviderRegistry(['ok'=>$okProvider])));
+$queuedStop=$stopRepo->enqueue(null);
+check($stopRepo->stop($queuedStop['request_id'])['status']==='stopped' && $stopWorker->step($queuedStop['request_id'],0)['status']==='stopped','queued stop prevents the worker from importing');
+try{$stopRepo->stop(str_repeat('a',32));throw new LogicException('Expected stale request rejection');}
+catch(EtymologException $e){check($e->status===409,'stale stop cannot cancel another request');}
+$runningStop=$stopRepo->enqueue(null);
+$runningState=$stopRepo->prepareSteps($runningStop['request_id']);
+$lockKey='ety-worker:'.substr(hash('sha256',$stopTenant),0,48);
+$otherWorker=new PDO($dsn,'root','');
+$otherWorker->prepare('SELECT GET_LOCK(?,0)')->execute([$lockKey]);
+try {
+    check($stopRepo->stop($runningStop['request_id'])['status']==='stopping','active worker receives durable stop request');
+    check(!$stopRepo->enqueue(null)['accepted'],'new run cannot replace a stopping worker');
+    $stopRepo->finishStep($runningState,['status'=>'success','processed'=>2]);
+    check($stopRepo->status()['status']==='stopped' && $stopRepo->status()['processed']===2,'in-flight batch records progress and closes after stop');
+} finally {
+    $otherWorker->prepare('SELECT RELEASE_LOCK(?)')->execute([$lockKey]);
+}
+$callsBeforeStop=$okProvider->calls;
+check($stopWorker->step($runningStop['request_id'],0)['status']==='stopped' && $okProvider->calls===$callsBeforeStop,'delayed Cloudflare message cannot restart stopped batch');
+$afterStop=$stopRepo->enqueue(null);
+check($afterStop['accepted'] && $afterStop['request_id']!==$runningStop['request_id'],'new manual run is allowed after stop');
+
 // Completion callback failure must roll back source/cursor writes before audited failure.
 $atomicTenant='http-atomic-fixture';$atomicJobs=new EtymologRepository($db,$atomicTenant,'sync-jobs');
 $atomicId=$db->insert('etymolog_sync_job',['franchise_code'=>$atomicTenant,'title'=>'Atomic','provider'=>'ok']);

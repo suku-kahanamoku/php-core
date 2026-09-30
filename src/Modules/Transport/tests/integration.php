@@ -116,6 +116,7 @@ check($r->rows('SELECT status FROM transport_sync_run WHERE franchise_code=? ORD
 final class FakeHttp implements HttpClient
 {
     public array $requests = [];
+    public array $payloads = [];
     public array $urlResponses = [];
     public function __construct(public array $responses)
     {
@@ -129,6 +130,7 @@ final class FakeHttp implements HttpClient
         $out = [];
         foreach ($requests as $k => $q) {
             $this->requests[] = $k;
+            $this->payloads[] = $q;
             $out[$k] = $this->urlResponses[$q->url] ?? $this->responses[$k] ?? new HttpResponse(503, '');
         }return $out;
     }
@@ -534,4 +536,6 @@ if ($realFeed = getenv('TRANSPORT_TEST_PID_ARCHIVE')) {
     check((int)$r->activeFeed('pid')['id'] === $version, 'real import leaves active graph unchanged');
     echo 'PID import: '.json_encode($result['counts']).' in '.round(microtime(true) - $started, 1)." seconds\n";
 }
+require __DIR__.'/online-selection.php';
+require __DIR__.'/nearest-stop.php';
 echo "PASS $checks checks on isolated MySQL\n";

@@ -4,10 +4,13 @@ Transport je tenantový modul php-core. Poskytuje jedno API pro web a mobil, ada
 externích zdrojů a verzovaný import jízdních řádů pro vlastní OpenTripPlanner (OTP).
 Jízdenky, platby a frontend nejsou součástí této první etapy.
 
-**Online-first:** TRAM čte dopravní data z online API a v PID umí z Golemio
-složit přímou jízdu nebo jeden přestup mezi vybranými zastávkami. OTP se
-používá pouze při výpadku PID API. Úplnost podobná IDOS ani hledání PID od
-souřadnic zatím hotové nejsou; přesný rozsah a zbývající nesoulad cache uvádí
+**Online-first:** TRAM čte dopravní data z online API. Spojenka doplňuje české
+našeptávání a plánování; Entur obsluhuje své pokrytí, Golemio poskytuje PID data
+včetně omezeného skládání cest v PHP. Společný `ProviderSelectionService`
+vybírá zdroje podle tenantu, schopnosti, státu, města a pokrytí GPS.
+Importovaný katalog/OTP se používá až při výpadku odpovídajícího zdroje.
+Podmínky použití vývojového endpointu Spojenky, chybějící národní fallback,
+přesnost geografického výběru a zbývající nesoulad cache popisuje
 [online-first návrh](../../../docs/tram-online-first.md).
 
 ## Co je implementováno
@@ -16,6 +19,7 @@ souřadnic zatím hotové nejsou; přesný rozsah a zbývající nesoulad cache 
 - `JourneyService` vybírá poskytovatele pokrývající oba konce cesty, volá je souběžně,
   sjednocuje výsledky, řadí je a při výpadku oslovuje nakonfigurované zálohy.
 - `ProviderRegistry` obsahuje explicitně povolené adaptéry; konfigurace neurčuje PHP třídy.
+- `SpojenkaProvider` a `SpojenkaMapper` implementují české online zastávky, cesty a detaily spojů.
 - `TransmodelProvider` implementuje Entur a OTP 2.9 Transmodel GraphQL.
 - `PidProvider` implementuje online Golemio zastávky, odjezdy, detaily spojů a polohy vozidel.
 - `PidOnlineJourneyService` skládá časově ověřené přímé jízdy a jeden přestup z online stop times a detailů jízd.
@@ -270,3 +274,28 @@ Primární dokumentace:
   tříminutové návaznosti, příchodu do času, půlnoci, prázdné online odpovědi,
   výpadku API a UTC stáří záložního snapshotu.
 - Živé PID API nebylo voláno; token ani produkční tenant nejsou v testech.
+
+### České online zdroje a oblast hledání
+
+`config/transport.cz-online.example.json` je lokálně ověřený vzor pro Spojenku
+plus Golemio; nepřidává celostátní import ani oprávnění ke skladování dat.
+Před použitím v produkci vyřešit podmínky a limity vývojového serveru Spojenky.
+Konfiguraci sloučit s existujícími zdroji a jejich fallback vazbami; upsert
+neodstraňuje starší poskytovatele.
+
+Pro municipalitu lze přidat `cities` do položky pokrytí, například
+`{"country":"CZ","cities":["Brno"],"bbox":[16.4,49.0,16.9,49.4]}`.
+Jde o ilustrační obdélník, nikoli přesné hranice Brna. Národní zdroj se
+neomezuje na seznam měst. Přidání nové služby vyžaduje adaptér jen tehdy,
+pokud používá nový protokol; další instanci téhož API stačí nakonfigurovat.
+
+Našeptávání: `POST /v1/places/search` s `q.name.$regex`, `q.state`, `q.city`,
+volitelnou čerstvou GPS v těle a standardními `limit/page/sort/projection`.
+Řádky jsou pod `data`, maximálně 50 (web zobrazuje 20), stránka 1.
+Detaily se směrují přes tenantové ID původního poskytovatele.
+
+`NearestStopService` převádí `current_location` na nejbližší online zastávku
+v okruhu 2 km před hledáním cesty. Používá schopnost `nearby_stops`, sdílený
+HttpModule a tenantový fallback pouze při výpadku. Odpověď vrací veřejný název
+zastávky v `resolved_places`; GPS ani toto rozlišení se nepersistuje.
+Čas cesty začíná/končí na zastávce, bez pěší cesty od/k GPS bodu.

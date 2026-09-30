@@ -197,26 +197,49 @@ final class TransportRepository
     {
         return $this->rows("SELECT v.*,f.provider_code,f.timezone,(SELECT MAX(sr.finished_at) FROM transport_sync_run sr WHERE sr.franchise_code=v.franchise_code AND sr.version_id=v.id AND sr.status='ready') snapshot_at FROM transport_feed f JOIN transport_feed_version v ON v.franchise_code=f.franchise_code AND v.id=f.active_version_id AND v.feed_code=f.code WHERE f.franchise_code=? AND f.code=? AND v.status='active'", [$this->tenant,$code])[0] ?? null;
     }
+    /** Read only a valid static snapshot for failed nearby-stop providers. Never stores the query point. */
+    public function nearbyStops(array $location, int $radius, array $providers): array
+    {
+        if (!$providers) { return []; }
+        $sql = "SELECT s.*,f.provider_code,f.timezone,
+            6371000*ACOS(LEAST(1,GREATEST(-1,SIN(RADIANS(?))*SIN(RADIANS(s.lat))+COS(RADIANS(?))*COS(RADIANS(s.lat))*COS(RADIANS(s.lon-?))))) distance_m
+            FROM transport_feed f JOIN transport_feed_version v ON v.franchise_code=f.franchise_code AND v.id=f.active_version_id
+            JOIN transport_stop s ON s.franchise_code=v.franchise_code AND s.version_id=v.id
+            WHERE f.franchise_code=? AND v.status='active' AND v.valid_from<=UTC_DATE() AND v.valid_until>=UTC_DATE()
+            AND s.lat IS NOT NULL AND s.lon IS NOT NULL AND s.location_type IN (0,1)
+            AND s.lat BETWEEN ? AND ? AND f.provider_code IN (".implode(',',array_fill(0,count($providers),'?')).")
+            HAVING distance_m<=? ORDER BY distance_m,s.external_id LIMIT 50";
+        $delta = $radius / 110000;
+        return array_map($this->stopRow(...), $this->rows($sql,
+            [$location['lat'],$location['lat'],$location['lon'],$this->tenant,$location['lat']-$delta,$location['lat']+$delta,...$providers,$radius]));
+    }
+
     /**
-     * Vyhledá zastávky v aktivních feedech okurku podle začátku názvu.
+     * Vyhledá zastávky v aktivních feedech okurku podle části názvu.
      *
      * Zastávky z neplatného feedu (konec platnosti v minulosti) se nehledají a
      * volitelná země se filtruje přes pokrytí poskytovatele.
      *
-     * @param  string      $query   Hledaný začátek názvu; `%` a `_` jsou escapovány.
+     * @param  string      $query   Hledaná část názvu; `%` a `_` jsou escapovány.
      * @param  int         $limit   Maximální počet výsledků (1–50).
      * @param  string|null       $country   Kód země ISO 3166-1 alpha-2, nebo null.
      * @param  list<string>|null $providers Jen poskytovatelé, jejichž online katalog selhal;
      *                                      null dovoluje přímý katalogový dotaz.
      * @return list<array<string, mixed>> Zastávky s veřejným ID.
      */
-    public function places(string $query, int $limit, ?string $country, ?array $providers = null): array
+    public function places(string $query, int $limit, ?string $country, ?array $providers = null, ?string $city = null): array
     {
         if ($providers === []) {
             return [];
         }
         $sql = "SELECT s.*,f.provider_code,f.timezone,(SELECT MAX(sr.finished_at) FROM transport_sync_run sr WHERE sr.franchise_code=v.franchise_code AND sr.version_id=v.id AND sr.status='ready') snapshot_at FROM transport_feed f JOIN transport_feed_version v ON v.franchise_code=f.franchise_code AND v.id=f.active_version_id JOIN transport_stop s ON s.franchise_code=v.franchise_code AND s.version_id=v.id JOIN transport_provider p ON p.franchise_code=f.franchise_code AND p.code=f.provider_code WHERE f.franchise_code=? AND v.status='active' AND v.valid_until>=UTC_DATE() AND s.name LIKE ? ESCAPE '!'";
-        $params = [$this->tenant,str_replace(['!','%','_'], ['!!','!%','!_'], $query).'%'];
+        $params = [$this->tenant,'%'.str_replace(['!','%','_'], ['!!','!%','!_'], $query).'%'];
+        if ($city !== null) {
+            // Imported feeds may provide city metadata; otherwise require the city in the stop label.
+            $sql .= " AND (JSON_UNQUOTE(JSON_EXTRACT(s.data,'$.city'))=? OR s.name LIKE ? ESCAPE '!')";
+            $params[] = $city;
+            $params[] = str_replace(['!','%','_'], ['!!','!%','!_'], $city).',%';
+        }
         if ($country !== null) {
             $sql .= " AND JSON_CONTAINS(p.coverage,JSON_OBJECT('country',?))";
             $params[] = $country;

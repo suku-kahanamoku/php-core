@@ -56,6 +56,10 @@ final class EtymologHttpWorkerService
 function () use ($id, $index) {
             $batch = $this->batches->status();
             if (!$batch || $batch['request_id'] !== $id) { return ['status' => 'idle']; }
+            if ($batch['status'] === 'stopping') {
+                $this->batches->update($id, ['status' => 'stopped', 'finished_at' => gmdate('Y-m-d H:i:s')]);
+                return $this->result($this->batches->status());
+            }
             if (!in_array($batch['status'], ['queued', 'running'], true)) { return $this->result($batch); }
             if ($batch['status'] === 'queued') { $batch = $this->batches->prepareSteps($id); }
             $batch = $this->batches->optimizePending($batch);

@@ -65,17 +65,27 @@ final class OpenAiResponsesProductRecommender implements OpenAiProductRecommende
 
         $evidenceIds = $this->evidenceProductIds($response);
         $decision = json_decode($this->outputText($response), true);
-        if (!is_array($decision) || !in_array($decision['status'] ?? null, ['selected', 'no_match'], true)) {
+        if (!is_array($decision) || ($decision['status'] ?? null) !== 'selected') {
             throw new OpenAiUpstreamException('OpenAI returned an invalid recommendation.', $status);
-        }
-        if ($decision['status'] === 'no_match') {
-            return ['status' => 'no_match', 'product_id' => null];
         }
         $productId = filter_var($decision['product_id'] ?? null, FILTER_VALIDATE_INT);
         if ($productId === false || $productId < 1 || !isset($evidenceIds[$productId])) {
             throw new OpenAiUpstreamException('OpenAI selected a product without Vector Store evidence.', $status);
         }
-        return ['status' => 'selected', 'product_id' => $productId];
+        $matchQuality = (string) ($decision['match_quality'] ?? '');
+        $reason = trim((string) ($decision['reason'] ?? ''));
+        if (!in_array($matchQuality, ['exact', 'nearest'], true)) {
+            throw new OpenAiUpstreamException('OpenAI returned an invalid match quality.', $status);
+        }
+        if ($matchQuality === 'nearest' && $reason === '') {
+            throw new OpenAiUpstreamException('OpenAI omitted the nearest-match reason.', $status);
+        }
+        return [
+            'status' => 'selected',
+            'product_id' => $productId,
+            'match_quality' => $matchQuality,
+            'reason' => $matchQuality === 'nearest' ? mb_substr($reason, 0, 240) : '',
+        ];
     }
 
     /**
@@ -94,9 +104,12 @@ final class OpenAiResponsesProductRecommender implements OpenAiProductRecommende
             'store' => false,
             'instructions' => <<<'PROMPT'
 You select exactly one catalog product for a passive Czech retail assistant.
-Use file_search as the only source of product facts. Evaluate every retrieved product yourself against the complete active need, concrete category, confirmed price intent, mandatory constraints, preferences, intended use and rejection reasons.
-Never optimize for margin, popularity or inferred customer traits. Never invent an ID or attribute. A maximum price and explicit exclusion are mandatory. Previously shown products are not permanently excluded, but an immediate request for another product should prefer a different suitable result when the input says so.
-Return selected only for a product_id present in the file_search evidence. Return no_match when no retrieved document satisfies the evidence.
+Use file_search as the only source of product facts. Evaluate every retrieved product yourself against the complete active need, concrete category, confirmed price intent, constraints, preferences, intended use and rejection reasons.
+Never optimize for margin, popularity or inferred customer traits. Never invent an ID or attribute. Previously shown products are not permanently excluded, but an immediate request for another product should prefer a different suitable result when the input says so.
+Always return exactly one product_id present in the file_search evidence. Never return no_match after the mandatory category and price gate has been completed.
+Use match_quality exact only when the selected product satisfies the active category, confirmed price intent, explicit constraints and current in-stock requirement.
+When no exact in-stock candidate exists, return the closest evidence-backed candidate with match_quality nearest. Prefer an in-stock product in the requested category, then minimize deviations from explicit constraints, price and preferences. If every retrieved candidate is unavailable, still choose the closest catalog item.
+For nearest, write a short Czech reason naming the important unmet condition, for example unavailable stock, no product in the requested price range, or the closest category or attribute mismatch. Do not claim a mismatch that is absent from the evidence. For exact, return an empty reason.
 PROMPT,
             'input' => json_encode([
                 'language' => 'cs',
@@ -121,21 +134,25 @@ PROMPT,
                         'properties' => [
                             'status' => [
                                 'type' => 'string',
-                                'enum' => ['selected', 'no_match'],
+                                'enum' => ['selected'],
                             ],
                             'product_id' => [
-                                'anyOf' => [
-                                    ['type' => 'integer'],
-                                    ['type' => 'null'],
-                                ],
+                                'type' => 'integer',
+                            ],
+                            'match_quality' => [
+                                'type' => 'string',
+                                'enum' => ['exact', 'nearest'],
+                            ],
+                            'reason' => [
+                                'type' => 'string',
                             ],
                         ],
-                        'required' => ['status', 'product_id'],
+                        'required' => ['status', 'product_id', 'match_quality', 'reason'],
                         'additionalProperties' => false,
                     ],
                 ],
             ],
-            'max_output_tokens' => 128,
+            'max_output_tokens' => 192,
         ];
     }
 

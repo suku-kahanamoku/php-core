@@ -10,15 +10,15 @@ use App\Modules\Transport\TransportException;
  * Definice dopravního poskytovatele pro daný okrsek.
  *
  * Kód musí být bezpečný pro URL a veřejné API, role je `primary` nebo
- * `fallback`. Pokrytí je výhradně geometrické — země a město jsou jen nápověda
- * a nikdy neurčují hranici trasy.
+ * `fallback`. Výběr podle země/města řeší ProviderSelectionService. Oba konce trasy
+ * navíc musí ležet v pokrytí nebo mít ověřená nativní ID poskytovatele.
  */
 final class ProviderDefinition
 {
     /**
      * @param  string              $tenant     Kód okurku.
      * @param  string              $code       Kód poskytovatele (`[a-z0-9][a-z0-9_-]{0,63}`).
-     * @param  string              $adapter    Adaptér (`entur`, `pid` nebo `otp_transmodel`).
+     * @param  string              $adapter    Adaptér (`entur`, `pid`, `spojenka` nebo `otp_transmodel`).
      * @param  array<string, mixed> $config     Konfigurace poskytovatele (adresy, hlavičky, atribuce).
      * @param  list<array<string, mixed>> $coverage Pokryté oblasti s obdélníkem `[w, s, e, n]`.
      * @param  string              $role       `primary` nebo `fallback`.
@@ -49,6 +49,10 @@ final class ProviderDefinition
     {
         // A route needs a provider covering BOTH endpoints. Country/city are hints, never a hard route boundary.
         foreach ([$query->from,$query->to] as $point) {
+            // An online planner can resolve its own verified station IDs even without coordinates.
+            if (($this->config['native_stop_search'] ?? false) && ($point['provider'] ?? null) === $this->code && isset($point['external'])) {
+                continue;
+            }
             $found = false;
             foreach ($this->coverage as $region) {
                 $box = $region['bbox'] ?? null;

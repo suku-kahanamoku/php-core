@@ -64,7 +64,8 @@ final class PidProvider implements ResourceProvider, OnlineJourneySearchProvider
      */
     public function capabilities(): array
     {
-        return ['journeys','places','stop','trip','departures','realtime'];
+        return array_values(array_filter(['journeys','places','stop','trip','departures','realtime'],
+            fn ($operation) => $operation !== 'places' || ($this->definition->config['places_enabled'] ?? true)));
     }
     /**
      * Sestaví požadavek na Golemio pro danou operaci.

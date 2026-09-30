@@ -41,6 +41,7 @@ final class JourneyQuery
         public readonly array $modes,
         public readonly int $maxTransfers,
         public readonly int $limit,
+        public readonly ?array $location = null,
     ) {
     }
     /**
@@ -54,7 +55,7 @@ final class JourneyQuery
      */
     public static function fromArray(array $input): self
     {
-        $allowed = ['from-dest','to-dest','from-date','to-date','state','city','modes','max-transfers','limit'];
+        $allowed = ['from-dest','to-dest','from-date','to-date','state','city','modes','max-transfers','limit','location'];
         if (array_diff(array_keys($input), $allowed)) {
             throw new TransportException('invalid_query', 'Unknown search attributes.');
         }
@@ -66,7 +67,7 @@ final class JourneyQuery
             throw new TransportException('invalid_country', 'state must be an ISO 3166-1 alpha-2 country code.');
         }
         $city = $input['city'] ?? null;
-        if ($city !== null && (!is_string($city) || mb_strlen($city) > 120)) {
+        if ($city !== null && (!is_string($city) || trim($city) === '' || mb_strlen($city) > 120)) {
             throw new TransportException('invalid_city', 'Invalid city.');
         }
         $modes = $input['modes'] ?? self::MODES;
@@ -82,7 +83,8 @@ final class JourneyQuery
             $city,
             array_values(array_unique($modes)),
             self::integer($input['max-transfers'] ?? 5, 0, 10),
-            self::integer($input['limit'] ?? 10, 1, 20)
+            self::integer($input['limit'] ?? 10, 1, 20),
+            isset($input['location']) ? self::currentLocation($input['location']) : null
         );
     }
     /**
@@ -134,6 +136,13 @@ final class JourneyQuery
      * @throws TransportException 'invalid_place' pro neplatnou zastávku/bod;
      *                            'stale_location' pro starý GPS fix uživatele.
      */
+    public static function currentLocation(mixed $value): array
+    {
+        $place = self::place($value);
+        if ($place['type'] !== 'current_location') { throw new TransportException('invalid_place', 'Expected a current GPS fix.'); }
+        return $place;
+    }
+
     private static function place(mixed $value): array
     {
         if (!is_array($value)) {
@@ -186,6 +195,6 @@ final class JourneyQuery
      */
     public function withPlaces(array $from, array $to): self
     {
-        return new self($from, $to, $this->time, $this->arriveBy, $this->country, $this->city, $this->modes, $this->maxTransfers, $this->limit);
+        return new self($from, $to, $this->time, $this->arriveBy, $this->country, $this->city, $this->modes, $this->maxTransfers, $this->limit, $this->location);
     }
 }

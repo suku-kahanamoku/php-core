@@ -1,0 +1,52 @@
+{
+  "providers": [
+    {
+      "code": "spojenka",
+      "adapter": "spojenka",
+      "published": true,
+      "role": "primary",
+      "coverage": [
+        {
+          "country": "CZ",
+          "bbox": [
+            12.0,
+            48.5,
+            18.9,
+            51.1
+          ]
+        }
+      ],
+      "config": {
+        "url": "https://spojenka.d3s.mff.cuni.cz/api",
+        "timezone": "Europe/Prague",
+        "min_interval_ms": 0,
+        "attribution": "Spojenka – online jízdní řády (CIS JŘ a další zdroje)",
+        "native_stop_search": true
+      }
+    },
+    {
+      "code": "pid",
+      "adapter": "pid",
+      "published": true,
+      "coverage": [
+        {
+          "country": "CZ",
+          "bbox": [
+            12.8,
+            49.3,
+            16.2,
+            51.1
+          ]
+        }
+      ],
+      "config": {
+        "url": "https://api.golemio.cz",
+        "token_env": "TRANSPORT_PID_TOKEN",
+        "min_interval_ms": 100,
+        "realtime_max_age": 30,
+        "attribution": "PID / Golemio",
+        "places_enabled": false
+      }
+    }
+  ]
+}

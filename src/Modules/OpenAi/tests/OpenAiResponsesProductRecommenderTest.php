@@ -46,7 +46,7 @@ $recommender = new OpenAiResponsesProductRecommender(
                         'type' => 'message',
                         'content' => [[
                             'type' => 'output_text',
-                            'text' => '{"status":"selected","product_id":90}',
+                            'text' => '{"status":"selected","product_id":90,"match_quality":"nearest","reason":"V dané ceně není produkt skladem."}',
                         ]],
                     ],
                 ],
@@ -64,6 +64,8 @@ $result = $recommender->recommend(
 assert_test('returns a product selected by the Responses model', $result === [
     'status' => 'selected',
     'product_id' => 90,
+    'match_quality' => 'nearest',
+    'reason' => 'V dané ceně není produkt skladem.',
 ]);
 assert_test('uses hosted file_search against the tenant store', $captured['payload']['tools'] === [[
     'type' => 'file_search',
@@ -75,7 +77,7 @@ assert_test(
     'uses strict minimal structured output',
     $captured['payload']['text']['format']['type'] === 'json_schema'
         && $captured['payload']['text']['format']['strict'] === true
-        && $captured['payload']['max_output_tokens'] === 128,
+        && $captured['payload']['max_output_tokens'] === 192,
 );
 assert_test('does not expose the server key in the result', !str_contains(json_encode($result), 'sk-test'));
 
@@ -93,7 +95,7 @@ try {
                     ]]],
                     ['type' => 'message', 'content' => [[
                         'type' => 'output_text',
-                        'text' => '{"status":"selected","product_id":999}',
+                        'text' => '{"status":"selected","product_id":999,"match_quality":"exact","reason":""}',
                     ]]],
                 ],
             ], JSON_THROW_ON_ERROR),

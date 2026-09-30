@@ -46,8 +46,19 @@ final class TransportApi
     public function registerRoutes(Router $router): void
     {
         $router->post('/v1/journeys/search', fn (Request $r) => $this->respond(fn () => $this->journeys->search(JourneyQuery::fromArray($r->body))));
+        $router->post('/v1/places/search', fn (Request $r) => $this->respond(function () use ($r) {
+            $q = \App\Modules\Transport\DTO\PlaceQuery::parse($r->body);
+            $result = $this->resources->places($q['query'], $q['limit'], $q['country'], $q['city'], $q['location']);
+            $rows = $result['places'];
+            if ($q['sort'] !== '') {
+                $descending = str_contains($q['sort'], '-1') || str_contains($q['sort'], 'DESC');
+                usort($rows, static fn ($a,$b) => ($descending ? -1 : 1) * strcmp($a['name'],$b['name']));
+            }
+            return ['data'=>array_map(static fn ($row)=>\App\Utils\QueryPolicy::fields($row,$q['projection']),$rows),
+                'partial'=>$result['partial'],'sources'=>$result['sources']];
+        }));
         $router->get('/v1/coverage', fn () => $this->respond(fn () => ['providers' => array_values(array_map(fn ($p) => $p->definition()->publicData($p->capabilities()), $this->registry->all()))]));
-        $router->get('/v1/places', fn (Request $r) => $this->respond(fn () => $this->resources->places($this->text($r, 'query'), JourneyQuery::integer($r->get('limit', 10), 1, 50), $r->get('state') !== null ? $this->text($r, 'state') : null)));
+        $router->get('/v1/places', fn (Request $r) => $this->respond(fn () => $this->resources->places($this->text($r, 'query'), JourneyQuery::integer($r->get('limit', 10), 1, 50), $r->get('state') !== null ? $this->text($r, 'state') : null, $r->get('city') !== null ? $this->text($r, 'city') : null)));
         $router->get('/v1/journeys/:id', fn (Request $r, array $p) => $this->respond(fn () => $this->repository->journey($p['id'])));
         $router->get('/v1/journeys/:id/geometry', fn (Request $r, array $p) => $this->respond(
             /**

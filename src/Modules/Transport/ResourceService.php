@@ -43,7 +43,7 @@ final class ResourceService
      *                            'sources_unavailable' (503), pokud nelze
      *                            žádný zdroj.
      */
-    public function places(string $query, int $limit, ?string $country): array
+    public function places(string $query, int $limit, ?string $country, ?string $city = null, ?array $location = null): array
     {
         if (mb_strlen(trim($query)) < 2 || mb_strlen($query) > 120) {
             throw new TransportException('invalid_query', 'Place query must contain 2 to 120 characters.');
@@ -56,7 +56,7 @@ final class ResourceService
         $sources = [];
         $items = [];
         $failed = [];
-        foreach ($this->registry->all() as $code => $provider) {
+        foreach ((new ProviderSelectionService($this->registry))->select('places', $country, $city, $location) as $code => $provider) {
             if (!$provider instanceof ResourceProvider || !in_array('places', $provider->capabilities(), true)) {
                 continue;
             }
@@ -71,12 +71,12 @@ final class ResourceService
                 }
                 continue;
             }
-            $requests[$code] = $provider->resourceRequest('places', ['query' => $query,'limit' => $limit]);
+            $requests[$code] = $provider->resourceRequest('places', ['query' => $query,'limit' => $limit,'city' => $city,'location' => $city === null ? $location : null]);
             $selected[$code] = $provider;
         }
         foreach ($this->http->sendAll($requests) as $code => $response) {
             try {
-                $data = $selected[$code]->resourceResult('places', $response, ['query' => $query,'limit' => $limit]);
+                $data = $selected[$code]->resourceResult('places', $response, ['query' => $query,'limit' => $limit,'city' => $city,'location' => $city === null ? $location : null]);
                 foreach ($data as $item) {
                     $item['source_mode'] = 'live';
                     $items[$item['id']] = $item;
@@ -90,7 +90,7 @@ final class ResourceService
             }
         }
         if ($failed) {
-            foreach ($this->repository->places($query, $limit, $country, $failed) as $item) {
+            foreach ($this->repository->places($query, $limit, $country, $failed, $city) as $item) {
                 $item['source_mode'] = 'fallback';
                 $items[$item['id']] ??= $item;
             }
@@ -227,9 +227,9 @@ final class ResourceService
         if ($actual['provider'] !== $expectedProvider || $actual['external'] !== $expectedExternal) {
             throw new TransportException('invalid_upstream', 'Resolved stop identity does not match the request.', 502);
         }
-        if (!is_numeric($stop['lat'] ?? null) || !is_numeric($stop['lon'] ?? null)) {
+        if ((!is_numeric($stop['lat'] ?? null) || !is_numeric($stop['lon'] ?? null)) && !($this->registry->get($actual['provider'])->definition()->config['native_stop_search'] ?? false)) {
             throw new TransportException('missing_coordinates', 'Selected stop has no coordinates.');
         }
-        return array_merge($place, $actual, ['id' => $stop['id'],'lat' => (float)$stop['lat'],'lon' => (float)$stop['lon']]);
+        return array_merge($place, $actual, ['id' => $stop['id'],'name' => $stop['name'],'lat' => isset($stop['lat']) ? (float)$stop['lat'] : null,'lon' => isset($stop['lon']) ? (float)$stop['lon'] : null]);
     }
 }

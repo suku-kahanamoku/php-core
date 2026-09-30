@@ -56,6 +56,12 @@ final class EtymologBackgroundService
         return $request;
     }
 
+    /** Zastaví požadovaný běh po právě zpracovávané dávce. */
+    public function stop(string $id): array
+    {
+        return $this->batches->stop($id);
+    }
+
     /**
      * Zpracuje pouze požadavek vytvořený tlačítkem; nikdy nespustí autonomní průch.
      *
@@ -112,6 +118,9 @@ function () use ($requestId) {
                         $this->sync->run((int)$ids[$batch['completed']], fn (array $result) => $this->batches->finishStep($batch, $result, false));
                     } catch (SyncException) { /* Failure audited; continue with the next source. */ }
                     $batch = $this->batches->status();
+                }
+                if ($batch['status'] === 'stopping') {
+                    $this->batches->update($requestId, ['status' => 'stopped', 'finished_at' => gmdate('Y-m-d H:i:s')]);
                 }
             } catch (\Throwable $e) {
                 $this->batches->update($requestId, ['status' => 'failed', 'error_code' => 'worker_failed', 'finished_at' => gmdate('Y-m-d H:i:s')]);

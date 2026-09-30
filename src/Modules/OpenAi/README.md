@@ -52,7 +52,8 @@ produkty podle požadavků a nevytváří vlastní pořadí kandidátů.
 `price_intent`. PHP je pouze validuje a předá OpenAI Responses modelu. Ten
 pomocí hostovaného `file_search` vyhledá dokumenty v tenantovém Vector Store,
 sám porovná názvy, popisy, kategorie, varianty, cenu, dostupnost a
-`selection_attributes` a vrátí pouze stav a konkrétní `product_id`. PHP
+`selection_attributes` a vrátí konkrétní `product_id`, kvalitu `exact` nebo
+`nearest` a krátký český důvod nejbližší alternativy. PHP
 nepřijímá ani nevrací pořadí kandidátů.
 
 `get_product` přijímá pouze `product_id`, které zvolil Responses model z
@@ -72,7 +73,9 @@ Realtime API nemá přímý hostovaný nástroj `file_search` z Responses API.
 Realtime model proto volá úzký function nástroj `recommend_product`. PHP v něm
 nečte produktový katalog ani cenu a neobsahuje doporučovací algoritmus; pouze
 drží serverový API klíč a pošle požadavek do Responses API. OpenAI Responses
-provede `file_search`, rozhodne a vrátí jediné doložené ID. Teprve následné
+provede `file_search`, rozhodne a vrátí jediné doložené ID. Po dokončení povinné
+brány nikdy nevrací obchodní `no_match`: pokud přesná skladová, cenová nebo
+atributová shoda neexistuje, vybere nejbližší produkt a popíše odchylku. Teprve následné
 `get_product` načte právě jeden publikovaný produkt z databáze.
 
 Realtime relace analyzuje celý rozhovor a neposílá volný text určený k
@@ -83,7 +86,7 @@ konkrétní kategorie produktu a současně cenový záměr nebo důvěryhodný
 normalizovaný profil. Obecné „produkt“, „kosmetika“ ani účel „dárek“ nejsou
 kategorií. Profilový kontext zatím Realtime relaci není zpřístupněný, takže v
 aktuálním kontraktu musí být potvrzená kategorie i cena. Do té doby relace volá
-`continue_listening` se stavem obou bodů pro checklist obchodníka. Responses model z `file_search` dokumentů vybere jediný produkt a PHP
+`continue_listening` se stavem obou bodů pro checklist obchodníka. Responses model z `file_search` dokumentů vybere vždy jeden produkt; bez přesné shody vrátí nejbližší doloženou alternativu a důvod pro displej. PHP
 pro něj pouze načte aktuální katalogový detail. Nespokojenost nebo žádost o jiný,
 další či lepší produkt vede bezprostředně k preferenci jiné vhodné varianty,
 ale žádné dříve zobrazené ID se trvale nevyloučí. Zákazník se k němu může později

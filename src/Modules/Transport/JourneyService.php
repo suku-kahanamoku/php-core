@@ -43,10 +43,21 @@ final class JourneyService
      */
     public function search(JourneyQuery $query): array
     {
-        $query = $query->withPlaces($this->resources->resolve($query->from), $this->resources->resolve($query->to));
+        $original = $query;
+        $resolvedPlaces = [];
+        $locationPartial = false;
+        $nearest = new NearestStopService($this->registry, $this->http, $this->repository);
+        $resolve = function (string $side, array $place) use ($nearest, &$resolvedPlaces, &$locationPartial): array {
+            if ($place['type'] !== 'current_location') { return $this->resources->resolve($place); }
+            $result = $nearest->resolve($place);
+            $locationPartial = $locationPartial || $result['partial'];
+            $resolvedPlaces[$side] = array_intersect_key($result['place'], array_flip(['id','name','lat','lon','source_mode']));
+            return $result['place'];
+        };
+        $query = $query->withPlaces($resolve('from', $query->from), $resolve('to', $query->to));
         $candidates = [];
         $coveredButUnsupported = false;
-        foreach ($this->registry->all() as $code => $provider) {
+        foreach ((new ProviderSelectionService($this->registry))->journeys($query) as $code => $provider) {
             if (!$provider->definition()->covers($query)) {
                 continue;
             }
@@ -131,7 +142,7 @@ final class JourneyService
             $budget = max(1, min($phase === 'primary' ? 5000 : 3000, (int)(($deadline - microtime(true)) * 1000)));
             foreach ($this->http->sendAll($requests, $budget) as $code => $response) {
                 try {
-                    $consume($code, $selected[$code]->searchResult($response), false);
+                    $consume($code, $selected[$code]->searchResult($response, $query), false);
                 } catch (\Throwable) {
                     $this->repository->providerFailure($code, $response->retryAfter);
                     $failed[] = $code;
@@ -171,11 +182,12 @@ final class JourneyService
         if ($limited) {
             $warnings[] = 'Some online journey sources use a bounded search window; additional trips may be missing.';
         }
-        JourneyQuery::assertFreshLocation($query->from);
-        JourneyQuery::assertFreshLocation($query->to);
+        JourneyQuery::assertFreshLocation($original->from);
+        JourneyQuery::assertFreshLocation($original->to);
+        if ($query->location !== null) { JourneyQuery::assertFreshLocation($query->location); }
         return ['journeys' => array_map(fn ($journey) => $this->repository->cacheJourney($journey,
-            publicStopsOnly: $query->from['type'] === 'stop' && $query->to['type'] === 'stop'), $selectedJourneys),
-            'partial' => $unavailable || $limited,'sources' => $sources,'warnings' => $warnings];
+            publicStopsOnly: $original->from['type'] === 'stop' && $original->to['type'] === 'stop'), $selectedJourneys),
+            'resolved_places' => $resolvedPlaces, 'partial' => $unavailable || $limited || $locationPartial,'sources' => $sources,'warnings' => $warnings];
     }
 
 }

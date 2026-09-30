@@ -28,5 +28,5 @@ interface JourneySearchProvider extends Provider
      * @return array<string, mixed> Normalizované výsledky vyhledávání.
      * @throws TransportException    Při neplatné nebo neočekávané odpovědi.
      */
-    public function searchResult(HttpResponse $result): array;
+    public function searchResult(HttpResponse $result, ?JourneyQuery $query = null): array;
 }

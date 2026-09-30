@@ -7,6 +7,9 @@ status(api('GET', 'etymolog/sync/status', token: $editor), 403, 'editor cannot i
 status(api('POST', 'etymolog/sync/start', []), 401, 'anonymous cannot launch worker');
 status(api('POST', 'etymolog/sync/start', ['tenant' => 'other'], $admin), 422, 'start rejects caller tenant or worker options');
 status(api('GET', 'etymolog/sync/status', token: $admin), 200, 'admin can read idle batch status');
+status(api('POST', 'etymolog/sync/stop', ['request_id'=>str_repeat('a',32)], $editor), 403, 'editor cannot stop synchronization');
+status(api('POST', 'etymolog/sync/stop', ['request_id'=>str_repeat('a',32)]), 401, 'anonymous cannot stop synchronization');
+status(api('POST', 'etymolog/sync/stop', ['request_id'=>'invalid'], $admin), 422, 'stop requires a valid request ID');
 
 $dictionaryName=$db->insert('etymolog_name',['franchise_code'=>'etymolog','name'=>'Novotný','kind'=>'surname']);
 $dictionaryStart=json_encode(['after'=>$dictionaryName-1]);

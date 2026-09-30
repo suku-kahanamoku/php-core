@@ -52,7 +52,7 @@ $recommender = new class($receivedNeed) implements OpenAiProductRecommender {
     public function recommend(string $query, string $category, string $priceIntent): array
     {
         $this->receivedNeed->value = [$query, $category, $priceIntent];
-        return ['status' => 'selected', 'product_id' => 90];
+        return ['status' => 'selected', 'product_id' => 90, 'match_quality' => 'exact', 'reason' => ''];
     }
 };
 $service = new OpenAiKnowledgeCatalogService($gateway, $recommender);
@@ -70,9 +70,11 @@ assert_test(
         'maximálně 2000 Kč',
     ],
 );
-assert_test('returns only the OpenAI-selected product ID', $recommendation === [
+assert_test('returns the OpenAI-selected product decision', $recommendation === [
     'status' => 'selected',
     'product_id' => 90,
+    'match_quality' => 'exact',
+    'reason' => '',
 ]);
 assert_test(
     'recommendation does not query the PHP product catalog',

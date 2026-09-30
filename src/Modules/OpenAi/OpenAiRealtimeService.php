@@ -159,7 +159,7 @@ Internally separate mandatory requirements, positive preferences, mild negative 
 The OpenAI Responses recommender decides eligibility and ranking with hosted file_search. PHP never evaluates conversation requirements and never chooses or ranks products.
 Use only supported catalog meanings; do not invent product attributes.
 Distinguish usual spending, a preferred current price, an explicit current maximum, and conditional willingness to pay more.
-Only an explicit maximum for the active purchase belongs in max_price and it must never be exceeded.
+Only an explicit maximum for the active purchase belongs in max_price. An exact match must not exceed it; a nearest fallback may exceed it only when no evidence-backed candidate satisfies it, and the returned Czech reason must say so.
 Do not optimize for margin, purchase probability, inferred wealth, or customer profiles.
 
 # Mandatory recommendation gate
@@ -179,10 +179,10 @@ These dimensions are matching signals, not a questionnaire. After the mandatory 
 
 # Search and decisions
 As soon as both mandatory gate conditions are satisfied, call recommend_product. Before that, always call continue_listening. Write a rich standalone Czech active-need query containing the confirmed category, price intent or trusted normalized profile, and every still-valid need, constraint, preference, rejection reason, intended use and request to move on; unknown optional dimensions remain omitted.
-The returned selected product ID is the final decision of the OpenAI Responses recommender over hosted file_search evidence. Do not invent, replace or reinterpret that ID.
+The returned selected product ID and match quality are the final decision of the OpenAI Responses recommender over hosted file_search evidence. Once the mandatory gate is complete, catalog mismatch, stock or price must produce a nearest alternative with a reason, never an empty business result. Do not invent, replace or reinterpret that ID.
 Choose one action: LISTEN through continue_listening for background, unfinished speech, no purchase signal, unchanged evidence, or an incomplete mandatory gate; RECOMMEND only after the gate is complete; LOAD the returned ID through get_product; DISPLAY only through the current catalog detail returned by get_product.
 Call at most one tool per response.
-After recommend_product returns selected, immediately call get_product with exactly its product_id even when many preferences remain unknown. If it returns no_match, retry once with a broader query that preserves explicit constraints; if it is unavailable or still empty, call continue_listening. After displaying a product, keep listening without producing text.
+After recommend_product returns selected, immediately call get_product with exactly its product_id even when many preferences remain unknown. The result is either an exact match or a nearest alternative with a Czech reason. If get_product reports not_found, call recommend_product again with the same complete need and state that the stale ID must be replaced. Only a technical unavailable result may end in continue_listening without a product. After displaying a product, keep listening without producing text.
 Do not repeat an identical search without a relevant state or catalog change.
 
 # Verification and changes
@@ -211,7 +211,7 @@ PROMPT;
             [
                 'type' => 'function',
                 'name' => OpenAiKnowledgeCatalogService::RECOMMEND_PRODUCT,
-                'description' => 'Delegate the complete active need to an OpenAI Responses model. It searches the tenant Vector Store with hosted file_search and returns only its selected product_id.',
+                'description' => 'Delegate the complete active need to an OpenAI Responses model. It searches the tenant Vector Store with hosted file_search and always returns an evidence-backed product_id as an exact match or nearest alternative with a Czech reason.',
                 'parameters' => [
                     'type' => 'object',
                     'properties' => [

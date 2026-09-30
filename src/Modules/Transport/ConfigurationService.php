@@ -34,12 +34,15 @@ final class ConfigurationService
         }
         $seen = [];
         foreach ($config['providers'] as $p) {
-            if (!in_array($p['adapter'] ?? '', ['entur','pid','otp_transmodel'], true) || isset($seen[$p['code']])) {
+            if (!in_array($p['adapter'] ?? '', ['entur','pid','otp_transmodel','spojenka'], true) || isset($seen[$p['code']])) {
                 throw new TransportException('invalid_configuration', 'Unknown adapter or duplicate provider.');
             }
             $seen[$p['code']] = true;
             new ProviderDefinition($r->tenant, $p['code'], $p['adapter'], $p['config'], $p['coverage'], $p['role'] ?? 'primary', $p['fallback_for'] ?? []);
             self::url($p['config']['url'] ?? '', $p['adapter'] === 'otp_transmodel');
+            if ($p['adapter'] === 'spojenka' && rtrim($p['config']['url'], '/') !== 'https://spojenka.d3s.mff.cuni.cz/api') {
+                throw new TransportException('invalid_configuration', 'Unsupported Spojenka endpoint.');
+            }
             if (isset($p['config']['geocoder_url'])) {
                 self::url($p['config']['geocoder_url']);
             }
@@ -52,6 +55,10 @@ final class ConfigurationService
                 throw new TransportException('invalid_configuration', 'Coverage must be explicit.');
             }
             foreach ($p['coverage'] as $region) {
+                $cities = $region['cities'] ?? (isset($region['city']) ? [$region['city']] : []);
+                if (!is_array($cities) || !array_is_list($cities) || array_filter($cities, fn ($city) => !is_string($city) || trim($city) === '' || mb_strlen($city) > 120)) {
+                    throw new TransportException('invalid_configuration', 'Invalid city coverage.');
+                }
                 $b = $region['bbox'] ?? null;
                 if (!preg_match('/^[A-Z]{2}$/D', $region['country'] ?? '') || !is_array($b) || count($b) !== 4 || array_filter($b, fn ($x) => !is_numeric($x) || !is_finite((float)$x)) || abs($b[0]) > 180 || abs($b[2]) > 180 || abs($b[1]) > 90 || abs($b[3]) > 90 || $b[1] > $b[3]) {
                     throw new TransportException('invalid_configuration', 'Invalid coverage bounding box.');
