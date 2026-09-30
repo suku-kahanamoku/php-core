@@ -131,8 +131,69 @@ final class SpojenkaMapper
             $stops[] = ['stop'=>$this->stopReference($call['stopPostRef'] ?? []),'sequence'=>$index,
                 'scheduled_arrival'=>isset($call['arrivalTime']) ? $this->time($call['arrivalTime']) : null,
                 'scheduled_departure'=>isset($call['departureTime']) ? $this->time($call['departureTime']) : null,
-                'expected_arrival'=>null,'expected_departure'=>null,'realtime'=>false];
+                'expected_arrival'=>null,'expected_departure'=>null,'realtime'=>false] + $this->stopDetails($call);
         }
-        return ['id'=>$this->id('trip',$external,$date),'stops'=>$stops,'geometry'=>null];
+        return ['id'=>$this->id('trip',$external,$date),'stops'=>$stops,'geometry'=>null,'metadata'=>$this->tripMetadata($connection, $date)];
     }
+    /** Stop-specific timetable attributes; retain source kilometrage without estimating geometry. */
+    private function stopDetails(array $call): array
+    {
+        $zones = [];
+        foreach (array_slice(is_array($call['tariffZones'] ?? null) ? $call['tariffZones'] : [], 0, 30) as $entry) {
+            if (!is_array($entry) || !is_string($entry['tariffZone'] ?? null) || trim($entry['tariffZone']) === '') { continue; }
+            $zone = mb_substr(trim($entry['tariffZone']), 0, 80);
+            $system = is_string($entry['idsID'] ?? null) ? mb_substr($entry['idsID'], 0, 80) : null;
+            $zones[json_encode([$system,$zone])] = ['system'=>$system,'zone'=>$zone];
+        }
+        $km = $call['kmPosition'] ?? null;
+        return ['tariff_zones'=>array_values($zones),
+            'request_stop'=>is_array($call['features'] ?? null) ? in_array('REQUEST_STOP', $call['features'], true) : null,
+            'route_km'=>(is_int($km) || is_float($km)) && is_finite((float)$km) && $km >= 0 ? (float)$km : null];
+    }
+
+    /** Supplemental timetable information only: never infer calendars, operators or guaranteed transfers. */
+    private function tripMetadata(array $connection, string $date): array
+    {
+        $line = is_array($connection['line'] ?? null) ? $connection['line'] : [];
+        $plain = static fn ($value, int $limit = 512) => is_string($value) && trim($value) !== '' ? mb_substr(trim($value), 0, $limit) : null;
+        $code = null;
+        foreach ($line['ids'] ?? [] as $affiliation) {
+            $code = $plain($affiliation['localLineCode'] ?? null, 80);
+            if ($code !== null) { break; }
+        }
+        // Registry numbers are public service identifiers; opaque persistent IDs are not.
+        $number = null;
+        foreach (['CISJR','KADR','PID'] as $registry) {
+            foreach ($connection['numbers'] ?? [] as $item) {
+                if (($item['registryName'] ?? null) === $registry) {
+                    $number = $plain($item['number'] ?? null, 80);
+                    if ($number !== null) { break 2; }
+                }
+            }
+        }
+        if ($code === null) {
+            foreach ($line['numbers'] ?? [] as $item) {
+                if (in_array($item['registryName'] ?? null, ['CISJR','KADR','PID'], true)) {
+                    $code = $plain($item['number'] ?? null, 80);
+                    if ($code !== null) { break; }
+                }
+            }
+        }
+        $notes = [];
+        foreach (['trip'=>$connection,'line'=>$line] as $scope=>$source) {
+            $items = $source['timetableNotes'] ?? [];
+            if (!is_array($items)) { continue; }
+            foreach (array_slice($items, 0, 30) as $note) {
+                if (!is_array($note) || !is_array($note['localizedText'] ?? null)) { continue; }
+                $texts = [];
+                foreach (array_slice($note['localizedText'], 0, 10, true) as $language=>$text) {
+                    if (is_string($language) && preg_match('/^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/D', $language) && ($value = $plain($text, 4000)) !== null) { $texts[$language] = $value; }
+                }
+                if ($texts) { $notes[] = ['scope'=>$scope,'texts'=>$texts,'default_language'=>$plain($note['defaultLanguage'] ?? null, 35)]; }
+            }
+        }
+        return ['line'=>$code, 'number'=>$number, 'name'=>$plain($connection['name'] ?? null),
+            'service_date'=>$date, 'notes'=>$notes];
+    }
+
 }

@@ -43,8 +43,12 @@ final class ResourceService
      *                            'sources_unavailable' (503), pokud nelze
      *                            žádný zdroj.
      */
-    public function places(string $query, int $limit, ?string $country, ?string $city = null, ?array $location = null): array
+    public function places(?string $query, int $limit, ?string $country, ?string $city = null, ?array $location = null): array
     {
+        if ($query === null) {
+            if ($location === null) { throw new TransportException('invalid_query', 'Nearby lookup requires a fresh location.'); }
+            return (new NearestStopService($this->registry, $this->http, $this->repository))->search($location, $limit, $country, $city);
+        }
         if (mb_strlen(trim($query)) < 2 || mb_strlen($query) > 120) {
             throw new TransportException('invalid_query', 'Place query must contain 2 to 120 characters.');
         }

@@ -49,9 +49,9 @@ $gateway = new class implements OpenAiCatalogGateway {
 $receivedNeed = (object) ['value' => null];
 $recommender = new class($receivedNeed) implements OpenAiProductRecommender {
     public function __construct(private object $receivedNeed) {}
-    public function recommend(string $query, string $category, string $priceIntent): array
+    public function recommend(string $query, string $category, string $priceIntent, ?int $excludedProductId = null): array
     {
-        $this->receivedNeed->value = [$query, $category, $priceIntent];
+        $this->receivedNeed->value = [$query, $category, $priceIntent, $excludedProductId];
         return ['status' => 'selected', 'product_id' => 90, 'match_quality' => 'exact', 'reason' => ''];
     }
 };
@@ -61,6 +61,7 @@ $recommendation = $service->execute(OpenAiKnowledgeCatalogService::RECOMMEND_PRO
     'query' => 'Výrazná vůně na večer do 2000 Kč',
     'category' => 'parfém',
     'price_intent' => 'maximálně 2000 Kč',
+    'excluded_product_id' => 85,
 ]);
 assert_test(
     'passes complete evidence to the OpenAI Responses recommender',
@@ -68,6 +69,7 @@ assert_test(
         'Výrazná vůně na večer do 2000 Kč',
         'parfém',
         'maximálně 2000 Kč',
+        85,
     ],
 );
 assert_test('returns the OpenAI-selected product decision', $recommendation === [
@@ -104,6 +106,7 @@ foreach ([
     ['query' => '', 'category' => 'parfém', 'price_intent' => 'do 2000 Kč'],
     ['query' => 'vůně', 'category' => '', 'price_intent' => 'do 2000 Kč'],
     ['query' => 'vůně', 'category' => 'parfém', 'price_intent' => ''],
+    ['query' => 'vůně', 'category' => 'parfém', 'price_intent' => 'bez omezení', 'excluded_product_id' => 0],
 ] as $invalidArguments) {
     $thrown = false;
     try {

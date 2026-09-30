@@ -60,6 +60,7 @@ $result = $recommender->recommend(
     'svěží parfém na den do 2000 Kč',
     'parfém',
     'maximálně 2000 Kč',
+    85,
 );
 assert_test('returns a product selected by the Responses model', $result === [
     'status' => 'selected',
@@ -71,7 +72,16 @@ assert_test('uses hosted file_search against the tenant store', $captured['paylo
     'type' => 'file_search',
     'vector_store_ids' => ['vs_fun'],
     'max_num_results' => 20,
+    'filters' => [
+        'type' => 'ne',
+        'key' => 'product_id',
+        'value' => 85,
+    ],
 ]]);
+assert_test(
+    'passes the one-request exclusion to the model input',
+    json_decode($captured['payload']['input'], true, flags: JSON_THROW_ON_ERROR)['excluded_product_id'] === 85,
+);
 assert_test('requires a hosted tool call', $captured['payload']['tool_choice'] === 'required');
 assert_test(
     'uses strict minimal structured output',
@@ -81,7 +91,7 @@ assert_test(
 );
 assert_test('does not expose the server key in the result', !str_contains(json_encode($result), 'sk-test'));
 
-$hallucinationRejected = false;
+$excludedCurrentRejected = false;
 try {
     (new OpenAiResponsesProductRecommender(
         $store,
@@ -95,17 +105,17 @@ try {
                     ]]],
                     ['type' => 'message', 'content' => [[
                         'type' => 'output_text',
-                        'text' => '{"status":"selected","product_id":999,"match_quality":"exact","reason":""}',
+                        'text' => '{"status":"selected","product_id":90,"match_quality":"exact","reason":""}',
                     ]]],
                 ],
             ], JSON_THROW_ON_ERROR),
         ],
         'sk-test',
-    ))->recommend('vůně', 'parfém', 'bez omezení');
+    ))->recommend('vůně', 'parfém', 'bez omezení', 90);
 } catch (OpenAiUpstreamException) {
-    $hallucinationRejected = true;
+    $excludedCurrentRejected = true;
 }
-assert_test('rejects an ID absent from file_search evidence', $hallucinationRejected);
+assert_test('rejects the current product even if the model returns it', $excludedCurrentRejected);
 
 if (!isset($runnerMode)) {
     print_results();

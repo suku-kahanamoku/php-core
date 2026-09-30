@@ -41,7 +41,7 @@ POST /api/openai/tool
 X-Rokid-Key: <ROKID_AI_CLIENT_KEY>
 Content-Type: application/json
 
-{"name":"recommend_product","arguments":{"query":"svěží parfémová voda na každý den do 2500 Kč","category":"parfém","price_intent":"maximálně 2500 Kč"}}
+{"name":"recommend_product","arguments":{"query":"jiná svěží parfémová voda na každý den do 2500 Kč","category":"parfém","price_intent":"maximálně 2500 Kč","excluded_product_id":85}}
 ```
 
 Katalogový endpoint je tenantově omezený, rate-limitovaný na 60 volání za
@@ -49,7 +49,8 @@ minutu a nezpřístupňuje obecné admin API. PHP neposuzuje rozhovor, nefiltruj
 produkty podle požadavků a nevytváří vlastní pořadí kandidátů.
 
 `recommend_product` vyžaduje český `query`, konkrétní `category` a potvrzený
-`price_intent`. PHP je pouze validuje a předá OpenAI Responses modelu. Ten
+`price_intent`; při bezprostřední náhradě může Android přidat aktuální
+`excluded_product_id`. PHP hodnoty pouze validuje a předá OpenAI Responses modelu. Ten
 pomocí hostovaného `file_search` vyhledá dokumenty v tenantovém Vector Store,
 sám porovná názvy, popisy, kategorie, varianty, cenu, dostupnost a
 `selection_attributes` a vrátí konkrétní `product_id`, kvalitu `exact` nebo
@@ -88,8 +89,9 @@ kategorií. Profilový kontext zatím Realtime relaci není zpřístupněný, ta
 aktuálním kontraktu musí být potvrzená kategorie i cena. Do té doby relace volá
 `continue_listening` se stavem obou bodů pro checklist obchodníka. Responses model z `file_search` dokumentů vybere vždy jeden produkt; bez přesné shody vrátí nejbližší doloženou alternativu a důvod pro displej. PHP
 pro něj pouze načte aktuální katalogový detail. Nespokojenost nebo žádost o jiný,
-další či lepší produkt vede bezprostředně k preferenci jiné vhodné varianty,
-ale žádné dříve zobrazené ID se trvale nevyloučí. Zákazník se k němu může později
+další či lepší produkt nastaví `replace_current_product`; Android z něj odvodí
+aktuální `excluded_product_id` a Responses `file_search` jej přes metadatový filtr
+`product_id != ID` pro tento jediný výběr povinně vyřadí. Žádné dříve zobrazené ID se trvale nevyloučí. Zákazník se k němu může později
 vrátit. „Lepší“ znamená přesnější shodu s doloženými požadavky, nikoli vyšší
 cenu, popularitu nebo marži.
 

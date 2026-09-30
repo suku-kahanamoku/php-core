@@ -49,7 +49,7 @@ final class OpenAiKnowledgeCatalogService
      * PHP nenačítá produktový katalog, dokumenty neporovnává s rozhovorem a
      * nevybírá vítěze. Vrací pouze ID zvolené a doložené OpenAI Vector Store.
      *
-     * @param array<string, mixed> $arguments Dotaz, kategorie a cenový záměr.
+     * @param array<string, mixed> $arguments Dotaz, kategorie, cenový záměr a volitelné jednorázově vyloučené ID.
      * @return array{status:string,product_id:int|null,match_quality?:string,reason?:string}
      */
     private function recommendProduct(array $arguments): array
@@ -66,11 +66,18 @@ final class OpenAiKnowledgeCatalogService
         if ($priceIntent === '' || mb_strlen($priceIntent) > 240) {
             throw new \InvalidArgumentException('Confirmed price intent is required.');
         }
+        $excludedProductId = null;
+        if (array_key_exists('excluded_product_id', $arguments)) {
+            $excludedProductId = filter_var($arguments['excluded_product_id'], FILTER_VALIDATE_INT);
+            if ($excludedProductId === false || $excludedProductId < 1) {
+                throw new \InvalidArgumentException('excluded_product_id must be a positive integer.');
+            }
+        }
         if ($this->recommender === null) {
             return ['status' => 'unavailable', 'product_id' => null];
         }
         try {
-            return $this->recommender->recommend($query, $category, $priceIntent);
+            return $this->recommender->recommend($query, $category, $priceIntent, $excludedProductId);
         } catch (OpenAiConfigurationException | OpenAiUpstreamException) {
             return ['status' => 'unavailable', 'product_id' => null];
         }

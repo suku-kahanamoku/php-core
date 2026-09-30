@@ -78,3 +78,26 @@ check(\App\Modules\Transport\JourneyAreaService::city($cityQuery->withPlaces(['c
 $outsideCity = [['legs'=>[['from'=>['id'=>'a'],'to'=>['id'=>'x','name'=>'Kuřim, nádraží']],['from'=>['id'=>'x','name'=>'Kuřim, nádraží'],'to'=>['id'=>'b']]]]];
 check(\App\Modules\Transport\JourneyAreaService::city($cityQuery,$outsideCity)===null, 'journey via another municipality does not infer a city scope');
 check(\App\Modules\Transport\JourneyAreaService::city($nativeQuery,$cityJourneys)===null, 'coordinates without verified city do not fabricate a municipality');
+
+$legendTrip = ['connection'=>['persistentId'=>'not-a-public-number','originDeparture'=>'2026-10-06T10:00:00+02:00',
+    'numbers'=>[['registryName'=>'CISJR','number'=>'1093']],
+    'line'=>['ids'=>[['localLineCode'=>'35']], 'timetableNotes'=>[['defaultLanguage'=>'cs','localizedText'=>['cs'=>'Poznámka linky www.idsjmk.cz']]]],
+    'timetableNotes'=>[['defaultLanguage'=>'cs','localizedText'=>['cs'=>'Garantovaná návaznost dle jízdního řádu','en'=>'Timetable connection note']]],
+    'vehiclePosition'=>['lat'=>50,'lon'=>14]], 'route'=>[]];
+$legend = $mapper->trip($legendTrip,'fixture','2026-10-06')['metadata'];
+check($legend['line']==='35' && $legend['number']==='1093', 'trip legend uses explicit public line and connection numbers');
+check($legend['notes'][0]['scope']==='trip' && $legend['notes'][1]['scope']==='line' && $legend['notes'][0]['texts']['en']==='Timetable connection note', 'legend preserves localized trip and line notes with scope');
+check(!isset($legend['operator'],$legend['operating_days'],$legend['vehiclePosition']) && $legend['service_date']==='2026-10-06', 'legend does not invent operators, operating calendars or telemetry');
+unset($legendTrip['connection']['numbers']);
+check($mapper->trip($legendTrip,'fixture','2026-10-06')['metadata']['number']===null, 'opaque identifiers never become passenger-facing trip numbers');
+
+$legendTrip['route'] = [['stopPostRef'=>['stationRef'=>['id'=>'test','name'=>'Soukopova']], 'kmPosition'=>0.303,
+    'features'=>['REQUEST_STOP'],'tariffZones'=>[['idsID'=>'IDSJMK','tariffZone'=>'100'],['idsID'=>'IDSJMK','tariffZone'=>'100'],['idsID'=>'OTHER','tariffZone'=>'A']]]];
+$details = $mapper->trip($legendTrip,'fixture','2026-10-06')['stops'][0];
+check($details['route_km']===0.303 && $details['request_stop']===true && count($details['tariff_zones'])===2, 'trip stops preserve source kilometres, request-stop flag and distinct tariff zones');
+$legendTrip['route'][0]['kmPosition'] = 0;
+check($mapper->trip($legendTrip,'fixture','2026-10-06')['stops'][0]['route_km']===0.0, 'zero kilometrage remains a known value');
+$legendTrip['route'][0]['kmPosition'] = -1;
+unset($legendTrip['route'][0]['features'],$legendTrip['route'][0]['tariffZones']);
+$details = $mapper->trip($legendTrip,'fixture','2026-10-06')['stops'][0];
+check($details['route_km']===null && $details['request_stop']===null && $details['tariff_zones']===[], 'unknown stop attributes and invalid kilometrage are not fabricated');

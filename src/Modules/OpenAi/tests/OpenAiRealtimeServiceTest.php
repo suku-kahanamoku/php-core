@@ -62,6 +62,7 @@ assert_test(
         'query',
         'category',
         'price_intent',
+        'replace_current_product',
     ],
 );
 assert_test(
@@ -70,6 +71,7 @@ assert_test(
         'query',
         'category',
         'price_intent',
+        'replace_current_product',
     ],
 );
 assert_test(
@@ -127,6 +129,7 @@ assert_test(
 assert_test(
     'preserves active need while replacing a rejected product',
     str_contains($captured['payload']['session']['instructions'], 'Preserve every still-valid fact and constraint')
+        && str_contains($captured['payload']['session']['instructions'], 'set replace_current_product to true')
         && str_contains($captured['payload']['session']['instructions'], 'better evidence-based match')
         && str_contains($captured['payload']['session']['instructions'], 'další produkt'),
 );

@@ -59,3 +59,19 @@ check($sent->body['from']===['@type'=>'station','stationId'=>'S3'], 'routing sta
 check($found['resolved_places']['from']['name']==='Nearest online stop' && count($found['journeys'])===1, 'search response exposes chosen stop to UI');
 $cached = $r->journey($found['journeys'][0]['id']);
 check($cached['legs'][0]['from']['lat']===null && !isset($cached['resolved_places']) && !str_contains(json_encode($cached),'50.0751'), 'GPS search and its resolution metadata are not persisted in journey cache');
+
+$resetNearest();
+$nearHttp->responses['pid'] = new HttpResponse(200,json_encode([$stationFar,$stationNear,$stationNear]));
+$nearHttp->urlResponses = [];
+$nearby = $nearService->search($gps);
+check(array_column($nearby['places'],'name')===['Nearest online stop','Farther online stop'], 'nearby dropdown ranks and deduplicates online stops without local rows');
+$resetNearest();
+check(count($nearService->search($gps,1)['places'])===1, 'nearby dropdown respects limit');
+$filter = ['q'=>['latitude'=>$gps['lat'],'longitude'=>$gps['lon'],'observed_at'=>$gps['observed_at']]];
+$nearQuery = \App\Modules\Transport\DTO\PlaceQuery::parse($filter);
+check($nearQuery['query']===null && $nearQuery['location']['type']==='current_location', 'places filter accepts GPS-only nearby search');
+fails(fn()=>\App\Modules\Transport\DTO\PlaceQuery::parse(['q'=>['state'=>'CZ']]),'invalid_query');
+fails(fn()=>\App\Modules\Transport\DTO\PlaceQuery::parse(['q'=>['name'=>['$regex'=>'']]+$filter['q']]),'invalid_query');
+$resetNearest();
+$nearHttp->responses['pid'] = new HttpResponse(200,'[]');
+check($nearService->search($gps)['places']===[], 'successful empty nearby search does not mix in local catalogue');

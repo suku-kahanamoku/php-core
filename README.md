@@ -126,8 +126,11 @@ and returns one evidence-backed product ID. It marks an exact match as `exact`; 
 candidates and never chooses a recommended product. The model never asks clarification questions or
 generates sales, upsell or cross-sell arguments; while the gate is incomplete,
 the required `continue_listening` tool ends the turn without free text and updates only
-the salesperson checklist with the confirmed category and price intent. Previously displayed products are not permanently excluded and may be
-selected again when the customer returns to them. After Responses chooses an ID
+the salesperson checklist with the confirmed category and price intent. A move-on, rejection, or changed requirement sets `replace_current_product`;
+Android converts it to the current `excluded_product_id`, and Responses file search
+applies a one-request `product_id != ID` metadata filter. Previously displayed
+products are not permanently excluded and may be selected again when the customer
+returns to them. After Responses chooses an ID
 from file-search evidence, Realtime calls `get_product`; PHP only loads its current published
 catalog detail for Android. `migrations/fann_seed.sql` contains the consolidated
 FAnn demo catalogue and structured source metadata. Reapplying it preserves
@@ -146,7 +149,7 @@ and never deletes catalogue rows. See `src/Modules/FannCatalog/README.md`.
 
 The OpenAI Vector Store provides product knowledge to the Responses model. PHP
 only synchronizes published catalog documents and securely proxies the Responses
-request; it contains no fallback recommendation algorithm. Install
+request, including an optional one-request current-product exclusion; it contains no fallback recommendation algorithm. Install
 `migrations/schema.sql`, synchronize the selected tenant,
 and only then enable the runtime lookup:
 

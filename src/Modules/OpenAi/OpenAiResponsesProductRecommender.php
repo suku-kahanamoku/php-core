@@ -37,7 +37,7 @@ final class OpenAiResponsesProductRecommender implements OpenAiProductRecommende
     }
 
     /** @inheritDoc */
-    public function recommend(string $query, string $category, string $priceIntent): array
+    public function recommend(string $query, string $category, string $priceIntent, ?int $excludedProductId = null): array
     {
         if ($this->apiKey === '') {
             throw new OpenAiConfigurationException('OPENAI_API_KEY is not configured.');
@@ -53,6 +53,7 @@ final class OpenAiResponsesProductRecommender implements OpenAiProductRecommende
             $query,
             $category,
             $priceIntent,
+            $excludedProductId,
         ));
         $status = (int) ($result['status'] ?? 0);
         if ($status < 200 || $status >= 300) {
@@ -71,6 +72,9 @@ final class OpenAiResponsesProductRecommender implements OpenAiProductRecommende
         $productId = filter_var($decision['product_id'] ?? null, FILTER_VALIDATE_INT);
         if ($productId === false || $productId < 1 || !isset($evidenceIds[$productId])) {
             throw new OpenAiUpstreamException('OpenAI selected a product without Vector Store evidence.', $status);
+        }
+        if ($excludedProductId !== null && $productId === $excludedProductId) {
+            throw new OpenAiUpstreamException('OpenAI selected the explicitly excluded current product.', $status);
         }
         $matchQuality = (string) ($decision['match_quality'] ?? '');
         $reason = trim((string) ($decision['reason'] ?? ''));
@@ -98,14 +102,28 @@ final class OpenAiResponsesProductRecommender implements OpenAiProductRecommende
         string $query,
         string $category,
         string $priceIntent,
+        ?int $excludedProductId,
     ): array {
+        $fileSearchTool = [
+            'type' => 'file_search',
+            'vector_store_ids' => [$vectorStoreId],
+            'max_num_results' => self::MAX_RESULTS,
+        ];
+        if ($excludedProductId !== null) {
+            $fileSearchTool['filters'] = [
+                'type' => 'ne',
+                'key' => 'product_id',
+                'value' => $excludedProductId,
+            ];
+        }
+
         return [
             'model' => $this->model,
             'store' => false,
             'instructions' => <<<'PROMPT'
 You select exactly one catalog product for a passive Czech retail assistant.
 Use file_search as the only source of product facts. Evaluate every retrieved product yourself against the complete active need, concrete category, confirmed price intent, constraints, preferences, intended use and rejection reasons.
-Never optimize for margin, popularity or inferred customer traits. Never invent an ID or attribute. Previously shown products are not permanently excluded, but an immediate request for another product should prefer a different suitable result when the input says so.
+Never optimize for margin, popularity or inferred customer traits. Never invent an ID or attribute. Previously shown products are not permanently excluded. When excluded_product_id is present, it is a mandatory one-request exclusion: never select that ID, while all older products remain eligible.
 Always return exactly one product_id present in the file_search evidence. Never return no_match after the mandatory category and price gate has been completed.
 Use match_quality exact only when the selected product satisfies the active category, confirmed price intent, explicit constraints and current in-stock requirement.
 When no exact in-stock candidate exists, return the closest evidence-backed candidate with match_quality nearest. Prefer an in-stock product in the requested category, then minimize deviations from explicit constraints, price and preferences. If every retrieved candidate is unavailable, still choose the closest catalog item.
@@ -116,12 +134,9 @@ PROMPT,
                 'category' => $category,
                 'price_intent' => $priceIntent,
                 'active_need' => $query,
+                'excluded_product_id' => $excludedProductId,
             ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR),
-            'tools' => [[
-                'type' => 'file_search',
-                'vector_store_ids' => [$vectorStoreId],
-                'max_num_results' => self::MAX_RESULTS,
-            ]],
+            'tools' => [$fileSearchTool],
             'tool_choice' => 'required',
             'include' => ['file_search_call.results'],
             'text' => [

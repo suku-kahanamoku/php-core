@@ -307,3 +307,29 @@ u Spojenky `placeHierarchy.MUNICIPALITY`). Vyhledání spojení přidává
 zobrazených úseků; neověřuje celou geometrii ani průjezdní zastávky.
 Meziměstská cesta, prázdný výsledek či chybějící metadata vrací `null`.
 Jde o odvozená metadata odpovědi, nikoli nový zdroj plánování nebo GPS cache.
+
+`POST /v1/places/search` podporuje také nabídku nejbližších zastávek: vynechané
+`q.name` vyžaduje čerstvé `q.latitude`, `q.longitude`, `q.observed_at` v POST těle.
+`NearestStopService::search()` vrací seznam do 2 km řazený podle geografické
+vzdálenosti, bez duplicit ID, nejvýše podle `limit`. Stejnou metodu používá
+`resolve()` při plánování z GPS. Úspěšný prázdný seznam nespouští fallback;
+statický katalog se použije jen pro selhané poskytovatele. Výběr uživatelem
+je volitelný a seznam ani měření se neukládá do cache cest.
+
+Detail jízdy ze Spojenky přidává volitelné `metadata`: `line`, `number`,
+`name`, `service_date` a `notes` s `scope` (trip/line), `texts` dle jazyka
+ a `default_language`. Veřejné číslo pochází z explicitních registry numbers
+CISJR/KADR/PID; persistent ID a technická čísla PTI se za číslo spoje nevydávají.
+Poznámky se přebírají z `connection.timetableNotes` a `line.timetableNotes`.
+Metadata neobsahují telemetrii a neodvozují provozní kalendář ani garantované
+návaznosti. Aktuálně ověřená odpověď pro 35/1093 poskytuje číslo, trasu a poznámky
+linky; kontakt dopravce, „jede v X“ a garanci návaznosti na 38 v ní nejsou.
+Nejde o změnu synchronizace ani databázového schématu.
+
+Spojenka mapuje atributy každého zastavení do `tariff_zones` (seznam
+`system`/`zone`), `request_stop` (bool nebo null při chybějících datech)
+a `route_km` (nezáporná konečná hodnota nebo null). Zdroje jsou
+`tariffZones`, příznak `REQUEST_STOP` a `kmPosition`. Nula zůstává známou
+hodnotou; chybějící nebo neplatná kilometráž se nepřepočítává z GPS ani
+nedoplňuje z jiných zdrojů. Údaje jsou součástí online detailu jízdy,
+bez nové migrace.

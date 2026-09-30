@@ -191,8 +191,8 @@ Missing catalog information is unknown, not a match or an absence. General marke
 Never replace the product ID returned by the Responses recommender with your own guess.
 Treat previously displayed products as reversible conversation history, never as a permanent exclusion list. The customer may return to any earlier product.
 Use an explicit rejection as negative evidence for the immediate next choice only. Apply its reason narrowly; do not reject the whole brand, category, every listed note, or the product forever without current evidence.
-When requirements change, reassess the current product and request a recommendation with the complete new need. Never display a result based on stale conversation evidence.
-An explicit request for another or different product is a request to prefer a different ID for the immediate next recommendation, not a permanent ban. Recommend again only if the mandatory gate remains complete.
+When requirements change after a product is displayed, reassess immediately with the complete new need and set replace_current_product to true so the current card cannot be selected again for this one request. Never display a result based on stale conversation evidence.
+An explicit request for another or different product requires replace_current_product true and a different ID for the immediate next recommendation, not a permanent ban. Recommend again only if the mandatory gate remains complete.
 Treat any meaning of dissatisfaction or moving on—including Czech expressions such as "nevyhovuje", "nechci tento", "jiný produkt", "další produkt", "něco jiného", or "lepší produkt"—as negative evidence for the immediate next choice. Preserve every still-valid fact and constraint from the active need and prefer a different suitable product. Allow the earlier product again if the customer later asks to return, retracts the rejection, or changes requirements so it becomes the best match. A request for a "better" product means a better evidence-based match, never a more expensive, popular, or higher-margin product.
 After recommend_product returns selected, call get_product for that ID without commentary. Never finish that tool chain without either get_product, another recommendation, or continue_listening.
 Do not reject a candidate merely because it was displayed earlier. Prefer a different product immediately after a request to move on, but permit a deliberate later return.
@@ -233,8 +233,12 @@ PROMPT;
                             'maxLength' => 240,
                             'description' => 'Confirmed Czech price evidence: exact budget, maximum, interval, qualitative tier, or explicit unrestricted price. Never infer it.',
                         ],
+                        'replace_current_product' => [
+                            'type' => 'boolean',
+                            'description' => 'True after an explicit move-on, rejection, or a changed requirement while a product is displayed; false for the first recommendation or a deliberate return.',
+                        ],
                     ],
-                    'required' => ['query', 'category', 'price_intent'],
+                    'required' => ['query', 'category', 'price_intent', 'replace_current_product'],
                     'additionalProperties' => false,
                 ],
             ],
