@@ -260,9 +260,11 @@ function () use ($actor) {
      */
     public function finishStep(array $batch, array $result, bool $retryLimited = true): void
     {
-        $limited = ($result['error_code'] ?? null) === 'upstream_rate_limited';
-        $retryAt = $limited ? gmdate('Y-m-d H:i:s', time() + max(300, min(604800, (int)($result['retry_after'] ?? 300)))) : null;
-        if ($retryLimited && $limited && (int)$batch['retry_count'] < 2) {
+        $error = $result['error_code'] ?? null;
+        $retryable = in_array($error, ['upstream_rate_limited', 'worker_time_budget_exceeded'], true);
+        $minimumDelay = $error === 'upstream_rate_limited' ? 300 : 60;
+        $retryAt = $retryable ? gmdate('Y-m-d H:i:s', time() + max($minimumDelay, min(604800, (int)($result['retry_after'] ?? $minimumDelay)))) : null;
+        if ($retryLimited && $retryable && (int)$batch['retry_count'] < 2) {
             // No advancement until this source batch succeeds or exhausts its retry budget.
             $this->update($batch['request_id'], ['retry_at' => $retryAt, 'retry_count' => (int)$batch['retry_count'] + 1]);
             return;

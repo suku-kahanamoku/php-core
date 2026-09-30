@@ -38,7 +38,7 @@ final class SyncBudgetProvider implements HttpClient
     public function send(HttpRequest $r): HttpResponse
     {
         $left = (int)floor($this->deadline - hrtime(true) / 1000000);
-        if ($left < 1) { throw new SyncException('worker_time_budget_exceeded'); }
+        if ($left < 1) { throw new SyncException('worker_time_budget_exceeded', 60); }
         return $this->client->send(new HttpRequest($r->url, $r->method, $r->headers, $r->body,
             min($r->timeoutMs, $left), $r->maxBytes, min($r->connectTimeoutMs, $left),
             $r->multipart, $r->sink, $r->redirectHosts, $r->maxRedirects));

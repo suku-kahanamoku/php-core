@@ -139,6 +139,20 @@ $csuRow = $db->fetchOne("SELECT o.* FROM etymolog_occurrence o JOIN etymolog_ext
 check($csuRow['measure'] === 'births' && $csuRow['observed_year'] === 2025 && $csuRow['observed_on'] === null && $csuRow['country_code'] === 'CZ' && $csuRow['count'] === 999, 'CSU population is annual births, not all residents or snapshot date');
 $csuSnapshot = $external->imports('occurrences', (int)$csuRow['id'])[0];
 check($csuSnapshot['license'] === 'CC-BY-4.0' && $csuSnapshot['payload']['coverage'] === 'top100_per_sex', 'CSU source licence and limited coverage retained');
+$csuSourceId = (int)$csuSnapshot['source_id'];
+$csuProvider = App\Modules\Etymolog\Providers\CsuBabyNamesProvider::class;
+check($db->fetchOne('SELECT url FROM etymolog_source WHERE id=?', [$csuSourceId])['url'] === $csuProvider::FILE_URL, 'CSU citation opens the actual XLSX dataset');
+$db->update('etymolog_source', ['url' => $csuProvider::PUBLICATION_URL], 'id=?', [$csuSourceId]);
+$db->query("UPDATE etymolog_external_record SET source_url=? WHERE provider='csu-baby-names' AND source_id=?", [$csuProvider::PUBLICATION_URL, $csuSourceId]);
+$db->query('UPDATE etymolog_sync_job SET next_run_at=NULL WHERE id=?', [$csuJobId]);
+$fake->responses = [new App\Modules\Http\HttpResponse(200, $csuTerms), new App\Modules\Http\HttpResponse(200, $xlsx)];
+$csuService->run($csuJobId);
+check($db->fetchOne('SELECT url FROM etymolog_source WHERE id=?', [$csuSourceId])['url'] === $csuProvider::FILE_URL && $external->imports('occurrences', (int)$csuRow['id'])[0]['source_url'] === $csuProvider::FILE_URL, 'repeat import repairs previous press-release URL on shared source and provenance');
+$db->update('etymolog_source', ['url' => 'https://example.org/editorial-source'], 'id=?', [$csuSourceId]);
+$db->query('UPDATE etymolog_sync_job SET next_run_at=NULL WHERE id=?', [$csuJobId]);
+$fake->responses = [new App\Modules\Http\HttpResponse(200, $csuTerms), new App\Modules\Http\HttpResponse(200, $xlsx)];
+$csuService->run($csuJobId);
+check($db->fetchOne('SELECT url FROM etymolog_source WHERE id=?', [$csuSourceId])['url'] === 'https://example.org/editorial-source', 'repeat import keeps manually edited source URL');
 $reader = new App\Modules\Etymolog\Readers\NameStatisticsXlsxReader();
 check($reader->read($xlsx)[99]['rank'] === '100-101', 'shared rank range preserved without numeric truncation');
 try {$reader->read($zipFixture(formula:true));throw new LogicException('Expected formula rejection');}

@@ -21,8 +21,10 @@ final class CsuBabyNamesProvider implements BatchProvider
 {
     /** Přímá adresa XLSX souboru s daty. */
     public const FILE_URL = 'https://csu.gov.cz/docs/107508/0a6170f4-bc53-7d35-afe2-3d5fcd0acb47/data_detska_jmena_top_100_cesko_2025.xlsx?version=1.0';
-    /** Adresa publikační zprávy s tabulkou. */
-    public const SOURCE_URL = 'https://csu.gov.cz/produkty/viktorie-byla-vubec-poprve-nejoblibenejsi-jakub-prvenstvi-obhajil-tesne';
+    /** Přímý veřejný podklad citovaný u jednotlivých statistických údajů. */
+    public const SOURCE_URL = self::FILE_URL;
+    /** Tisková zpráva, ze které je tabulka na webu ČSÚ dostupná. */
+    public const PUBLICATION_URL = 'https://csu.gov.cz/produkty/viktorie-byla-vubec-poprve-nejoblibenejsi-jakub-prvenstvi-obhajil-tesne';
     /** Adresa podmínek pro využívání statistických údajů (důkaz licence). */
     public const TERMS_URL = 'https://csu.gov.cz/podminky_pro_vyuzivani_a_dalsi_zverejnovani_statistickych_udaju_csu';
     /**
@@ -67,7 +69,7 @@ final class CsuBabyNamesProvider implements BatchProvider
                 'source_url' => self::SOURCE_URL, 'license' => 'CC-BY-4.0', 'license_url' => 'https://creativecommons.org/licenses/by/4.0/',
                 'attribution' => 'Český statistický úřad (ČSÚ), Dětská jména TOP 100 v Česku za rok 2025; převedeno z XLSX, výběr jména a počtu.', 'notes' => $notes,
                 'occurrence' => ['country_code' => 'CZ', 'observed_year' => 2025, 'observed_on' => null, 'sex' => $row['sex'], 'measure' => 'births', 'count' => $row['count'], 'original_spelling' => $row['name'], 'locator' => ($row['sex'] === 'male' ? 'Chlapci' : 'Dívky').', pořadí '.$row['rank'], 'notes' => $notes],
-                'payload' => $row + ['observed_year' => 2025, 'measure' => 'births', 'coverage' => 'top100_per_sex', 'xlsx_sha256' => $hash, 'file_url' => self::FILE_URL, 'license_evidence_url' => self::TERMS_URL, 'license_evidence_sha256' => hash('sha256', $terms)],
+                'payload' => $row + ['observed_year' => 2025, 'measure' => 'births', 'coverage' => 'top100_per_sex', 'xlsx_sha256' => $hash, 'file_url' => self::FILE_URL, 'publication_url' => self::PUBLICATION_URL, 'license_evidence_url' => self::TERMS_URL, 'license_evidence_sha256' => hash('sha256', $terms)],
             ];
         }
         $next = $offset + count($items); $complete = $next >= count($rows);

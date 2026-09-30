@@ -162,6 +162,13 @@ try {
     $fake->responses = [$discovery, $jsonResponse(['entities' => ['Q123' => $entity]])];
     $result = $service->run($jobId);
     check($result['processed'] === 1 && $result['cursor'] === '1', 'import commits cursor and record');
+    $unlabelled = $entity; $unlabelled['id'] = 'Q124'; $unlabelled['labels'] = [];
+    $fake->responses = [
+        $jsonResponse(['continue' => ['sroffset' => 2], 'query' => ['search' => [['title' => 'Q124'], ['title' => 'Q123']]]]),
+        $jsonResponse(['entities' => ['Q124' => $unlabelled, 'Q123' => $entity]]),
+    ];
+    $labelled = $provider->batch('cs', 'surname', '0', 2);
+    check(count($labelled['items']) === 1 && $labelled['items'][0]['external_id'] === 'Q123' && $labelled['cursor'] === '2', 'unlabelled Wikidata entity does not block later names or cursor progress');
     $imported = $db->fetchOne("SELECT * FROM etymolog_name WHERE franchise_code='etymolog' AND import_key='wikidata:surname:Q123'");
     check($imported['country_code'] === null && $imported['language'] === 'cs' && $imported['published'] === 0, 'import keeps stated language without inferring country or publishing');
     $snapshot = $sync->imports((int)$imported['id'])[0];

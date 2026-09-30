@@ -56,6 +56,12 @@ final class EtymologExternalRepository extends BaseRepository
                     $this->_db->update($table, ['name_id' => $nameId], 'franchise_code=? AND id=? AND name_id=?', [$this->_code, $existing[$field], $existing['name_id']]);
                 }
             }
+            // Refresh a provider-owned source URL only while it still matches
+            // the preceding import snapshot. An editorial URL stays untouched.
+            if ($existing['source_id'] !== null && $existing['source_url'] !== $item['source_url']) {
+                $this->_db->query('UPDATE etymolog_source SET url=? WHERE franchise_code=? AND id=? AND deleted=0 AND url=?',
+                    [$item['source_url'], $this->_code, $existing['source_id'], $existing['source_url']]);
+            }
             $snapshot['name_id'] = $nameId;
             $this->_db->update('etymolog_external_record', $snapshot, 'id=? AND franchise_code=?', [$existing['id'], $this->_code]);
             return; // Never overwrite manual edits, citations or publication.

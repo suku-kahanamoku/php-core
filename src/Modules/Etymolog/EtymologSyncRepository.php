@@ -95,8 +95,14 @@ final class EtymologSyncRepository extends BaseRepository
     {
         $this->_db->update('etymolog_sync_run', ['status' => $status, 'processed' => $processed, 'error_code' => $error, 'finished_at' => gmdate('Y-m-d H:i:s')],
             'id=? AND franchise_code=?', [$runId, $this->_code]);
+        $delay = match (true) {
+            $status === 'success' => 0,
+            $error === 'upstream_rate_limited' => max(300, $retryAfter),
+            $error === 'worker_time_budget_exceeded' => max(60, $retryAfter),
+            default => max((int)$job['interval_seconds'], $retryAfter),
+        };
         $this->_db->update('etymolog_sync_job', ['cursor' => $cursor, 'last_status' => $status, 'last_error' => $error,
-            'next_run_at' => gmdate('Y-m-d H:i:s', time() + ($status === 'success' ? 0 : ($error === 'upstream_rate_limited' ? max(300, $retryAfter) : max((int)$job['interval_seconds'], $retryAfter))))],
+            'next_run_at' => gmdate('Y-m-d H:i:s', time() + $delay)],
             'id=? AND franchise_code=?', [(int)$job['id'], $this->_code]);
     }
 

@@ -84,6 +84,25 @@ $rateProvider->limited=true;$db->update('etymolog_sync_job',['cursor'=>'kept','n
 for($attempt=0;$attempt<3;$attempt++){$due();$r=$rateService->step($id,0);}
 check($r['status']==='partial'&&$rateRepo->status()['completed']===1&&$rateRepo->status()['failed']===1,'persistent 429 stops after initial attempt plus two retries');
 
+$budgetTenant='http-budget-fixture';$budgetRepo=new EtymologBatchRepository($db,$budgetTenant,900,900);
+$budgetId=$db->insert('etymolog_sync_job',['franchise_code'=>$budgetTenant,'title'=>'Slow source','provider'=>'budget','interval_seconds'=>3600,'cursor'=>'kept']);
+$budgetProvider=new class implements App\Modules\Etymolog\Contracts\BatchProvider {
+    public int $calls=0;
+    public function batch(string $language,string $kind,?string $cursor,int $limit):array {
+        check($cursor==='kept','time-budget retry retains source cursor');
+        if(++$this->calls===1)throw new SyncException('worker_time_budget_exceeded',60);
+        return ['items'=>[],'complete'=>true,'cursor'=>null];
+    }
+};
+$budgetService=new EtymologHttpWorkerService($budgetRepo,new EtymologSyncService(new EtymologRepository($db,$budgetTenant,'sync-jobs'),new EtymologSyncRepository($db,$budgetTenant),new ProviderRegistry(['budget'=>$budgetProvider])));
+$budgetBatch=$budgetRepo->enqueue(null)['request_id'];$budgetResult=$budgetService->step($budgetBatch,0);
+check($budgetResult['status']==='running'&&$budgetResult['next_step']===0&&$budgetResult['retry_after']>=58&&$budgetRepo->status()['failed']===0,'time-budget exhaustion retries the same step instead of failing the whole source');
+$budgetJob=$db->fetchOne('SELECT `cursor`,next_run_at FROM etymolog_sync_job WHERE id=?',[$budgetId]);
+check($budgetJob['cursor']==='kept'&&strtotime($budgetJob['next_run_at'].' UTC')<=time()+61,'time-budget retry preserves cursor and schedules a short cooldown');
+$db->update('etymolog_sync_batch',['retry_at'=>'2000-01-01 00:00:00'],'franchise_code=?',[$budgetTenant]);
+$db->update('etymolog_sync_job',['next_run_at'=>null],'id=?',[$budgetId]);
+check($budgetService->step($budgetBatch,0)['status']==='complete'&&$budgetProvider->calls===2,'transient slow source finishes after bounded retry');
+
 $clockMs=0.0;$sleeps=[];$timedFake=new class implements App\Modules\Http\Contracts\HttpClient {
     public function send(App\Modules\Http\HttpRequest $r):App\Modules\Http\HttpResponse{return new App\Modules\Http\HttpResponse(200,'{}');}
     public function sendAll(array $requests,int $budgetMs=6000,int $concurrency=4):array{return [];}

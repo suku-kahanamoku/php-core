@@ -60,7 +60,7 @@ final class WikidataProvider implements NameProvider
      * @return array{items:list<array<string, mixed>>, cursor:?string, complete:bool} Dávka položek.
      * @throws SyncException           'invalid_provider_configuration', 'search_window_exceeded',
      *                                'invalid_discovery_response', 'invalid_discovery_cursor',
-     *                                'invalid_entity_response', 'invalid_entity_label'
+     *                                'invalid_entity_response'
      *                                nebo chyba upstreamu.
      */
     public function batch(string $language, string $kind, ?string $cursor, int $limit): array
@@ -122,7 +122,9 @@ final class WikidataProvider implements NameProvider
             }
             $name = $entity['labels'][$language]['value'] ?? $entity['labels']['mul']['value'] ?? $entity['labels']['en']['value'] ?? null;
             if (!is_string($name) || trim($name) === '' || strlen($name) > 255) {
-                throw new SyncException('invalid_entity_label');
+                // A valid entity may have no usable label; skip it so the next
+                // search offset is not blocked by one incomplete record.
+                continue;
             }
             // Preserve references and qualifiers. Do not fabricate an etymology from a description.
             $items[] = ['external_id' => $id, 'name' => trim($name), 'revision' => (string)$entity['lastrevid'],
