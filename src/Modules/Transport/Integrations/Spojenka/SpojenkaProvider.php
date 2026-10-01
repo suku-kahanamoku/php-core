@@ -28,22 +28,45 @@ final class SpojenkaProvider implements JourneySearchProvider, ResourceProvider
         $this->mapper = new SpojenkaMapper($definition->tenant, $definition->code);
     }
 
-    public function definition(): ProviderDefinition { return $this->definition; }
-    public function capabilities(): array { return ['places','nearby_stops','stop','journeys','trip']; }
+    public function definition(): ProviderDefinition
+    {
+        return $this->definition;
+    }
+    public function capabilities(): array
+    {
+        return ['cities', 'places', 'nearby_stops', 'stop', 'journeys', 'trip'];
+    }
 
     private function request(string $path, ?array $body = null): HttpRequest
     {
-        return new HttpRequest(rtrim($this->definition->config['url'], '/').$path,
-            $body === null ? 'GET' : 'POST', ['Accept: application/json','User-Agent: TRAM/1.0'], $body);
+        return new HttpRequest(
+            rtrim($this->definition->config['url'], '/') . $path,
+            $body === null ? 'GET' : 'POST',
+            ['Accept: application/json', 'User-Agent: TRAM/1.0'],
+            $body
+        );
     }
 
     public function resourceRequest(string $operation, array $input): HttpRequest
     {
+        if ($operation === 'cities') {
+            // Spojenka's municipality register currently covers CZ. The catalogue
+            // endpoint needs a reference point even when returning all municipalities.
+            // This is a fixed dataset reference, never a user's GPS location.
+            if (($input['country'] ?? null) !== 'CZ') {
+                throw new TransportException('unsupported_capability', 'This catalogue covers CZ only.', 422);
+            }
+            return new HttpRequest(rtrim($this->definition->config['url'], '/') . '/places/search?' . http_build_query([
+                'lat' => 49.75,
+                'lon' => 15.5,
+                'limit' => 10000
+            ]) . '&typeMask%5B%5D=MUNICIPALITY', headers: ['Accept' => 'application/json'], maxBytes: 12000000);
+        }
         $path = match ($operation) {
-            'places' => '/stations/search/name?'.http_build_query(['name' => trim((!empty($input['city']) && !str_contains(PlaceSearchService::normalize($input['query']), PlaceSearchService::normalize($input['city'])) ? $input['city'].' ' : '').PlaceSearchService::normalize($input['query'])), 'lat'=>$input['location']['lat']??null,'lon'=>$input['location']['lon']??null,'limit' => min(200, max(50, $input['limit'] * 5))]),
-            'nearby_stops' => '/stations/search/name?'.http_build_query(['lat'=>$input['location']['lat'],'lon'=>$input['location']['lon'],'limit'=>$input['limit']]),
-            'stop' => '/stations/'.rawurlencode($input['external']),
-            'trip' => '/connections/'.rawurlencode($input['external']).'?'.http_build_query(['route' => 'true','trajectory' => 'false','atTime' => $input['date'].'T12:00:00'.(new \DateTimeImmutable($input['date'], new \DateTimeZone('Europe/Prague')))->format('P')]),
+            'places' => '/stations/search/name?' . http_build_query(['name' => trim((!empty($input['city']) && !str_contains(PlaceSearchService::normalize($input['query']), PlaceSearchService::normalize($input['city'])) ? $input['city'] . ' ' : '') . PlaceSearchService::normalize($input['query'])), 'lat' => $input['location']['lat'] ?? null, 'lon' => $input['location']['lon'] ?? null, 'limit' => min(200, max(50, $input['limit'] * 5))]),
+            'nearby_stops' => '/stations/search/name?' . http_build_query(['lat' => $input['location']['lat'], 'lon' => $input['location']['lon'], 'limit' => $input['limit']]),
+            'stop' => '/stations/' . rawurlencode($input['external']),
+            'trip' => '/connections/' . rawurlencode($input['external']) . '?' . http_build_query(['route' => 'true', 'trajectory' => 'false', 'atTime' => $input['date'] . 'T12:00:00' . (new \DateTimeImmutable($input['date'], new \DateTimeZone('Europe/Prague')))->format('P')]),
             default => throw new TransportException('unsupported_capability', 'Operation is not available from Spojenka.', 422),
         };
         return $this->request($path);
@@ -55,7 +78,23 @@ final class SpojenkaProvider implements JourneySearchProvider, ResourceProvider
             throw new TransportException('not_found', 'Source record not found.', 404);
         }
         $data = UpstreamResponseMapper::json($result);
-        if (in_array($operation, ['places','nearby_stops'], true)) {
+        if ($operation === 'cities') {
+            if (!array_is_list($data) || count($data) >= 10000) {
+                throw new TransportException('invalid_upstream', 'Invalid or truncated municipality catalogue.', 502);
+            }
+            $rows = [];
+            foreach ($data as $place) {
+                if (
+                    !is_array($place) || ($place['type'] ?? null) !== 'MUNICIPALITY' || !is_string($place['name'] ?? null) || trim($place['name']) === '' || mb_strlen($place['name']) > 120
+                    || !is_string($place['id']['listId'] ?? null) || !is_string($place['id']['objectId'] ?? null)
+                ) {
+                    throw new TransportException('invalid_upstream', 'Invalid municipality.', 502);
+                }
+                $rows[] = ['id' => \App\Modules\Transport\Model\ResourceIdCodec::encode($this->definition->tenant, $this->definition->code, 'city', json_encode($place['id'], JSON_THROW_ON_ERROR)), 'name' => $place['name'], 'state' => 'CZ'];
+            }
+            return $rows;
+        }
+        if (in_array($operation, ['places', 'nearby_stops'], true)) {
             if (!array_is_list($data) || count($data) > 200) {
                 throw new TransportException('invalid_upstream', 'Invalid station list.', 502);
             }
@@ -63,13 +102,15 @@ final class SpojenkaProvider implements JourneySearchProvider, ResourceProvider
                 $city = PlaceSearchService::normalize($input['city']);
                 $data = array_values(array_filter($data, static function ($station) use ($city) {
                     foreach ($station['placeHierarchy'] ?? [] as $place) {
-                        if (($place['type'] ?? '') === 'MUNICIPALITY' && PlaceSearchService::normalize($place['name'] ?? '') === $city) { return true; }
+                        if (($place['type'] ?? '') === 'MUNICIPALITY' && PlaceSearchService::normalize($place['name'] ?? '') === $city) {
+                            return true;
+                        }
                     }
                     return false;
                 }));
             }
             return $operation === 'nearby_stops' ? array_map($this->mapper->station(...), $data)
-                : PlaceSearchService::rank(array_map($this->mapper->station(...), $data), $input['query'], $input['limit']);
+                : PlaceSearchService::rank(array_map($this->mapper->station(...), $data), $input['query'], $input['limit'], empty($input['city']) ? ($input['location'] ?? null) : null);
         }
         return match ($operation) {
             'stop' => $this->mapper->station($data),
@@ -80,22 +121,27 @@ final class SpojenkaProvider implements JourneySearchProvider, ResourceProvider
 
     public function searchRequest(JourneyQuery $query): HttpRequest
     {
-        $location = fn (array $place) => ($place['provider'] ?? null) === $this->definition->code
-            ? ['@type'=>'station','stationId'=>$place['external']]
-            : ['@type'=>'coordinates','latitude'=>$place['lat'],'longitude'=>$place['lon'],'maxRadius'=>1000];
+        $location = fn(array $place) => ($place['provider'] ?? null) === $this->definition->code
+            ? ['@type' => 'station', 'stationId' => $place['external']]
+            : ['@type' => 'coordinates', 'latitude' => $place['lat'], 'longitude' => $place['lon'], 'maxRadius' => 1000];
         $means = [];
         foreach ($query->modes as $mode) {
             $mapped = SpojenkaMapper::UPSTREAM_MODES[$mode] ?? null;
-            if ($mapped !== null) { $means[$mapped] = $mapped; }
+            if ($mapped !== null) {
+                $means[$mapped] = $mapped;
+            }
         }
         return $this->request('/journey/search', [
-            'from'=>$location($query->from),'to'=>$location($query->to),
-            'time'=>$query->time->format(DATE_RFC3339),
-            'type'=>$query->arriveBy ? 'ARRIVAL' : 'DEPARTURE',
-            'direction'=>$query->arriveBy ? 'BACKWARD' : 'FORWARD',
-            'maxTransfers'=>$query->maxTransfers,'maxResults'=>min(10, $query->limit),
-            'connectionFilter'=>['permittedMeans'=>array_values($means)],
-            'allowManualTransfers'=>true,'calculateTariff'=>false,
+            'from' => $location($query->from),
+            'to' => $location($query->to),
+            'time' => $query->time->format(DATE_RFC3339),
+            'type' => $query->arriveBy ? 'ARRIVAL' : 'DEPARTURE',
+            'direction' => $query->arriveBy ? 'BACKWARD' : 'FORWARD',
+            'maxTransfers' => $query->maxTransfers,
+            'maxResults' => min(10, $query->limit),
+            'connectionFilter' => ['permittedMeans' => array_values($means)],
+            'allowManualTransfers' => true,
+            'calculateTariff' => false,
         ]);
     }
 

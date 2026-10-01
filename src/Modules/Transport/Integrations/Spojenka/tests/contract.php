@@ -73,3 +73,20 @@ $legendTrip['route'][0]['kmPosition'] = -1;
 unset($legendTrip['route'][0]['features'],$legendTrip['route'][0]['tariffZones']);
 $details = $mapper->trip($legendTrip,'fixture','2026-10-06')['stops'][0];
 check($details['route_km']===null && $details['request_stop']===null && $details['tariff_zones']===[], 'unknown stop attributes and invalid kilometrage are not fabricated');
+
+$equipmentTrip = $legendTrip;
+$equipmentTrip['connection']['features'] = ['BICYCLE_TRANSPORT','WIFI','TOILETS','BICYCLE_TRANSPORT','FUTURE_UNKNOWN'];
+$equipmentTrip['connection']['accessibility'] = 'BARRIER_FREE';
+$equipmentTrip['connection']['reservations'] = ['bicycle'=>'MANDATORY','passenger'=>'AVAILABLE','luggage'=>'NONE','secret'=>'MANDATORY'];
+$equipmentTrip['connection']['line']['timetableNotes'][] = ['localizedText'=>['cs'=>'Grafikony: PD: T2610 SN: T2609 Pz: P2610']];
+$equipment = $mapper->trip($equipmentTrip,'fixture','2026-10-06')['metadata'];
+check($equipment['features'] === ['BICYCLE_TRANSPORT','WIFI','TOILETS'] && $equipment['accessibility']==='accessible', 'trip mapper includes documented equipment, deduplicates and rejects unknown features');
+check($equipment['reservations']===['bicycle'=>'mandatory','passenger'=>'available'], 'trip reservation policies remain distinct from transport permissions');
+check(end($equipment['notes'])['category']==='technical' && $equipment['notes'][0]['category']==='passenger', 'internal timetable variants are classified separately from passenger notes');
+$equipmentTrip['connection']['accessibility']='NONE';
+$equipmentTrip['connection']['features']=null;
+check($mapper->trip($equipmentTrip,'fixture','2026-10-06')['metadata']['accessibility']===null && $mapper->trip($equipmentTrip,'fixture','2026-10-06')['metadata']['features']===[], 'missing equipment never invents availability or a prohibition');
+
+check(!\App\Modules\Transport\Core\JourneyAreaService::isIntercity($nativeQuery,$cityJourneys), 'unknown city metadata does not assert an intercity route');
+check(\App\Modules\Transport\Core\JourneyAreaService::isIntercity($cityQuery->withPlaces(['city'=>'Praha','id'=>'a'],['city'=>'Brno','id'=>'b']),$cityJourneys), 'verified distinct endpoint cities mark intercity routes');
+check(!\App\Modules\Transport\Core\JourneyAreaService::isIntercity($cityQuery,$cityJourneys), 'local journeys do not clear the selected city');

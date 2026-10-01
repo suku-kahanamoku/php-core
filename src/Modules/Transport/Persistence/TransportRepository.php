@@ -22,9 +22,7 @@ final class TransportRepository
      * @param  string $tenant Kód okurku, kterému patří všechny dotazy.
      * @return void
      */
-    public function __construct(public readonly \PDO $db, public readonly string $tenant)
-    {
-    }
+    public function __construct(public readonly \PDO $db, public readonly string $tenant) {}
 
     /**
      * Provede výběrový dotaz a vrátí všechny řádky.
@@ -71,7 +69,7 @@ final class TransportRepository
         return $this->execute(
             'UPDATE transport_provider SET probe_until=IF(open_until IS NOT NULL,DATE_ADD(UTC_TIMESTAMP(),INTERVAL 15 SECOND),probe_until),next_request_at=DATE_ADD(UTC_TIMESTAMP(3),INTERVAL ? MICROSECOND)
             WHERE franchise_code=? AND code=? AND published=1 AND (open_until IS NULL OR open_until<=UTC_TIMESTAMP()) AND (probe_until IS NULL OR probe_until<=UTC_TIMESTAMP()) AND (next_request_at IS NULL OR next_request_at<=UTC_TIMESTAMP(3))',
-            [max(1, $minIntervalMs * 1000),$this->tenant,$code]
+            [max(1, $minIntervalMs * 1000), $this->tenant, $code]
         ) === 1;
     }
     /**
@@ -93,7 +91,7 @@ final class TransportRepository
     /** Circuit is open after upstream failures or a Retry-After response. */
     public function providerOutage(string $code): bool
     {
-        $rows = $this->rows('SELECT (open_until>UTC_TIMESTAMP() OR (failure_count>=3 AND probe_until>UTC_TIMESTAMP())) AS unavailable FROM transport_provider WHERE franchise_code=? AND code=?', [$this->tenant,$code]);
+        $rows = $this->rows('SELECT (open_until>UTC_TIMESTAMP() OR (failure_count>=3 AND probe_until>UTC_TIMESTAMP())) AS unavailable FROM transport_provider WHERE franchise_code=? AND code=?', [$this->tenant, $code]);
         return !empty($rows[0]['unavailable']);
     }
 
@@ -105,7 +103,7 @@ final class TransportRepository
      */
     public function providerSuccess(string $code): void
     {
-        $this->execute('UPDATE transport_provider SET failure_count=0,open_until=NULL,probe_until=NULL WHERE franchise_code=? AND code=?', [$this->tenant,$code]);
+        $this->execute('UPDATE transport_provider SET failure_count=0,open_until=NULL,probe_until=NULL WHERE franchise_code=? AND code=?', [$this->tenant, $code]);
     }
     /**
      * Zapíše selhání poskytovatele a případně jej dočasně odstaví.
@@ -120,7 +118,7 @@ final class TransportRepository
     public function providerFailure(string $code, ?int $retryAfter = null): void
     {
         $seconds = max(30, min(3600, $retryAfter ?? 30));
-        $this->execute('UPDATE transport_provider SET open_until=IF(failure_count>=2 OR ?=1,DATE_ADD(UTC_TIMESTAMP(),INTERVAL ? SECOND),NULL),failure_count=failure_count+1,probe_until=NULL WHERE franchise_code=? AND code=?', [$retryAfter !== null ? 1 : 0,$seconds,$this->tenant,$code]);
+        $this->execute('UPDATE transport_provider SET open_until=IF(failure_count>=2 OR ?=1,DATE_ADD(UTC_TIMESTAMP(),INTERVAL ? SECOND),NULL),failure_count=failure_count+1,probe_until=NULL WHERE franchise_code=? AND code=?', [$retryAfter !== null ? 1 : 0, $seconds, $this->tenant, $code]);
     }
     /**
      * Uloží spojení do mezipaměti a doplní mu veřejné ID a čas vypršení.
@@ -139,7 +137,7 @@ final class TransportRepository
         $expires = gmdate('Y-m-d H:i:s', time() + $ttl);
         $journey['id'] = $id;
         $journey['expires_at'] = gmdate('Y-m-d\TH:i:s\Z', time() + $ttl);
-        $this->execute('INSERT INTO transport_journey_cache (franchise_code,id,payload,expires_at) VALUES (?,?,?,?)', [$this->tenant,$id,json_encode($journey, JSON_THROW_ON_ERROR),$expires]);
+        $this->execute('INSERT INTO transport_journey_cache (franchise_code,id,payload,expires_at) VALUES (?,?,?,?)', [$this->tenant, $id, json_encode($journey, JSON_THROW_ON_ERROR), $expires]);
         $publicJourney['id'] = $id;
         $publicJourney['expires_at'] = $journey['expires_at'];
         return $publicJourney;
@@ -159,7 +157,7 @@ final class TransportRepository
         if (!preg_match('/^[a-f0-9]{32}$/D', $id)) {
             throw new TransportException('not_found', 'Journey not found.', 404);
         }
-        $r = $this->rows('SELECT payload FROM transport_journey_cache WHERE franchise_code=? AND id=? AND expires_at>UTC_TIMESTAMP()', [$this->tenant,$id]);
+        $r = $this->rows('SELECT payload FROM transport_journey_cache WHERE franchise_code=? AND id=? AND expires_at>UTC_TIMESTAMP()', [$this->tenant, $id]);
         if (!$r) {
             throw new TransportException('expired_journey', 'Journey expired or not found; search again.', 404);
         }
@@ -173,23 +171,37 @@ final class TransportRepository
      */
     public function activeFeed(string $code): ?array
     {
-        return $this->rows("SELECT v.*,f.provider_code,f.timezone,(SELECT MAX(sr.finished_at) FROM transport_sync_run sr WHERE sr.franchise_code=v.franchise_code AND sr.version_id=v.id AND sr.status='ready') snapshot_at FROM transport_feed f JOIN transport_feed_version v ON v.franchise_code=f.franchise_code AND v.id=f.active_version_id AND v.feed_code=f.code WHERE f.franchise_code=? AND f.code=? AND v.status='active'", [$this->tenant,$code])[0] ?? null;
+        return $this->rows("SELECT v.*,f.provider_code,f.timezone,(SELECT MAX(sr.finished_at) FROM transport_sync_run sr WHERE sr.franchise_code=v.franchise_code AND sr.version_id=v.id AND sr.status='ready') snapshot_at FROM transport_feed f JOIN transport_feed_version v ON v.franchise_code=f.franchise_code AND v.id=f.active_version_id AND v.feed_code=f.code WHERE f.franchise_code=? AND f.code=? AND v.status='active'", [$this->tenant, $code])[0] ?? null;
     }
     /** Read only a valid static snapshot for failed nearby-stop providers. Never stores the query point. */
     public function nearbyStops(array $location, int $radius, array $providers): array
     {
-        if (!$providers) { return []; }
+        if (!$providers) {
+            return [];
+        }
         $sql = "SELECT s.*,f.provider_code,f.timezone,
             6371000*ACOS(LEAST(1,GREATEST(-1,SIN(RADIANS(?))*SIN(RADIANS(s.lat))+COS(RADIANS(?))*COS(RADIANS(s.lat))*COS(RADIANS(s.lon-?))))) distance_m
             FROM transport_feed f JOIN transport_feed_version v ON v.franchise_code=f.franchise_code AND v.id=f.active_version_id
             JOIN transport_stop s ON s.franchise_code=v.franchise_code AND s.version_id=v.id
             WHERE f.franchise_code=? AND v.status='active' AND v.valid_from<=UTC_DATE() AND v.valid_until>=UTC_DATE()
             AND s.lat IS NOT NULL AND s.lon IS NOT NULL AND s.location_type IN (0,1)
-            AND s.lat BETWEEN ? AND ? AND f.provider_code IN (".implode(',',array_fill(0,count($providers),'?')).")
+            AND s.lat BETWEEN ? AND ? AND f.provider_code IN (" . implode(',', array_fill(0, count($providers), '?')) . ")
             HAVING distance_m<=? ORDER BY distance_m,s.external_id LIMIT 50";
         $delta = $radius / 110000;
-        return array_map($this->stopRow(...), $this->rows($sql,
-            [$location['lat'],$location['lat'],$location['lon'],$this->tenant,$location['lat']-$delta,$location['lat']+$delta,...$providers,$radius]));
+        return array_map($this->stopRow(...), $this->rows(
+            $sql,
+            [$location['lat'], $location['lat'], $location['lon'], $this->tenant, $location['lat'] - $delta, $location['lat'] + $delta, ...$providers, $radius]
+        ));
+    }
+
+    /** Imported municipality names of failed sources only; never used for healthy online catalogues. */
+    public function cities(string $country, array $providers): array
+    {
+        if (!$providers) {
+            return [];
+        }
+        $sql = "SELECT DISTINCT f.provider_code,JSON_UNQUOTE(JSON_EXTRACT(s.data,'$.city')) name FROM transport_feed f JOIN transport_feed_version v ON v.franchise_code=f.franchise_code AND v.id=f.active_version_id JOIN transport_stop s ON s.franchise_code=v.franchise_code AND s.version_id=v.id JOIN transport_provider p ON p.franchise_code=f.franchise_code AND p.code=f.provider_code WHERE f.franchise_code=? AND v.status='active' AND v.valid_until>=UTC_DATE() AND JSON_TYPE(JSON_EXTRACT(s.data,'$.city'))='STRING' AND JSON_CONTAINS(p.coverage,JSON_OBJECT('country',?)) AND f.provider_code IN (" . implode(',', array_fill(0, count($providers), '?')) . ") ORDER BY name,provider_code LIMIT 10000";
+        return array_map(fn($row) => ['id' => \App\Modules\Transport\Model\ResourceIdCodec::encode($this->tenant, $row['provider_code'], 'city', $row['name']), 'name' => $row['name'], 'state' => $country, 'source_mode' => 'fallback'], $this->rows($sql, [$this->tenant, $country, ...$providers]));
     }
 
     /**
@@ -205,29 +217,37 @@ final class TransportRepository
      *                                      null dovoluje přímý katalogový dotaz.
      * @return list<array<string, mixed>> Zastávky s veřejným ID.
      */
-    public function places(string $query, int $limit, ?string $country, ?array $providers = null, ?string $city = null): array
+    public function places(string $query, int $limit, ?string $country, ?array $providers = null, ?string $city = null, ?array $location = null): array
     {
         if ($providers === []) {
             return [];
         }
         $sql = "SELECT s.*,f.provider_code,f.timezone,(SELECT MAX(sr.finished_at) FROM transport_sync_run sr WHERE sr.franchise_code=v.franchise_code AND sr.version_id=v.id AND sr.status='ready') snapshot_at FROM transport_feed f JOIN transport_feed_version v ON v.franchise_code=f.franchise_code AND v.id=f.active_version_id JOIN transport_stop s ON s.franchise_code=v.franchise_code AND s.version_id=v.id JOIN transport_provider p ON p.franchise_code=f.franchise_code AND p.code=f.provider_code WHERE f.franchise_code=? AND v.status='active' AND v.valid_until>=UTC_DATE() AND s.name LIKE ? ESCAPE '!'";
-        $params = [$this->tenant,'%'.str_replace(['!','%','_'], ['!!','!%','!_'], $query).'%'];
+        $params = [$this->tenant, '%' . str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $query) . '%'];
         if ($city !== null) {
             // Imported feeds may provide city metadata; otherwise require the city in the stop label.
             $sql .= " AND (JSON_UNQUOTE(JSON_EXTRACT(s.data,'$.city'))=? OR s.name LIKE ? ESCAPE '!')";
             $params[] = $city;
-            $params[] = str_replace(['!','%','_'], ['!!','!%','!_'], $city).',%';
+            $params[] = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $city) . ',%';
         }
         if ($country !== null) {
             $sql .= " AND JSON_CONTAINS(p.coverage,JSON_OBJECT('country',?))";
             $params[] = $country;
         }
         if ($providers !== null) {
-            $sql .= ' AND f.provider_code IN ('.implode(',', array_fill(0, count($providers), '?')).')';
+            $sql .= ' AND f.provider_code IN (' . implode(',', array_fill(0, count($providers), '?')) . ')';
             array_push($params, ...$providers);
         }
-        $sql .= ' ORDER BY s.name,s.external_id LIMIT '.max(1, min(50, $limit));
-        return array_map(fn ($s) => $this->stopRow($s), $this->rows($sql, $params));
+        if ($location !== null && $city === null) {
+            // Order before LIMIT so distant alphabetical matches cannot hide nearby stops.
+            $sql .= ' ORDER BY (s.lat IS NULL OR s.lon IS NULL OR ABS(s.lat)>90 OR ABS(s.lon)>180), '
+                . 'POW(SIN(RADIANS(s.lat-?)/2),2)+COS(RADIANS(?))*COS(RADIANS(s.lat))*POW(SIN(RADIANS(s.lon-?)/2),2), s.name,s.external_id';
+            array_push($params, $location['lat'], $location['lat'], $location['lon']);
+        } else {
+            $sql .= ' ORDER BY s.name,s.external_id';
+        }
+        $sql .= ' LIMIT ' . max(1, min(50, $limit));
+        return array_map(fn($s) => $this->stopRow($s), $this->rows($sql, $params));
     }
     /**
      * Načte jednu zastávku z aktivního feedu poskytovatele.
@@ -238,7 +258,7 @@ final class TransportRepository
      */
     public function stop(string $provider, string $external): ?array
     {
-        $rows = $this->rows("SELECT s.*,f.provider_code,f.timezone,(SELECT MAX(sr.finished_at) FROM transport_sync_run sr WHERE sr.franchise_code=v.franchise_code AND sr.version_id=v.id AND sr.status='ready') snapshot_at FROM transport_feed f JOIN transport_feed_version v ON v.franchise_code=f.franchise_code AND v.id=f.active_version_id JOIN transport_stop s ON s.franchise_code=v.franchise_code AND s.version_id=v.id WHERE f.franchise_code=? AND f.provider_code=? AND s.external_id=? AND v.status='active' AND v.valid_until>=UTC_DATE()", [$this->tenant,$provider,$external]);
+        $rows = $this->rows("SELECT s.*,f.provider_code,f.timezone,(SELECT MAX(sr.finished_at) FROM transport_sync_run sr WHERE sr.franchise_code=v.franchise_code AND sr.version_id=v.id AND sr.status='ready') snapshot_at FROM transport_feed f JOIN transport_feed_version v ON v.franchise_code=f.franchise_code AND v.id=f.active_version_id JOIN transport_stop s ON s.franchise_code=v.franchise_code AND s.version_id=v.id WHERE f.franchise_code=? AND f.provider_code=? AND s.external_id=? AND v.status='active' AND v.valid_until>=UTC_DATE()", [$this->tenant, $provider, $external]);
         return isset($rows[0]) ? $this->stopRow($rows[0]) : null;
     }
     /**
@@ -249,8 +269,17 @@ final class TransportRepository
      */
     private function stopRow(array $s): array
     {
-        return ['id' => ResourceIdCodec::encode($this->tenant, $s['provider_code'], 'stop', $s['external_id']),'name' => $s['name'],'lat' => $s['lat'] !== null ? (float)$s['lat'] : null,'lon' => $s['lon'] !== null ? (float)$s['lon'] : null,'platform' => $s['platform'],'timezone' => $s['timezone'],'source_mode' => 'schedule','snapshot_version' => (int)$s['version_id'],
-            'snapshot_at' => isset($s['snapshot_at']) ? str_replace(' ', 'T', $s['snapshot_at']).'Z' : null];
+        return [
+            'id' => ResourceIdCodec::encode($this->tenant, $s['provider_code'], 'stop', $s['external_id']),
+            'name' => $s['name'],
+            'lat' => $s['lat'] !== null ? (float)$s['lat'] : null,
+            'lon' => $s['lon'] !== null ? (float)$s['lon'] : null,
+            'platform' => $s['platform'],
+            'timezone' => $s['timezone'],
+            'source_mode' => 'schedule',
+            'snapshot_version' => (int)$s['version_id'],
+            'snapshot_at' => isset($s['snapshot_at']) ? str_replace(' ', 'T', $s['snapshot_at']) . 'Z' : null
+        ];
     }
     /**
      * Načte spoj včetně zastávek, pokud v daném datu skutečně jede.
@@ -266,13 +295,14 @@ final class TransportRepository
      */
     public function trip(string $provider, string $external, string $date): ?array
     {
-        $rows = $this->rows("SELECT t.*,r.name line,r.mode,r.data route_data,o.timezone,(SELECT MAX(sr.finished_at) FROM transport_sync_run sr WHERE sr.franchise_code=v.franchise_code AND sr.version_id=v.id AND sr.status='ready') snapshot_at FROM transport_feed f JOIN transport_feed_version v ON v.franchise_code=f.franchise_code AND v.id=f.active_version_id JOIN transport_trip t ON t.franchise_code=v.franchise_code AND t.version_id=v.id JOIN transport_route r ON r.franchise_code=t.franchise_code AND r.version_id=t.version_id AND r.external_id=t.route_id JOIN transport_operator o ON o.franchise_code=r.franchise_code AND o.version_id=r.version_id AND o.external_id=r.operator_id WHERE f.franchise_code=? AND f.provider_code=? AND t.external_id=? AND v.status='active' AND v.valid_from<=? AND v.valid_until>=?", [$this->tenant,$provider,$external,$date,$date]);
+        $rows = $this->rows("SELECT t.*,r.name line,r.mode,r.data route_data,o.timezone,(SELECT MAX(sr.finished_at) FROM transport_sync_run sr WHERE sr.franchise_code=v.franchise_code AND sr.version_id=v.id AND sr.status='ready') snapshot_at FROM transport_feed f JOIN transport_feed_version v ON v.franchise_code=f.franchise_code AND v.id=f.active_version_id JOIN transport_trip t ON t.franchise_code=v.franchise_code AND t.version_id=v.id JOIN transport_route r ON r.franchise_code=t.franchise_code AND r.version_id=t.version_id AND r.external_id=t.route_id JOIN transport_operator o ON o.franchise_code=r.franchise_code AND o.version_id=r.version_id AND o.external_id=r.operator_id WHERE f.franchise_code=? AND f.provider_code=? AND t.external_id=? AND v.status='active' AND v.valid_from<=? AND v.valid_until>=?", [$this->tenant, $provider, $external, $date, $date]);
         if (!$rows) {
             return null;
-        } $trip = $rows[0];
+        }
+        $trip = $rows[0];
         $version = $trip['version_id'];
-        $service = $this->rows('SELECT * FROM transport_service WHERE franchise_code=? AND version_id=? AND external_id=?', [$this->tenant,$version,$trip['service_id']])[0];
-        $exception = $this->rows('SELECT exception_type FROM transport_service_exception WHERE franchise_code=? AND version_id=? AND service_id=? AND service_date=?', [$this->tenant,$version,$trip['service_id'],$date])[0]['exception_type'] ?? null;
+        $service = $this->rows('SELECT * FROM transport_service WHERE franchise_code=? AND version_id=? AND external_id=?', [$this->tenant, $version, $trip['service_id']])[0];
+        $exception = $this->rows('SELECT exception_type FROM transport_service_exception WHERE franchise_code=? AND version_id=? AND service_id=? AND service_date=?', [$this->tenant, $version, $trip['service_id'], $date])[0]['exception_type'] ?? null;
         $runs = $date >= ($service['start_date'] ?? '9999') && $date <= ($service['end_date'] ?? '0000') && ($service['weekdays'][(int)(new \DateTimeImmutable($date))->format('N') - 1] ?? '0') === '1';
         if ($exception !== null) {
             $runs = (int)$exception === 1;
@@ -280,7 +310,7 @@ final class TransportRepository
         if (!$runs) {
             return null;
         }
-        $stops = $this->rows('SELECT st.*,s.name,s.lat,s.lon,s.platform FROM transport_stop_time st JOIN transport_stop s ON s.franchise_code=st.franchise_code AND s.version_id=st.version_id AND s.external_id=st.stop_id WHERE st.franchise_code=? AND st.version_id=? AND st.trip_id=? ORDER BY st.sequence', [$this->tenant,$version,$external]);
+        $stops = $this->rows('SELECT st.*,s.name,s.lat,s.lon,s.platform FROM transport_stop_time st JOIN transport_stop s ON s.franchise_code=st.franchise_code AND s.version_id=st.version_id AND s.external_id=st.stop_id WHERE st.franchise_code=? AND st.version_id=? AND st.trip_id=? ORDER BY st.sequence', [$this->tenant, $version, $external]);
         $calls = [];
         foreach ($stops as $s) {
             /**
@@ -289,12 +319,27 @@ final class TransportRepository
              * @param  int|null $seconds Sekundy od půlnoci, nebo null pro neuvedený čas.
              * @return string|null         Čas ve formátu RFC3339, nebo null.
              */
-            $clock = fn ($seconds) => $seconds === null ? null : ServiceTimeService::instant($date, (int)$seconds, $trip['timezone'])->format(DATE_RFC3339);
-            $calls[] = ['stop' => ['id' => ResourceIdCodec::encode($this->tenant, $provider, 'stop', $s['stop_id']),'name' => $s['name'],'lat' => (float)$s['lat'],'lon' => (float)$s['lon'],'platform' => $s['platform'],'timezone' => $trip['timezone']],
-                'scheduled_arrival' => $clock($s['arrival_seconds']),'scheduled_departure' => $clock($s['departure_seconds']),'expected_arrival' => null,'expected_departure' => null,'realtime' => false,'cancelled' => null];
+            $clock = fn($seconds) => $seconds === null ? null : ServiceTimeService::instant($date, (int)$seconds, $trip['timezone'])->format(DATE_RFC3339);
+            $calls[] = [
+                'stop' => ['id' => ResourceIdCodec::encode($this->tenant, $provider, 'stop', $s['stop_id']), 'name' => $s['name'], 'lat' => (float)$s['lat'], 'lon' => (float)$s['lon'], 'platform' => $s['platform'], 'timezone' => $trip['timezone']],
+                'scheduled_arrival' => $clock($s['arrival_seconds']),
+                'scheduled_departure' => $clock($s['departure_seconds']),
+                'expected_arrival' => null,
+                'expected_departure' => null,
+                'realtime' => false,
+                'cancelled' => null
+            ];
         }
-        $frequency = (bool)$this->rows('SELECT 1 FROM transport_frequency WHERE franchise_code=? AND version_id=? AND trip_id=? LIMIT 1', [$this->tenant,$version,$external]);
-        return ['id' => ResourceIdCodec::encode($this->tenant, $provider, 'trip', $external, $date),'service_date' => $date,'line' => ['id' => ResourceIdCodec::encode($this->tenant, $provider, 'line', $trip['route_id']),'name' => $trip['line'],'code' => json_decode($trip['route_data'], true)['route_short_name'] ?? null,'mode' => $trip['mode']],'stops' => $calls,'frequency_based' => $frequency,'source_mode' => 'schedule',
-            'snapshot_version' => (int)$version,'snapshot_at' => isset($trip['snapshot_at']) ? str_replace(' ', 'T', $trip['snapshot_at']).'Z' : null];
+        $frequency = (bool)$this->rows('SELECT 1 FROM transport_frequency WHERE franchise_code=? AND version_id=? AND trip_id=? LIMIT 1', [$this->tenant, $version, $external]);
+        return [
+            'id' => ResourceIdCodec::encode($this->tenant, $provider, 'trip', $external, $date),
+            'service_date' => $date,
+            'line' => ['id' => ResourceIdCodec::encode($this->tenant, $provider, 'line', $trip['route_id']), 'name' => $trip['line'], 'code' => json_decode($trip['route_data'], true)['route_short_name'] ?? null, 'mode' => $trip['mode']],
+            'stops' => $calls,
+            'frequency_based' => $frequency,
+            'source_mode' => 'schedule',
+            'snapshot_version' => (int)$version,
+            'snapshot_at' => isset($trip['snapshot_at']) ? str_replace(' ', 'T', $trip['snapshot_at']) . 'Z' : null
+        ];
     }
 }

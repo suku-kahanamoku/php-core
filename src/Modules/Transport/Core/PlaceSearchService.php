@@ -15,7 +15,7 @@ final class PlaceSearchService
     }
 
     /** @param list<array<string,mixed>> $places @return list<array<string,mixed>> */
-    public static function rank(array $places, string $query, int $limit): array
+    public static function rank(array $places, string $query, int $limit, ?array $location = null): array
     {
         $query = self::normalize($query);
         $ranked = [];
@@ -29,9 +29,16 @@ final class PlaceSearchService
             $score = $name === $query || $local === $query ? 0
                 : (count($parts) > 1 && str_starts_with($local, $query) ? 1
                 : (str_starts_with($name, $query) ? 2 : 3));
-            $ranked[] = [$score, $name, (string)$place['id'], $place];
+            $distance = 0.0;
+            if ($location !== null) {
+                $valid = is_numeric($place['lat'] ?? null) && is_numeric($place['lon'] ?? null)
+                    && is_finite((float)$place['lat']) && is_finite((float)$place['lon'])
+                    && abs((float)$place['lat']) <= 90 && abs((float)$place['lon']) <= 180;
+                $distance = $valid ? NearestStopService::distance($location, $place) : INF;
+            }
+            $ranked[] = [$distance, $score, $name, (string)$place['id'], $place];
         }
-        usort($ranked, static fn ($a, $b) => [$a[0],$a[1],$a[2]] <=> [$b[0],$b[1],$b[2]]);
-        return array_map(static fn ($row) => $row[3], array_slice($ranked, 0, $limit));
+        usort($ranked, static fn ($a, $b) => [$a[0],$a[1],$a[2],$a[3]] <=> [$b[0],$b[1],$b[2],$b[3]]);
+        return array_map(static fn ($row) => $row[4], array_slice($ranked, 0, $limit));
     }
 }

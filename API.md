@@ -2169,3 +2169,25 @@ not an automatic migration; it preserves users and removes foreign source jobs.
 ### Etymolog: dnešní jmeniny
 
 `GET /etymolog/public/today` vrací jediný denní přehled `{date, timezone: "Europe/Prague", items}` v obálce `data`. Datum určuje server podle Prahy, endpoint nemá filtry ani stránkování. Položky obsahují `name_id,name,source_url,source_title,source_fallback_url,calendar_title`. Odpověď také obsahuje `proverb`: buď `null`, nebo `{date,body,source_url,source_title,name_id}`. Přednost má publikovaná pranostika se zdrojem připojená k dnešnímu českému gregoriánskému datu; jinak citovaná pranostika dnešního publikovaného jména; nakonec nejbližší budoucí pranostika doložená kalendářním datem nebo nadcházejícími jmeninami. `date` uvádí skutečné datum vybrané pranostiky včetně následujících roků a přestupných dnů. Není-li dostupná žádná publikovaná pranostika, je `proverb=null`. Všechny JOINy jsou omezené tenantem; vrací jen publikované nesmazané jmenné dny a jména s aktivním zdrojem a českým gregoriánským kalendářem platným v daném roce. Nepublikované záznamy se nevracejí. Zachovává interní klíč a validaci tenanta, nevyžaduje uživatelský bearer. Odpověď je `no-store`. Migrace není potřeba.
+
+
+### Transport: online municipality catalogue
+
+`POST /transport/v1/cities/search` accepts
+`{"q":{"state":"CZ","name":{"$regex":"tab"}},"sort":[{"name":1}],"page":1,"limit":50,"projection":"id,name,state,source_mode"}`.
+`state` is required; omit `name` for the complete catalogue. Names are literal,
+accent-insensitive substrings. `limit` is 1–10000. The success envelope contains
+`data: {data: [...], total, has_more, partial, sources}`. A city row has `id`,
+`name`, `state`, `source_mode`. Names are deduplicated within the requested state.
+Healthy online catalogues take priority; imported city metadata is used only
+for failed providers, scoped to the authenticated tenant. No user GPS is read
+or stored by this endpoint. Missing capability returns `cities_not_configured`.
+
+
+Transport dodatky: `POST /transport/v1/journeys/search` vrací v `area` vedle
+`city` také `intercity` (boolean). `city=null` samo neprokazuje meziměstskou
+cestu. Detail spoje může vrátit `result.metadata.features` (povolené vybavení),
+`accessibility` (`accessible`, `partial`, null), `reservations`
+(bicycle/passenger/luggage → available/mandatory) a u poznámek
+`category` (`passenger`/`technical`). Neznámá pole lze ignorovat; vybavení je
+údaj jízdního řádu. Původní kontrakty a tenantová autorizace se nemění.

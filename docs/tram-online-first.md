@@ -124,8 +124,11 @@ naopak směrují podle ověřeného ID zdroje, aby se nezaměnily identity dopra
   pokrytí. Městský dotaz tedy zachová také národní zdroj.
 - Prázdné město znamená hledání napříč městy vybraného státu. Prázdný stát
   bez GPS znamená všechny nakonfigurované státy.
-- Výslovně zadané město má přednost před GPS. Stát lze kombinovat s GPS pro
-  lokální výběr; pokud je zařízení mimo zadaný stát, rozhoduje zadaný stát.
+- Výslovně zadané město má přednost před GPS. Při textovém našeptávání se
+  zvoleným státem GPS slouží k řazení všech textových shod podle vzdálenosti,
+  nikoli k vyřazení poskytovatelů ostatních měst. Bez souřadnic rozhoduje
+  textová relevance; položky bez známé polohy zůstávají za těmi se vzdáleností.
+  Samostatné hledání nejbližší zastávky nadále vybírá zdroje podle pokrytí GPS.
 - GPS výběr používá nakonfigurované `bbox`. **Není to zatím globální reverse
   geocoder ani přesná administrativní hranice obcí/států.** U hranic se mohou
   oblasti překrývat; přesné rozlišení vyžaduje doplnit geografický resolver

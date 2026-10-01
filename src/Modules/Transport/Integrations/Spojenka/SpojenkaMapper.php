@@ -190,11 +190,24 @@ final class SpojenkaMapper
                 foreach (array_slice($note['localizedText'], 0, 10, true) as $language=>$text) {
                     if (is_string($language) && preg_match('/^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/D', $language) && ($value = $plain($text, 4000)) !== null) { $texts[$language] = $value; }
                 }
-                if ($texts) { $notes[] = ['scope'=>$scope,'texts'=>$texts,'default_language'=>$plain($note['defaultLanguage'] ?? null, 35)]; }
+                if ($texts) { $notes[] = ['scope'=>$scope,'category'=>($scope === 'line' && preg_match('/^\s*Grafikony\s*:/iu', $texts['cs'] ?? '')) ? 'technical' : 'passenger','texts'=>$texts,'default_language'=>$plain($note['defaultLanguage'] ?? null, 35)]; }
             }
         }
         return ['line'=>$code, 'number'=>$number, 'name'=>$plain($connection['name'] ?? null),
-            'service_date'=>$date, 'notes'=>$notes];
+            'service_date'=>$date, 'notes'=>$notes,
+            'features'=>array_values(array_unique(array_intersect(
+                is_array($connection['features'] ?? null) ? array_filter($connection['features'], 'is_string') : [],
+                ['REFRESHMENTS','TOILETS','LUGGAGE_TRANSPORT','BICYCLE_TRANSPORT','SOCKETS_230V','WIFI','INFOTAINMENT']
+            ))),
+            // NONE/unknown is not evidence of an accessible vehicle, nor a passenger-facing prohibition.
+            'accessibility'=>match($connection['accessibility'] ?? null) {
+                'SEMI_BARRIER_FREE'=>'partial', 'BARRIER_FREE','BARRIER_FREE_DELUXE'=>'accessible', default=>null,
+            },
+            'reservations'=>array_filter(array_map(
+                static fn($policy)=>in_array($policy, ['AVAILABLE','MANDATORY'], true) ? strtolower($policy) : null,
+                array_intersect_key(is_array($connection['reservations'] ?? null) ? $connection['reservations'] : [], array_flip(['bicycle','passenger','luggage']))
+            )),
+        ];
     }
 
 }

@@ -324,6 +324,11 @@ pokud používá nový protokol; další instanci téhož API stačí nakonfigur
 Našeptávání: `POST /v1/places/search` s `q.name.$regex`, `q.state`, `q.city`,
 volitelnou čerstvou GPS v těle a standardními `limit/page/sort/projection`.
 Řádky jsou pod `data`, maximálně 50 (web zobrazuje 20), stránka 1.
+Bez výslovného města čerstvá GPS řadí textové shody podle vzdálenosti (vzdušnou
+čarou), potom textové relevance a stabilního ID. Shody bez souřadnic zůstávají
+na konci. Pro výslovný stát se oslovují i zdroje ostatních měst; GPS není
+omezení na okolí ani okruh 2 km. Řadí se před limitem v adaptéru i po sloučení
+zdrojů; při výpadku také nad statickými zastávkami z DB.
 Detaily se směrují přes tenantové ID původního poskytovatele.
 
 `NearestStopService` převádí `current_location` na nejbližší online zastávku
@@ -380,3 +385,44 @@ Pro stávající instalaci je před nasazením kódu nutná aditivní migrace
 `migrations/tram_modularity.sql`. Přesné kroky, pravidla cleanup a zbývající
 omezení (jeden feed na OTP graf, sanitizovaná cache detailů, žádné obecné skládání
 mezinárodních přestupů) jsou v [ARCHITECTURE.md](ARCHITECTURE.md#11-migrace-a-aktuální-hranice).
+
+
+### Katalog měst a obcí (1. 10. 2026)
+
+`POST /transport/v1/cities/search` používá standardní kontrakt: `q.state`
+(povinný ISO stát), volitelné `q.name.$regex` (doslovná část názvu bez rozlišení
+diakritiky), `sort` podle `name`, `projection`, `page` a `limit` 1–10000.
+Příklad: `{"q":{"state":"CZ"},"limit":10000,"page":1,"sort":[{"name":1}]}`.
+Výsledek obsahuje `data`, `total`, `has_more`, `partial` a `sources`.
+Řádky mají `id` druhu `city`, `name`, `state`, `source_mode`.
+
+`CityCatalogService` používá společný výběr poskytovatelů, HTTP rozhraní,
+časové rozpočty a circuit breaker. Schopnost `cities` dodává adaptér zdroje;
+nové země nemají v UI vlastní seznam měst. Shodné názvy ve státě slučujeme,
+protože současný filtr `city` pracuje s názvem, nikoli ID municipality.
+Zdravá prázdná odpověď nikdy nespouští DB fallback. Při výpadku se použijí jen
+ověřená `data.city` zastávek aktivního importu postiženého poskytovatele,
+s tenantovým a státním omezením; pokud chybějí, dostupnost se nepředstírá.
+Žádná nová migrace ani persistování GPS není potřeba.
+
+Spojenka poskytuje český registr `MUNICIPALITY` přes `/places/search`.
+Prázdný dotaz bez referenčního bodu vrací prázdný seznam, proto adaptér pro
+celý registr používá pevný geografický referenční bod datasetu a limit 10000.
+Nejde o GPS uživatele. Limit i velikost odpovědi jsou omezené; zaplněný limit
+se odmítne jako neúplná odpověď. Živě ověřeno 6258 položek dne 1. 10. 2026.
+Katalog obcí neznamená garanci spoje pro každý čas nebo kombinaci zastávek.
+
+### Oblast výsledků a vybavení konkrétního spoje
+
+`area.city=null` může znamenat neúplná metadata obcí. Samostatné `area.intercity`
+rozlišuje prokázanou cestu mezi různými obcemi; frontend nemá při neznámé oblasti
+mazat zvolené město. Nejde o kontrolu celé geometrie trasy.
+
+Spojenka převádí `connection.features`, `accessibility` a `reservations` do
+`metadata.features`, `accessibility` (`accessible` / `partial` / null) a
+`reservations` (bicycle/passenger/luggage: available/mandatory). Používáme jen
+povolené doložené hodnoty z OpenAPI. NONE, neznámé nebo chybějící hodnoty
+nezobrazujeme jako potvrzení vybavení či zákaz přepravy. Nejde o realtime
+ověření vozidla. Poznámky linky začínající českým „Grafikony:“ označuje adaptér
+jako `category=technical`; původní text zůstává dostupný, ostatní poznámky mají
+`category=passenger`. Žádný limit tří poznámek neexistuje.

@@ -8,6 +8,31 @@ use App\Modules\Transport\Model\JourneyQuery;
 /** Determine a common municipality from verified endpoint metadata and the returned itinerary. */
 final class JourneyAreaService
 {
+    /** Missing municipality metadata is not evidence of an intercity journey. */
+    public static function isIntercity(JourneyQuery $query, array $journeys): bool
+    {
+        if (!$journeys) { return false; }
+        $cities = [];
+        foreach ([$query->from, $query->to] as $stop) {
+            if (is_string($stop['city'] ?? null) && trim($stop['city']) !== '') {
+                $cities[PlaceSearchService::normalize($stop['city'])] = true;
+            }
+        }
+        if (count($cities) > 1) { return true; }
+        // Judge each itinerary independently, using only explicit municipality metadata.
+        foreach ($journeys as $journey) {
+            $visited = $cities;
+            foreach ($journey['legs'] as $leg) {
+                foreach (['from','to'] as $side) {
+                    $city = $leg[$side]['city'] ?? null;
+                    if (is_string($city) && trim($city) !== '') { $visited[PlaceSearchService::normalize($city)] = true; }
+                }
+            }
+            if (count($visited) > 1) { return true; }
+        }
+        return false;
+    }
+
     public static function city(JourneyQuery $query, array $journeys): ?string
     {
         $city = $query->from['city'] ?? null;
