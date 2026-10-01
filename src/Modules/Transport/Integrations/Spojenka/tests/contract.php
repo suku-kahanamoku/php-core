@@ -90,3 +90,11 @@ check($mapper->trip($equipmentTrip,'fixture','2026-10-06')['metadata']['accessib
 check(!\App\Modules\Transport\Core\JourneyAreaService::isIntercity($nativeQuery,$cityJourneys), 'unknown city metadata does not assert an intercity route');
 check(\App\Modules\Transport\Core\JourneyAreaService::isIntercity($cityQuery->withPlaces(['city'=>'Praha','id'=>'a'],['city'=>'Brno','id'=>'b']),$cityJourneys), 'verified distinct endpoint cities mark intercity routes');
 check(!\App\Modules\Transport\Core\JourneyAreaService::isIntercity($cityQuery,$cityJourneys), 'local journeys do not clear the selected city');
+
+// Static rows must be deliverable without any per-stop coordinate HTTP requests.
+$noCoordinateHttp = new class implements \App\Modules\Http\Contracts\HttpClient {
+    public function send(\App\Modules\Http\HttpRequest $request): \App\Modules\Http\HttpResponse { throw new \RuntimeException('Unexpected enrichment request'); }
+    public function sendAll(array $requests, int $budgetMs = 6000, int $concurrency = 4): array { throw new \RuntimeException('Unexpected enrichment requests'); }
+};
+$staticTrip = $mapper->trip($legendTrip, 'fixture', '2026-10-06');
+check($sp->enrichResource('trip', $staticTrip, ['stop_coordinates' => false], $noCoordinateHttp) === $staticTrip, 'fast trip keeps static rows and metadata without waiting for coordinate enrichment');

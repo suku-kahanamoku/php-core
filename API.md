@@ -2192,6 +2192,16 @@ cestu. Detail spoje může vrátit `result.metadata.features` (povolené vybaven
 `category` (`passenger`/`technical`). Neznámá pole lze ignorovat; vybavení je
 údaj jízdního řádu. Původní kontrakty a tenantová autorizace se nemění.
 
+### Transport: rychlé načtení statického detailu
+
+`GET /transport/v1/trips/:id?stop_coordinates=0` vynechá u Spojenky dodatečné
+HTTP dohledávání chybějících souřadnic zastávek. Vrací stejné statické zastávky,
+časy a metadata; existující souřadnice zachová. Výchozí `stop_coordinates=1`
+zachovává původní chování. Parametr přijímá pouze 0/1. Neovlivňuje autorizaci,
+online výběr zdroje ani pravidla záložního katalogu. Frontend může později
+vyžádat doplněný detail pro promítnutí živé GPS na osu, aniž nahrazuje seznam.
+Živé pozorování se načítá nezávisle přes tracking.
+
 ### Transport: živé sledování a predikce
 
 - IDS JMK realtime doplní podporované datované Spojenka/CIS identity přes `RealtimeReferenceProvider`; veřejné ID původního spoje se nemění. Vyžaduje zapnutý adaptér `idsjmk`, ověřený dnešní jízdní řád a měření mladší 30 sekund. Dostupnost ticketu znamená podporu odběru, nikoli záruku, že vozidlo právě vysílá. Viz [konfigurace a přesné pokrytí](docs/tram-realtime-tracking.md).

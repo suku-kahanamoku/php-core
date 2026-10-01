@@ -122,7 +122,7 @@ final class SpojenkaProvider implements JourneySearchProvider, ResourceProvider,
     /** Resolve public stop coordinates online; no vehicle or user positions are persisted. */
     public function enrichResource(string $operation, array $result, array $input, \App\Modules\Http\Contracts\HttpClient $http): array
     {
-        if ($operation !== 'trip') {
+        if ($operation !== 'trip' || ($input['stop_coordinates'] ?? true) === false) {
             return $result;
         }
         $requests = [];

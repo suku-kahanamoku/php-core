@@ -96,7 +96,8 @@ final class TransportApi
         foreach (['/v1/stops/:id' => 'stop', '/v1/stops/:id/departures' => 'departures', '/v1/trips/:id' => 'trip', '/v1/trips/:id/realtime' => 'realtime'] as $path => $operation) {
             $router->get($path, fn(Request $r, array $p) => $this->respond(fn() => $this->resources->resource($operation, $p['id'], [
                 'at' => JourneyQuery::date($r->get('at', gmdate('Y-m-d\TH:i:s\Z')))->format(DATE_RFC3339),
-                'limit' => JourneyQuery::integer($r->get('limit', 20), 1, 50)
+                'limit' => JourneyQuery::integer($r->get('limit', 20), 1, 50),
+                'stop_coordinates' => JourneyQuery::integer($r->get('stop_coordinates', 1), 0, 1) === 1
             ])));
         }
     }
