@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Transport\Core;
 
 use App\Modules\Http\Contracts\HttpClient;
-use App\Modules\Transport\Contracts\ResourceProvider;
+use App\Modules\Transport\Contracts\{ResourceEnrichmentProvider, ResourceProvider};
 use App\Modules\Transport\Model\{RequestBudget, ResourceIdCodec, TransportException};
 use App\Modules\Transport\Persistence\TransportRepository;
 
@@ -27,6 +27,9 @@ final class ResourceSearchService
                 $code = $provider->definition()->code;
                 $response = $http->sendAll([$code => $provider->resourceRequest($operation, $input)])[$code];
                 $data = $provider->resourceResult($operation, $response, $input);
+                if ($provider instanceof ResourceEnrichmentProvider) {
+                    $data = $provider->enrichResource($operation, $data, $input, $http);
+                }
                 foreach ($data as $row) {
                     $ref = ResourceIdCodec::decode((string)($row['id'] ?? ''), $this->repository->tenant, $operation === 'cities' ? 'city' : 'stop');
                     if ($ref['provider'] !== $code) {

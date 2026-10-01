@@ -2,6 +2,25 @@
 
 Před prací přečti `README.md` a `ARCHITECTURE.md`. Platí také root `AGENTS.md`.
 
+Mise modulu: postupně propojit veřejnou dopravu co nejvíce zemí (nejprve EU)
+do jednoho systému. Při zadání další země/providera/API pro vyhledávání spojů
+platí vždy tento postup, bez ohledu na to, zda je v zadání výslovně rozepsaný:
+
+1. Nejprve ověř licenci a podmínky použití podle licenčního gate v root
+   `AGENTS.md`. Bez potvrzeného oprávnění se adaptér nepřidává.
+2. Po potvrzení licence implementuj z reálných dat providera vše, co nabízí
+   nebo co z jeho dat lze spolehlivě odvodit: vyhledání spojení z bodu A do
+   bodu B v zadaném čase, časy odjezdů/příjezdů, zastávky a mezizastávkové
+   detaily (trasa, pořadí a přestupy). Nikdy si nevymýšlej názvy zastávek,
+   linek, spojů ani časy — používej výhradně to, co vrací API/feed/adaptér.
+   Pokud provider danou operaci nenabízí a nelze ji odvodit z jeho dat,
+   operaci vynech a rozsah jasně zdokumentuj, místo aby ses ji snažil nahradit
+   vymyšlenými hodnotami.
+3. Realtime rozšíření (zpoždění, aktuální poloha vozidla) je bonus, ne
+   povinnost. Implementuj ho, pokud to provider nabízí a licence to dovoluje;
+   chybějící realtime není důvod integraci zamítnout ani okleštit její rozsah
+   z bodu 2.
+
 - Rozšiřuj integrace v `Integrations/<Service>`; země skládej přes `Countries/<ISO2>`.
   Nová země sama nevyžaduje nový provider ani kopii protokolu.
 - Instalované implementace registruje výhradně `TransportModule`. Nezaváděj další

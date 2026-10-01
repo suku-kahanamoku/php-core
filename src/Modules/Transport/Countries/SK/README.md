@@ -14,6 +14,10 @@ tenantovým přepisem:
 }
 ```
 
-Preset nepřidává online plánovač ani realtime data. ŽSR GTFS je samostatné
-rozhodnutí: před zapnutím ukládání pro komerční použití je nutné ověřit jeho
-licenci u poskytovatele.
+Preset konfiguruje i `geocoder_url` pro fulltextové hledání zastávky podle
+jména (operace `places`). Vyžaduje zapnutý `SandboxAPIGeocoder` v `otp-config.json`
+nasazeného OTP — bez této volby OTP samotný endpoint `/otp/geocode/stopClusters`
+neobsluhuje a `places` zůstane nedostupné, zatímco routing, zastávky, odjezdy a
+detail spoje fungují i bez něj. Preset nepřidává online plánovač ani realtime
+data. ŽSR GTFS je samostatné rozhodnutí: před zapnutím ukládání pro komerční
+použití je nutné ověřit jeho licenci u poskytovatele.

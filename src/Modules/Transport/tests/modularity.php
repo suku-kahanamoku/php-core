@@ -70,6 +70,50 @@ check(count((new ProviderSelectionService(new ProviderRegistry([$fixtureRegistry
 
 require dirname(__DIR__) . '/Integrations/Entur/tests/contract.php';
 require dirname(__DIR__) . '/Integrations/WienerLinien/tests/contract.php';
+require dirname(__DIR__) . '/Integrations/OpenTripPlanner/tests/contract.php';
+
+$modular->execute('INSERT INTO transport_provider(franchise_code,code,adapter,config,coverage,fallback_for,published) VALUES (?,?,?,?,?,?,1)', ['modular', 'enriching', 'fixture_transmodel', '{}', json_encode($coverage), '[]']);
+$enrichingProvider = new class(new ProviderDefinition('modular', 'enriching', 'fixture_transmodel', ['url' => 'https://fixture.invalid'], $coverage)) implements \App\Modules\Transport\Contracts\ResourceEnrichmentProvider {
+    public function __construct(private readonly ProviderDefinition $def) {}
+    public function definition(): ProviderDefinition
+    {
+        return $this->def;
+    }
+    public function capabilities(): array
+    {
+        return ['places'];
+    }
+    public function resourceRequest(string $operation, array $input): HttpRequest
+    {
+        return new HttpRequest('https://fixture.invalid/places');
+    }
+    public function resourceResult(string $operation, HttpResponse $result, array $input): array
+    {
+        return [['id' => \App\Modules\Transport\Model\ResourceIdCodec::encode('modular', 'enriching', 'stop', 'raw-1'), 'name' => null, 'lat' => 1.0, 'lon' => 2.0]];
+    }
+    public function enrichResource(string $operation, array $result, array $input, HttpClient $http): array
+    {
+        foreach ($result as &$row) {
+            $row['name'] = 'Enriched Stop';
+        }
+        unset($row);
+        return $result;
+    }
+};
+$enrichingHttp = new class implements HttpClient {
+    public function send(HttpRequest $request): HttpResponse
+    {
+        return new HttpResponse(200, '{}');
+    }
+    public function sendAll(array $requests, int $budgetMs = 6000, int $concurrency = 4): array
+    {
+        return array_map(static fn() => new HttpResponse(200, '{}'), $requests);
+    }
+};
+$enrichedSearch = (new \App\Modules\Transport\Core\ResourceSearchService(new ProviderRegistry([$enrichingProvider]), $enrichingHttp, $modular))
+    ->search('places', ['query' => 'x'], null, null, null, new RequestBudget());
+check($enrichedSearch['rows'][0]['name'] === 'Enriched Stop', 'ResourceSearchService applies provider enrichment to place search results');
+
 $envRegistry = TransportModule::registry($r, ['TRANSPORT_PID_TOKEN' => 'modularity-fixture-credential']);
 $golemioDefinition = $envRegistry->get('pid')->definition();
 check($golemioDefinition->config['quota']['limit'] === 20 && !str_contains(json_encode($golemioDefinition->publicData([])), 'modularity-fixture-credential'), 'Golemio quota is credential-scoped and credentials never enter public metadata');

@@ -9,11 +9,12 @@
         {
           "country": "SK",
           "cities": ["Bratislava"],
-          "bbox": [16.95, 48.05, 17.25, 48.25]
+          "bbox": [16.95, 48.0, 17.25, 48.25]
         }
       ],
       "config": {
         "url": "http://127.0.0.1:8080/otp/transmodel/v3",
+        "geocoder_url": "http://127.0.0.1:8080/otp/geocode",
         "feed_code": "dpb",
         "otp_feed_id": "dpb",
         "timezone": "Europe/Bratislava",

@@ -99,7 +99,7 @@ může vynechat runtime nastavení, například aktivní graf nebo výchozí kv�
 | `Provider` | Definice instance a seznam skutečně podporovaných operací |
 | `JourneySearchProvider` | Jedno HTTP volání pro cesty: sestavení requestu a mapování response |
 | `OnlineJourneySearchProvider` | Více navazujících online volání; `supportsQuery()` a `searchOnline()` |
-| `ResourceProvider` | `places`, `nearby_stops`, `stop`, `trip`, `departures`, `realtime` dle skutečného API |
+| `ResourceProvider` | `places`, `nearby_stops`, `stop`, `trip`, `departures`, `realtime` dle skutečného API; OTP/Transmodel doplní `places` jen s nakonfigurovaným `geocoder_url` (OTP Geocoder API) |
 | `ResourcePreparationProvider` | Přípravná online volání před detailem; např. ověření provozního dne vozidla |
 | `JourneyEnrichmentProvider` | Volitelné doplnění již nalezených cest, bez persistence a změny jejich identity |
 | `ResourceMappingProvider` | Ověřený převod zdrojových ID pro online detail nebo zálohu |

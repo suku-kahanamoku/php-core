@@ -20,9 +20,20 @@ require_once __DIR__ . '/../../../../vendor/autoload.php';
 
 section('OpenAI Responses product recommender');
 $store = new class implements OpenAiVectorStoreGateway {
-    public function store(): ?array { return ['vector_store_id' => 'vs_fun']; }
+    public function acquireSyncLock(): bool
+    {
+        return true;
+    }
+    public function releaseSyncLock(): void {}
+    public function store(): ?array
+    {
+        return ['vector_store_id' => 'vs_fun'];
+    }
     public function saveStore(string $vectorStoreId, string $name): void {}
-    public function productMappings(): array { return []; }
+    public function productMappings(): array
+    {
+        return [];
+    }
     public function saveProductMapping(int $productId, string $vectorStoreId, string $fileId, string $sourceHash): void {}
     public function deleteProductMapping(int $productId): void {}
 };

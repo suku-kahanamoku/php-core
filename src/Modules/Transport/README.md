@@ -290,6 +290,7 @@ Primární dokumentace:
 - https://gtfs.org/documentation/schedule/reference/
 - https://docs.opentripplanner.org/en/v2.9.0/apis/TransmodelApi/
 - https://docs.opentripplanner.org/en/v2.9.0/GTFS-RT-Config/
+- https://docs.opentripplanner.org/en/v2.9.0/sandbox/GeocoderAPI/
 
 ### Ověřeno při implementaci (27. 9. 2026)
 
@@ -317,6 +318,22 @@ plus Golemio; nepřidává celostátní import ani oprávnění ke skladování 
 Před použitím v produkci vyřešit podmínky a limity vývojového serveru Spojenky.
 Konfiguraci sloučit s existujícími zdroji a jejich fallback vazbami; upsert
 neodstraňuje starší poskytovatele.
+
+### OTP geocoder a hledání zastávek (1. 10. 2026)
+
+Samotný OTP/Transmodel adaptér bez živého geokodéru podporuje jen `journeys`,
+`stop`, `departures` a `trip` — ne fulltextové hledání zastávky podle jména.
+Pokud provider v konfiguraci nastaví `geocoder_url` (OTP `SandboxAPIGeocoder`,
+endpoint `/otp/geocode/stopClusters`), adaptér schopnost `places` doplní: ID a
+souřadnice vrací přímo geokodér, jméno zastávky dořeší přes už ověřený
+Transmodel dotaz na `stop`. `ResourceSearchService` proto nově po úspěšném
+`resourceResult()` volá `enrichResource()`, pokud ho provider implementuje —
+platí pro `places` i `cities`, beze změny pro providery bez enrichmentu.
+Izolované MySQL testy: 317 kontrol (`src/Modules/Transport/tests/integration.php`),
+včetně kontraktu `Integrations/OpenTripPlanner/tests/contract.php` a ověření, že
+`ResourceSearchService` enrichment skutečně volá. Živý OTP se `SandboxAPIGeocoder`
+nebyl voláním ověřen; kontrakt vychází z aktuálního zdrojového kódu OTP 2.9/dev-2.x
+(`GeocoderResource`, `LuceneStopCluster`, `StopCluster.Coordinate`).
 
 Pro municipalitu lze přidat `cities` do položky pokrytí, například
 `{"country":"CZ","cities":["Brno"],"bbox":[16.4,49.0,16.9,49.4]}`.
