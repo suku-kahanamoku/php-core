@@ -1,10 +1,12 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Modules\Transport;
 
 use App\Modules\Http\Contracts\HttpClient;
 use App\Modules\Transport\Api\TransportApi;
-use App\Modules\Transport\Core\{IntegrationRegistry,ProviderRegistry,JourneyService,ResourceService};
+use App\Modules\Transport\Core\{IntegrationRegistry, ProviderRegistry, JourneyService, ResourceService};
 use App\Modules\Transport\Integrations\Golemio\GolemioModule;
 use App\Modules\Transport\Integrations\Spojenka\SpojenkaModule;
 use App\Modules\Transport\Integrations\Entur\EnturModule;
@@ -16,7 +18,7 @@ final class TransportModule
 {
     public static function integrations(): IntegrationRegistry
     {
-        return new IntegrationRegistry([new GolemioModule(), new SpojenkaModule(), new EnturModule(), new OpenTripPlannerModule()]);
+        return new IntegrationRegistry([new GolemioModule(), new \App\Modules\Transport\Integrations\IdsJmk\IdsJmkModule(), new SpojenkaModule(), new EnturModule(), new OpenTripPlannerModule()]);
     }
 
     public static function registry(TransportRepository $repository, array $env): ProviderRegistry
@@ -33,7 +35,7 @@ final class TransportModule
     public static function importers(TransportRepository $repository): \App\Modules\Transport\Import\ImporterRegistry
     {
         return new \App\Modules\Transport\Import\ImporterRegistry([
-            fn () => new \App\Modules\Transport\Import\Gtfs\GtfsImportService($repository->db, $repository->tenant),
+            fn() => new \App\Modules\Transport\Import\Gtfs\GtfsImportService($repository->db, $repository->tenant),
         ]);
     }
 
@@ -41,5 +43,4 @@ final class TransportModule
     {
         return new \App\Modules\Transport\Import\FeedSyncService($repository, $storage, $http, self::importers($repository));
     }
-
 }

@@ -44,3 +44,4 @@ check(count(PlaceSearchService::rank($rows,'Vaclav',20))===2, 'substring search 
 check(count(PlaceSearchService::rank($rows,'Brno Vaclav',20))===1, 'city plus name works without a comma');
 check(PlaceSearchService::rank($rows,'.*',20)===[], 'regex-looking input remains literal');
 require dirname(__DIR__).'/Integrations/Spojenka/tests/contract.php';
+require dirname(__DIR__).'/Integrations/IdsJmk/tests/contract.php';

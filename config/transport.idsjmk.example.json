@@ -1,0 +1,90 @@
+{
+  "providers": [
+    {
+      "code": "spojenka",
+      "adapter": "spojenka",
+      "published": true,
+      "role": "primary",
+      "coverage": [
+        {
+          "country": "CZ",
+          "bbox": [
+            12.0,
+            48.5,
+            18.9,
+            51.1
+          ]
+        }
+      ],
+      "config": {
+        "url": "https://spojenka.d3s.mff.cuni.cz/api",
+        "timezone": "Europe/Prague",
+        "min_interval_ms": 0,
+        "attribution": "Spojenka – online jízdní řády (CIS JŘ a další zdroje)",
+        "native_stop_search": true
+      }
+    },
+    {
+      "code": "pid",
+      "adapter": "pid",
+      "published": true,
+      "coverage": [
+        {
+          "country": "CZ",
+          "bbox": [
+            12.8,
+            49.3,
+            16.2,
+            51.1
+          ]
+        }
+      ],
+      "config": {
+        "url": "https://api.golemio.cz",
+        "token_env": "TRANSPORT_PID_TOKEN",
+        "min_interval_ms": 100,
+        "realtime_max_age": 30,
+        "attribution": "PID / Golemio",
+        "places_enabled": false
+      }
+    },
+    {
+      "code": "idsjmk",
+      "adapter": "idsjmk",
+      "published": true,
+      "coverage": [
+        {
+          "country": "CZ",
+          "cities": [
+            "Brno"
+          ],
+          "bbox": [
+            16.4,
+            49.05,
+            16.85,
+            49.35
+          ]
+        }
+      ],
+      "config": {
+        "source_provider": "spojenka",
+        "schedule_url": "https://kordis-jmk.cz/gtfs/gtfs.zip",
+        "realtime_url": "https://kordis-jmk.cz/gtfs/gtfsReal.dat",
+        "traffic_url": "https://www.idsjmk.cz/api/traffic-state/line",
+        "cis_line_ranges": [
+          {
+            "min": 738001,
+            "max": 738099,
+            "offset": 738000
+          }
+        ],
+        "quota": {
+          "scope": "idsjmk-public",
+          "limit": 180,
+          "window_ms": 60000
+        },
+        "attribution": "KORDIS JMK / IDS JMK, CC BY 4.0"
+      }
+    }
+  ]
+}

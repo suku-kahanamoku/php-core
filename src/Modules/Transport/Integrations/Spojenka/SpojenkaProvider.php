@@ -15,7 +15,7 @@ use App\Modules\Transport\Core\PlaceSearchService;
 use App\Modules\Transport\Model\TransportException;
 
 /** Public Spojenka REST API. All data are fetched online via the shared HttpModule. */
-final class SpojenkaProvider implements JourneySearchProvider, ResourceProvider
+final class SpojenkaProvider implements JourneySearchProvider, ResourceProvider, \App\Modules\Transport\Contracts\ResourceEnrichmentProvider
 {
     private readonly SpojenkaMapper $mapper;
 
@@ -117,6 +117,53 @@ final class SpojenkaProvider implements JourneySearchProvider, ResourceProvider
             'trip' => $this->mapper->trip($data, $input['external'], $input['date']),
             default => throw new TransportException('unsupported_capability', 'Unsupported operation.', 422),
         };
+    }
+
+    /** Resolve public stop coordinates online; no vehicle or user positions are persisted. */
+    public function enrichResource(string $operation, array $result, array $input, \App\Modules\Http\Contracts\HttpClient $http): array
+    {
+        if ($operation !== 'trip') {
+            return $result;
+        }
+        $requests = [];
+        foreach ($result['stops'] as $call) {
+            $stop = $call['stop'];
+            if ($stop['lat'] !== null && $stop['lon'] !== null) {
+                continue;
+            }
+            $ref = \App\Modules\Transport\Model\ResourceIdCodec::decode($stop['id'], $this->definition->tenant, 'stop');
+            if ($ref['provider'] !== $this->definition->code || count($requests) >= 64) {
+                continue;
+            }
+            $requests[$stop['id']] = $this->resourceRequest('stop', $ref);
+        }
+        if (!$requests) {
+            return $result;
+        }
+        $resolved = [];
+        try {
+            $responses = $http->sendAll($requests);
+        } catch (TransportException) {
+            return $result;
+        }
+        foreach ($responses as $id => $response) {
+            try {
+                $stop = $this->mapper->station(UpstreamResponseMapper::json($response));
+                if ($stop['id'] === $id) {
+                    $resolved[$id] = $stop;
+                }
+            } catch (TransportException) { /* Timetable remains available if optional coordinates fail. */
+            }
+        }
+        foreach ($result['stops'] as &$call) {
+            $stop = $resolved[$call['stop']['id']] ?? null;
+            if ($stop) {
+                $call['stop']['lat'] = $stop['lat'];
+                $call['stop']['lon'] = $stop['lon'];
+            }
+        }
+        unset($call);
+        return $result;
     }
 
     public function searchRequest(JourneyQuery $query): HttpRequest

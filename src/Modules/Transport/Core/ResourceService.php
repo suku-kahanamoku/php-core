@@ -31,7 +31,9 @@ final class ResourceService
         if (mb_strlen(trim($query)) < 2 || mb_strlen($query) > 120) {
             throw new TransportException('invalid_query', 'Place query must contain 2 to 120 characters.');
         }
-        if ($location !== null) { JourneyQuery::assertFreshLocation($location); }
+        if ($location !== null) {
+            JourneyQuery::assertFreshLocation($location);
+        }
         $rankingLocation = $city === null ? $location : null;
         $input = ['query' => $query, 'limit' => $limit, 'city' => $city, 'location' => $rankingLocation];
         // For a named country, GPS ranks matches; it must not exclude distant city sources.
@@ -68,7 +70,7 @@ final class ResourceService
         }
         $provider = $this->registry->get($ref['provider']);
         $config = $provider->definition()->config;
-        if (!$provider instanceof ResourceProvider || !$provider->definition()->enabled($operation) || !in_array($operation, $provider->capabilities(), true)) {
+        if ((!$provider instanceof ResourceProvider && !$provider instanceof \App\Modules\Transport\Contracts\OnlineResourceProvider) || !$provider->definition()->enabled($operation) || !in_array($operation, $provider->capabilities(), true)) {
             throw new TransportException('unsupported_capability', 'This source does not provide the requested operation.', 422);
         }
         if (!($config['graph_ready'] ?? true)) {
@@ -76,11 +78,16 @@ final class ResourceService
         }
         $input = array_merge($input, $ref);
         $result = (new ProviderExecutionService($this->http, $this->repository))->run([$ref['provider'] => $provider], static function ($p, HttpClient $http) use ($operation, $input): array {
+            if ($p instanceof \App\Modules\Transport\Contracts\OnlineResourceProvider) {
+                return $p->resourceOnline($operation, $input, $http);
+            }
             if ($p instanceof ResourcePreparationProvider) {
                 $input = $p->prepareResource($operation, $input, $http);
             }
             $response = $http->sendAll(['resource' => $p->resourceRequest($operation, $input)])['resource'];
-            return $p->resourceResult($operation, $response, $input);
+            $data = $p->resourceResult($operation, $response, $input);
+            return $p instanceof \App\Modules\Transport\Contracts\ResourceEnrichmentProvider
+                ? $p->enrichResource($operation, $data, $input, $http) : $data;
         }, $budget)[$ref['provider']];
         if ($result->succeeded()) {
             return ['result' => $result->data, 'source' => ['provider' => $ref['provider'], 'mode' => $provider instanceof ScheduleProvider ? 'schedule' : 'live', 'fetched_at' => gmdate(DATE_RFC3339)], 'partial' => false];

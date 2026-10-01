@@ -19,6 +19,11 @@ final class SpojenkaModule implements IntegrationModule
     }
     public function create(ProviderDefinition $definition, array $env, ?TransportRepository $repository = null): Provider
     {
-        return new SpojenkaProvider($definition);
+        $config = $definition->config;
+        // Public endpoint shares one admission pool across tenants; detail enrichment must not burst dozens of calls.
+        $quota = $config['quota'] ?? [];
+        $quota += ['scope' => 'spojenka-public', 'limit' => 8, 'window_ms' => 1000];
+        $config['quota'] = $quota;
+        return new SpojenkaProvider($definition->withConfig($config));
     }
 }

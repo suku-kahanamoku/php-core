@@ -32,7 +32,8 @@ final class ProviderRegistry
             $code = $p->definition()->code;
             if (isset($this->providers[$code])) {
                 throw new \LogicException('Duplicate provider.');
-            } $this->providers[$code] = $p;
+            }
+            $this->providers[$code] = $p;
         }
     }
     /**
@@ -80,18 +81,47 @@ final class ProviderRegistry
         $visited = [];
         while (true) {
             $code = $reference['provider'];
-            if (isset($visited[$code])) { throw new TransportException('invalid_configuration', 'Cyclic source identity mapping.', 500); }
+            if (isset($visited[$code])) {
+                throw new TransportException('invalid_configuration', 'Cyclic source identity mapping.', 500);
+            }
             $visited[$code] = true;
             $provider = $this->get($code);
-            if (!$provider->definition()->enabled($operation) || !in_array($operation,$provider->capabilities(),true)) {
+            if ($operation === 'realtime' && $provider->definition()->enabled($operation) && !in_array($operation, $provider->capabilities(), true)) {
+                $matches = [];
+                foreach ($this->providers as $candidate) {
+                    if (
+                        $candidate instanceof \App\Modules\Transport\Contracts\RealtimeReferenceProvider
+                        && $candidate->definition()->enabled('realtime') && in_array('realtime', $candidate->capabilities(), true)
+                        && ($mapped = $candidate->realtimeReference($reference)) !== null
+                    ) {
+                        if (($mapped['date'] ?? null) !== ($reference['date'] ?? null) || $mapped['provider'] !== $candidate->definition()->code) {
+                            throw new \LogicException('Invalid realtime reference mapping.');
+                        }
+                        $matches[] = $mapped;
+                    }
+                }
+                if (count($matches) > 1) {
+                    throw new TransportException('invalid_configuration', 'Ambiguous realtime source mapping.', 500);
+                }
+                if ($matches) {
+                    $reference = $matches[0];
+                    continue;
+                }
+            }
+            if (!$provider->definition()->enabled($operation) || !in_array($operation, $provider->capabilities(), true)) {
                 throw new TransportException('unsupported_capability', 'Mapped source does not provide the requested operation.', 422);
             }
-            if (!$provider instanceof \App\Modules\Transport\Contracts\ResourceMappingProvider) { return $reference; }
+            if (!$provider instanceof \App\Modules\Transport\Contracts\ResourceMappingProvider) {
+                return $reference;
+            }
             $mapped = $provider->sourceReference($operation, $reference);
-            if ($mapped === null) { return $reference; }
-            if (($mapped['date'] ?? null) !== ($reference['date'] ?? null)) { throw new \LogicException('Identity mapping changed the service day.'); }
+            if ($mapped === null) {
+                return $reference;
+            }
+            if (($mapped['date'] ?? null) !== ($reference['date'] ?? null)) {
+                throw new \LogicException('Identity mapping changed the service day.');
+            }
             $reference = $mapped;
         }
     }
-
 }
