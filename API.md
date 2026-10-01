@@ -2191,3 +2191,10 @@ cestu. Detail spoje může vrátit `result.metadata.features` (povolené vybaven
 (bicycle/passenger/luggage → available/mandatory) a u poznámek
 `category` (`passenger`/`technical`). Neznámá pole lze ignorovat; vybavení je
 údaj jízdního řádu. Původní kontrakty a tenantová autorizace se nemění.
+
+### Transport: živé sledování a predikce
+
+- `POST /transport/v1/trips/:id/tracking` vydává tenantově omezený WebSocket ticket pro datovaný spoj. Vrací `status: available` + `url`, `ticket`, `expires_at`, nebo `unsupported`/`disabled`. Původní interní autentizace zůstává povinná.
+- `GET /transport/v1/trips/:id/observation` vrací normalizované `status`, `position`, `observed_at`, `valid_until`, `delay_seconds`, `cancelled`. GPS starší než 30 s nikdy nevrací jako použitelnou polohu; žádný databázový fallback. Odpovědi jsou `no-store`.
+- WebSocket přijímá `subscribe` s ticketem a `ping`; posílá `observation` a `pong`. Konfigurace, přesný kontrakt a aktuální podpora zdrojů: [živé sledování TRAM](docs/tram-realtime-tracking.md).
+- Vyhledávání ověřuje přestupy po realtime obohacení a před finálním řazením/limitem. `duration_seconds` odpovídá aktualizovaným časům. `arrival_estimated` odlišuje odhad z vozidlového zpoždění od predikce zastávky; `min_transfer_seconds` zachovává minimum zdroje. Cache spoje ukládá výhradně plánovaná data.

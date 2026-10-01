@@ -426,3 +426,7 @@ nezobrazujeme jako potvrzení vybavení či zákaz přepravy. Nejde o realtime
 ověření vozidla. Poznámky linky začínající českým „Grafikony:“ označuje adaptér
 jako `category=technical`; původní text zůstává dostupný, ostatní poznámky mají
 `category=passenger`. Žádný limit tří poznámek neexistuje.
+
+### Živá poloha a zpoždění
+
+`Tracking/` obsahuje vydávání podepsaných ticketů, normalizaci čerstvých pozorování a sdílené odběry gateway. Spouští se samostatně přes `bin/transport-tracking.php`, síťový transport zůstává v HttpModule. `JourneyRealtimeService` a `JourneyTimingService` obohacují kandidáty a ověřují přestupy před řazením. Golemio/PID je podporovaným GPS zdrojem; samotný Spojenka adaptér bez přesné vazby na GPS zdroj vrací `unsupported`. [Provoz, kontrakty a omezení](../../../docs/tram-realtime-tracking.md).

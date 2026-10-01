@@ -28,7 +28,7 @@ final class TransportModule
     {
         $registry = self::registry($repository, $env);
         $resources = new ResourceService($registry, $http, $repository);
-        return new TransportApi(new JourneyService($registry, $http, $repository, $resources), $resources, $registry, $repository);
+        return new TransportApi(new JourneyService($registry, $http, $repository, $resources), $resources, $registry, $repository, new \App\Modules\Transport\Tracking\TripTrackingService($registry, $resources, $repository->tenant, $env));
     }
     public static function importers(TransportRepository $repository): \App\Modules\Transport\Import\ImporterRegistry
     {

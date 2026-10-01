@@ -30,7 +30,7 @@ final class TransportApi
      * @param  TransportRepository   $repository Cached spojení a jejich geometrie.
      * @return void
      */
-    public function __construct(private readonly JourneyService $journeys, private readonly ResourceService $resources, private readonly ProviderRegistry $registry, private readonly TransportRepository $repository) {}
+    public function __construct(private readonly JourneyService $journeys, private readonly ResourceService $resources, private readonly ProviderRegistry $registry, private readonly TransportRepository $repository, private readonly ?\App\Modules\Transport\Tracking\TripTrackingService $tracking = null) {}
 
     /**
      * Zaregistruje routy dopravy.
@@ -63,6 +63,14 @@ final class TransportApi
                 'partial' => $result['partial'],
                 'sources' => $result['sources']
             ];
+        }));
+        $router->post('/v1/trips/:id/tracking', fn(Request $r, array $p) => $this->respond(function() use ($p) {
+            header('Cache-Control: no-store');
+            return $this->tracking?->session($p['id']) ?? ['status'=>'disabled'];
+        }));
+        $router->get('/v1/trips/:id/observation', fn(Request $r, array $p) => $this->respond(function() use ($p) {
+            header('Cache-Control: no-store');
+            return $this->tracking?->observation($p['id']) ?? \App\Modules\Transport\Tracking\TrackingObservationMapper::unavailable();
         }));
         $router->get('/v1/coverage', fn() => $this->respond(fn() => ['providers' => array_values(array_map(fn($p) => $p->definition()->publicData($p->capabilities()), $this->registry->all()))]));
         $router->get('/v1/places', fn(Request $r) => $this->respond(fn() => $this->resources->places($this->text($r, 'query'), JourneyQuery::integer($r->get('limit', 10), 1, 50), $r->get('state') !== null ? $this->text($r, 'state') : null, $r->get('city') !== null ? $this->text($r, 'city') : null)));
@@ -116,6 +124,7 @@ final class TransportApi
      */
     private function respond(callable $action): never
     {
+        header('Cache-Control: no-store');
         try {
             Response::success($action());
         } catch (TransportException $e) {

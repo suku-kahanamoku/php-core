@@ -97,7 +97,7 @@ final class ResourceService
                 return ['result' => $local, 'source' => ['provider' => $ref['provider'], 'mode' => 'fallback', 'realtime' => false, 'snapshot_version' => $local['snapshot_version'] ?? null, 'snapshot_at' => $local['snapshot_at'] ?? null], 'partial' => true];
             }
         }
-        if (!$scheduleOnly && $provider instanceof ResourceMappingProvider && ($mapped = $provider->fallbackReference($operation, $ref)) !== null) {
+        if ($operation !== 'realtime' && !$scheduleOnly && $provider instanceof ResourceMappingProvider && ($mapped = $provider->fallbackReference($operation, $ref)) !== null) {
             if (($mapped['date'] ?? null) !== $ref['date']) {
                 throw new \LogicException('Fallback mapping changed the service day.');
             }

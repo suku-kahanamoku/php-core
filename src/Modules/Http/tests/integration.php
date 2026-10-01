@@ -122,6 +122,7 @@ try {
     // Keep another provider usable after one request fails.
     $results = $http->sendAll(['bad' => new HttpRequest('file:///etc/hosts'), 'good' => new HttpRequest($second.'/echo')]);
     check($results['bad']->error !== null && $results['good']->successful(), 'one provider failure does not abort the batch');
+    require __DIR__.'/async.php';
 } finally {
     foreach ($processes as [$process, $pipe]) {
         proc_terminate($process);

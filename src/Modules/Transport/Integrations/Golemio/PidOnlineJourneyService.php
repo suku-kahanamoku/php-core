@@ -182,7 +182,7 @@ final class PidOnlineJourneyService
             $destination['lat'] ??= $query->to['lat'];
             $destination['lon'] ??= $query->to['lon'];
         }
-        return ['mode' => $trip['line']['mode'],'from' => $origin,'to' => $destination,
+        return ['min_transfer_seconds' => self::MIN_TRANSFER_SECONDS, 'mode' => $trip['line']['mode'],'from' => $origin,'to' => $destination,
             'scheduled_departure' => $from['scheduled_departure'],'scheduled_arrival' => $to['scheduled_arrival'],
             'expected_departure' => null,'expected_arrival' => null,'realtime' => false,'cancelled' => null,
             'trip_id' => $trip['id'],'service_date' => $trip['service_date'],'line' => $trip['line'],

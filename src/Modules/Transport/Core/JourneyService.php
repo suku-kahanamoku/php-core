@@ -111,9 +111,7 @@ final class JourneyService
                 }
                 foreach ($data as $journey) {
                     $legs = $journey['legs'];
-                    $first = $legs[0]['expected_departure'] ?? $legs[0]['scheduled_departure'];
-                    $last = $legs[count($legs) - 1]['expected_arrival'] ?? $legs[count($legs) - 1]['scheduled_arrival'];
-                    if (($query->arriveBy && strtotime($last) > $query->time->getTimestamp()) || (!$query->arriveBy && strtotime($first) < $query->time->getTimestamp()) || $journey['transfers'] > $query->maxTransfers) {
+                    if ($journey['transfers'] > $query->maxTransfers) {
                         continue;
                     }
                     if (array_filter($legs, fn ($leg) => $leg['mode'] !== 'walk' && !in_array($leg['mode'], $query->modes, true))) {
@@ -161,21 +159,17 @@ final class JourneyService
             throw new TransportException('sources_unavailable', 'Journey search is unavailable; no valid fallback is ready.', 503, ['sources' => $sources]);
         }
         $journeys = array_values($journeys);
-        usort($journeys, static function ($a, $b) use ($query): int {
-            if ($query->arriveBy) {
-                return strtotime($b['legs'][0]['expected_departure'] ?? $b['legs'][0]['scheduled_departure']) <=> strtotime($a['legs'][0]['expected_departure'] ?? $a['legs'][0]['scheduled_departure']);
-            }
-            $al = $a['legs'][count($a['legs']) - 1];
-            $bl = $b['legs'][count($b['legs']) - 1];
-            return strtotime($al['expected_arrival'] ?? $al['scheduled_arrival']) <=> strtotime($bl['expected_arrival'] ?? $bl['scheduled_arrival']);
-        });
-        $selectedJourneys = array_slice($journeys, 0, $query->limit);
+        // Enrich the candidate pool before timing validation, ordering and final LIMIT.
+        $selectedJourneys = $journeys;
         foreach ($this->registry->all() as $code=>$provider) {
             if (!$selectedJourneys || !$provider instanceof \App\Modules\Transport\Contracts\JourneyEnrichmentProvider || !$provider->definition()->enabled('enrich_journeys') || $budget->remainingMs() === 0) { continue; }
             $result = $execution->run([$code=>$provider], fn ($p, HttpClient $http)=>$p->enrichJourneys($selectedJourneys, $this->registry, $http), $budget->child(1500))[$code];
             if ($result->status === 'configuration_error') { throw $result->error; }
             if ($result->succeeded()) { $selectedJourneys = $result->data; }
         }
+        $selectedJourneys = (new JourneyRealtimeService($this->registry, $this->resources, $this->repository->tenant))
+            ->enrich($selectedJourneys, $budget->child(1800));
+        $selectedJourneys = JourneyTimingService::rank($selectedJourneys, $query);
         $warnings = [];
         $unavailable = (bool)array_filter($sources, static fn ($source) => $source['status'] !== 'ok');
         if ($unavailable) {

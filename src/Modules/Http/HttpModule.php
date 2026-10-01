@@ -17,6 +17,14 @@ use App\Modules\Http\Contracts\HttpClient;
 final class HttpModule
 {
     private static ?HttpClient $http = null;
+    public static function asyncClient(): \App\Modules\Http\Contracts\AsyncHttpClient
+    {
+        return new AsyncHttpService(self::client());
+    }
+    public static function websocket(): WebSocketService
+    {
+        return new WebSocketService();
+    }
 
     /**
      * Vrátí sdílenou instanci HTTP klienta pro daný request.

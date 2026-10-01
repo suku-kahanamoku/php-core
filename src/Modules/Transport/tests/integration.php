@@ -623,4 +623,5 @@ require __DIR__ . '/nearest-stop.php';
 require __DIR__ . '/modularity.php';
 require __DIR__ . '/cities.php';
 require __DIR__ . '/places-ranking.php';
+require __DIR__ . '/tracking.php';
 echo "PASS $checks checks on isolated MySQL\n";

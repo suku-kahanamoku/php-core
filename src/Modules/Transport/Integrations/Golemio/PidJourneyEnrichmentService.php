@@ -34,15 +34,16 @@ final class PidJourneyEnrichmentService
         foreach ($journeys as $journeyIndex => $journey) {
             foreach ($journey['legs'] as $legIndex => $leg) {
                 $trip = $this->pidId($leg['trip_id'] ?? null, 'trip');
-                $stop = $this->pidId($leg['from']['id'] ?? null, 'stop');
-                $scheduled = isset($leg['scheduled_departure']) ? strtotime($leg['scheduled_departure']) : false;
-                if ($trip === null || $stop === null || $scheduled === false) {
-                    continue;
+                foreach (['from'=>'departure', 'to'=>'arrival'] as $side=>$event) {
+                    $stop = $this->pidId($leg[$side]['id'] ?? null, 'stop');
+                    $scheduled = isset($leg['scheduled_'.$event]) ? strtotime($leg['scheduled_'.$event]) : false;
+                    if ($trip === null || $stop === null || $scheduled === false) { continue; }
+                    if (!isset($stopIds[$stop]) && count($stopIds) >= 8) { continue; }
+                    $key = $stop.'|'.$trip.'|'.$event.'|'.$scheduled;
+                    $matches[$key][] = [$journeyIndex,$legIndex,$event];
+                    $stopIds[$stop] = true;
+                    $earliest = $earliest === null ? $scheduled : min($earliest, $scheduled);
                 }
-                $key = $stop.'|'.$trip.'|'.$scheduled;
-                $matches[$key][] = [$journeyIndex,$legIndex];
-                $stopIds[$stop] = true;
-                $earliest = $earliest === null ? $scheduled : min($earliest, $scheduled);
             }
         }
         if (!$matches || count($stopIds) > 8) { return $journeys; }
@@ -54,20 +55,18 @@ final class PidJourneyEnrichmentService
                 continue;
             }
             $stop = ResourceIdCodec::decode($departure['stop']['id'], $this->pid->definition()->tenant, 'stop');
-            $scheduled = strtotime($departure['scheduled_departure']);
-            if ($stop['provider'] !== $this->pid->definition()->code || $scheduled === false) {
-                continue;
-            }
-            $key = $stop['external'].'|'.$departure['external_trip_id'].'|'.$scheduled;
-            foreach ($matches[$key] ?? [] as [$journeyIndex,$legIndex]) {
-                if ($departure['expected_departure'] !== null) {
-                    $journeys[$journeyIndex]['legs'][$legIndex]['expected_departure'] = $departure['expected_departure'];
-                    $journeys[$journeyIndex]['legs'][$legIndex]['realtime'] = true;
+            foreach (['departure','arrival'] as $event) {
+                $scheduled = strtotime($departure['scheduled_'.$event] ?? '');
+                if ($stop['provider'] !== $this->pid->definition()->code || $scheduled === false) { continue; }
+                $key = $stop['external'].'|'.$departure['external_trip_id'].'|'.$event.'|'.$scheduled;
+                foreach ($matches[$key] ?? [] as [$journeyIndex,$legIndex]) {
+                    if (($departure['expected_'.$event] ?? null) !== null) {
+                        $journeys[$journeyIndex]['legs'][$legIndex]['expected_'.$event] = $departure['expected_'.$event];
+                        $journeys[$journeyIndex]['legs'][$legIndex]['realtime'] = true;
+                    }
+                    if ($departure['cancelled']) { $journeys[$journeyIndex]['legs'][$legIndex]['cancelled'] = true; }
+                    $journeys[$journeyIndex]['source']['realtime_provider'] = $this->pid->definition()->code;
                 }
-                if ($departure['cancelled']) {
-                    $journeys[$journeyIndex]['legs'][$legIndex]['cancelled'] = true;
-                }
-                $journeys[$journeyIndex]['source']['realtime_provider'] = $this->pid->definition()->code;
             }
         }
         return $journeys;

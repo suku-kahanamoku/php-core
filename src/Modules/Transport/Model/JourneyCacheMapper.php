@@ -23,7 +23,7 @@ final class JourneyCacheMapper
         foreach ($journey['legs'] ?? [] as $leg) {
             $item = array_intersect_key($leg, array_flip([
                 'mode','scheduled_departure','scheduled_arrival',
-                'trip_id','service_date','line','operator','distance_m',
+                'trip_id','service_date','line','operator','distance_m','min_transfer_seconds',
             ]));
             if (isset($item['line'])) {
                 $item['line'] = is_array($item['line']) ? array_intersect_key($item['line'], array_flip(['id','name','code','mode'])) : null;
@@ -47,6 +47,17 @@ final class JourneyCacheMapper
             }
             $item['geometry'] = $publicStopsOnly && ($leg['mode'] ?? '') !== 'walk' ? ($leg['geometry'] ?? null) : null;
             $result['legs'][] = $item;
+        }
+        if ($result['legs']) {
+            $first = $result['legs'][0];
+            $last = $result['legs'][count($result['legs']) - 1];
+            $arrival = strtotime($last['scheduled_arrival'] ?? '');
+            $departure = strtotime($first['scheduled_departure'] ?? '');
+            if ($arrival !== false && $departure !== false) {
+                $result['duration_seconds'] = max(0, $arrival - $departure);
+            } else {
+                unset($result['duration_seconds']);
+            }
         }
         return $result;
     }

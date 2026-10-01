@@ -112,3 +112,7 @@ php src/Modules/Transport/tests/live.php
 HTTP testy používají dva lokální fixture servery a Guzzle MockHandler; SMTP zprávy
 sestavují, ale neodesílají. Transport test má vlastní dočasnou MySQL. Aplikační ani
 produkční databáze se při těchto testech nepoužívá.
+
+### Asynchronní HTTP a WebSocket gateway
+
+`HttpModule::asyncClient()` vrací `AsyncHttpClient` pro Workerman event loop (`sendAsync` s jedním callbackem `HttpResponse`). Jeho synchronní metody delegují běžnému klientu; v gateway se nepoužívají. TLS ověřuje certifikát, přesměrování jsou zakázána, platí limity času a velikosti těla. Pool se vytváří až uvnitř aktivního event loopu. `HttpModule::websocket()` obsluhuje loopback listener, origin allowlist, velikost zpráv, heartbeat timeout a pomalé klienty. Transportová doména dodává pouze callbacky a vlastní pravidla odběrů.
