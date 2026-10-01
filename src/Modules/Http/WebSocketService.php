@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Http;
 
+use App\Modules\Http\Contracts\WebSocketServer;
+
 /** One event-loop worker; TLS and connection/IP limits belong to the reverse proxy. */
-final class WebSocketService
+final class WebSocketService implements WebSocketServer
 {
     public function run(string $listen, array $origins, callable $message, callable $closed, callable $tick, string $name = 'websocket', ?string $runtimeDirectory = null): void
     {

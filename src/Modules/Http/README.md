@@ -65,9 +65,10 @@ Stejné rozhraní používají i pomocníci API testů.
 PHPMailer a odeslání vlastní `SmtpService` (`Contracts/MailClient`), vždy pro jeden
 franchise code. Existující `*_MAILER_*` a globální fallback zůstávají funkční.
 
-V php-core nyní není SOAP ani WebSocket klient/server. Mobilní WebSocket spojení
-s OpenAI/Cloudflare není PHP socket. Až přibude konkrétní protokol, jeho služba a
-rozhraní budou v tomto modulu; Guzzle nepředstírá implementaci WebSocketu. SOAP
+WebSocket server implementuje `WebSocketService` přes `Contracts/WebSocketServer`
+a Workerman. SOAP ani odchozí WebSocket klient zatím implementované nejsou.
+Mobilní WebSocket spojení s OpenAI/Cloudflare není PHP socket. Další protokoly
+patří se svým rozhraním do tohoto modulu; Guzzle nepředstírá implementaci WebSocketu. SOAP
 může používat XML body přes HTTP, ale WSDL klient musí mít vlastní adapter. Pro
 trvalé WebSocket/SSE spojení je třeba odpovídající worker a lifecycle, ne běžný
 krátký PHP request. PDO a lokální filesystem zůstávají v příslušné infrastruktuře.
@@ -115,4 +116,15 @@ produkční databáze se při těchto testech nepoužívá.
 
 ### Asynchronní HTTP a WebSocket gateway
 
-`HttpModule::asyncClient()` vrací `AsyncHttpClient` pro Workerman event loop (`sendAsync` s jedním callbackem `HttpResponse`). Jeho synchronní metody delegují běžnému klientu; v gateway se nepoužívají. TLS ověřuje certifikát, přesměrování jsou zakázána, platí limity času a velikosti těla. Pool se vytváří až uvnitř aktivního event loopu. `HttpModule::websocket()` obsluhuje loopback listener, origin allowlist, velikost zpráv, heartbeat timeout a pomalé klienty. Transportová doména dodává pouze callbacky a vlastní pravidla odběrů.
+`HttpModule::asyncClient()` vrací `AsyncHttpClient` pro Workerman event loop (`sendAsync` s jedním callbackem `HttpResponse`). Jeho synchronní metody delegují běžnému klientu; v gateway se nepoužívají. TLS ověřuje certifikát, přesměrování jsou zakázána, platí limity času a velikosti těla. Pool se vytváří až uvnitř aktivního event loopu. `HttpModule::websocket()` vrací `Contracts\WebSocketServer`; výchozí `WebSocketService` obsluhuje loopback listener, origin allowlist, velikost zpráv, heartbeat timeout a pomalé klienty. Transportová doména dodává pouze callbacky a vlastní pravidla odběrů.
+
+
+Kontrakt serveru zachovává `run(listen, origins, message, closed, tick, name, runtimeDirectory)`.
+Callbacky používají pouze řetězcová ID, JSON pole a funkce send/close; nepropouštějí
+objekty Workerman do domény. Továrna server pouze vytvoří, `run()` spouští jeho
+životní cyklus. Jiný server lze zvolit v `HttpModule`; spotřebitelům se injektuje
+`Contracts\WebSocketServer`. Testovací implementace může uchovat callbacky a
+řízeně simulovat zprávy, heartbeat a uzavření bez portu nebo event loopu.
+Transport test ověřuje tímto mockem skutečný `TrackingHubService`; nejde o test
+WebSocket handshaku nové implementace. Kontrakt nemění konfiguraci ani způsob
+spuštění `bin/transport-tracking.php` a nevyžaduje migraci DB.

@@ -99,3 +99,36 @@ $arrivalQuery = new \App\Modules\Transport\Model\JourneyQuery([], [], new DateTi
 check(JourneyTimingService::rank([['legs' => [$leg('08:00', '08:20', '08:10')]]], $arrivalQuery) === [], 'arrival-by deadline is rechecked after applying delay');
 $cached = \App\Modules\Transport\Model\JourneyCacheMapper::sanitize(['duration_seconds' => 9999,'legs' => [$leg('08:00', '08:20', '08:10')]]);
 check($cached['duration_seconds'] === 1200, 'persistent cache duration also uses scheduled times only');
+
+// An injected server double can drive the real hub without Workerman or network listeners.
+$serverDouble = new class implements \App\Modules\Http\Contracts\WebSocketServer {
+    public array $callbacks = [];
+    public function run(string $listen, array $origins, callable $message, callable $closed, callable $tick, string $name = 'websocket', ?string $runtimeDirectory = null): void
+    {
+        $this->callbacks = [$message, $closed, $tick];
+    }
+};
+$contractAsync = clone $fakeAsync;
+$contractAsync->requests = $contractAsync->callbacks = [];
+$contractHub = new TrackingHubService($ticketService, $contractAsync, 'http://127.0.0.1:9999', 'server-key', ['tram' => 'tram.test']);
+$runServer = static function (\App\Modules\Http\Contracts\WebSocketServer $server) use ($contractHub): void {
+    $server->run('websocket://127.0.0.1:8091', ['https://tram.test'], $contractHub->message(...), $contractHub->closed(...), $contractHub->tick(...));
+};
+$runServer($serverDouble);
+[$onMessage, $onClosed, $onTick] = $serverDouble->callbacks;
+$contractMessages = [];
+$contractClosed = false;
+$send = static function (array $value) use (&$contractMessages): void { $contractMessages[] = $value; };
+$close = static function () use (&$contractClosed): void { $contractClosed = true; };
+$onMessage('mock-peer', ['type' => 'subscribe', 'ticket' => $issued['ticket']], $send, $close);
+$onTick();
+check(count($contractAsync->requests) === 1 && $contractMessages[0]['data']['status'] === 'connecting', 'WebSocket mock starts a real tracking subscription via the contract callbacks');
+($contractAsync->callbacks[0])(new HttpResponse(200, json_encode(['success' => true, 'data' => TrackingObservationMapper::map($raw, time())])));
+check(end($contractMessages)['data']['status'] === 'live', 'WebSocket mock receives actual hub observations through its send callback');
+$onMessage('mock-peer', ['type' => 'ping'], $send, $close);
+check(end($contractMessages)['type'] === 'pong', 'WebSocket mock supports gateway heartbeat without transport-specific objects');
+$onClosed('mock-peer');
+$onTick();
+check(count($contractAsync->requests) === 1, 'WebSocket close callback releases the last upstream watch');
+$onMessage('invalid-peer', ['type' => 'subscribe', 'ticket' => 'invalid'], $send, $close);
+check($contractClosed, 'WebSocket mock exposes policy close callback for invalid tracking tickets');

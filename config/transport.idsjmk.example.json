@@ -73,6 +73,11 @@
         "traffic_url": "https://www.idsjmk.cz/api/traffic-state/line",
         "cis_line_ranges": [
           {
+            "min": 737001,
+            "max": 737099,
+            "offset": 737000
+          },
+          {
             "min": 738001,
             "max": 738099,
             "offset": 738000

@@ -2194,6 +2194,7 @@ cestu. Detail spoje může vrátit `result.metadata.features` (povolené vybaven
 
 ### Transport: živé sledování a predikce
 
+- IDS JMK realtime doplní podporované datované Spojenka/CIS identity přes `RealtimeReferenceProvider`; veřejné ID původního spoje se nemění. Vyžaduje zapnutý adaptér `idsjmk`, ověřený dnešní jízdní řád a měření mladší 30 sekund. Dostupnost ticketu znamená podporu odběru, nikoli záruku, že vozidlo právě vysílá. Viz [konfigurace a přesné pokrytí](docs/tram-realtime-tracking.md).
 - `POST /transport/v1/trips/:id/tracking` vydává tenantově omezený WebSocket ticket pro datovaný spoj. Vrací `status: available` + `url`, `ticket`, `expires_at`, nebo `unsupported`/`disabled`. Původní interní autentizace zůstává povinná.
 - `GET /transport/v1/trips/:id/observation` vrací normalizované `status`, `position`, `observed_at`, `valid_until`, `delay_seconds`, `cancelled`. GPS starší než 30 s nikdy nevrací jako použitelnou polohu; žádný databázový fallback. Odpovědi jsou `no-store`.
 - WebSocket přijímá `subscribe` s ticketem a `ping`; posílá `observation` a `pong`. Konfigurace, přesný kontrakt a aktuální podpora zdrojů: [živé sledování TRAM](docs/tram-realtime-tracking.md).

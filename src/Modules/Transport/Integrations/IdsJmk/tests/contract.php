@@ -13,16 +13,20 @@ check($idsProvider->realtimeReference($idsReference)['provider'] === 'jmk-live',
 check($idsProvider->realtimeReference(array_replace($idsReference, ['provider' => 'foreign'])) === null, 'IDS JMK cannot claim a foreign source namespace');
 check($idsProvider->realtimeReference(array_replace($idsReference, ['date' => '2026-10-02'])) === null, 'IDS JMK rejects conflicting embedded service dates');
 check($idsProvider->realtimeReference(array_replace($idsReference, ['external' => str_replace('738068','123068',$idsExternal)])) === null, 'same public line number outside configured CIS range is not mapped');
+foreach ([737003, 737012, 737035, 737039, 738068, 738095] as $cisLine) {
+    $reference = array_replace($idsReference, ['external' => str_replace('738068', (string)$cisLine, $idsExternal)]);
+    check($idsProvider->realtimeReference($reference)['provider'] === 'jmk-live', 'Brno tram, trolleybus and bus CIS identities all have a realtime bridge: '.$cisLine);
+}
 $idsRegistry = new \App\Modules\Transport\Core\ProviderRegistry([$sp, $idsProvider]);
 check($idsRegistry->canonicalReference('realtime', $idsReference)['provider'] === 'jmk-live', 'generic registry routes the verified bridge despite static source lacking realtime');
 
 $idsDir = getenv('TRANSPORT_TEST_DIR').'/idsjmk-fixture'; mkdir($idsDir, 0700);
 $idsZip = $idsDir.'/schedule.zip'; $zip = new ZipArchive(); $zip->open($idsZip, ZipArchive::CREATE);
-$zip->addFromString('api.txt', "Linka/CVlaku = trip_id: 68/1050 = 100\r\nLinka/CVlaku = trip_id: 68/1050 = 101\r\n");
+$zip->addFromString('api.txt', "Linka/CVlaku = trip_id: 68/1050 = 100\r\nLinka/CVlaku = trip_id: 68/1050 = 101\r\nLinka/CVlaku = trip_id: 68/1051 = 102\r\n");
 $zip->addFromString('calendar.txt', "service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date\nweekday,1,1,1,1,1,0,0,20260101,20261231\nweekend,0,0,0,0,0,1,1,20260101,20261231\n");
 $zip->addFromString('calendar_dates.txt', "service_id,date,exception_type\nweekday,20261002,2\n");
-$zip->addFromString('trips.txt', "route_id,service_id,trip_id\nL68D99,weekday,100\nL68D99,weekend,101\n");
-$zip->addFromString('stop_times.txt', "trip_id,stop_id,stop_sequence,arrival_time,departure_time\n100,U1,1,10:20:00,10:20:00\n100,U2,2,10:44:00,10:44:00\n101,U1,1,10:20:00,10:20:00\n101,U2,2,10:44:00,10:44:00\n"); $zip->close();
+$zip->addFromString('trips.txt', "route_id,service_id,trip_id\nL68D99,weekday,100\nL68D99,weekend,101\nL68D99,weekday,102\n");
+$zip->addFromString('stop_times.txt', "trip_id,stop_id,stop_sequence,arrival_time,departure_time\n100,U1,1,10:20:00,10:20:00\n100,U2,2,10:44:00,10:44:00\n101,U1,1,10:20:00,10:20:00\n101,U2,2,10:44:00,10:44:00\n102,U1,1,10:20:00,10:20:00\n102,U2,2,10:44:00,10:44:00\n"); $zip->close();
 $idsSchedule = new IdsJmkScheduleService($idsDir.'/cache', $idsConfig['schedule_url']);
 $idsRef = ['line'=>68,'number'=>1050,'date'=>'2026-10-01','from_index'=>0,'from_time'=>'10:20:00','to_index'=>1,'to_time'=>'10:44:00'];
 $idsTrip = $idsSchedule->match($idsZip, $idsRef);
@@ -38,6 +42,8 @@ $idsHttp = new class(file_get_contents($idsZip)) implements \App\Modules\Http\Co
 check($idsSchedule->resolve($idsRef, $idsHttp)['trip_id']==='100','online static identity resolves via shared HTTP contract');
 $idsHttp->status=304;
 check($idsSchedule->resolve($idsRef, $idsHttp)['trip_id']==='100' && end($idsHttp->requests)->headers['If-None-Match']==='"v1"', 'static identity cache is used only after online conditional validation');
+check($idsSchedule->resolve(array_replace($idsRef, ['number'=>1051]), $idsHttp)['trip_id']==='102', 'shared line index distinguishes different run numbers with identical stop times');
+check($idsSchedule->resolve(array_replace($idsRef, ['number'=>9999]), $idsHttp)===null, 'shared line index never substitutes another run with the same times');
 $idsHttp->status=503;
 fails(fn()=>$idsSchedule->resolve($idsRef,$idsHttp),'source_unavailable');
 

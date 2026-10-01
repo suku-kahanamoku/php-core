@@ -45,6 +45,10 @@ function mockHttp(array $responses, array &$history): HttpService
     $stack->push(Middleware::history($history));
     return new HttpService(new Client(['handler' => $stack]));
 }
+$websocket = HttpModule::websocket();
+check($websocket instanceof \App\Modules\Http\Contracts\WebSocketServer, 'module exposes WebSocket server contract without starting a listener');
+check((string)(new ReflectionMethod(HttpModule::class, 'websocket'))->getReturnType() === \App\Modules\Http\Contracts\WebSocketServer::class, 'WebSocket factory declares the interface rather than a concrete service');
+rejects(fn () => $websocket->run('websocket://0.0.0.0:8091', ['https://tram.test'], static function () {}, static function () {}, static function () {}), InvalidArgumentException::class, 'WebSocket interface preserves loopback listener validation');
 $http = HttpModule::client();
 check($http === HttpModule::client(), 'module reuses stateless HTTP client');
 check($http->sendAll([]) === [], 'empty batch');

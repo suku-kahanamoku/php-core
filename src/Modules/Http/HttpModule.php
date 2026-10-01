@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Http;
 
 use App\Modules\Http\Contracts\HttpClient;
+use App\Modules\Http\Contracts\WebSocketServer;
 
 /**
  * Composition root pro odchozí transporty. Doménové služby přijímají injektované kontrakty.
@@ -21,7 +22,8 @@ final class HttpModule
     {
         return new AsyncHttpService(self::client());
     }
-    public static function websocket(): WebSocketService
+    /** Vytvoří WebSocket server za vyměnitelným kontraktem; listener otevře až run(). */
+    public static function websocket(): WebSocketServer
     {
         return new WebSocketService();
     }
