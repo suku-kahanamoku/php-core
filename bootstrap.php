@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Middleware\CorsMiddleware;
+use App\Utils\StructuredLogger;
 use Dotenv\Dotenv;
 
 // ── Autoload ────────────────────────────────────────────────────────────────
@@ -54,6 +55,12 @@ register_shutdown_function(static function () use ($appEnv): void {
     if (headers_sent()) {
         return;
     }
+    StructuredLogger::error('fatal_error', [
+        'type'    => $error['type'],
+        'message' => $error['message'],
+        'file'    => $error['file'],
+        'line'    => $error['line'],
+    ]);
     http_response_code(500);
     header('Content-Type: application/json; charset=utf-8');
     $response = ['success' => false, 'message' => 'Internal Server Error'];
@@ -73,6 +80,11 @@ set_exception_handler(static function (\Throwable $e) use ($appEnv): void {
         return;
     }
 
+    StructuredLogger::error('unhandled_exception', [
+        'exception' => get_class($e),
+        'message'   => $e->getMessage(),
+        'code'      => $e->getCode(),
+    ]);
     http_response_code(500);
     header('Content-Type: application/json; charset=utf-8');
     $response = ['success' => false, 'message' => 'Internal Server Error'];

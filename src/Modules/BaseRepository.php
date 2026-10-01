@@ -47,6 +47,18 @@ abstract class BaseRepository
         $this->_code = $franchiseCode;
     }
 
+    protected function _tenantWhere(string $alias = ''): string
+    {
+        $prefix = $alias === '' ? '' : rtrim($alias, '.') . '.';
+        return $prefix . 'franchise_code = ?';
+    }
+
+    /** @return list<string> */
+    protected function _tenantParams(): array
+    {
+        return [$this->_code];
+    }
+
     /**
      * Sestavi aliasovanou SELECT klauzuli z projekce.
      *
@@ -78,8 +90,8 @@ abstract class BaseRepository
         $from   = $this->_alias !== '' ? "{$this->_table} {$this->_alias}" : $this->_table;
 
         $row = $this->_db->fetchOne(
-            "SELECT {$select} FROM {$from} WHERE {$a}id = ? AND {$a}franchise_code = ? AND {$a}deleted = 0",
-            [$id, $this->_code],
+            "SELECT {$select} FROM {$from} WHERE {$a}id = ? AND {$this->_tenantWhere($a)} AND {$a}deleted = 0",
+            [$id, ...$this->_tenantParams()],
         );
 
         return $row ? $proj->apply($row, $this->_sys) : null;
@@ -166,8 +178,8 @@ abstract class BaseRepository
         return $this->_db->update(
             $this->_table,
             ['deleted' => 1],
-            'id = ? AND franchise_code = ?',
-            [$id, $this->_code]
+            'id = ? AND ' . $this->_tenantWhere(),
+            [$id, ...$this->_tenantParams()]
         );
     }
 
@@ -181,8 +193,8 @@ abstract class BaseRepository
     {
         return $this->_db->delete(
             $this->_table,
-            'id = ? AND franchise_code = ?',
-            [$id, $this->_code]
+            'id = ? AND ' . $this->_tenantWhere(),
+            [$id, ...$this->_tenantParams()]
         );
     }
 

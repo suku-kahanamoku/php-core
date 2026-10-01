@@ -130,6 +130,8 @@ Note: This endpoint requires a valid Bearer token in the `Authorization` header;
 ## Response Envelope
 
 Every response — success or error — is wrapped in a consistent JSON envelope.
+Application responses also include an `X-Request-ID` header. Include this value
+when reporting an error so the corresponding server log can be found.
 
 ### Success
 ```json
