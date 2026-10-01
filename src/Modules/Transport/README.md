@@ -90,6 +90,20 @@ vzorového JSON běžící tenant nepřepne.
 `temp/transport` je blokovaný existujícím Apache pravidlem pro `/temp/`.
 Na jiném webserveru musí být tento adresář také nepřístupný přes HTTP.
 
+Pro nasazení jedné nebo více zemí z `Countries/<ISO2>` jedním příkazem (konfigurace
+poskytovatelů a feedů, následně stažení a import dat každého feedu) slouží:
+
+```bash
+php scripts/transport-sync-countries.php --tenant=tram --config=/etc/tram/countries.json
+```
+
+kde `countries.json` obsahuje `{"countries": ["AT", "SK"]}` (viz
+`config/transport.countries.example.json`). Skript je idempotentní a čte
+připojení k DB ze stejného `.env`, ve kterém běží — na produkci stačí spustit
+se serverovým `.env` a serverovou kopií konfiguračního JSON. Země bez feedu
+(např. AT) proběhnou bez stahování; feed se synchronizuje jen tam, kde je
+v presetu uveden.
+
 ## Sestavení a aktivace OTP
 
 Import skončí jako `ready` a vypíše `version_id`. Aktivní data se nezmění.
