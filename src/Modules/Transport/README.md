@@ -33,7 +33,10 @@ do společných služeb. Jediný seznam instalovaných implementací je
 
 Příklad kombinace zemí je v `config/transport.countries.example.json`.
 Starší kompletní JSON konfigurace fungují dál. CZ preset odpovídá českým online
-zdrojům; automaticky nevytváří lokální OTP zálohu. NO preset zapíná Entur.
+zdrojům; automaticky nevytváří lokální OTP zálohu. NO preset zapíná Entur. AT
+preset nabízí neperzistentní Wiener Linien realtime odjezdy pro známé RBL ID.
+SK preset připraví DPB GTFS pro import, ale lokální OTP provider nechává
+vypnutý, dokud tenant neaktivuje ověřený graph.
 
 ## Co je implementováno
 

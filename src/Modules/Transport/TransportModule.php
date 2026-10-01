@@ -11,6 +11,7 @@ use App\Modules\Transport\Integrations\Golemio\GolemioModule;
 use App\Modules\Transport\Integrations\Spojenka\SpojenkaModule;
 use App\Modules\Transport\Integrations\Entur\EnturModule;
 use App\Modules\Transport\Integrations\OpenTripPlanner\OpenTripPlannerModule;
+use App\Modules\Transport\Integrations\WienerLinien\WienerLinienModule;
 use App\Modules\Transport\Persistence\TransportRepository;
 
 /** The only composition root that imports concrete integration modules. */
@@ -18,7 +19,7 @@ final class TransportModule
 {
     public static function integrations(): IntegrationRegistry
     {
-        return new IntegrationRegistry([new GolemioModule(), new \App\Modules\Transport\Integrations\IdsJmk\IdsJmkModule(), new SpojenkaModule(), new EnturModule(), new OpenTripPlannerModule()]);
+        return new IntegrationRegistry([new GolemioModule(), new \App\Modules\Transport\Integrations\IdsJmk\IdsJmkModule(), new SpojenkaModule(), new EnturModule(), new OpenTripPlannerModule(), new WienerLinienModule()]);
     }
 
     public static function registry(TransportRepository $repository, array $env): ProviderRegistry

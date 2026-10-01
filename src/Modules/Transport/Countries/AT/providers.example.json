@@ -1,0 +1,22 @@
+{
+  "providers": [
+    {
+      "code": "wiener-linien",
+      "adapter": "wiener_linien",
+      "published": true,
+      "coverage": [
+        {
+          "country": "AT",
+          "cities": ["Wien"],
+          "bbox": [16.15, 48.1, 16.65, 48.35]
+        }
+      ],
+      "config": {
+        "url": "https://www.wienerlinien.at/ogd_realtime",
+        "timezone": "Europe/Vienna",
+        "attribution": "Wiener Linien Open Data (CC BY)"
+      }
+    }
+  ],
+  "feeds": []
+}

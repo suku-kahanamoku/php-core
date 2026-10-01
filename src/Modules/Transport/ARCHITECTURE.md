@@ -121,7 +121,10 @@ na statický graf a feed namespace. Nevkládej `if country == ...` do protokolu.
 ## 5. Země a konfigurace tenantů
 
 `Countries/<ISO2>/providers.example.json` je verzovaný preset obsahující `providers`
-a volitelně `feeds`. Aktuálně jsou instalované CZ a NO; SK/DE/DK nemají vymyšlené
+a volitelně `feeds`. Aktuálně jsou instalované AT, CZ, NO a SK. Rakouský preset
+obsahuje neperzistentní Wiener Linien realtime odjezdy. Slovenský preset
+obsahuje pouze komerčně použitelný plánovaný DPB GTFS feed; jeho OTP provider
+zůstává vypnutý, dokud tenant neaktivuje ověřený graph. DE/DK nemají vymyšlené
 endpointy nebo zástupné funkční providery. Složka země nepotřebuje PHP třídu.
 
 Soukromá serverová konfigurace může obsahovat například:
