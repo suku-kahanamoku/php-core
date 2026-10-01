@@ -165,6 +165,20 @@ OPENAI_RECOMMENDATION_MODEL=gpt-5.6-terra
 The sync is incremental and can follow every catalogue import or run hourly.
 See `src/Modules/OpenAi/README.md` for operation and unavailable-index behavior.
 
+The available offline and disposable-database checks can be run through Composer:
+
+```bash
+composer lint
+composer test:http
+composer test:transport
+composer test
+```
+
+GitHub Actions runs `composer validate --strict`, `composer lint` and
+`composer test:http` with PHP 8.2 for pushes and pull requests. The remaining
+commands create their own temporary MySQL instances and can be run locally or
+added to a dedicated CI job.
+
 This is intentionally an HTTPS session broker, not a PHP WebSocket daemon.
 CGI/FastCGI requests do not provide a reliable long-running WebSocket process.
 

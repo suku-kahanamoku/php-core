@@ -25,6 +25,23 @@ final class OpenAiVectorStoreRepository implements OpenAiVectorStoreGateway
         private readonly string $franchiseCode,
     ) {}
 
+    public function acquireSyncLock(): bool
+    {
+        $row = $this->database->fetchOne(
+            'SELECT GET_LOCK(?, 0) AS acquired',
+            ['openai_vector_store_sync:' . $this->franchiseCode],
+        );
+        return (int) ($row['acquired'] ?? 0) === 1;
+    }
+
+    public function releaseSyncLock(): void
+    {
+        $this->database->fetchOne(
+            'SELECT RELEASE_LOCK(?) AS released',
+            ['openai_vector_store_sync:' . $this->franchiseCode],
+        );
+    }
+
     /** @return array<string, mixed>|null */
     public function store(): ?array
     {

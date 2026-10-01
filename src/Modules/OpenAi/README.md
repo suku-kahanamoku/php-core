@@ -174,7 +174,7 @@ php8.2 scripts/sync_openai_vector_store.php --tenant=fann
 Teprve po úspěšné první synchronizaci se pro běžné API nastaví
 `OPENAI_VECTOR_STORE_ENABLED=true`. Synchronizaci lze spouštět po katalogovém
 importu nebo pravidelně z cronu, například jednou za hodinu. Souběžné běhy nad
-stejným tenantem se nesmějí plánovat. Při změně produktu vznikne nejprve nový
+stejným tenantem služba odmítne tenantovým databázovým zámkem. Při změně produktu vznikne nejprve nový
 hotový index a až poté se odpojí starý soubor, takže běžné vyhledávání nepřijde
 o poslední platnou verzi.
 

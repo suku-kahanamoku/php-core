@@ -13,6 +13,8 @@ files/
 !.github/prompts/
 !.github/agents/
 !.github/skills/
+!.github/workflows/
+!.github/workflows/**
 
 .php-cs-fixer.php
 .php-cs-fixer.cache

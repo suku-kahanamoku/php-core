@@ -37,6 +37,25 @@ final class OpenAiVectorStoreSyncService
      */
     public function sync(?callable $progress = null): array
     {
+        if (!$this->repository->acquireSyncLock()) {
+            throw new OpenAiConfigurationException(
+                "Vector Store synchronization is already running for tenant {$this->franchiseCode}.",
+            );
+        }
+
+        try {
+            return $this->syncLocked($progress);
+        } finally {
+            $this->repository->releaseSyncLock();
+        }
+    }
+
+    /**
+     * @param callable(string):void|null $progress
+     * @return array{vector_store_id:string,total:int,created:int,updated:int,unchanged:int,removed:int}
+     */
+    private function syncLocked(?callable $progress): array
+    {
         $store = $this->repository->store();
         if ($store === null) {
             $name          = 'Product catalog - ' . $this->franchiseCode;

@@ -12,6 +12,12 @@ namespace App\Modules\OpenAi;
  */
 interface OpenAiVectorStoreGateway
 {
+    /** Získá výhradní zámek synchronizace pro aktuální tenant bez čekání. */
+    public function acquireSyncLock(): bool;
+
+    /** Uvolní dříve získaný zámek synchronizace. */
+    public function releaseSyncLock(): void;
+
     /**
      * @return array<string, mixed>|null Uložený stav Vector Store okurku, nebo null.
      */

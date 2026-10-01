@@ -41,17 +41,28 @@ $client = new OpenAiVectorStoreProvider(
 
 $catalog = new class implements OpenAiCatalogGateway {
     public array $products = [[
-        'id' => 1, 'sku' => 'A', 'name' => 'Vůně', 'description' => 'Svěží vůně',
-        'price_with_vat' => 100.0, 'stock_quantity' => 1,
+        'id' => 1,
+        'sku' => 'A',
+        'name' => 'Vůně',
+        'description' => 'Svěží vůně',
+        'price_with_vat' => 100.0,
+        'stock_quantity' => 1,
         'data' => ['brand' => 'Test', 'currency' => 'CZK', 'selection_attributes' => ['character' => ['svěží']]],
         'categories' => [['name' => 'Fragrances']],
     ], [
-        'id' => 2, 'sku' => 'B', 'name' => 'Krém', 'description' => 'Hydratační krém',
-        'price_with_vat' => 200.0, 'stock_quantity' => 1,
+        'id' => 2,
+        'sku' => 'B',
+        'name' => 'Krém',
+        'description' => 'Hydratační krém',
+        'price_with_vat' => 200.0,
+        'stock_quantity' => 1,
         'data' => ['brand' => 'Test', 'currency' => 'CZK', 'selection_attributes' => ['need' => ['hydratace']]],
         'categories' => [['name' => 'Skin Care']],
     ]];
-    public function publishedProducts(): iterable { yield from $this->products; }
+    public function publishedProducts(): iterable
+    {
+        yield from $this->products;
+    }
     public function publishedProduct(int $productId): ?array
     {
         foreach ($this->products as $product) {
@@ -65,20 +76,44 @@ $catalog = new class implements OpenAiCatalogGateway {
 $gateway = new class implements OpenAiVectorStoreGateway {
     public ?array $stored = null;
     public array $mappings = [];
-    public function store(): ?array { return $this->stored; }
+    public bool $locked = false;
+    public function acquireSyncLock(): bool
+    {
+        if ($this->locked) {
+            return false;
+        }
+        $this->locked = true;
+        return true;
+    }
+    public function releaseSyncLock(): void
+    {
+        $this->locked = false;
+    }
+    public function store(): ?array
+    {
+        return $this->stored;
+    }
     public function saveStore(string $vectorStoreId, string $name): void
     {
         $this->stored = ['vector_store_id' => $vectorStoreId, 'name' => $name];
     }
-    public function productMappings(): array { return $this->mappings; }
+    public function productMappings(): array
+    {
+        return $this->mappings;
+    }
     public function saveProductMapping(int $productId, string $vectorStoreId, string $fileId, string $sourceHash): void
     {
         $this->mappings[$productId] = compact('productId', 'vectorStoreId', 'fileId', 'sourceHash') + [
-            'product_id' => $productId, 'vector_store_id' => $vectorStoreId,
-            'openai_file_id' => $fileId, 'source_hash' => $sourceHash,
+            'product_id' => $productId,
+            'vector_store_id' => $vectorStoreId,
+            'openai_file_id' => $fileId,
+            'source_hash' => $sourceHash,
         ];
     }
-    public function deleteProductMapping(int $productId): void { unset($this->mappings[$productId]); }
+    public function deleteProductMapping(int $productId): void
+    {
+        unset($this->mappings[$productId]);
+    }
 };
 $sync = new OpenAiVectorStoreSyncService(
     $catalog,
@@ -92,6 +127,15 @@ assert_test('creates one tenant vector store', $first['vector_store_id'] === 'vs
 assert_test('indexes every published product', $first['created'] === 2 && count($gateway->mappings) === 2);
 $second = $sync->sync();
 assert_test('skips unchanged product documents', $second['unchanged'] === 2 && $second['created'] === 0);
+
+$gateway->locked = true;
+try {
+    $sync->sync();
+    assert_test('rejects concurrent synchronization', false);
+} catch (\App\Modules\OpenAi\OpenAiConfigurationException) {
+    assert_test('rejects concurrent synchronization', true);
+}
+$gateway->locked = false;
 
 $document = (new OpenAiProductDocumentBuilder())->build($catalog->products[1], 'fann');
 assert_test('product document contains verifiable ID and attributes', str_contains($document, '"product_id": 2') && str_contains($document, 'hydratace'));
