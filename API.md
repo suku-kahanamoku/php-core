@@ -2061,6 +2061,21 @@ async function apiFetch(method, path, body = null) {
 
 ## Transport / TRAM
 
+`GET /transport/v1/coverage` retains `providers` and adds tenant-scoped
+`countries`: `{state, capabilities, search_available, cities_available}`.
+Capabilities count only enabled primary online operations. Local schedule
+planners and fallback providers do not enable a country in the search form.
+`search_available` requires both `places` and `journeys`; `cities_available`
+is independent. This describes configuration, not a live health probe, and
+does not expose credentials. Existing internal-key protection is unchanged.
+
+Wiener Linien departures accept only the current 70-minute monitor window;
+unsupported dates return `422 unsupported_time` without triggering outage
+fallback. Filtering and sorting use expected departure (planned when unknown),
+then apply the requested limit. Equipment is available in `metadata`, and
+monitor-linked plain-text disruptions in `alerts`. This source still does not
+provide journey planning, full trips or vehicle GPS.
+
 Tenant-scoped transport API under `/api/transport/v1`, using the same server-only
 `X-Internal-Key` boundary as existing modules. Includes journey search, stop lookup,
 departure boards, dated trip details, provider coverage and GeoJSON geometry.

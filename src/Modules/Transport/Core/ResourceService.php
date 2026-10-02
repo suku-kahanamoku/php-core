@@ -92,7 +92,7 @@ final class ResourceService
         if ($result->succeeded()) {
             return ['result' => $result->data, 'source' => ['provider' => $ref['provider'], 'mode' => $provider instanceof ScheduleProvider ? 'schedule' : 'live', 'fetched_at' => gmdate(DATE_RFC3339)], 'partial' => false];
         }
-        if ($result->status === 'configuration_error' || $result->status === 'not_found') {
+        if (in_array($result->status, ['configuration_error', 'not_found', 'invalid_request', 'unsupported_capability'], true)) {
             throw $result->error;
         }
         if (!$result->allowsFallback()) {

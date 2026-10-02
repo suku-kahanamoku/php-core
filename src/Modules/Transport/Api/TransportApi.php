@@ -72,7 +72,7 @@ final class TransportApi
             header('Cache-Control: no-store');
             return $this->tracking?->observation($p['id']) ?? \App\Modules\Transport\Tracking\TrackingObservationMapper::unavailable();
         }));
-        $router->get('/v1/coverage', fn() => $this->respond(fn() => ['providers' => array_values(array_map(fn($p) => $p->definition()->publicData($p->capabilities()), $this->registry->all()))]));
+        $router->get('/v1/coverage', fn() => $this->respond(fn() => (new \App\Modules\Transport\Core\CountryCoverageService($this->registry))->describe()));
         $router->get('/v1/places', fn(Request $r) => $this->respond(fn() => $this->resources->places($this->text($r, 'query'), JourneyQuery::integer($r->get('limit', 10), 1, 50), $r->get('state') !== null ? $this->text($r, 'state') : null, $r->get('city') !== null ? $this->text($r, 'city') : null)));
         $router->get('/v1/journeys/:id', fn(Request $r, array $p) => $this->respond(fn() => $this->repository->journey($p['id'])));
         $router->get('/v1/journeys/:id/geometry', fn(Request $r, array $p) => $this->respond(

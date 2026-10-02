@@ -48,6 +48,37 @@ ConfigurationService::apply($modular, $fixtureConfig, $fixtureModules, Transport
 $fixtureRows = array_values(array_filter($modular->providers(), fn($p) => $p['code'] === 'fixture'));
 $fixtureRegistry = ProviderRegistry::build($fixtureRows, 'modular', [], $fixtureModules, $modular);
 check($fixtureRegistry->get('fixture') instanceof TransmodelProvider, 'external integration validates and constructs through one registry');
+$orphanFallback = $slovakConfig;
+$orphanFallback['providers'][0]['published'] = true;
+fails(fn() => ConfigurationService::apply($modular, $orphanFallback, TransportModule::integrations(), TransportModule::importers($modular)), 'invalid_configuration');
+check(!array_filter($modular->providers(), fn($p) => $p['code'] === 'dpb-otp'), 'orphan fallback configuration fails before any provider is published');
+$coveragePrimary = new class(new ProviderDefinition('modular', 'coverage-primary', 'fixture_transmodel', [
+    'operations' => ['journeys' => ['role' => 'primary']],
+], [['country' => 'SK', 'bbox' => [16.9,48,17.3,48.3]]], 'fallback')) implements Provider {
+    public function __construct(private readonly ProviderDefinition $def) {}
+    public function definition(): ProviderDefinition { return $this->def; }
+    public function capabilities(): array { return ['places','journeys','cities']; }
+};
+$coverageDescription = (new \App\Modules\Transport\Core\CountryCoverageService(new ProviderRegistry([$coveragePrimary])))->describe();
+check($coverageDescription['countries'][0]['search_available'] === false && $coverageDescription['countries'][0]['capabilities'] === ['journeys'], 'country readiness respects operation roles and excludes fallback catalogues');
+$coverageFull = new class implements Provider {
+    public function definition(): ProviderDefinition { return new ProviderDefinition('modular', 'coverage-full', 'fixture_transmodel', [], [['country' => 'PL', 'bbox' => [14,49,24,55]]]); }
+    public function capabilities(): array { return ['places','journeys']; }
+};
+$coverageDescription = (new \App\Modules\Transport\Core\CountryCoverageService(new ProviderRegistry([$coverageFull])))->describe();
+check($coverageDescription['countries'][0]['search_available'] && !$coverageDescription['countries'][0]['cities_available'], 'country route availability is independent of optional municipality catalogues');
+$unreadyCoverage = new \App\Modules\Transport\Integrations\OpenTripPlanner\OtpProvider(new ProviderDefinition('modular', 'unready', 'otp_transmodel', ['graph_ready' => false, 'geocoder_url' => 'http://localhost/otp/geocode'], [['country' => 'SK', 'bbox' => [16,48,18,49]]]));
+check(!(new \App\Modules\Transport\Core\CountryCoverageService(new ProviderRegistry([$unreadyCoverage])))->describe()['countries'][0]['search_available'], 'unready graph cannot advertise country search');
+$validFallbackConfig = $fixtureConfig;
+$validFallbackConfig['providers'][] = [
+    'code' => 'fixture-backup', 'adapter' => 'fixture_transmodel', 'published' => true,
+    'coverage' => $coverage, 'role' => 'fallback', 'fallback_for' => ['fixture'],
+    'config' => ['url' => 'https://fixture.invalid', 'operations' => [
+        'stop' => ['enabled' => false], 'trip' => ['enabled' => false], 'departures' => ['enabled' => false],
+    ]],
+];
+ConfigurationService::apply($modular, $validFallbackConfig, $fixtureModules, TransportModule::importers($modular));
+check(count(array_filter($modular->providers(), fn($p) => $p['code'] === 'fixture-backup')) === 1, 'explicit fallback for a published primary operation remains configurable');
 $badPolicy = $fixtureConfig;
 $badPolicy['providers'][0]['config']['operations'] = ['realtime' => ['enabled' => true]];
 fails(fn() => ConfigurationService::apply($modular, $badPolicy, $fixtureModules, TransportModule::importers($modular)), 'invalid_configuration');
@@ -71,6 +102,13 @@ check(count((new ProviderSelectionService(new ProviderRegistry([$fixtureRegistry
 require dirname(__DIR__) . '/Integrations/Entur/tests/contract.php';
 require dirname(__DIR__) . '/Integrations/WienerLinien/tests/contract.php';
 require dirname(__DIR__) . '/Integrations/OpenTripPlanner/tests/contract.php';
+
+$windowDefinition = new ProviderDefinition('modular', 'wiener-window', 'wiener_linien', ['url' => 'https://www.wienerlinien.at/ogd_realtime'], $coverage);
+$modular->execute('INSERT INTO transport_provider(franchise_code,code,adapter,config,coverage,fallback_for,published) VALUES (?,?,?,?,?,?,1)', ['modular', 'wiener-window', 'wiener_linien', '{}', json_encode($coverage), '[]']);
+$windowHttp = new FakeHttp([]);
+$windowResource = new ResourceService(new ProviderRegistry([new \App\Modules\Transport\Integrations\WienerLinien\WienerLinienProvider($windowDefinition)]), $windowHttp, $modular);
+fails(fn() => $windowResource->resource('departures', \App\Modules\Transport\Model\ResourceIdCodec::encode('modular', 'wiener-window', 'stop', '147'), ['at' => '2030-01-01T00:00:00Z']), 'unsupported_time');
+check(count($windowHttp->requests) === 0 && (int)$modular->rows('SELECT failure_count FROM transport_provider WHERE franchise_code=? AND code=?', ['modular', 'wiener-window'])[0]['failure_count'] === 0, 'unsupported monitor time makes no network request and never triggers fallback or circuit failure');
 
 $modular->execute('INSERT INTO transport_provider(franchise_code,code,adapter,config,coverage,fallback_for,published) VALUES (?,?,?,?,?,?,1)', ['modular', 'enriching', 'fixture_transmodel', '{}', json_encode($coverage), '[]']);
 $enrichingProvider = new class(new ProviderDefinition('modular', 'enriching', 'fixture_transmodel', ['url' => 'https://fixture.invalid'], $coverage)) implements \App\Modules\Transport\Contracts\ResourceEnrichmentProvider {

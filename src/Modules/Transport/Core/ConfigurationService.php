@@ -36,6 +36,9 @@ final class ConfigurationService
             throw new TransportException('invalid_configuration', 'Providers are required.');
         }
         $seen = [];
+        $definitions = [];
+        $capabilities = [];
+        $published = [];
         foreach ($config['providers'] as $p) {
             if (!is_string($p['code'] ?? null) || !is_string($p['adapter'] ?? null)
                 || !is_array($p['config'] ?? null) || !is_array($p['coverage'] ?? null) || !array_is_list($p['coverage'])
@@ -50,7 +53,10 @@ final class ConfigurationService
             $definition = new ProviderDefinition($r->tenant, $p['code'], $p['adapter'], $p['config'], $p['coverage'], $p['role'] ?? 'primary', $p['fallback_for'] ?? []);
             $module = $modules->get($definition->adapter);
             $module->validate($definition);
-            self::operations($definition, $module->create($definition, [])->capabilities());
+            $definitions[$p['code']] = $definition;
+            $published[$p['code']] = !empty($p['published']);
+            $capabilities[$p['code']] = $module->create($definition, [])->capabilities();
+            self::operations($definition, $capabilities[$p['code']]);
             self::quota($definition->config);
             foreach (['client_name','token_env'] as $key) {
                 if (isset($p['config'][$key]) && (!is_string($p['config'][$key]) || preg_match('/[\r\n]/', $p['config'][$key]))) {
@@ -77,6 +83,22 @@ final class ConfigurationService
             foreach ($p['config']['operations'] ?? [] as $policy) { $references = array_merge($references, $policy['fallback_for'] ?? []); }
             if (in_array($p['code'], $references, true) || array_diff($references, array_keys($seen))) {
                 throw new TransportException('invalid_configuration', 'Fallback refers to an unknown provider.');
+            }
+            if (!empty($p['published'])) {
+                $definition = $definitions[$p['code']];
+                foreach ($capabilities[$p['code']] as $operation) {
+                    if (!$definition->enabled($operation) || $definition->roleFor($operation) !== 'fallback') {
+                        continue;
+                    }
+                    $targets = $definition->fallbackFor($operation);
+                    if (!$targets || !array_filter($targets, static fn($code) =>
+                        $definitions[$code]->enabled($operation) && $definitions[$code]->roleFor($operation) === 'primary'
+                        && in_array($operation, $capabilities[$code], true)
+                        && $published[$code]
+                    )) {
+                        throw new TransportException('invalid_configuration', 'Published fallback requires a published primary source for operation: ' . $operation);
+                    }
+                }
             }
         }
         foreach ($config['providers'] as $p) {

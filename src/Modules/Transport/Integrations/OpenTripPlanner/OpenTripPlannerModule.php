@@ -26,6 +26,7 @@ final class OpenTripPlannerModule implements IntegrationModule
         }
         if (isset($definition->config['geocoder_url'])) {
             ConfigurationService::url($definition->config['geocoder_url'], true);
+            $this->geocoderUrl($definition->config['url'], $definition->config['geocoder_url']);
         }
     }
     public function create(ProviderDefinition $definition, array $env, ?TransportRepository $repository = null): Provider
@@ -40,8 +41,25 @@ final class OpenTripPlannerModule implements IntegrationModule
                 'graph_version' => $version['id'] ?? null,
                 'snapshot_at' => isset($version['snapshot_at']) ? str_replace(' ', 'T', $version['snapshot_at']) . 'Z' : null,
             ]);
+            if (isset($config['geocoder_url'])) {
+                $config['geocoder_url'] = $this->geocoderUrl($config['url'], $config['geocoder_url']);
+            }
             $definition = $definition->withConfig($config);
         }
         return new OtpProvider($definition);
+    }
+
+    /** Geocoder must belong to the same immutable OTP instance as Transmodel. */
+    private function geocoderUrl(string $graphUrl, string $configuredUrl): string
+    {
+        $path = parse_url($graphUrl, PHP_URL_PATH) ?? '';
+        if (!str_ends_with($path, '/transmodel/v3') || parse_url($graphUrl, PHP_URL_QUERY) !== null || parse_url($graphUrl, PHP_URL_FRAGMENT) !== null) {
+            throw new TransportException('invalid_configuration', 'OTP geocoder requires a graph URL ending in /transmodel/v3.');
+        }
+        $configuredPath = parse_url($configuredUrl, PHP_URL_PATH) ?? '';
+        if (!str_ends_with($configuredPath, '/geocode') || parse_url($configuredUrl, PHP_URL_QUERY) !== null || parse_url($configuredUrl, PHP_URL_FRAGMENT) !== null) {
+            throw new TransportException('invalid_configuration', 'OTP geocoder URL must end in /geocode.');
+        }
+        return substr($graphUrl, 0, -strlen('/transmodel/v3')) . '/geocode';
     }
 }

@@ -124,7 +124,9 @@ na statický graf a feed namespace. Nevkládej `if country == ...` do protokolu.
 a volitelně `feeds`. Aktuálně jsou instalované AT, CZ, NO a SK. Rakouský preset
 obsahuje neperzistentní Wiener Linien realtime odjezdy. Slovenský preset
 obsahuje pouze komerčně použitelný plánovaný DPB GTFS feed; jeho OTP provider
-zůstává vypnutý, dokud tenant neaktivuje ověřený graph. DE/DK nemají vymyšlené
+zůstává vypnutý, dokud tenant neaktivuje ověřený graph a nenakonfiguruje primární
+online zdroj s odpovídajícím `fallback_for`. Publikovanou zálohu bez primárního
+zdroje pro povolenou operaci konfigurátor odmítne před zápisem. DE/DK/PL/AU nemají vymyšlené
 endpointy nebo zástupné funkční providery. Složka země nepotřebuje PHP třídu.
 
 Soukromá serverová konfigurace může obsahovat například:

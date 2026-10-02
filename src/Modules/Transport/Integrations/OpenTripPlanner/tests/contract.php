@@ -70,3 +70,21 @@ check(
         && $enrichedRows[1]['name'] === null && count($stopHttp->requests) === 2,
     'OTP place enrichment resolves real stop names through the existing Transmodel stop query'
 );
+
+$otpModule = new \App\Modules\Transport\Integrations\OpenTripPlanner\OpenTripPlannerModule();
+$otpDefinition = $otp->definition();
+$otpModule->validate($otpDefinition);
+$otpInvalidGeocoder = $otpDefinition->withConfig(array_replace($otpDefinition->config, ['geocoder_url' => 'http://localhost/wrong']));
+fails(fn() => $otpModule->validate($otpInvalidGeocoder), 'invalid_configuration');
+// The integration fixture already has an active graph; point that graph at a different immutable instance.
+$activeOtpFeed = $r->activeFeed('pid');
+if ($activeOtpFeed) {
+    $previousGraphUrl = $activeOtpFeed['graph_url'];
+    try {
+        $r->execute('UPDATE transport_feed_version SET graph_url=? WHERE franchise_code=? AND id=?', ['http://127.0.0.1:8089/version-2/otp/transmodel/v3', $r->tenant, $activeOtpFeed['id']]);
+        $runtimeOtp = $otpModule->create($otpDefinition->withConfig(array_replace($otpDefinition->config, ['feed_code' => 'pid'])), [], $r);
+        check(str_starts_with($runtimeOtp->resourceRequest('places', ['query' => 'Hlavna'])->url, 'http://127.0.0.1:8089/version-2/otp/geocode/stopClusters'), 'OTP geocoder follows the active immutable graph endpoint and context path');
+    } finally {
+        $r->execute('UPDATE transport_feed_version SET graph_url=? WHERE franchise_code=? AND id=?', [$previousGraphUrl, $r->tenant, $activeOtpFeed['id']]);
+    }
+}

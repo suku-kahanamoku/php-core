@@ -36,7 +36,9 @@ Starší kompletní JSON konfigurace fungují dál. CZ preset odpovídá český
 zdrojům; automaticky nevytváří lokální OTP zálohu. NO preset zapíná Entur. AT
 preset nabízí neperzistentní Wiener Linien realtime odjezdy pro známé RBL ID.
 SK preset připraví DPB GTFS pro import, ale lokální OTP provider nechává
-vypnutý, dokud tenant neaktivuje ověřený graph.
+vypnutý. Zveřejnění vyžaduje ověřený graf i primární online zdroj a explicitní
+`fallback_for` pro každou povolenou záložní operaci. Samotný import SK tedy
+neznamená dostupné online vyhledávání. PL ani AU nemají instalovaný preset.
 
 ## Co je implementováno
 
@@ -154,7 +156,7 @@ omezena na 120 požadavků za minutu/tenant; za serverovou proxy jde o společn�
 | Metoda/cesta | Význam |
 | --- | --- |
 | `POST /journeys/search` | Vyhledání spojení |
-| `GET /coverage` | Poskytovatelé, schopnosti a konfigurované pokrytí |
+| `GET /coverage` | Poskytovatelé, schopnosti a konfigurované pokrytí; připravenost zemí pro formulář |
 | `GET /places?query=Oslo&state=NO&limit=10` | Výběr zastávky; u PID názvový filtr Golemio; lokální index pouze po výpadku |
 | `GET /stops/{id}` | Detail zastávky |
 | `GET /stops/{id}/departures?at=...&limit=20` | Odjezdy; `at` je RFC3339, implicitně nyní |

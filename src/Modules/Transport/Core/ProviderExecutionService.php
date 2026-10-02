@@ -38,6 +38,7 @@ final class ProviderExecutionService
                     $e instanceof TransportException && in_array($e->reason, ['deadline_exceeded','request_limit_exceeded'], true) => 'deadline_exceeded',
                     $e instanceof TransportException && $e->status === 404 => 'not_found',
                     $e instanceof TransportException && $e->reason === 'unsupported_capability' => 'unsupported_capability',
+                    $e instanceof TransportException && in_array($e->reason, ['unsupported_time', 'invalid_id', 'invalid_query', 'invalid_date', 'invalid_limit'], true) => 'invalid_request',
                     default => 'unavailable',
                 };
                 $results[$code] = new ProviderResult($status, error: $e);
