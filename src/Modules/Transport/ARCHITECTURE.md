@@ -17,6 +17,29 @@ Provider je **zdroj dat**, ne nutně dopravce. Dopravce uvnitř jízdního řád
 `operator`. Integrace může obsluhovat více zemí; země může zapnout více integrací.
 `code` je součást veřejných ID. Přesun tříd neopravňuje přejmenovat existující kódy.
 
+### Úplnost integrace nové země
+
+Při implementaci nové země je povinné řešit obě oblasti podle
+[AGENTS.md](AGENTS.md), nikoli pouze první nalezený endpoint:
+
+| Oblast | Požadovaný rozsah | Český příklad |
+| --- | --- | --- |
+| Primární online katalog a plánovač | Města/jízdní řády, zastávky a našeptávání, nejbližší zastávky, detaily zastávek a spojů, všechny zastávky spoje, hledání odkud–kam v zadaném čase a přestupy | Spojenka |
+| Doplňující online provozní data | Odjezdy, zpoždění, očekávané časy, výluky, zrušení, živé polohy vozidel, vybavení/přístupnost a podporované omezené lokální plánování | Golemio/PID |
+
+Jeden provider může obsloužit obě oblasti, případně země složí více providerů.
+Rozšiřuj existující protokoly a kontrakty; společné služby nesmějí obsahovat
+větve pro konkrétní zemi. Všechna dostupná licenčně povolená data integruj,
+včetně realtime. Pokud některé schopnosti zdroj nenabízí, prověř další zdroje
+a dolož konkrétní mezeru v README země. Bez skutečných dat se schopnost
+nepředstírá a částečné pokrytí se nevydává za dokončenou integraci.
+
+README země musí uvádět zdroj a stav pro každou oblast: implementovaný kontrakt,
+skutečné geografické pokrytí, chybějící schopnosti/credentials, fixture i live
+ověření a potřebné kroky nasazení. Primární data zůstávají online; vlastní
+importovaný katalog a OTP se aktivují pouze při výpadku nakonfigurovaného
+zdroje. Živé GPS se neukládají ani neodvozují z plánovaných časů.
+
 ## 2. Adresáře a povolené závislosti
 
 ```text

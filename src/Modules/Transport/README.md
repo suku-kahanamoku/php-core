@@ -20,6 +20,15 @@ sdílené `Protocols`/`Import` a konfigurační balíčky `Countries`.
 **Před přidáním země, adaptéru nebo providera přečti
 [ARCHITECTURE.md](ARCHITECTURE.md) a [lokální pravidla pro AI](AGENTS.md).**
 
+**Nová země vyžaduje kompletní integraci obou oblastí:** primární online
+katalog měst a zastávek, detaily spojů a vyhledávání spojení (vzor Spojenka),
+plus doplňující provozní data, zpoždění, živé polohy a podporované lokální
+plánování (vzor Golemio/PID). Všechny dostupné a licenčně povolené schopnosti
+musí být zapojené do společné logiky a ověřené od API po frontend. Jeden zdroj
+může pokrýt obě oblasti; chybějící schopnosti hledej u dalších zdrojů a mezery
+zaznamenej v README země. Samotný preset, import nebo odjezdový monitor není
+dokončená integrace země. Konkrétní postup je závazně rozepsaný v `AGENTS.md`.
+
 [ARCHITECTURE.md](ARCHITECTURE.md) přesně popisuje registraci modulů, kontrakty,
 složení zemí, politiku operací, identity, souběžné vícekrokové volání, kvóty,
 migraci i aktuální hranice škálování. Není potřeba přidávat větev pro novou zemi
