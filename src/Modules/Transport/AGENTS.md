@@ -1,69 +1,27 @@
-# Transport: pravidla pro další změny
+# Transport: PHP gateway
 
-Před prací přečti `README.md` a `ARCHITECTURE.md`. Platí také root `AGENTS.md`.
+Před změnou čti `README.md`, `ARCHITECTURE.md` a root `AGENTS.md`.
+Uživatel 3. 10. 2026 výslovně autorizoval odstranění PHP dopravní implementace.
 
-Mise modulu: postupně propojit veřejnou dopravu co nejvíce zemí (nejprve EU)
-do jednoho systému. Při zadání další země/providera/API pro vyhledávání spojů
-platí vždy tento postup, bez ohledu na to, zda je v zadání výslovně rozepsaný:
-
-1. Nejprve ověř licenci a podmínky použití podle licenčního gate v root
-   `AGENTS.md`. Bez potvrzeného oprávnění se adaptér nepřidává.
-2. Po potvrzení licence implementuj z reálných dat providera vše, co nabízí
-   nebo co z jeho dat lze spolehlivě odvodit: vyhledání spojení z bodu A do
-   bodu B v zadaném čase, časy odjezdů/příjezdů, zastávky a mezizastávkové
-   detaily (trasa, pořadí a přestupy). Nikdy si nevymýšlej názvy zastávek,
-   linek, spojů ani časy — používej výhradně to, co vrací API/feed/adaptér.
-   Pokud provider danou operaci nenabízí a nelze ji odvodit z jeho dat,
-   operaci vynech a rozsah jasně zdokumentuj, místo aby ses ji snažil nahradit
-   vymyšlenými hodnotami.
-3. Novou zemi integruj jako úplný celek se dvěma oblastmi schopností:
-   - **Primární online katalog a plánovač (vzor Spojenka):** seznam a hledání
-     měst/jízdních řádů, našeptávání a hledání zastávek, nejbližší zastávky podle
-     aktuální GPS, detail zastávky, vyhledávání spojení odkud–kam pro odjezd i
-     příjezd, přestupy, detail spoje a všechny jeho zastávky včetně časů a pořadí.
-   - **Doplňující online provozní data (vzor Golemio/PID):** aktuální odjezdy,
-     zpoždění a očekávané časy, výluky a zrušení, aktuální polohy vozidel,
-     vybavení a přístupnost, další dostupné detaily a omezené lokální plánování
-     tam, kde jej API poskytuje nebo lze spolehlivě sestavit z jeho online dat.
-   Obě oblasti může poskytovat jeden adaptér nebo více spolupracujících
-   adaptérů. Není povinné kopírovat české implementace ani vytvářet dvě třídy;
-   povinné je propojit všechny dostupné schopnosti do společné logiky TRAM.
-4. Pokud první API některé údaje neumí, prověř další zdroje pro danou zemi
-   a města. Dostupné a licenčně povolené realtime schopnosti se musí
-   implementovat, nesmějí se odložit jako nepovinný bonus. Chybějící zdroj,
-   oprávnění, credentials nebo nedostupná schopnost jsou konkrétní mezera,
-   kterou zaznamenej v README země spolu s pokrytím a potřebným dalším krokem.
-   Pouhý preset, GTFS import nebo adaptér jen pro odjezdy není hotová integrace
-   země. Částečnou integraci lze připravit, ale nesmí se vydávat za kompletní
-   podporu ani deklarovat neimplementované capabilities.
-5. Ověř celý tok: výběr zdrojů podle země/města/GPS, katalog měst a zastávek,
-   vyhledávání, načtení detailů, propojení provozních dat a frontend. Identity
-   mezi zdroji propojuj pouze doloženými ID a provozním dnem. Zpoždění promítni
-   do očekávaných časů, proveditelnosti přestupů, řazení, délky cesty a zobrazení;
-   nepřičítej je slepě ke všem úsekům. Poloha vozidla je vždy živý údaj ze zdroje,
-   nikdy odhad podle jízdního řádu. Polohy vozidel ani uživatelů se neukládají.
-6. Zachovej online-first: primární hledání a data běží přes online služby;
-   synchronizovaná DB a vlastní OTP slouží pouze jako nakonfigurovaná záloha při
-   výpadku odpovídající online služby. Chybějící primární API není výpadek.
-   Připravenost pro hledání v `coverage` není potvrzení, že jsou dokončeny všechny
-   doplňující schopnosti země; jejich skutečný stav dokumentuj samostatně.
-
-- Rozšiřuj integrace v `Integrations/<Service>`; země skládej přes `Countries/<ISO2>`.
-  Nová země sama nevyžaduje nový provider ani kopii protokolu.
-- Instalované implementace registruje výhradně `TransportModule`. Nezaváděj další
-  adapter allowlist ani načítání PHP tříd/cest z JSON, DB nebo uživatelského vstupu.
-- `Core`, `Model`, `Persistence` a `Protocols` nesmějí importovat `Integrations`.
-  Specifické realtime přípravy, mapování ID a enrichment patří integračním kontraktům.
-- Síť jde přes injektovaný kontrakt HttpModule. Vícekrokové interaktivní operace
-  používají klienta z `ProviderExecutionService`; nepřeskakuj jeho quota/deadline.
-- Každý externí HTTP request spotřebuje kvótu, i v dávce nebo enrichmentu. Stejný
-  klíč/pool sdílí quota scope. Místní throttle ani úspěšná prázdná odpověď nejsou výpadek.
-- Zachovej stabilní provider codes a formát ID, tenantovou izolaci, provozní den,
-  online-first pravidla a zákaz ukládání GPS. Identity spojuj pouze doloženou vazbou.
-- Importér vzniká z nové tovární instance pro každý běh. Zápis jde do neaktivní verze;
-  aktivaci/rollback plánovače řeš odděleně. GTFS není implicitní podpora jiných formátů.
-- Testuj na dočasné DB pomocí `scripts/test-transport.sh` a `scripts/test-http.sh`,
-  ověř PHP lint a diff. Nové integrační fixtures patří k integraci a musí být zapojené
-  do test runneru. Dodržuj Graphify workflow z root pravidel.
-- V dokumentaci přesně rozliš implementovaný kontrakt, fixture ověření, live ověření
-  a budoucí práci. Nevydávej preset země nebo registraci adaptéru za produkční nasazení.
+1. PHP obsahuje pouze bezpečnostní/tenant hranici a transparentní gateway do Javy.
+   Nepřidávej sem adaptéry dopravců, katalogy, GTFS/OSM transformace, importy,
+   plánování, výpočty zpoždění, SQL fallback ani transportový WebSocket server.
+2. Dopravní změny patří do [Java projektů](../../../../../java/AGENTS.md).
+   Nový zdroj/země vyžaduje doloženou licenci a všechny dostupné schopnosti;
+   částečné pokrytí se nesmí prezentovat jako kompletní. Ověř Java implementaci,
+   nikoli existenci presetu. Odstranění PHP nepotvrzuje plnou funkční paritu.
+3. Zachovej interní klíč a pevný tenant; SQL rate limiter zde nepoužívej. Java URL a token jsou
+   pouze serverové; konfiguraci nelze zvolit browserem. Nenakonfigurovaný tenant
+   vrací chybu, nesmí se připojit ke grafu jiného tenantu.
+4. Síť vede přes injektovaný `Http\Contracts\HttpClient` ze společného HttpModule.
+   Udržuj explicitní route/method/query allowlist a konečné časové/objemové limity.
+   Administrace, build a synchronizace Javy nejsou veřejné gateway endpointy.
+5. Dopravní JSON předávej beze změny, včetně plánovaných/očekávaných časů,
+   metadata, statusů a `Retry-After`. Neplatné upstream odpovědi nepublikuj surové.
+   Nepersistuj GPS uživatelů ani vozidel. Nastav `no-store`.
+6. Staré TRAM SQL skripty jsou odstraněné; existující DB data se nemažou.
+   Gateway nesmí používat SQL, Database ani SQL RateLimiter, ani pro počítadla.
+   Testy gateway běží bez DB a explicitně zakazují databázový přístup.
+7. Spusť `scripts/test-java-gateway.sh`, `scripts/test-http.sh`, PHP lint a diff check.
+   Testy gateway patří do `Gateway/tests`; rozliš fixture a skutečnou Java službu.
+   Dodržuj Graphify z root pravidel a aktualizuj dokumentaci kontraktu/nasazení.

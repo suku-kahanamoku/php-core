@@ -170,7 +170,7 @@ The available offline and disposable-database checks can be run through Composer
 ```bash
 composer lint
 composer test:http
-composer test:transport
+composer test:java-gateway
 composer test
 ```
 
@@ -624,10 +624,15 @@ already sends the internal key. No production deployment is performed by tests.
 
 ## TRAM transport backend
 
-The [Transport module](src/Modules/Transport/README.md) provides modular Entur,
-PID/Golemio and OpenTripPlanner integrations, versioned GTFS imports and a unified
-journey API. Setup uses the additive `migrations/tram_schema.sql` migration
-and tenant-scoped CLI configuration. Existing API authentication remains required.
+The [Transport module](src/Modules/Transport/README.md) is an authenticated,
+tenant-bound JSON gateway to the [Java transport services](../../java/README.md).
+Java owns GTFS/OSM collection, graph building, catalogues, planning and realtime.
+Configure `TRANSPORT_JAVA_ENABLED`, `TRANSPORT_JAVA_TENANT`, `TRANSPORT_JAVA_URL`
+and the server-only `TRANSPORT_JAVA_TOKEN`; preserve internal-key authentication
+and `FRANCHISE_CODES`. PHP transport adapters/imports/CLI workers have been removed.
+The gateway authenticates from server configuration and needs no SQL connection
+or tables; it does not use the SQL rate limiter. Java backpressure is forwarded. Legacy TRAM SQL scripts have been removed from the project;
+this change does not apply or drop existing application database structures/data.
 
 ### Sdílená odchozí komunikace
 

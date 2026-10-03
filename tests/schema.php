@@ -34,10 +34,10 @@ function snapshot(): array {
     }
     return $result;
 }
-$schemas = ['schema', 'etymolog_schema', 'tram_schema', 'sry_schema', 'zoo_schema', 'fann_schema', 'zajeci_schema'];
-$seeds = ['schema_seed', 'zajeci_seed', 'zoo_seed', 'fann_seed', 'etymolog_seed', 'tram_seed', 'sry_seed'];
+$schemas = ['schema', 'etymolog_schema', 'sry_schema', 'zoo_schema', 'fann_schema', 'zajeci_schema'];
+$seeds = ['schema_seed', 'zajeci_seed', 'zoo_seed', 'fann_seed', 'etymolog_seed', 'sry_seed'];
 foreach ($schemas as $file) { apply($file); }
-verify(count(rows('SHOW TABLES')) === 75, 'all 75 current tables created');
+verify(count(rows('SHOW TABLES')) === 60, 'all 60 current tables created');
 foreach (rows('SHOW TABLES') as $row) {
     $table = reset($row);
     verify((int)$pdo->query('SELECT COUNT(*) FROM `'.$table.'`')->fetchColumn() === 0, $table.' schema contains no seed data');
@@ -47,7 +47,7 @@ foreach (['role', 'enumeration', 'user', 'category', 'customer_profile', 'produc
     $pdo->exec('ALTER TABLE `'.$table.'` AUTO_INCREMENT=5000');
 }
 foreach ($seeds as $file) { apply($file); }
-foreach (['role'=>12, 'user'=>13, 'product'=>88, 'category'=>37, 'enumeration'=>60,
+foreach (['role'=>12, 'user'=>13, 'product'=>88, 'category'=>37, 'enumeration'=>48,
           'customer_profile'=>20, 'product_category'=>107, 'product_alternative'=>27,
           'product_customer_profile_probability'=>338, 'user_customer_profile'=>10,
           'etymolog_sync_job'=>11] as $table=>$count) {

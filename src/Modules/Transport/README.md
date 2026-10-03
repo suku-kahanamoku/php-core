@@ -1,477 +1,91 @@
-# TRAM / Transport
+# TRAM: PHP gateway do Javy
 
-Transport je tenantový modul php-core. Poskytuje jedno API pro web a mobil, adaptéry
-externích zdrojů a verzovaný import jízdních řádů pro vlastní OpenTripPlanner (OTP).
-Jízdenky, platby a frontend nejsou součástí této první etapy.
+Od 3. 10. 2026 obsahuje tento modul pouze autentizované předání API do Java služeb.
+Výpočty, katalogy, adaptéry, GTFS/OSM sběr a transformace, sestavení grafů,
+plánování a realtime zajišťují [Java projekty](../../../../../java/README.md).
+PHP neimportuje jízdní řády, nepočítá přestupy ani zpoždění a neprovozuje
+transportový WebSocket server. Zdrojové implementace původního PHP Transport/Gtfs
+byly odstraněny na výslovné zadání uživatele; odstranění není potvrzením úplné
+funkční parity. Meze Javy popisuje [PARITY.md](../../../../../java/PARITY.md).
 
-**Online-first:** TRAM čte dopravní data z online API. Spojenka doplňuje české
-našeptávání a plánování; Entur obsluhuje své pokrytí, Golemio poskytuje PID data
-včetně omezeného skládání cest v PHP. Společný `ProviderSelectionService`
-vybírá zdroje podle tenantu, schopnosti, státu, města a pokrytí GPS.
-Importovaný katalog/OTP se používá až při výpadku odpovídajícího zdroje.
-Podmínky použití vývojového endpointu Spojenky, chybějící národní fallback,
-přesnost geografického výběru a zbývající nesoulad cache popisuje
-[online-first návrh](../../../docs/tram-online-first.md).
+## Zapojení
 
-## Modularita a postup pro další implementace
+Frontend → Astro BFF → `/api/transport/v1/...` → Java `/transport/v1/...`.
+`api/transport/index.php` používá společný bootstrap, interní klíč, výběr tenantu
+z `FRANCHISE_CODES`. Gateway se nepřipojuje k SQL a nezapisuje ani počítadla požadavků.
+`TransportModule` sestaví gateway pouze pro explicitně nakonfigurovaný tenant.
+`JavaTransportApi` registruje pevný seznam cest; `JavaTransportService` předá
+JSON přes injektovaný `HttpModule::client()`. Dopravní obsah nemění.
 
-Transport je modulární monolit: společné `Core`, samostatné `Integrations`,
-sdílené `Protocols`/`Import` a konfigurační balíčky `Countries`.
-**Před přidáním země, adaptéru nebo providera přečti
-[ARCHITECTURE.md](ARCHITECTURE.md) a [lokální pravidla pro AI](AGENTS.md).**
+Serverová konfigurace:
 
-**Nová země vyžaduje kompletní integraci obou oblastí:** primární online
-katalog měst a zastávek, detaily spojů a vyhledávání spojení (vzor Spojenka),
-plus doplňující provozní data, zpoždění, živé polohy a podporované lokální
-plánování (vzor Golemio/PID). Všechny dostupné a licenčně povolené schopnosti
-musí být zapojené do společné logiky a ověřené od API po frontend. Jeden zdroj
-může pokrýt obě oblasti; chybějící schopnosti hledej u dalších zdrojů a mezery
-zaznamenej v README země. Samotný preset, import nebo odjezdový monitor není
-dokončená integrace země. Konkrétní postup je závazně rozepsaný v `AGENTS.md`.
-
-[ARCHITECTURE.md](ARCHITECTURE.md) přesně popisuje registraci modulů, kontrakty,
-složení zemí, politiku operací, identity, souběžné vícekrokové volání, kvóty,
-migraci i aktuální hranice škálování. Není potřeba přidávat větev pro novou zemi
-do společných služeb. Jediný seznam instalovaných implementací je
-[TransportModule.php](TransportModule.php).
-
-- Nové pokrytí existujícího API: konfigurace instance/preset země.
-- Nové API: vlastní `Integrations/<Service>` a jedna registrace modulu.
-- Nový formát feedu: `FeedImporter` a továrna v registru importérů.
-- Propojování zdrojových ID: explicitní kontrakt; názvy zastávek nejsou identita.
-
-Příklad kombinace zemí je v `config/transport.countries.example.json`.
-Starší kompletní JSON konfigurace fungují dál. CZ preset odpovídá českým online
-zdrojům; automaticky nevytváří lokální OTP zálohu. NO preset zapíná Entur. AT
-preset nabízí neperzistentní Wiener Linien realtime odjezdy pro známé RBL ID.
-SK preset připraví DPB GTFS pro import, ale lokální OTP provider nechává
-vypnutý. Zveřejnění vyžaduje ověřený graf i primární online zdroj a explicitní
-`fallback_for` pro každou povolenou záložní operaci. Samotný import SK tedy
-neznamená dostupné online vyhledávání. PL ani AU nemají instalovaný preset.
-
-## Co je implementováno
-
-- `TransportApi` používá stávající Router, Response a `X-Internal-Key` middleware.
-- `JourneyService` vybírá poskytovatele pokrývající oba konce cesty, provádí jejich jedno- i vícekroková volání přes `ProviderExecutionService`,
-  sjednocuje výsledky, řadí je a při výpadku oslovuje nakonfigurované zálohy.
-- `TransportModule` registruje integrační moduly; stejný registr používá konfigurátor i `ProviderRegistry`. Konfigurace neurčuje PHP třídy.
-- `SpojenkaProvider` a `SpojenkaMapper` implementují české online zastávky, cesty a detaily spojů.
-- `EnturProvider` a `OtpProvider` používají sdílený `Protocols/Transmodel`; Entur geokodér a OTP identita/graf zůstávají ve svých integracích.
-- `PidProvider` implementuje online Golemio zastávky, odjezdy, detaily spojů a polohy vozidel.
-- `PidOnlineJourneyService` skládá časově ověřené přímé jízdy a jeden přestup z online stop times a detailů jízd.
-- `ResourceService` řeší detaily přes obecné kontrakty; specifické mapování OTP/PID ID a ověření realtime zajišťují integrace.
-- `HttpModule` poskytuje společný Guzzle transport s omezenou paralelizací, velikostí odpovědi a deadlinem; Transport vlastní HTTP implementaci nemá.
-- `TransportRepository` odděluje tenanty i provozní stav poskytovatelů.
-- `FeedSyncService` a `GtfsImportService` streamují ZIP/CSV do odděleného snapshotu.
-- `GraphService` exportuje přesný snapshot pro OTP a aktivuje až ověřený graf.
-
-Druhy dopravy jsou v existujícím `enumeration`, typ `transport_mode`.
-Linky, spoje a jízdní řády používají `transport_*`; tabulky produktů se nemění.
-
-## Instalace
-
-PHP 8.1+ s PDO MySQL, curl, zip a mbstring; MySQL 8. OTP běží zvlášť v Dockeru/JVM.
-PHP nemusí obsahovat Java knihovny. Spustit `composer install` podle lockfile (společný HttpModule používá Guzzle).
-
-1. Aplikovat `migrations/schema.sql`, potom `migrations/tram_schema.sql`, `migrations/tram_modularity.sql` a
-   volitelně `migrations/tram_seed.sql` (12 druhů dopravy). Schémata jsou
-   opakovatelná a pouze doplňují chybějící strukturu. Neobsahují data ani veřejné hosty.
-2. Pro zvolený TRAM host přidat mapování `host:tram` do stávajících `FRANCHISE_CODES`.
-   Zachovat ostatní mapování.
-3. Zkopírovat `config/transport.example.json` do soukromé serverové konfigurace,
-   např. `/etc/tram/providers.json`; upravit pokrytí, endpointy a identifikaci aplikace.
-4. Nastavit serverový `TRANSPORT_PID_TOKEN` pro Golemio. Bez něj bude tento adaptér
-   nedostupný a API to přizná; žádný klíč se neposílá klientovi.
-5. Spustit:
-
-```bash
-php scripts/transport-configure.php --tenant=tram --config=/etc/tram/providers.json
-php scripts/transport-sync.php --tenant=tram --feed=pid
+```dotenv
+TRANSPORT_JAVA_ENABLED=1
+TRANSPORT_JAVA_TENANT=tram
+TRANSPORT_JAVA_URL=http://127.0.0.1:18095
+TRANSPORT_JAVA_TOKEN=<soukromy-serverovy-token-alespon-24-znaku>
 ```
 
-Konfigurátor upsertuje pouze uvedené poskytovatele a feedy daného tenantu.
-Vynechání z konfigurace existujícího poskytovatele neodstraní; vypnout jej pomocí
-`published: false`. Existující překlady/upravené číselníky nepřepisuje.
-`storage_allowed: true` u feedu musí odpovídat ověřenému oprávnění data ukládat.
-Při přechodu ze starší konfigurace znovu spustit `transport-configure.php`, aby
-se uložená role `pid-otp` změnila z `primary` na `fallback`. Samotná úprava
-vzorového JSON běžící tenant nepřepne.
-
-`TRANSPORT_STORAGE_DIR` může určit soukromý adresář pro ZIP snapshoty. Výchozí
-`temp/transport` je blokovaný existujícím Apache pravidlem pro `/temp/`.
-Na jiném webserveru musí být tento adresář také nepřístupný přes HTTP.
-
-Pro nasazení jedné nebo více zemí z `Countries/<ISO2>` jedním příkazem (konfigurace
-poskytovatelů a feedů, následně stažení a import dat každého feedu) slouží:
-
-```bash
-php scripts/transport-sync-countries.php --tenant=tram --config=/etc/tram/countries.json
-```
-
-kde `countries.json` obsahuje `{"countries": ["AT", "SK"]}` (viz
-`config/transport.countries.example.json`). Skript je idempotentní a čte
-připojení k DB ze stejného `.env`, ve kterém běží — na produkci stačí spustit
-se serverovým `.env` a serverovou kopií konfiguračního JSON. Země bez feedu
-(např. AT) proběhnou bez stahování; feed se synchronizuje jen tam, kde je
-v presetu uveden.
-
-## Sestavení a aktivace OTP
-
-Import skončí jako `ready` a vypíše `version_id`. Aktivní data se nezmění.
-Použít nový adresář a nový interní port/URL pro každou verzi:
-
-```bash
-php scripts/transport-graph.php --tenant=tram --command=export --version=1 --output=/srv/tram/graphs/pid-1
-# Do tohoto adresáře dodat příslušný OSM výřez jako streets.osm.pbf.
-bash scripts/transport-build-graph.sh /srv/tram/graphs/pid-1
-OTP_HEAP=4G bash scripts/transport-serve-graph.sh /srv/tram/graphs/pid-1 8081 tram-pid-1
-# Po naběhnutí OTP aktivovat ověřenou verzi:
-php scripts/transport-graph.php --tenant=tram --command=activate --version=1 \
-  --manifest=/srv/tram/graphs/pid-1/manifest.json \
-  --graph-url=http://127.0.0.1:8081/otp/transmodel/v3
-```
-
-Číslo verze nahraďte skutečným ID. Paměť závisí na velikosti dat; 4 GB není záruka
-pro celou zemi. Spouštěcí skript publikuje pouze na localhost; nevyžaduje Compose plugin. Alternativní Compose konfigurace je v `deploy/transport/compose.yaml` (vyžaduje Docker Compose v2). Při PHP v kontejneru použít
-interní síťovou adresu OTP, nikoli localhost PHP kontejneru.
-
-Export vytváří manifest, GTFS a `build-config.json` s explicitním obdobím platnosti snapshotu. Build používá připnutý OTP
-2.9.0 a po úspěchu zapisuje kontrolní součty grafu a manifestu. Aktivace kontroluje
-tenanta, verzi, součty, platnost a dva prostorově ověřené záznamy zastávek přes
-skutečné API plánovače. V jedné DB transakci přepne graf i aktivní snapshot.
-**Provozovatel musí na uvedené URL skutečně spustit adresář z manifestu.** Kontrola
-zastávek není vzdálený kryptografický důkaz celé sítě. URL se nesmí přepoužít pro
-jinou verzi; běžící starý proces ponechat pro rozpracované požadavky a rollback.
-
-Rollback: znovu aktivovat předchozí stále platnou verzi s jejím manifestem a URL.
-Předchozí snapshoty a grafy se automaticky nemažou. Provozní úklid musí ponechat
-aktivní verzi a alespoň jednu ověřenou zálohu. Chybný import neaktivuje nic.
-
-Výchozí lokální OTP vyhledává podle plánovaných jízdních řádů. Živá data PID čte
-PHP adaptér samostatně. Zapojení GTFS-RT do samotného OTP vyžaduje jeho serverový
-`router-config.json` s `stop-time-updater`/`real-time-alerts` a Golemio klíčem;
-není v příkladu automaticky zapnuté. Klíč nepatří do verzovaného konfiguračního
-souboru ani do klienta. Bez tohoto nastavení lokální plánovač nepřepočítává přestupy
-podle zpoždění. Entur vrací provozní změny ze své služby.
+URL je kořen privátního Java API, bez cesty, query a credentials. Token musí
+odpovídat Java API; nikdy nepatří do browseru. Adresa 18095 je lokální country
+router, nikoli povinný produkční port. Host TRAM musí být mapovaný v
+`FRANCHISE_CODES`; tato mapa vybírá tenant, nenahrazuje autentizaci.
+Chybějící konfigurace, vypnutí nebo jiný tenant vrátí 503. Původní PHP režim
+ani automatický SQL fallback již neexistují.
 
 ## API
 
-Prefix: `/api/transport/v1`. **Všechny operace stále vyžadují serverový
-`X-Internal-Key`.** Bearer tento klíč nenahrazuje. Web/mobil musí používat serverovou
-vstupní vrstvu; interní klíč nesmí být součástí aplikace. Veřejná gateway ani změna
-InternalAuthMiddleware nejsou v této implementaci. Bezprostřední zdrojová IP je
-omezena na 120 požadavků za minutu/tenant; za serverovou proxy jde o společný limit.
+| Metoda | Cesta za `/api/transport` | Účel v Javě |
+| --- | --- | --- |
+| GET | `/v1/coverage` | Skutečně zapojené země a schopnosti |
+| GET | `/v1/attributions` | Atribuce vstupů aktivního grafu |
+| POST | `/v1/cities/search` | Katalog měst |
+| POST | `/v1/places/search` | Hledání a okolní zastávky |
+| POST | `/v1/journeys/search` | Vyhledání spojení |
+| GET | `/v1/journeys/:id` | Detail uloženého výsledku |
+| GET | `/v1/journeys/:id/geometry` | Geometrie cesty |
+| GET | `/v1/stops/:id` | Detail zastávky |
+| GET | `/v1/stops/:id/departures` | Odjezdy |
+| GET | `/v1/trips/:id` | Statický detail a zastávky spoje |
+| GET | `/v1/trips/:id/realtime` | Aktuální provozní údaje |
+| GET | `/v1/trips/:id/observation` | Okamžité pozorování polohy/zpoždění |
+| POST | `/v1/trips/:id/tracking` | Ticket pro Java WebSocket |
 
-| Metoda/cesta | Význam |
-| --- | --- |
-| `POST /journeys/search` | Vyhledání spojení |
-| `GET /coverage` | Poskytovatelé, schopnosti a konfigurované pokrytí; připravenost zemí pro formulář |
-| `GET /places?query=Oslo&state=NO&limit=10` | Výběr zastávky; u PID názvový filtr Golemio; lokální index pouze po výpadku |
-| `GET /stops/{id}` | Detail zastávky |
-| `GET /stops/{id}/departures?at=...&limit=20` | Odjezdy; `at` je RFC3339, implicitně nyní |
-| `GET /journeys/{id}` | Snapshot výsledku, platný 15 minut |
-| `GET /journeys/{id}/geometry` | GeoJSON FeatureCollection ve WGS84 |
-| `GET /trips/{id}` | Spoj pro konkrétní provozní den |
-| `GET /trips/{id}/realtime` | Poloha a zpoždění, pokud je zdroj podporuje |
+Vstupy a odpovědi určuje [Java API](../../../../../java/OTP/API.md).
+List/search přijímá `q`, `sort`, `projection`, `page`, `limit` v JSON těle;
+PHP je nepřekládá na SQL. GET query má omezené názvy `at`, `limit`,
+`stop_coordinates`; atribuce query nepřijímají. Administrace, synchronizace,
+build a libovolné proxy URL nejsou veřejné cesty gateway.
 
-```json
-{
-  "from-dest": {"type": "coordinates", "lat": 59.911, "lon": 10.752},
-  "to-dest": {"type": "coordinates", "lat": 59.958, "lon": 10.774},
-  "from-date": "2026-10-06T10:00:00+02:00",
-  "state": "NO",
-  "modes": ["tram", "bus", "metro", "train"],
-  "max-transfers": 3,
-  "limit": 10
-}
+Gateway zachová status, JSON obálku a `Retry-After` Javy, nastaví `no-store`.
+Síťové selhání vrací 503, neplatná upstream odpověď 502 bez surového těla.
+Limit hledání je 24 s, ostatních operací 9 s, připojení 1,5 s a odpovědi 16 MB.
+Reálné pokrytí neznamená všechny dopravce země ani dostupnou GPS každého spoje.
+
+## Provoz a kontroly
+
+Synchronizaci a grafy provozujte podle [Java služby OTP](../../../../../java/OTP/README.md).
+PHP transportové cron/configure/build/serve skripty a provider presets byly
+odstraněny. Při nasazení odstraňte jejich staré cron/supervisor položky a obnovte
+PHP OPcache; Java služby a jejich soukromé API musí být dostupné před přepnutím.
+
+Gateway nevyžaduje žádné databázové schéma ani SQL credentials.
+Autentizace interním klíčem a výběr tenantu probíhají ze serverové konfigurace.
+SQL rate limiter byl pro tuto gateway odstraněn; Java `Retry-After` a HTTP
+backpressure se nadále předávají. Limity provozu patří Java API nebo vstupní proxy.
+Staré TRAM SQL schéma, seed a modulární migrace byly odstraněny z projektu.
+Gateway je nepotřebuje. Existující dopravní tabulky ani data tento refaktor nemaže.
+
+```sh
+bash scripts/test-java-gateway.sh
+bash scripts/test-http.sh
+composer lint
+git diff --check
 ```
 
-Alternativní destinace: `{"type":"stop","id":"<id z /places nebo výsledku>"}`.
-`type: coordinates` označuje bod vybraný pro plánování cesty, nikoli tvrzení
-že jde o aktuální polohu člověka. Pro GPS polohu uživatele má klient poslat
-`{"type":"current_location","lat":50.075,"lon":14.42,"observed-at":"2026-09-30T10:00:00Z"}`
-s časem pořízení skutečného měření. Backend přijme jen fix starý nejvýše
-30 sekund a při dalším hledání potřebuje nové měření. Tuto polohu neukládá
-ani ji nevydává z historie. Příklad času je ilustrační; v požadavku musí být aktuální.
-Právě jeden z `from-date` (odjezd nejdříve) a `to-date` (příjezd nejpozději) je
-povinný. Neznámé atributy a režimy jsou odmítnuty. `state` znamená ISO kód země;
-`city` je kontext klienta, nikoli zákaz překročení hranice. Vlastní výběr plánovače
-používá souřadnice obou destinací. Žádné skládání neověřených přestupů mezi API.
-
-Výsledek: stávající obálka `{success,message,data}`; data obsahují `journeys`,
-`partial`, `sources`, `warnings`. Každá cesta obsahuje `legs`, `source`, `id`,
-`expires_at`. Linky mají jednotná pole `id`, `name`, `code`, `mode`; odjezdy mají objekt `stop` ve stejném formátu jako zastávky. Úsek nese plánované a odhadované časy zvlášť, příznak `realtime`,
-odřeknutí, zastávky, linku a dostupnou geometrii. Chybějící údaje jsou `null`.
-`live` označuje dotaz na API, ne automaticky aktuální GPS měření.
-
-- Úspěšné API bez cest: HTTP 200 s prázdným seznamem; nespouští fallback.
-- Výpadek některého zdroje: částečný výsledek a `partial: true`; lokální
-  záloha nese verzi snapshotu a UTC čas dokončeného importu.
-- Omezené PID online skládání: `partial: true` a `source.limited: true`
-  i při úspěšném API; vyhledání nemusí být úplné.
-- Nedostupné všechny vhodné zdroje a zálohy: HTTP 503 `sources_unavailable`.
-- Nepokrytá cesta: HTTP 422 `unsupported_coverage`.
-- Chybějící schopnost: HTTP 422 `unsupported_capability`.
-- Expirované ID výsledku: HTTP 404 `expired_journey`, klient hledá znovu.
-
-ID jsou neprůhledná, URL-safe a obsahují namespace tenantu/zdroje/druhu objektu.
-`trip_id` zahrnuje provozní datum. U PID odjezdů endpoint provozní den neposkytuje,
-proto vrací `external_trip_id` a `trip_id: null`; nevymýšlí se datum podle hodin na
-zastávce. PID realtime se naváže pouze při shodě začátku jízdy s online detailem provozního dne.
-U intervalových spojů tato verze vazbu na konkrétní vozidlo neodhaduje.
-Souřadnice vozidla se vracejí pouze při ověřené instanci spoje, aktivním
-sledování, platném bodu a měření starém nejvýše 30 sekund. V ostatních
-případech jsou `position`, `bearing`, `speed_kmh` a `observed_at` `null`
-a `realtime: false`; stará poloha se nesmí ukazovat jako poslední známá.
-Endpoint poskytuje jednu aktuální observaci na vyžádání; pro průběžnou mapu musí
-klient posílat další požadavky a znovu vyhodnocovat `realtime` a `observed_at`.
-Běžná statická poloha zastávky a plánovaná geometrie trasy nejsou polohou vozidla.
-
-Krátkodobá cache detailu má whitelist polí: z odpovědi pro souřadnicový dotaz
-odstraňuje názvy a souřadnice bodů, pěší geometrii, predikce i telemetrii.
-U dotazu mezi veřejnými zastávkami zachovává jejich statické polohy a
-plánovanou geometrii linky. Cache nicméně stále ukládá omezený plánovaný
-výsledek do MySQL a detail jej čte; to je zbývající odchylka od cílového
-pravidla „DB jen záložní katalog“ popsaná v [návrhu](../../../docs/tram-online-first.md).
-
-## Další poskytovatelé a provoz
-
-Kompatibilní existující integrace: přidat instanci do serverového JSON nebo preset
-do `Countries/<ISO2>`. Nové API: vlastní `IntegrationModule`, provider a případné
-mappery v `Integrations/<Service>`, jedna registrace v `TransportModule`.
-Stejný název protokolu sám nepotvrzuje kompatibilitu autentizace, verzí a polí.
-Přesný postup a kontrakty jsou v [ARCHITECTURE.md](ARCHITECTURE.md).
-
-Konfigurace může přepsat roli, prioritu, zapnutí a vazbu záloh pro jednotlivé
-operace přes `config.operations`. Nemůže deklarovat neimplementovanou schopnost.
-Endpointy a credentials pocházejí jen ze serverové konfigurace.
-
-`role: primary` se volá běžně; `role: fallback` s `fallback_for: ["provider-code"]`
-se volá pouze při selhání daného relevantního primárního zdroje. V příkladu
-je `pid` primární online zdroj a `pid-otp` záloha při jeho výpadku.
-PID online skládání používá čtyřhodinové okno a nejvýše jeden přestup na
-identické zastávce. Vrací `partial: true` a varování, protože omezený počet
-kandidátů nemůže dokázat úplnost výsledků. Pro souřadnice a složitější trasy
-je nutný další online plánovač; úspěšná prázdná odpověď nespouští OTP.
-Více tenantů může používat stejné tabulky, jejich konfigurace, snapshoty, výsledky
-ani stav výpadků se ale nesdílejí. Globální deduplikace feedů mezi tenanty není zapnutá.
-
-Síťové volání používá sdílený HttpModule, souběh nejvýše 4, běžný timeout zdroje
-4 s a limit těla 4 MB. Hledání předává jeden monotónní rozpočet 8 s už od rozlišení
-koncových míst až po enrichment. Primární fáze má nejvýše 5 s, zálohy 3 s,
-vždy omezené skutečně zbývajícím časem. Vícekrokové integrace executor skládá
-do společných HTTP kol přes PHP Fibers. CPU/SQL/serializace nejsou tímto časovačem
-preemptivně omezené; nejde o celkové produkční SLA.
-
-Tři chyby otevírají tenant/provider circuit na 30 s; zotavení dovolí jediný probe.
-Každý HTTP request včetně přípravných dávek a enrichmentu spotřebuje atomickou
-kvótu v MySQL. Golemio modul nastavuje výchozí 20 requestů v klouzavém okně 8 s
-a scope sdílený podle tokenu. `Retry-After` blokuje sdílený scope nejvýše hodinu.
-Podrobnosti a konfigurace jsou v [ARCHITECTURE.md](ARCHITECTURE.md#7-kvóty-chyby-a-fallback).
-Místní kvóta ani vyčerpání rozpočtu před odesláním nejsou výpadek zdroje.
-Neúspěšné HTTP requesty se automaticky neopakují.
-
-Import: limit ZIP 500 MB, rozbalených dat 4 GB, 200 souborů, 10 milionů řádků na CSV.
-Soubory se neextrahují do cest dodaných archivem. Nový snapshot má vlastní záznamy,
-FK včetně tenantu a verze, validaci kalendářů, návazností a časů. Kalendáře podporují
-výjimky, časy nad 24 hodin a GTFS pravidlo noon-minus-12h při změně letního času.
-Zápis používá dávky nejvýše 500 řádků / přibližně 1 MB. Originální archiv zachovává i doplňkové GTFS soubory pro OTP. GTFS Flex se záměrně
-odmítá, pokud vyžaduje jiný model stop times; NeTEx/JDF importéry zatím nejsou napsané.
-
-Denně synchronizovat feedy podle jejich publikačního intervalu; sestavení nového
-grafu provozovat mimo uživatelské požadavky. Zámek v MySQL brání dvěma současným
-importům stejného feedu/tenantu. Průběh sledovat v `transport_sync_run`; neúspěchy
-obsahují bezpečný kód, nikoli tajné HTTP hlavičky. Pravidelně čistit dočasné výsledky:
-
-```bash
-php scripts/transport-cleanup.php --tenant=tram
-```
-
-## Ověření
-
-```bash
-# Nová dočasná MySQL instance na UNIX socketu; žádný přístup k aplikační databázi.
-bash scripts/test-transport.sh
-# Volitelné ověření aktuálního velkého GTFS archivu:
-TRANSPORT_TEST_PID_ARCHIVE=/absolute/path/PID_GTFS.zip bash scripts/test-transport.sh
-# Read-only dotazy na skutečný Entur:
-php src/Modules/Transport/tests/live.php
-# Pro OTP s testovacími vstupy (viz tests/fixtures.php a osm-fixture.py):
-TRANSPORT_TEST_OTP_URL=http://127.0.0.1:18089/otp/transmodel/v3 php src/Modules/Transport/tests/live.php
-```
-
-Testy pokrývají opakovatelnou migraci/konfiguraci/import, tenanty, rollback importu,
-kalendáře, půlnoc/DST, aktivaci grafu, cache, circuit breaker, fallback, rozdíl mezi
-výpadkem a prázdnou odpovědí, HTTP autentizaci a HTTP timeout/size/redirect limity.
-Live test OTP používá syntetickou síť, nikoli kompletní produkční síť PID.
-Golemio realtime i online skládání spojů vyžadují platný token a jejich
-produkční ověření je samostatný krok. Výchozí limit Golemio je 20 požadavků
-za 8 sekund na klíč; současná omezení počtu kandidátů omezují jeden dotaz,
-sdílené řízení kvóty nyní poskytuje `ProviderQuotaRepository`; vyšší dostupná kapacita stále závisí na limitu poskytovatele.
-
-Primární dokumentace:
-- https://developer.entur.org/pages-journeyplanner-journeyplanner/
-- https://api.golemio.cz/docs/static/vp-output-gateway/openapi.json
-- https://gtfs.org/documentation/schedule/reference/
-- https://docs.opentripplanner.org/en/v2.9.0/apis/TransmodelApi/
-- https://docs.opentripplanner.org/en/v2.9.0/GTFS-RT-Config/
-- https://docs.opentripplanner.org/en/v2.9.0/sandbox/GeocoderAPI/
-
-### Ověřeno při implementaci (27. 9. 2026)
-
-- Izolované MySQL testy: 58 kontrol po doplnění testu časové návaznosti.
-- Reálný Entur: vyhledávání, zastávka, odjezdy, datovaný detail a našeptávač.
-- Skutečný OTP 2.9.0: sestavení syntetického GTFS/OSM grafu, vyhledávání,
-  zastávka, odjezdy a datovaný detail přes stejný PHP adaptér.
-- Aktuální PID GTFS: 20 166 zastávek, 900 linek, 87 923 spojů,
-  1 793 456 stop times, 3 603 307 bodů geometrie; import v dočasné databázi
-  přibližně 175 s. Jde o lokální měření konkrétního feedu, nikoli produkční SLA.
-- Živá Golemio API s autentizačním tokenem ani plný PID routing graf nejsou
-  produkčně ověřeny. Produkční DB, hosty a běžící služby nebyly změněny.
-
-### Ověřeno po přepnutí na online-first (30. 9. 2026)
-
-- Izolované MySQL testy: 92 kontrol včetně přímé jízdy, jednoho přestupu,
-  tříminutové návaznosti, příchodu do času, půlnoci, prázdné online odpovědi,
-  výpadku API a UTC stáří záložního snapshotu.
-- Živé PID API nebylo voláno; token ani produkční tenant nejsou v testech.
-
-### České online zdroje a oblast hledání
-
-`config/transport.cz-online.example.json` je lokálně ověřený vzor pro Spojenku
-plus Golemio; nepřidává celostátní import ani oprávnění ke skladování dat.
-Před použitím v produkci vyřešit podmínky a limity vývojového serveru Spojenky.
-Konfiguraci sloučit s existujícími zdroji a jejich fallback vazbami; upsert
-neodstraňuje starší poskytovatele.
-
-### OTP geocoder a hledání zastávek (1. 10. 2026)
-
-Samotný OTP/Transmodel adaptér bez živého geokodéru podporuje jen `journeys`,
-`stop`, `departures` a `trip` — ne fulltextové hledání zastávky podle jména.
-Pokud provider v konfiguraci nastaví `geocoder_url` (OTP `SandboxAPIGeocoder`,
-endpoint `/otp/geocode/stopClusters`), adaptér schopnost `places` doplní: ID a
-souřadnice vrací přímo geokodér, jméno zastávky dořeší přes už ověřený
-Transmodel dotaz na `stop`. `ResourceSearchService` proto nově po úspěšném
-`resourceResult()` volá `enrichResource()`, pokud ho provider implementuje —
-platí pro `places` i `cities`, beze změny pro providery bez enrichmentu.
-Izolované MySQL testy: 317 kontrol (`src/Modules/Transport/tests/integration.php`),
-včetně kontraktu `Integrations/OpenTripPlanner/tests/contract.php` a ověření, že
-`ResourceSearchService` enrichment skutečně volá. Živý OTP se `SandboxAPIGeocoder`
-nebyl voláním ověřen; kontrakt vychází z aktuálního zdrojového kódu OTP 2.9/dev-2.x
-(`GeocoderResource`, `LuceneStopCluster`, `StopCluster.Coordinate`).
-
-Pro municipalitu lze přidat `cities` do položky pokrytí, například
-`{"country":"CZ","cities":["Brno"],"bbox":[16.4,49.0,16.9,49.4]}`.
-Jde o ilustrační obdélník, nikoli přesné hranice Brna. Národní zdroj se
-neomezuje na seznam měst. Přidání nové služby vyžaduje adaptér jen tehdy,
-pokud používá nový protokol; další instanci téhož API stačí nakonfigurovat.
-
-Našeptávání: `POST /v1/places/search` s `q.name.$regex`, `q.state`, `q.city`,
-volitelnou čerstvou GPS v těle a standardními `limit/page/sort/projection`.
-Řádky jsou pod `data`, maximálně 50 (web zobrazuje 20), stránka 1.
-Bez výslovného města čerstvá GPS řadí textové shody podle vzdálenosti (vzdušnou
-čarou), potom textové relevance a stabilního ID. Shody bez souřadnic zůstávají
-na konci. Pro výslovný stát se oslovují i zdroje ostatních měst; GPS není
-omezení na okolí ani okruh 2 km. Řadí se před limitem v adaptéru i po sloučení
-zdrojů; při výpadku také nad statickými zastávkami z DB.
-Detaily se směrují přes tenantové ID původního poskytovatele.
-
-`NearestStopService` převádí `current_location` na nejbližší online zastávku
-v okruhu 2 km před hledáním cesty. Používá schopnost `nearby_stops`, sdílený
-HttpModule a tenantový fallback pouze při výpadku. Odpověď vrací veřejný název
-zastávky v `resolved_places`; GPS ani toto rozlišení se nepersistuje.
-Čas cesty začíná/končí na zastávce, bez pěší cesty od/k GPS bodu.
-
-Výsledky míst mohou obsahovat `city` (obec z ověřených metadat poskytovatele;
-u Spojenky `placeHierarchy.MUNICIPALITY`). Vyhledání spojení přidává
-`area: {city: string|null}` pro automatický výběr oblasti ve frontendu.
-`JourneyAreaService` ověřuje společnou obec koncových zastávek a konců
-zobrazených úseků; neověřuje celou geometrii ani průjezdní zastávky.
-Meziměstská cesta, prázdný výsledek či chybějící metadata vrací `null`.
-Jde o odvozená metadata odpovědi, nikoli nový zdroj plánování nebo GPS cache.
-
-`POST /v1/places/search` podporuje také nabídku nejbližších zastávek: vynechané
-`q.name` vyžaduje čerstvé `q.latitude`, `q.longitude`, `q.observed_at` v POST těle.
-`NearestStopService::search()` vrací seznam do 2 km řazený podle geografické
-vzdálenosti, bez duplicit ID, nejvýše podle `limit`. Stejnou metodu používá
-`resolve()` při plánování z GPS. Úspěšný prázdný seznam nespouští fallback;
-statický katalog se použije jen pro selhané poskytovatele. Výběr uživatelem
-je volitelný a seznam ani měření se neukládá do cache cest.
-
-Detail jízdy ze Spojenky přidává volitelné `metadata`: `line`, `number`,
-`name`, `service_date` a `notes` s `scope` (trip/line), `texts` dle jazyka
- a `default_language`. Veřejné číslo pochází z explicitních registry numbers
-CISJR/KADR/PID; persistent ID a technická čísla PTI se za číslo spoje nevydávají.
-Poznámky se přebírají z `connection.timetableNotes` a `line.timetableNotes`.
-Metadata neobsahují telemetrii a neodvozují provozní kalendář ani garantované
-návaznosti. Aktuálně ověřená odpověď pro 35/1093 poskytuje číslo, trasu a poznámky
-linky; kontakt dopravce, „jede v X“ a garanci návaznosti na 38 v ní nejsou.
-Nejde o změnu synchronizace ani databázového schématu.
-
-Spojenka mapuje atributy každého zastavení do `tariff_zones` (seznam
-`system`/`zone`), `request_stop` (bool nebo null při chybějících datech)
-a `route_km` (nezáporná konečná hodnota nebo null). Zdroje jsou
-`tariffZones`, příznak `REQUEST_STOP` a `kmPosition`. Nula zůstává známou
-hodnotou; chybějící nebo neplatná kilometráž se nepřepočítává z GPS ani
-nedoplňuje z jiných zdrojů. Údaje jsou součástí online detailu jízdy,
-bez nové migrace.
-
-
-### Refaktor modularity
-
-Implementace nyní obsahuje integrační moduly, presety CZ/NO, registr importérů,
-politiky operací a společný executor s deadline/kvótou každého requestu.
-`tests/modularity.php` ověřuje registraci cizího adaptéru bez změny Core,
-skládání zemí, tenantové přepisy, souběžné vícekrokové integrace, kolize request ID,
-kvóty napříč spojeními/tenanty, oddělení lokálního omezení a výpadku i hranice závislostí.
-Integrační fixtures Enturu a Spojenky jsou ve složkách příslušných integrací.
-
-Pro stávající instalaci je před nasazením kódu nutná aditivní migrace
-`migrations/tram_modularity.sql`. Přesné kroky, pravidla cleanup a zbývající
-omezení (jeden feed na OTP graf, sanitizovaná cache detailů, žádné obecné skládání
-mezinárodních přestupů) jsou v [ARCHITECTURE.md](ARCHITECTURE.md#11-migrace-a-aktuální-hranice).
-
-
-### Katalog měst a obcí (1. 10. 2026)
-
-`POST /transport/v1/cities/search` používá standardní kontrakt: `q.state`
-(povinný ISO stát), volitelné `q.name.$regex` (doslovná část názvu bez rozlišení
-diakritiky), `sort` podle `name`, `projection`, `page` a `limit` 1–10000.
-Příklad: `{"q":{"state":"CZ"},"limit":10000,"page":1,"sort":[{"name":1}]}`.
-Výsledek obsahuje `data`, `total`, `has_more`, `partial` a `sources`.
-Řádky mají `id` druhu `city`, `name`, `state`, `source_mode`.
-
-`CityCatalogService` používá společný výběr poskytovatelů, HTTP rozhraní,
-časové rozpočty a circuit breaker. Schopnost `cities` dodává adaptér zdroje;
-nové země nemají v UI vlastní seznam měst. Shodné názvy ve státě slučujeme,
-protože současný filtr `city` pracuje s názvem, nikoli ID municipality.
-Zdravá prázdná odpověď nikdy nespouští DB fallback. Při výpadku se použijí jen
-ověřená `data.city` zastávek aktivního importu postiženého poskytovatele,
-s tenantovým a státním omezením; pokud chybějí, dostupnost se nepředstírá.
-Žádná nová migrace ani persistování GPS není potřeba.
-
-Spojenka poskytuje český registr `MUNICIPALITY` přes `/places/search`.
-Prázdný dotaz bez referenčního bodu vrací prázdný seznam, proto adaptér pro
-celý registr používá pevný geografický referenční bod datasetu a limit 10000.
-Nejde o GPS uživatele. Limit i velikost odpovědi jsou omezené; zaplněný limit
-se odmítne jako neúplná odpověď. Živě ověřeno 6258 položek dne 1. 10. 2026.
-Katalog obcí neznamená garanci spoje pro každý čas nebo kombinaci zastávek.
-
-### Oblast výsledků a vybavení konkrétního spoje
-
-`area.city=null` může znamenat neúplná metadata obcí. Samostatné `area.intercity`
-rozlišuje prokázanou cestu mezi různými obcemi; frontend nemá při neznámé oblasti
-mazat zvolené město. Nejde o kontrolu celé geometrie trasy.
-
-Spojenka převádí `connection.features`, `accessibility` a `reservations` do
-`metadata.features`, `accessibility` (`accessible` / `partial` / null) a
-`reservations` (bicycle/passenger/luggage: available/mandatory). Používáme jen
-povolené doložené hodnoty z OpenAPI. NONE, neznámé nebo chybějící hodnoty
-nezobrazujeme jako potvrzení vybavení či zákaz přepravy. Nejde o realtime
-ověření vozidla. Poznámky linky začínající českým „Grafikony:“ označuje adaptér
-jako `category=technical`; původní text zůstává dostupný, ostatní poznámky mají
-`category=passenger`. Žádný limit tří poznámek neexistuje.
-
-### Živá poloha a zpoždění
-
-`Tracking/` obsahuje vydávání podepsaných ticketů, normalizaci čerstvých pozorování a sdílené odběry gateway. Spouští se samostatně přes `bin/transport-tracking.php`, síťový transport zůstává v HttpModule. `JourneyRealtimeService` a `JourneyTimingService` obohacují kandidáty a ověřují přestupy před řazením. GPS poskytuje Golemio/PID a nově samostatná integrace IDS JMK pro doložené brněnské CIS identity ze Spojenky. Ostatní identity bez přesné vazby na GPS zdroj vracejí `unsupported`. IDS JMK se zapíná definicí z `config/transport.idsjmk.example.json`; registrace třídy sama zdroj nezapíná. [Provoz, kontrakty a omezení](../../../docs/tram-realtime-tracking.md).
+Gateway test používá skutečný PHP HTTP entrypoint a fixture Java server,
+bez MySQL a bez vytváření schémat. Testovací autoloader zakazuje přístup k
+Database i SQL RateLimiteru; každá zaregistrovaná cesta musí fungovat bez nich.
+Ověřuje autentizaci, tenant, route allowlist, JSON, chyby a Java backpressure.
+Fixture neprokazuje živý Java graf; lokální konfigurace a vybrané skutečné cesty
+jsou samostatně v [INTERNATIONAL-LOCAL.md](../../../../../java/OTP/INTERNATIONAL-LOCAL.md).

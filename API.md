@@ -2061,27 +2061,40 @@ async function apiFetch(method, path, body = null) {
 
 ## Transport / TRAM
 
-`GET /transport/v1/coverage` retains `providers` and adds tenant-scoped
-`countries`: `{state, capabilities, search_available, cities_available}`.
-Capabilities count only enabled primary online operations. Local schedule
-planners and fallback providers do not enable a country in the search form.
-`search_available` requires both `places` and `journeys`; `cities_available`
-is independent. This describes configuration, not a live health probe, and
-does not expose credentials. Existing internal-key protection is unchanged.
+PHP obsluhuje pouze autentizovanou gateway `/api/transport/v1/...` do Java
+`/transport/v1/...`. Dopravní adaptéry, SQL katalog/cache, GTFS/OSM import,
+plánování, graph CLI a PHP tracking server byly odstraněny 3. 10. 2026.
+Zůstává interní klíč a pevný tenant. Gateway neotevírá SQL připojení ani
+neukládá počítadla do `api_rate_limit`; statusy a limity Javy předává beze změny.
 
-Wiener Linien departures accept only the current 70-minute monitor window;
-unsupported dates return `422 unsupported_time` without triggering outage
-fallback. Filtering and sorting use expected departure (planned when unknown),
-then apply the requested limit. Equipment is available in `metadata`, and
-monitor-linked plain-text disruptions in `alerts`. This source still does not
-provide journey planning, full trips or vehicle GPS.
+| Metoda | Cesta za `/api/transport/v1` |
+| --- | --- |
+| GET | `/coverage`, `/attributions` |
+| POST | `/cities/search`, `/places/search`, `/journeys/search` |
+| GET | `/journeys/:id`, `/journeys/:id/geometry` |
+| GET | `/stops/:id`, `/stops/:id/departures` |
+| GET | `/trips/:id`, `/trips/:id/realtime`, `/trips/:id/observation` |
+| POST | `/trips/:id/tracking` |
 
-Tenant-scoped transport API under `/api/transport/v1`, using the same server-only
-`X-Internal-Key` boundary as existing modules. Includes journey search, stop lookup,
-departure boards, dated trip details, provider coverage and GeoJSON geometry.
-See [Transport module](src/Modules/Transport/README.md) for the request contract,
-source/fallback semantics, GTFS import, OTP deployment and tests. No ticket sales
-or public mobile credentials are introduced.
+Gateway předává JSON tělo, status a `Retry-After` bez dopravních transformací.
+`q`, `sort`, `projection`, `page`, `limit` pro list/search zpracuje Java.
+Povolené GET query názvy jsou `at`, `limit`, `stop_coordinates`; `/attributions`
+query nepřijímá. Upstream URL nelze zadat klientem. Java administrační/build/sync
+API není součástí tohoto whitelistu. Odpovědi mají `no-store`.
+
+Serverová konfigurace: `TRANSPORT_JAVA_ENABLED=1`, `TRANSPORT_JAVA_TENANT=tram`,
+privátní `TRANSPORT_JAVA_URL` bez cesty a serverový `TRANSPORT_JAVA_TOKEN`.
+Nevyhovující tenant/konfigurace nebo síťová nedostupnost vrací 503; chybná Java
+JSON obálka 502 bez raw těla. Žádný automatický návrat do původního PHP režimu.
+Statický detail nezávisí na tracking odběru. Okamžité observation se načítá při
+otevření dialogu; ticket připojí browser k Java WebSocketu. PHP polohu nepočítá.
+
+`coverage` a atribuce odpovídají skutečnému aktivnímu Java grafu/configuraci,
+nikoli registru starých PHP poskytovatelů. Atribuce obsahují licence a zdroje
+použitých GTFS/OSM vstupů; nesmějí obsahovat secrets ani interní URL.
+Úplný wire kontrakt a limity: [Java API](../../java/OTP/API.md).
+[PHP konfigurace a testy](src/Modules/Transport/README.md),
+[skutečné rozdíly proti historickému PHP](../../java/PARITY.md).
 
 ## Etymolog
 
@@ -2186,43 +2199,3 @@ not an automatic migration; it preserves users and removes foreign source jobs.
 ### Etymolog: dnešní jmeniny
 
 `GET /etymolog/public/today` vrací jediný denní přehled `{date, timezone: "Europe/Prague", items}` v obálce `data`. Datum určuje server podle Prahy, endpoint nemá filtry ani stránkování. Položky obsahují `name_id,name,source_url,source_title,source_fallback_url,calendar_title`. Odpověď také obsahuje `proverb`: buď `null`, nebo `{date,body,source_url,source_title,name_id}`. Přednost má publikovaná pranostika se zdrojem připojená k dnešnímu českému gregoriánskému datu; jinak citovaná pranostika dnešního publikovaného jména; nakonec nejbližší budoucí pranostika doložená kalendářním datem nebo nadcházejícími jmeninami. `date` uvádí skutečné datum vybrané pranostiky včetně následujících roků a přestupných dnů. Není-li dostupná žádná publikovaná pranostika, je `proverb=null`. Všechny JOINy jsou omezené tenantem; vrací jen publikované nesmazané jmenné dny a jména s aktivním zdrojem a českým gregoriánským kalendářem platným v daném roce. Nepublikované záznamy se nevracejí. Zachovává interní klíč a validaci tenanta, nevyžaduje uživatelský bearer. Odpověď je `no-store`. Migrace není potřeba.
-
-
-### Transport: online municipality catalogue
-
-`POST /transport/v1/cities/search` accepts
-`{"q":{"state":"CZ","name":{"$regex":"tab"}},"sort":[{"name":1}],"page":1,"limit":50,"projection":"id,name,state,source_mode"}`.
-`state` is required; omit `name` for the complete catalogue. Names are literal,
-accent-insensitive substrings. `limit` is 1–10000. The success envelope contains
-`data: {data: [...], total, has_more, partial, sources}`. A city row has `id`,
-`name`, `state`, `source_mode`. Names are deduplicated within the requested state.
-Healthy online catalogues take priority; imported city metadata is used only
-for failed providers, scoped to the authenticated tenant. No user GPS is read
-or stored by this endpoint. Missing capability returns `cities_not_configured`.
-
-
-Transport dodatky: `POST /transport/v1/journeys/search` vrací v `area` vedle
-`city` také `intercity` (boolean). `city=null` samo neprokazuje meziměstskou
-cestu. Detail spoje může vrátit `result.metadata.features` (povolené vybavení),
-`accessibility` (`accessible`, `partial`, null), `reservations`
-(bicycle/passenger/luggage → available/mandatory) a u poznámek
-`category` (`passenger`/`technical`). Neznámá pole lze ignorovat; vybavení je
-údaj jízdního řádu. Původní kontrakty a tenantová autorizace se nemění.
-
-### Transport: rychlé načtení statického detailu
-
-`GET /transport/v1/trips/:id?stop_coordinates=0` vynechá u Spojenky dodatečné
-HTTP dohledávání chybějících souřadnic zastávek. Vrací stejné statické zastávky,
-časy a metadata; existující souřadnice zachová. Výchozí `stop_coordinates=1`
-zachovává původní chování. Parametr přijímá pouze 0/1. Neovlivňuje autorizaci,
-online výběr zdroje ani pravidla záložního katalogu. Frontend může později
-vyžádat doplněný detail pro promítnutí živé GPS na osu, aniž nahrazuje seznam.
-Živé pozorování se načítá nezávisle přes tracking.
-
-### Transport: živé sledování a predikce
-
-- IDS JMK realtime doplní podporované datované Spojenka/CIS identity přes `RealtimeReferenceProvider`; veřejné ID původního spoje se nemění. Vyžaduje zapnutý adaptér `idsjmk`, ověřený dnešní jízdní řád a měření mladší 30 sekund. Dostupnost ticketu znamená podporu odběru, nikoli záruku, že vozidlo právě vysílá. Viz [konfigurace a přesné pokrytí](docs/tram-realtime-tracking.md).
-- `POST /transport/v1/trips/:id/tracking` vydává tenantově omezený WebSocket ticket pro datovaný spoj. Vrací `status: available` + `url`, `ticket`, `expires_at`, nebo `unsupported`/`disabled`. Původní interní autentizace zůstává povinná.
-- `GET /transport/v1/trips/:id/observation` vrací normalizované `status`, `position`, `observed_at`, `valid_until`, `delay_seconds`, `cancelled`. GPS starší než 30 s nikdy nevrací jako použitelnou polohu; žádný databázový fallback. Odpovědi jsou `no-store`.
-- WebSocket přijímá `subscribe` s ticketem a `ping`; posílá `observation` a `pong`. Konfigurace, přesný kontrakt a aktuální podpora zdrojů: [živé sledování TRAM](docs/tram-realtime-tracking.md).
-- Vyhledávání ověřuje přestupy po realtime obohacení a před finálním řazením/limitem. `duration_seconds` odpovídá aktualizovaným časům. `arrival_estimated` odlišuje odhad z vozidlového zpoždění od predikce zastávky; `min_transfer_seconds` zachovává minimum zdroje. Cache spoje ukládá výhradně plánovaná data.

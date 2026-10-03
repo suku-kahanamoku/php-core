@@ -57,7 +57,7 @@ PHP stream handler. Čekání na sockety obstarává knihovna; v modulech není 
 
 ## Integrace a další protokoly
 
-Přepojené: Entur/OTP, PID/Golemio, stahování GTFS, FAnn katalog, OpenAI Realtime
+Přepojené: PHP gateway do Java Transport API, FAnn katalog, OpenAI Realtime
 založení session, Responses, Vector Store upload, Cloudflare a Expo push outbox.
 Stejné rozhraní používají i pomocníci API testů.
 
@@ -90,11 +90,6 @@ Přepojené interní názvy (včetně všech použití v projektu):
 | FannCatalogHttpClient | FannCatalogProvider |
 | OpenAiVectorStoreClient | OpenAiVectorStoreProvider |
 | SryStore | SrySqlRepository |
-| Configuration | ConfigurationService |
-| GraphManager | GraphService |
-| GtfsImporter, GtfsArchive | GtfsImportService, GtfsArchiveReader |
-| ServiceClock | ServiceTimeService |
-| ResourceId, Geometry | ResourceIdCodec, GeometryMapper |
 
 HTTP endpointy ani jejich autentizační smlouvy se tímto refaktorem nemění.
 Při nasazení spustit `composer install` podle lockfile a obnovit PHP OPcache/workery.
@@ -105,9 +100,7 @@ Je potřeba PHP curl extension. Refaktor nevyžaduje databázovou migraci.
 ```bash
 composer install
 bash scripts/test-http.sh
-bash scripts/test-transport.sh
-# Volitelně skutečné čtecí požadavky na Entur:
-php src/Modules/Transport/tests/live.php
+bash scripts/test-java-gateway.sh
 ```
 
 HTTP testy používají dva lokální fixture servery a Guzzle MockHandler; SMTP zprávy
@@ -116,7 +109,7 @@ produkční databáze se při těchto testech nepoužívá.
 
 ### Asynchronní HTTP a WebSocket gateway
 
-`HttpModule::asyncClient()` vrací `AsyncHttpClient` pro Workerman event loop (`sendAsync` s jedním callbackem `HttpResponse`). Jeho synchronní metody delegují běžnému klientu; v gateway se nepoužívají. TLS ověřuje certifikát, přesměrování jsou zakázána, platí limity času a velikosti těla. Pool se vytváří až uvnitř aktivního event loopu. `HttpModule::websocket()` vrací `Contracts\WebSocketServer`; výchozí `WebSocketService` obsluhuje loopback listener, origin allowlist, velikost zpráv, heartbeat timeout a pomalé klienty. Transportová doména dodává pouze callbacky a vlastní pravidla odběrů.
+`HttpModule::asyncClient()` vrací `AsyncHttpClient` pro Workerman event loop (`sendAsync` s jedním callbackem `HttpResponse`). Jeho synchronní metody delegují běžnému klientu; v gateway se nepoužívají. TLS ověřuje certifikát, přesměrování jsou zakázána, platí limity času a velikosti těla. Pool se vytváří až uvnitř aktivního event loopu. `HttpModule::websocket()` vrací `Contracts\WebSocketServer`; výchozí `WebSocketService` obsluhuje loopback listener, origin allowlist, velikost zpráv, heartbeat timeout a pomalé klienty. TRAM používá WebSocket službu v Javě; společné PHP rozhraní zůstává dostupné ostatním modulům.
 
 
 Kontrakt serveru zachovává `run(listen, origins, message, closed, tick, name, runtimeDirectory)`.
@@ -125,6 +118,7 @@ objekty Workerman do domény. Továrna server pouze vytvoří, `run()` spouští
 životní cyklus. Jiný server lze zvolit v `HttpModule`; spotřebitelům se injektuje
 `Contracts\WebSocketServer`. Testovací implementace může uchovat callbacky a
 řízeně simulovat zprávy, heartbeat a uzavření bez portu nebo event loopu.
-Transport test ověřuje tímto mockem skutečný `TrackingHubService`; nejde o test
-WebSocket handshaku nové implementace. Kontrakt nemění konfiguraci ani způsob
-spuštění `bin/transport-tracking.php` a nevyžaduje migraci DB.
+Transport gateway test používá skutečný PHP HTTP entrypoint a fixture Java API.
+Původní PHP tracking hub a CLI byly odstraněny; lifecycle Java tracking služby
+popisuje `java/OTP/API.md`. Sdílené WebSocket/async HTTP kontrakty a jejich
+infrastrukturní testy zůstávají součástí HttpModule.

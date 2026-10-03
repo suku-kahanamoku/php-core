@@ -29,14 +29,14 @@
         "test:http": "bash scripts/test-http.sh",
         "test:etymolog": "bash scripts/test-etymolog.sh",
         "test:sry": "bash scripts/test-sry.sh",
-        "test:transport": "bash scripts/test-transport.sh",
+        "test:java-gateway": "bash scripts/test-java-gateway.sh",
         "test:schema": "bash scripts/test-schema.sh",
         "test:files": "bash scripts/test-file-list.sh",
         "test": [
             "@test:http",
             "@test:etymolog",
             "@test:sry",
-            "@test:transport",
+            "@test:java-gateway",
             "@test:schema",
             "@test:files"
         ]

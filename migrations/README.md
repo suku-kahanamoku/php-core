@@ -12,7 +12,6 @@ SQL je určené pro MySQL 8 a lze jej vložit do Admineru nebo spustit klientem
 | Projekt | Struktura po společném schématu | Výchozí data |
 | --- | --- | --- |
 | Etymolog | `etymolog_schema.sql`, 16 tabulek | `etymolog_seed.sql`, 2 role a 11 synchronizačních úloh |
-| TRAM | `tram_schema.sql`, 15 tabulek `transport_*` | `tram_seed.sql`, 12 druhů dopravy; poskytovatele nastavuje `scripts/transport-configure.php` |
 | SRY | `sry_schema.sql`, 16 tabulek | `sry_seed.sql`, role a kategorie |
 | Zoo | `zoo_schema.sql`, používá společné tabulky | `zoo_seed.sql`, účty, katalog, profily a vazby |
 | FAnn | `fann_schema.sql`, používá společné tabulky | `fann_seed.sql`, finální tenant `fann`, katalog, profily a vazby |
@@ -74,6 +73,12 @@ první dávky a další dávky budou pokračovat obvyklým způsobem. Importovan
 budou opět koncepty. Záznamy dostanou nová ID, původní odkazy na detail přestanou
 fungovat. Skript sám synchronizaci nespouští.
 
+## TRAM po přesunu do Javy
+
+TRAM SQL schéma, seed i modulární migrace byly odstraněny z PHP projektu.
+Gateway nepoužívá SQL ani rate-limit tabulky a žádné schéma nevyžaduje. Tento krok
+nespouští DROP ani nemění již existující tabulky či data aplikační databáze.
+
 ## Údržba a ověření
 
 Definice `CREATE TABLE` jsou na začátku schémat. Řádky `-- deferred CONSTRAINT`
@@ -85,7 +90,7 @@ python3 scripts/build-schemas.py
 python3 scripts/build-schemas.py --check
 bash scripts/test-schema.sh
 bash scripts/test-etymolog.sh
-bash scripts/test-transport.sh
+bash scripts/test-java-gateway.sh
 bash scripts/test-sry.sh
 ```
 
