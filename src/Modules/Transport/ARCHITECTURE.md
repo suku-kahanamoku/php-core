@@ -2,7 +2,7 @@
 
 Aktuální hranice od 3. 10. 2026: PHP přijímá autentizovaný požadavek,
 předá jej Java API a vrátí odpověď. Dopravní výpočty a synchronizace jsou
-v [Java projektech](../../../../../java/ARCHITECTURE.md).
+v [Java projektech](../../../../../java-tram/ARCHITECTURE.md).
 
 | Soubor | Odpovědnost |
 | --- | --- |
@@ -27,6 +27,6 @@ se zachovávají.
 
 Konfigurace, endpointy, limity a testy jsou v [README.md](README.md).
 Rozdíly proti historické implementaci jsou v
-[Java PARITY.md](../../../../../java/PARITY.md); odstranění starého kódu
+[Java PARITY.md](../../../../../java-tram/PARITY.md); odstranění starého kódu
 samo nedoplnilo chybějící schopnosti Javy. Staré TRAM SQL skripty byly odstraněny z projektu;
 žádná existující aplikační tabulka ani data nebyla tímto krokem smazána.

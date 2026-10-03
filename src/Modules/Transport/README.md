@@ -2,11 +2,11 @@
 
 Od 3. 10. 2026 obsahuje tento modul pouze autentizované předání API do Java služeb.
 Výpočty, katalogy, adaptéry, GTFS/OSM sběr a transformace, sestavení grafů,
-plánování a realtime zajišťují [Java projekty](../../../../../java/README.md).
+plánování a realtime zajišťují [Java projekty](../../../../../java-tram/README.md).
 PHP neimportuje jízdní řády, nepočítá přestupy ani zpoždění a neprovozuje
 transportový WebSocket server. Zdrojové implementace původního PHP Transport/Gtfs
 byly odstraněny na výslovné zadání uživatele; odstranění není potvrzením úplné
-funkční parity. Meze Javy popisuje [PARITY.md](../../../../../java/PARITY.md).
+funkční parity. Meze Javy popisuje [PARITY.md](../../../../../java-tram/PARITY.md).
 
 ## Zapojení
 
@@ -51,7 +51,7 @@ ani automatický SQL fallback již neexistují.
 | GET | `/v1/trips/:id/observation` | Okamžité pozorování polohy/zpoždění |
 | POST | `/v1/trips/:id/tracking` | Ticket pro Java WebSocket |
 
-Vstupy a odpovědi určuje [Java API](../../../../../java/OTP/API.md).
+Vstupy a odpovědi určuje [Java API](../../../../../java-tram/OTP/API.md).
 List/search přijímá `q`, `sort`, `projection`, `page`, `limit` v JSON těle;
 PHP je nepřekládá na SQL. GET query má omezené názvy `at`, `limit`,
 `stop_coordinates`; atribuce query nepřijímají. Administrace, synchronizace,
@@ -64,7 +64,7 @@ Reálné pokrytí neznamená všechny dopravce země ani dostupnou GPS každého
 
 ## Provoz a kontroly
 
-Synchronizaci a grafy provozujte podle [Java služby OTP](../../../../../java/OTP/README.md).
+Synchronizaci a grafy provozujte podle [Java služby OTP](../../../../../java-tram/OTP/README.md).
 PHP transportové cron/configure/build/serve skripty a provider presets byly
 odstraněny. Při nasazení odstraňte jejich staré cron/supervisor položky a obnovte
 PHP OPcache; Java služby a jejich soukromé API musí být dostupné před přepnutím.
@@ -88,4 +88,4 @@ bez MySQL a bez vytváření schémat. Testovací autoloader zakazuje přístup 
 Database i SQL RateLimiteru; každá zaregistrovaná cesta musí fungovat bez nich.
 Ověřuje autentizaci, tenant, route allowlist, JSON, chyby a Java backpressure.
 Fixture neprokazuje živý Java graf; lokální konfigurace a vybrané skutečné cesty
-jsou samostatně v [INTERNATIONAL-LOCAL.md](../../../../../java/OTP/INTERNATIONAL-LOCAL.md).
+jsou samostatně v [INTERNATIONAL-LOCAL.md](../../../../../java-tram/OTP/INTERNATIONAL-LOCAL.md).

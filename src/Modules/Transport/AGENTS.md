@@ -6,7 +6,7 @@ Uživatel 3. 10. 2026 výslovně autorizoval odstranění PHP dopravní implemen
 1. PHP obsahuje pouze bezpečnostní/tenant hranici a transparentní gateway do Javy.
    Nepřidávej sem adaptéry dopravců, katalogy, GTFS/OSM transformace, importy,
    plánování, výpočty zpoždění, SQL fallback ani transportový WebSocket server.
-2. Dopravní změny patří do [Java projektů](../../../../../java/AGENTS.md).
+2. Dopravní změny patří do [Java projektů](../../../../../java-tram/AGENTS.md).
    Nový zdroj/země vyžaduje doloženou licenci a všechny dostupné schopnosti;
    částečné pokrytí se nesmí prezentovat jako kompletní. Ověř Java implementaci,
    nikoli existenci presetu. Odstranění PHP nepotvrzuje plnou funkční paritu.

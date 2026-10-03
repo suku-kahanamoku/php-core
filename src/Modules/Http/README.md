@@ -120,5 +120,5 @@ objekty Workerman do domény. Továrna server pouze vytvoří, `run()` spouští
 řízeně simulovat zprávy, heartbeat a uzavření bez portu nebo event loopu.
 Transport gateway test používá skutečný PHP HTTP entrypoint a fixture Java API.
 Původní PHP tracking hub a CLI byly odstraněny; lifecycle Java tracking služby
-popisuje `java/OTP/API.md`. Sdílené WebSocket/async HTTP kontrakty a jejich
+popisuje `java-tram/OTP/API.md`. Sdílené WebSocket/async HTTP kontrakty a jejich
 infrastrukturní testy zůstávají součástí HttpModule.

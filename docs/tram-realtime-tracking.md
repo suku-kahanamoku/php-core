@@ -21,8 +21,8 @@ posouzení návazností; frontend zobrazuje plánované časy a upozornění na 
 Polohy lidí a vozidel se neukládají do SQL, souborů ani browser storage.
 
 Konfigurace a wire kontrakt:
-[Java API](../../../java/OTP/API.md), [OTP README](../../../java/OTP/README.md),
-[Java architektura](../../../java/ARCHITECTURE.md) a
+[Java API](../../../java-tram/OTP/API.md), [OTP README](../../../java-tram/OTP/README.md),
+[Java architektura](../../../java-tram/ARCHITECTURE.md) a
 [PHP gateway](../src/Modules/Transport/README.md).
 Java WS proxy, soukromý API token, upstream credentials a realtime role se
 konfigurují v Javě. Původní PHP `TRANSPORT_TRACKING_*` nastavení a

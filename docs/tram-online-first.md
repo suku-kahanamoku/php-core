@@ -11,9 +11,9 @@ země. Nepropojuje automaticky Spojenku/Entur ani SQL snapshot. Tento dokument
 není pokynem k obnovení odstraněných PHP adaptérů.
 
 - [PHP gateway a konfigurace](../src/Modules/Transport/README.md)
-- [Java architektura](../../../java/ARCHITECTURE.md)
-- [Skutečné mezery oproti historickému PHP](../../../java/PARITY.md)
-- [Lokální země a ověřené pokrytí](../../../java/OTP/INTERNATIONAL-LOCAL.md)
+- [Java architektura](../../../java-tram/ARCHITECTURE.md)
+- [Skutečné mezery oproti historickému PHP](../../../java-tram/PARITY.md)
+- [Lokální země a ověřené pokrytí](../../../java-tram/OTP/INTERNATIONAL-LOCAL.md)
 
 GTFS a OSM publikují statické verzované artefakty, OTP z nich sestavuje graf.
 Realtime zpoždění a GPS používají Java adaptéry v RAM; polohy uživatelů a

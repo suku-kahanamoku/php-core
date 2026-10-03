@@ -2092,9 +2092,9 @@ otevření dialogu; ticket připojí browser k Java WebSocketu. PHP polohu nepo�
 `coverage` a atribuce odpovídají skutečnému aktivnímu Java grafu/configuraci,
 nikoli registru starých PHP poskytovatelů. Atribuce obsahují licence a zdroje
 použitých GTFS/OSM vstupů; nesmějí obsahovat secrets ani interní URL.
-Úplný wire kontrakt a limity: [Java API](../../java/OTP/API.md).
+Úplný wire kontrakt a limity: [Java API](../../java-tram/OTP/API.md).
 [PHP konfigurace a testy](src/Modules/Transport/README.md),
-[skutečné rozdíly proti historickému PHP](../../java/PARITY.md).
+[skutečné rozdíly proti historickému PHP](../../java-tram/PARITY.md).
 
 ## Etymolog
 

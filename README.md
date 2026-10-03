@@ -625,7 +625,7 @@ already sends the internal key. No production deployment is performed by tests.
 ## TRAM transport backend
 
 The [Transport module](src/Modules/Transport/README.md) is an authenticated,
-tenant-bound JSON gateway to the [Java transport services](../../java/README.md).
+tenant-bound JSON gateway to the [Java transport services](../../java-tram/README.md).
 Java owns GTFS/OSM collection, graph building, catalogues, planning and realtime.
 Configure `TRANSPORT_JAVA_ENABLED`, `TRANSPORT_JAVA_TENANT`, `TRANSPORT_JAVA_URL`
 and the server-only `TRANSPORT_JAVA_TOKEN`; preserve internal-key authentication
