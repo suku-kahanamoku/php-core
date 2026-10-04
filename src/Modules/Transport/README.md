@@ -72,6 +72,18 @@ PHP nevytváří polohu, zpoždění ani fallback při výpadku existující slu
 
 ## Provoz a kontroly
 
+Lokální Java sync/build a explicitní Cloudflare deploy ovládá nová serverová
+služba `TransportModule::localPipeline($tenant, $env, HttpModule::client())`.
+Po administrační autorizaci volej `submit('sync_build')`, `submit('deploy')`
+nebo `status()`. PHP jen zařazuje pevné úlohy; lokální Java runner je vyzvedává
+přes odchozí HTTPS a spouští `sync_build.sh`/`deploy.sh`. Není potřeba veřejný
+port na PC ani čekající PHP request. Zapnutí vyžaduje
+`TRANSPORT_LOCAL_PIPELINE_ENABLED=1` a soukromý serverový
+`TRANSPORT_LOCAL_PIPELINE_TOKEN` (Cloudflare Admin token), vedle stávajícího
+TRAM tenanta a HTTPS `TRANSPORT_JAVA_URL`. Klíč nepatří do frontendu.
+Tato služba není registrovaná ve veřejné gateway; budoucí admin UI musí nejprve
+ověřit oprávnění. Viz [lokální pipeline](../../../../../java-tram/LOCAL_PIPELINE.md).
+
 Synchronizaci a grafy provozujte podle [Java služby OTP](../../../../../java-tram/OTP/README.md).
 PHP transportové cron/configure/build/serve skripty a provider presets byly
 odstraněny. Při nasazení odstraňte jejich staré cron/supervisor položky a obnovte
