@@ -66,6 +66,9 @@ Gateway zachová status, JSON obálku a `Retry-After` Javy, nastaví `no-store`.
 Síťové selhání vrací 503, neplatná upstream odpověď 502 bez surového těla.
 Limit hledání je 24 s, ostatních operací 9 s, připojení 1,5 s a odpovědi 16 MB.
 Reálné pokrytí neznamená všechny dopravce země ani dostupnou GPS každého spoje.
+Gateway transparentně předává také Java `estimated_progress` pro spoje bez
+registrované služby polohy. Odhad podle jízdního řádu počítá realtime backend;
+PHP nevytváří polohu, zpoždění ani fallback při výpadku existující služby.
 
 ## Provoz a kontroly
 

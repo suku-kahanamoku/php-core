@@ -41,6 +41,12 @@ try {
         check($response->status === 200 && $response->json()['data']['path'] === '/transport/v1/' . $path, 'Authenticated GET route forwards: ' . $path);
     }
     $body = ['q' => ['state' => 'SK', 'latitude' => 49.2, 'longitude' => 16.6, 'observed_at' => '2026-10-03T12:00:00Z']];
+    $estimated = $request('trips/estimated/observation')->json()['data'];
+    check($estimated['status'] === 'estimated' && $estimated['position'] === null && $estimated['delay_seconds'] === null
+        && $estimated['estimated_progress']['fraction'] === 0.5
+        && $estimated['estimated_progress']['from_stop_id'] === 'A'
+        && $estimated['estimated_progress']['valid_until'] === '2026-10-04T10:00:30Z',
+        'Backend timetable progress and its original expiry survive PHP forwarding without fake GPS or delay');
     foreach (['places/search', 'cities/search', 'journeys/search', 'trips/test/tracking'] as $path) {
         $response = $request($path, 'POST', $body);
         check($response->status === 200 && $response->json()['data']['body'] === $body, 'POST JSON is forwarded unchanged: ' . $path);

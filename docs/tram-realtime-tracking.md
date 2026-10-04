@@ -15,8 +15,13 @@ Java API; Java vlastní realtime adaptéry, RAM pozorování, tickety a WebSocke
    marker zůstává v paměti otevřeného dialogu, při chybě se nepřesouvá podle hodin.
 
 Poloha a zpoždění jsou nezávislé údaje a mají původní čas měření a platnost.
-Bez prvního ověřeného GPS vzorku nelze červený bod pravdivě zobrazit. Tracking
-není příslib GPS každého dopravce. Očekávané časy slouží Java plánování a
+Pro spoj bez registrované služby polohy Java realtime backend poskytne
+`estimated_progress`: indexy zastávek, časový poměr a vlastní expiraci.
+Samostatný odhad má `status: "estimated"` a žádnou GPS ani domyšlené
+zpoždění. Frontend bod označí „Odhad podle jízdního řádu; nejde o skutečnou
+polohu vozidla.“ Při výpadku existující služby se takový odhad nezapíná.
+PHP beze změny předává veřejnou obálku; výpočet vlastní Java.
+Tracking není příslib GPS každého dopravce. Očekávané časy slouží Java plánování a
 posouzení návazností; frontend zobrazuje plánované časy a upozornění na riziko.
 Polohy lidí a vozidel se neukládají do SQL, souborů ani browser storage.
 

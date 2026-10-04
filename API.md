@@ -2088,6 +2088,10 @@ Nevyhovující tenant/konfigurace nebo síťová nedostupnost vrací 503; chybn�
 JSON obálka 502 bez raw těla. Žádný automatický návrat do původního PHP režimu.
 Statický detail nezávisí na tracking odběru. Okamžité observation se načítá při
 otevření dialogu; ticket připojí browser k Java WebSocketu. PHP polohu nepočítá.
+Pro spoje bez registrované služby polohy Java může vrátit `status: "estimated"`
+a `estimated_progress` s indexy zastávek, poměrem a vlastní expirací.
+Gateway jej předá beze změny, bez vytvoření GPS nebo nulového zpoždění.
+Výpadek existující služby tento backendový odhad nezapne.
 
 `coverage` a atribuce odpovídají skutečnému aktivnímu Java grafu/configuraci,
 nikoli registru starých PHP poskytovatelů. Atribuce obsahují licence a zdroje
