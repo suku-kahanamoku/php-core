@@ -16,6 +16,11 @@ z `FRANCHISE_CODES`. Gateway se nepřipojuje k SQL a nezapisuje ani počítadla 
 `TransportModule` sestaví gateway pouze pro explicitně nakonfigurovaný tenant.
 `JavaTransportApi` registruje pevný seznam cest; `JavaTransportService` předá
 JSON přes injektovaný `HttpModule::client()`. Dopravní obsah nemění.
+Veřejná zastávková pole `modes` a `transport_scope` z Java katalogu zachovává
+v našeptávači, detailech i zastávkách spojení; barvy a ikony řídí společná
+komponenta Astro. MHD/regionální zařazení se konfiguruje u Java feedu/linky
+podle [kontraktu metadat](../../../../../java-tram/OTP/API.md#dopravní-metadata-zastávek),
+PHP jej neodvozuje ani nepřekládá.
 
 Serverová konfigurace:
 

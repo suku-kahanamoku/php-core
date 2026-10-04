@@ -45,6 +45,17 @@ try {
         $response = $request($path, 'POST', $body);
         check($response->status === 200 && $response->json()['data']['body'] === $body, 'POST JSON is forwarded unchanged: ' . $path);
     }
+    $stop = ['id' => 'metadata', 'name' => 'Hub', 'state' => 'CZ', 'city' => 'Brno',
+        'modes' => ['bus', 'tram', 'trolleybus'], 'transport_scope' => 'mixed'];
+    $places = $request('places/search', 'POST', ['q' => ['name' => ['$regex' => 'Hub'], 'state' => 'CZ'],
+        'projection' => 'id,name,state,city,modes,transport_scope']);
+    check($places->status === 200 && $places->json()['data']['data'] === [$stop], 'Stop modes and scope survive HTTP autocomplete forwarding');
+    check($request('stops/metadata')->json()['data']['result'] === $stop, 'Stop detail preserves transport metadata');
+    check($request('trips/metadata')->json()['data']['result']['stops'][0]['stop'] === $stop, 'Trip stop preserves transport metadata');
+    check($request('journeys/metadata')->json()['data']['legs'][0]['from'] === $stop, 'Stored journey preserves transport metadata');
+    $journeys = $request('journeys/search', 'POST', ['from-dest' => ['type' => 'stop', 'id' => 'metadata']])->json()['data'];
+    check($journeys['journeys'][0]['legs'][0]['to'] === $stop && $journeys['resolved_places']['from'] === $stop,
+        'Search journey and resolved places preserve transport metadata');
     check($request('coverage', headers: ['Host: other.test'])->status === 503, 'Unconfigured tenant cannot reach Java or fall back to PHP');
     check($request('coverage', 'POST')->status === 405, 'Only registered methods are exposed');
     check($request('sync', 'POST')->status === 404, 'Java administration is not exposed');
