@@ -18,7 +18,8 @@ final class TransportModule
             throw new JavaTransportException('invalid_configuration', 'Local pipeline is not configured for this tenant.', 503);
         }
         return new Admin\LocalPipelineService($http,
-            (string)($env['TRANSPORT_JAVA_URL'] ?? ''), (string)($env['TRANSPORT_LOCAL_PIPELINE_TOKEN'] ?? ''));
+            (string)(($env['TRANSPORT_LOCAL_PIPELINE_URL'] ?? '') ?: ($env['TRANSPORT_JAVA_URL'] ?? '')),
+            (string)($env['TRANSPORT_LOCAL_PIPELINE_TOKEN'] ?? ''));
     }
 
     public static function api(string $tenant, array $env, HttpClient $http): JavaTransportApi

@@ -80,9 +80,19 @@ přes odchozí HTTPS a spouští `sync_build.sh`/`deploy.sh`. Není potřeba ve�
 port na PC ani čekající PHP request. Zapnutí vyžaduje
 `TRANSPORT_LOCAL_PIPELINE_ENABLED=1` a soukromý serverový
 `TRANSPORT_LOCAL_PIPELINE_TOKEN` (Cloudflare Admin token), vedle stávajícího
-TRAM tenanta a HTTPS `TRANSPORT_JAVA_URL`. Klíč nepatří do frontendu.
-Tato služba není registrovaná ve veřejné gateway; budoucí admin UI musí nejprve
-ověřit oprávnění. Viz [lokální pipeline](../../../../../java-tram/LOCAL_PIPELINE.md).
+TRAM tenanta a HTTPS `TRANSPORT_LOCAL_PIPELINE_URL` (při neuvedení používá
+`TRANSPORT_JAVA_URL`). Oddělená adresa nemění lokální vyhledávání. Klíč nepatří
+do frontendu. Viz [lokální pipeline](../../../../../java-tram/LOCAL_PIPELINE.md).
+
+Hlavička Astro volá oddělený `GET/POST /api/transport-admin/local-pipeline`.
+Entry point vyžaduje interní klíč i uživatelský Bearer; společný Auth ověří
+aktivního administrátora ve vybraném tenantu před sestavením pipeline klienta.
+GET vrací stav, POST přijímá pouze `{"action":"sync_build"}` nebo
+`{"action":"deploy"}` a vrací 202. Query a další pole jsou odmítnutá.
+Odpovědi mají `private, no-store`. `LocalPipelineApi` nepřidává administrační
+cesty do veřejné dopravní gateway. Pouze autentizace admin entrypointu používá
+existující Auth databázi; dopravní gateway a pipeline klient zůstávají bez SQL.
+Nasazení vyžaduje i změnu `api/.htaccess`; žádná nová DB migrace není potřeba.
 
 Synchronizaci a grafy provozujte podle [Java služby OTP](../../../../../java-tram/OTP/README.md).
 PHP transportové cron/configure/build/serve skripty a provider presets byly

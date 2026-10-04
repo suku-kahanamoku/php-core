@@ -12,6 +12,7 @@ v [Java projektech](../../../../../java-tram/ARCHITECTURE.md).
 | `Gateway/JavaTransportService.php` | Pevný upstream, soukromý Bearer, síťové limity a transparentní JSON předání |
 | `Gateway/JavaTransportException.php` | Bezpečné chyby konfigurace, cesty a upstream spojení |
 | `Admin/LocalPipelineService.php` | Serverový klient explicitní fronty lokálních sync_build/deploy operací; bez veřejné route a bez dopravních výpočtů |
+| `api/transport-admin/index.php`, `Admin/LocalPipelineApi.php` | Oddělená administrační hranice s interním klíčem a společným Auth ověřením role admin a tenantu před zařazením úlohy |
 
 Gateway se k databázi vůbec nepřipojuje. Interní klíč a tenant ověřuje ze
 serverové konfigurace; SQL rate limiter se zde nepoužívá. Nemá dopravní

@@ -8,7 +8,7 @@ RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
 # Route known module prefixes to their own index.php (lazy loading)
 
-RewriteRule ^(etymolog|transport|sry|auth|roles|users|address|categories|products|customer-profiles|texts|enumerations|orders|invoices|mailer|templater|files|openai)(/.*)?$ $1/index.php [L,QSA]
+RewriteRule ^(etymolog|transport-admin|transport|sry|auth|roles|users|address|categories|products|customer-profiles|texts|enumerations|orders|invoices|mailer|templater|files|openai)(/.*)?$ $1/index.php [L,QSA]
 
 # Everything else (root / and unknown paths) → index.php
 

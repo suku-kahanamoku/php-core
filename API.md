@@ -58,6 +58,16 @@ All list endpoints support three universal query parameters:
 
 ## Authentication
 
+Transport pipeline control is a separate administrator API:
+`GET /transport-admin/local-pipeline` returns job/runner state;
+`POST /transport-admin/local-pipeline` accepts only
+`{"action":"sync_build"}` or `{"action":"deploy"}` and returns 202.
+Both require the internal key and an active tenant-bound admin Bearer session;
+responses are private and not cacheable. The PHP server must enable
+`TRANSPORT_LOCAL_PIPELINE_ENABLED` and configure its private Cloudflare admin
+token and HTTPS `TRANSPORT_LOCAL_PIPELINE_URL`. These operations are absent
+from the public `/transport/v1` gateway.
+
 All endpoints require server-only `X-Internal-Key` application authentication
 in common middleware, before any API service/database is initialized. The only
 exceptions are POST `/openai/realtime-session` and POST `/openai/tool`, which
