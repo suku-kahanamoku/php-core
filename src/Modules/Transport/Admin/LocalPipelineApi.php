@@ -18,11 +18,20 @@ final class LocalPipelineApi
             throw new JavaTransportException('unauthorized', 'Application authentication required.', 401);
         }
         ($this->authorize)();
-        if ($request->uri !== '/local-pipeline') {
+        if (!in_array($request->uri, ['/local-pipeline', '/online-planners'], true)) {
             throw new JavaTransportException('not_found', 'Unknown administrator endpoint.', 404);
         }
         if (!in_array($request->method, ['GET', 'POST'], true)) {
             throw new JavaTransportException('invalid_method', 'Method not allowed.', 405);
+        }
+        if ($request->uri === '/online-planners') {
+            if ($request->query !== [] || ($request->method === 'GET' && $request->body !== [])
+                || ($request->method === 'POST' && (array_keys($request->body) !== ['enabled']
+                    || !is_bool($request->body['enabled'])))) {
+                throw new JavaTransportException('invalid_query', 'Invalid planner setting.', 422);
+            }
+            $service = ($this->service)($request->franchiseCode);
+            return $request->method === 'GET' ? $service->onlinePlanners() : $service->setOnlinePlanners($request->body['enabled']);
         }
         if ($request->query !== [] || ($request->method === 'GET' && $request->body !== [])
             || ($request->method === 'POST' && (array_keys($request->body) !== ['action']

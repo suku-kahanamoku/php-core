@@ -21,7 +21,7 @@ try {
         },
         static fn(string $tenant) => TransportModule::localPipeline($tenant, $_ENV, HttpModule::client())
     );
-    Response::success($api->execute($request), status: $request->method === 'POST' ? 202 : 200);
+    Response::success($api->execute($request), status: $request->method === 'POST' && $request->uri === '/local-pipeline' ? 202 : 200);
 } catch (JavaTransportException $error) {
     Response::error($error->getMessage(), $error->status, ['code' => $error->reason]);
 }

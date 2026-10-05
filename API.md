@@ -68,6 +68,13 @@ responses are private and not cacheable. The PHP server must enable
 token and HTTPS `TRANSPORT_LOCAL_PIPELINE_URL`. These operations are absent
 from the public `/transport/v1` gateway.
 
+`GET /transport-admin/online-planners` returns the persistent global
+`{"enabled":true|false}` policy. `POST` accepts exactly one boolean `enabled`
+field and returns 200. It uses the same internal key, tenant-bound active admin
+session and server-only Cloudflare control configuration. PHP forwards only to
+`/admin/online-planners`; it does not store state or implement routing. This
+setting controls new online searches/catalogues, not realtime feeds or graph jobs.
+
 All endpoints require server-only `X-Internal-Key` application authentication
 in common middleware, before any API service/database is initialized. The only
 exceptions are POST `/openai/realtime-session` and POST `/openai/tool`, which

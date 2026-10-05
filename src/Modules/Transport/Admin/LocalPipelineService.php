@@ -8,7 +8,7 @@ use App\Modules\Http\Contracts\HttpClient;
 use App\Modules\Http\HttpRequest;
 use App\Modules\Transport\Gateway\JavaTransportException;
 
-/** Server-only admin control. Java runner executes two fixed scripts on the local build machine. */
+/** Server-only fixed admin routes for pipeline jobs and global online planner policy. */
 final class LocalPipelineService
 {
     public function __construct(private readonly HttpClient $http, private readonly string $url, private readonly string $token)
@@ -35,9 +35,19 @@ final class LocalPipelineService
         return $this->request('GET');
     }
 
-    private function request(string $method, ?array $body = null): array
+    public function onlinePlanners(): array
     {
-        $response = $this->http->send(new HttpRequest(rtrim($this->url, '/') . '/admin/local/jobs', $method,
+        return $this->request('GET', path: '/admin/online-planners');
+    }
+
+    public function setOnlinePlanners(bool $enabled): array
+    {
+        return $this->request('POST', ['enabled' => $enabled], '/admin/online-planners');
+    }
+
+    private function request(string $method, ?array $body = null, string $path = '/admin/local/jobs'): array
+    {
+        $response = $this->http->send(new HttpRequest(rtrim($this->url, '/') . $path, $method,
             ['Authorization' => 'Bearer ' . $this->token, 'Accept' => 'application/json'], $body,
             timeoutMs: 9000, maxBytes: 16384, connectTimeoutMs: 1500));
         if ($response->error !== null || $response->status === 0) {
@@ -53,6 +63,12 @@ final class LocalPipelineService
         }
         if ($response->status >= 400) {
             throw new JavaTransportException('source_unavailable', 'Local pipeline operation was rejected.', $response->status);
+        }
+        if ($path === '/admin/online-planners') {
+            if (!isset($payload['enabled']) || !is_bool($payload['enabled'])) {
+                throw new JavaTransportException('invalid_upstream', 'Invalid planner setting.', 502);
+            }
+            return ['enabled' => $payload['enabled']];
         }
         if (!in_array($payload['status'] ?? null, ['idle', 'queued', 'running', 'ready', 'failed'], true)
             || isset($payload['lease']) || isset($payload['expires'])

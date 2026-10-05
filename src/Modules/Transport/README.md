@@ -94,6 +94,13 @@ cesty do veřejné dopravní gateway. Pouze autentizace admin entrypointu použ�
 existující Auth databázi; dopravní gateway a pipeline klient zůstávají bez SQL.
 Nasazení vyžaduje i změnu `api/.htaccess`; žádná nová DB migrace není potřeba.
 
+Stejná chráněná administrace nabízí `GET/POST /transport-admin/online-planners`.
+GET vrací `{"enabled":true|false}`, POST přijímá pouze boolean `enabled` a vrací
+200. `LocalPipelineService` jej předává na pevný Cloudflare `/admin/online-planners`
+se stejnými serverovými credentials; PHP stav neukládá ani nevybírá plánovač.
+Globální stav udržuje Cloudflare Durable Object. Změna nezadává runner úlohu,
+nemění realtime či statické zdroje a není veřejnou dopravní mutací.
+
 Synchronizaci a grafy provozujte podle [Java služby OTP](../../../../../java-tram/OTP/README.md).
 PHP transportové cron/configure/build/serve skripty a provider presets byly
 odstraněny. Při nasazení odstraňte jejich staré cron/supervisor položky a obnovte

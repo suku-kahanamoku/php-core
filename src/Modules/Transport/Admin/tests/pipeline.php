@@ -56,9 +56,9 @@ $authorized = false;
 $api = new LocalPipelineApi(static function () use (&$authorized): void {
     if (!$authorized) throw new JavaTransportException('forbidden', 'Admin required.', 403);
 }, static fn(string $tenant) => TransportModule::localPipeline($tenant, $env, $http));
-function pipelineRequest(string $method = 'GET', array $body = [], array $query = [], bool $internal = true, string $tenant = 'tram'): Request {
+function pipelineRequest(string $method = 'GET', array $body = [], array $query = [], bool $internal = true, string $tenant = 'tram', string $uri = '/local-pipeline'): Request {
     $request = (new ReflectionClass(Request::class))->newInstanceWithoutConstructor();
-    foreach (['method' => $method, 'uri' => '/local-pipeline', 'body' => $body,
+    foreach (['method' => $method, 'uri' => $uri, 'body' => $body,
         'query' => $query, 'franchiseCode' => $tenant] as $property => $value) {
         (new ReflectionProperty(Request::class, $property))->setValue($request, $value);
     }
@@ -78,4 +78,21 @@ ensure(count($http->requests) === $before);
 ensure($api->execute(pipelineRequest())['status'] === 'idle');
 $http->payload = ['id' => '00000000-0000-0000-0000-000000000001', 'action' => 'deploy', 'status' => 'queued'];
 ensure($api->execute(pipelineRequest('POST', ['action' => 'deploy']))['action'] === 'deploy');
+$http->payload = ['enabled' => true, 'token' => 'must-not-enter-browser'];
+ensure($api->execute(pipelineRequest(uri: '/online-planners')) === ['enabled' => true]);
+$http->payload = ['enabled' => false];
+ensure($api->execute(pipelineRequest('POST', ['enabled' => false], uri: '/online-planners')) === ['enabled' => false]);
+$last = $http->requests[array_key_last($http->requests)];
+ensure($last->url === 'https://tram.example.test/admin/online-planners');
+ensure($last->body === ['enabled' => false]);
+$before = count($http->requests);
+foreach ([['enabled' => 'false'], ['enabled' => 0], ['enabled' => false, 'url' => 'https://evil.test'], []] as $body) {
+    rejected(fn() => $api->execute(pipelineRequest('POST', $body, uri: '/online-planners')));
+}
+rejected(fn() => $api->execute(pipelineRequest(uri: '/online-planners', internal: false)));
+$authorized = false;
+rejected(fn() => $api->execute(pipelineRequest(uri: '/online-planners')));
+ensure(count($http->requests) === $before);
+$http->payload = ['enabled' => 'false'];
+rejected(fn() => $pipeline->onlinePlanners());
 echo "Local pipeline PHP control tests passed.\n";
