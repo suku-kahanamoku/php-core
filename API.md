@@ -2095,6 +2095,10 @@ neukládá počítadla do `api_rate_limit`; statusy a limity Javy předává bez
 
 Gateway předává JSON tělo, status a `Retry-After` bez dopravních transformací.
 `q`, `sort`, `projection`, `page`, `limit` pro list/search zpracuje Java.
+Našeptávač podporuje opt-in `kinds: ["stop","street","address"]` pro Java
+Places katalog. Nová veřejná pole `kind` a `city_source` se předávají beze změny;
+ulice/adresa je souřadnicový cíl, zastávka zachovává ID. PHP nepotřebuje SQL,
+Lucene knihovnu ani nové env. Viz [Places API](../../java-tram/Places/README.md).
 Povolené GET query názvy jsou `at`, `limit`, `stop_coordinates`; `/attributions`
 query nepřijímá. Upstream URL nelze zadat klientem. Java administrační/build/sync
 API není součástí tohoto whitelistu. Odpovědi mají `no-store`.

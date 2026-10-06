@@ -48,5 +48,17 @@ $javaHttp->response = new HttpResponse(200, '{"success":true,"data":{"stops":[{"
 $times = $javaGateway->forward('GET', '/v1/trips/test', [], ['stop_coordinates' => 0]);
 check($times['payload']['data']['stops'][0] === ['scheduled_departure' => '12:00', 'expected_departure' => '12:08'], 'Gateway never recalculates scheduled or expected times');
 check(str_ends_with($javaHttp->requests[array_key_last($javaHttp->requests)]->url, '?stop_coordinates=0'), 'Gateway forwards allowed resource query');
-echo "PASS $checks Java gateway contract checks\n";
+// Geography backend is private Java configuration; PHP preserves the shared contract unchanged.
+$geographyQuery = ['q' => ['state' => 'CZ', 'name' => ['$regex' => 'ces']],
+    'projection' => 'id,name,kind,city,lat,lon', 'limit' => 20, 'kinds' => ['stop', 'street', 'address']];
+$geographyResponse = ['success' => true, 'data' => ['data' => [
+    ['id' => 'public-geography-id', 'name' => 'Česká', 'kind' => 'street',
+        'city' => 'Brno', 'lat' => 49.2, 'lon' => 16.6],
+], 'partial' => false]];
+$javaHttp->response = new HttpResponse(200, json_encode($geographyResponse, JSON_THROW_ON_ERROR));
+$geography = $javaGateway->forward('POST', '/v1/places/search', $geographyQuery);
+check($geography['payload'] === $geographyResponse
+    && $javaHttp->requests[array_key_last($javaHttp->requests)]->body === $geographyQuery,
+    'Street/address geography kinds pass unchanged without PHP index, SQL or vendor adapter');
 unset($javaHttp, $javaGateway, $javaEnv, $javaBody, $javaToken, $javaCredits, $forwarded);
+echo "PASS $checks Java gateway contract checks\n";

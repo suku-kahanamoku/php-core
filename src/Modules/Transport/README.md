@@ -58,6 +58,11 @@ ani automatický SQL fallback již neexistují.
 
 Vstupy a odpovědi určuje [Java API](../../../../../java-tram/OTP/API.md).
 List/search přijímá `q`, `sort`, `projection`, `page`, `limit` v JSON těle;
+našeptávání navíc volitelné `kinds` (`stop`, `street`, `address`, `city`). Java
+router volí samostatnou [Places službu](../../../../../java-tram/Places/README.md).
+Bez opt-in zůstává zastávkový kontrakt; ulice/adresa obsahuje statické souřadnice
+a `kind`, frontend ji do plánování předá jako bod. PHP nemá Lucene závislost,
+index ani další proměnné. Stávající `TRANSPORT_JAVA_*` zůstávají stejné.
 PHP je nepřekládá na SQL. GET query má omezené názvy `at`, `limit`,
 `stop_coordinates`; atribuce query nepřijímají. Administrace, synchronizace,
 build a libovolné proxy URL nejsou veřejné cesty gateway.
