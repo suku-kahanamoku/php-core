@@ -31,6 +31,24 @@ if ($path === '/transport/v1/trips/missing') {
 $stop = ['id' => 'metadata', 'name' => 'Hub', 'state' => 'CZ', 'city' => 'Brno',
     'modes' => ['bus', 'tram', 'trolleybus'], 'transport_scope' => 'mixed'];
 $body = json_decode(file_get_contents('php://input'), true);
+if ($path === '/transport/v1/cities/search'
+    && ($body['q']['name']['$regex'] ?? null) === '__compressed_catalogue__') {
+    if (!str_contains($_SERVER['HTTP_ACCEPT_ENCODING'] ?? '', 'gzip')) {
+        http_response_code(406);
+        echo '{"success":false,"errors":{"code":"compression_required"}}';
+        exit;
+    }
+    $cities = [];
+    for ($index = 0; $index < 1500; ++$index) {
+        $cities[] = ['id' => 'fixture-' . $index, 'name' => 'Žďár ' . $index, 'state' => 'CZ'];
+    }
+    $encoded = gzencode(json_encode(['success' => true, 'data' => ['data' => $cities, 'partial' => false]], JSON_THROW_ON_ERROR));
+    header('Content-Encoding: gzip');
+    header('Content-Length: ' . strlen($encoded));
+    header('Vary: Accept-Encoding');
+    echo $encoded;
+    exit;
+}
 if ($path === '/transport/v1/trips/estimated/observation') {
     echo json_encode(['success' => true, 'data' => [
         'status' => 'estimated', 'position' => null, 'delay_seconds' => null, 'cancelled' => null,

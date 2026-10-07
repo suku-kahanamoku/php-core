@@ -31,6 +31,9 @@ fails(fn() => $javaGateway->forward('GET', '/v1/stops/../../sync'), 'invalid_que
 fails(fn() => $javaGateway->forward('GET', '/v1/coverage', [], ['url' => 'http://other']), 'invalid_query');
 $javaHttp->response = new HttpResponse(404, '{"success":false,"errors":{"code":"not_found"}}');
 check($javaGateway->forward('GET', '/v1/trips/test')['status'] === 404, 'Java gateway preserves error status and envelope');
+$javaHttp->response = new HttpResponse(409, '{"success":false,"error":"stale_resource","errors":{"code":"stale_resource"}}');
+$stale = $javaGateway->forward('POST', '/v1/journeys/search', ['from-dest' => ['type' => 'stop', 'id' => 'snapshot-bound-id']]);
+check($stale['status'] === 409 && $stale['payload']['errors']['code'] === 'stale_resource', 'Snapshot mismatch is preserved without retry, SQL fallback or stop remapping');
 $javaHttp->response = new HttpResponse(0, '', 'network_error');
 fails(fn() => $javaGateway->forward('GET', '/v1/coverage'), 'source_unavailable');
 $javaHttp->response = new HttpResponse(200, '{"token":"must-not-leak"}');

@@ -33,9 +33,9 @@ final class JavaTransportService
             $target .= '?' . http_build_query($query, '', '&', PHP_QUERY_RFC3986);
         }
         $response = $this->http->send(new HttpRequest($target, $method,
-            ['Authorization' => 'Bearer ' . $this->token, 'Accept' => 'application/json'],
+            ['Authorization' => 'Bearer ' . $this->token, 'Accept' => 'application/json', 'Accept-Encoding' => 'gzip'],
             $method === 'POST' ? ($body === [] ? '{}' : $body) : null,
-            timeoutMs: $path === '/v1/journeys/search' ? 24000 : 9000, maxBytes: 16000000, connectTimeoutMs: 1500));
+            timeoutMs: $path === '/v1/journeys/search' ? 24000 : 9000, maxBytes: 16000000, connectTimeoutMs: 3000));
         if ($response->error !== null || $response->status === 0) {
             throw new JavaTransportException('source_unavailable', 'Java transport is unavailable.', 503);
         }

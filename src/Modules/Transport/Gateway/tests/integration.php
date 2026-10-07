@@ -51,6 +51,14 @@ try {
         $response = $request($path, 'POST', $body);
         check($response->status === 200 && $response->json()['data']['body'] === $body, 'POST JSON is forwarded unchanged: ' . $path);
     }
+    $compressedCities = $request('cities/search', 'POST', ['q' => ['state' => 'CZ', 'name' => ['$regex' => '__compressed_catalogue__']]]);
+    $expectedCities = [];
+    for ($index = 0; $index < 1500; ++$index) {
+        $expectedCities[] = ['id' => 'fixture-' . $index, 'name' => 'Žďár ' . $index, 'state' => 'CZ'];
+    }
+    check($compressedCities->status === 200
+        && $compressedCities->json() === ['success' => true, 'data' => ['data' => $expectedCities, 'partial' => false]],
+        'Gateway negotiates gzip and forwards the complete decoded Unicode catalogue unchanged');
     $stop = ['id' => 'metadata', 'name' => 'Hub', 'state' => 'CZ', 'city' => 'Brno',
         'modes' => ['bus', 'tram', 'trolleybus'], 'transport_scope' => 'mixed'];
     $places = $request('places/search', 'POST', ['q' => ['name' => ['$regex' => 'Hub'], 'state' => 'CZ'],

@@ -69,7 +69,10 @@ build a libovolné proxy URL nejsou veřejné cesty gateway.
 
 Gateway zachová status, JSON obálku a `Retry-After` Javy, nastaví `no-store`.
 Síťové selhání vrací 503, neplatná upstream odpověď 502 bez surového těla.
-Limit hledání je 24 s, ostatních operací 9 s, připojení 1,5 s a odpovědi 16 MB.
+Limit hledání je 24 s, ostatních operací 9 s, připojení 3 s a odpovědi 16 MB.
+Serverový HTTP požadavek explicitně nabízí `Accept-Encoding: gzip`; společný
+HttpModule odpověď dekóduje před předáním JSON a kontroluje její velikost.
+Velké katalogy se tak mohou přenášet komprimovaně bez prodlužování deadline.
 Reálné pokrytí neznamená všechny dopravce země ani dostupnou GPS každého spoje.
 Gateway transparentně předává také Java `estimated_progress` pro spoje bez
 registrované služby polohy. Odhad podle jízdního řádu počítá realtime backend;
