@@ -9,19 +9,19 @@ use App\Modules\Auth\Auth;
 use App\Modules\Database\Database;
 use App\Modules\Http\HttpModule;
 use App\Modules\Router\Response;
-use App\Modules\Transport\Admin\LocalPipelineApi;
+use App\Modules\Transport\Admin\OnlinePlannerApi;
 use App\Modules\Transport\Gateway\JavaTransportException;
 use App\Modules\Transport\TransportModule;
 
 try {
-    $api = new LocalPipelineApi(
+    $api = new OnlinePlannerApi(
         static function (): void {
             // Authentication storage belongs to Auth; no transport tables or queries.
             (new Auth(Database::getInstance()))->requireRole('admin');
         },
-        static fn(string $tenant) => TransportModule::localPipeline($tenant, $_ENV, HttpModule::client())
+        static fn(string $tenant) => TransportModule::onlinePlanners($tenant, $_ENV, HttpModule::client())
     );
-    Response::success($api->execute($request), status: $request->method === 'POST' && $request->uri === '/local-pipeline' ? 202 : 200);
+    Response::success($api->execute($request), status: 200);
 } catch (JavaTransportException $error) {
     Response::error($error->getMessage(), $error->status, ['code' => $error->reason]);
 }

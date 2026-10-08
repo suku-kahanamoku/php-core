@@ -86,51 +86,16 @@ Po administrační autorizaci volej `submit('sync_build')`, `submit('deploy')`
 nebo `status()`. PHP jen zařazuje pevné úlohy; lokální Java runner je vyzvedává
 přes odchozí HTTPS a spouští `sync_build.sh`/`deploy.sh`. Není potřeba veřejný
 port na PC ani čekající PHP request. Zapnutí vyžaduje
-`TRANSPORT_LOCAL_PIPELINE_ENABLED=1` a soukromý serverový
-`TRANSPORT_LOCAL_PIPELINE_TOKEN` (Cloudflare Admin token), vedle stávajícího
-TRAM tenanta a HTTPS `TRANSPORT_LOCAL_PIPELINE_URL` (při neuvedení používá
-`TRANSPORT_JAVA_URL`). Oddělená adresa nemění lokální vyhledávání. Klíč nepatří
-do frontendu. Viz [lokální pipeline](../../../../../java-tram/LOCAL_PIPELINE.md).
+`TRANSPORT_ONLINE_CONTROL_ENABLED=1`, `TRANSPORT_JAVA_TENANT=tram`,
+`TRANSPORT_ONLINE_CONTROL_URL=https://194.163.136.34` a soukromý
+`TRANSPORT_ONLINE_CONTROL_TOKEN` (Java admin token) nastavují jedinou
+administrativní funkci: `GET/POST /transport-admin/online-planners`.
+`OnlinePlannerApi` ověřuje interní klíč a role/tenant přes Auth;
+`OnlinePlannerService` používá HttpModule a pevnou Java `/admin/online-planners`
+cestu. PHP neukládá politiku; Java ji drží v souboru vlastního routeru.
 
-Hlavička Astro volá oddělený `GET/POST /api/transport-admin/local-pipeline`.
-Entry point vyžaduje interní klíč i uživatelský Bearer; společný Auth ověří
-aktivního administrátora ve vybraném tenantu před sestavením pipeline klienta.
-GET vrací stav, POST přijímá pouze `{"action":"sync_build"}` nebo
-`{"action":"deploy"}` a vrací 202. Query a další pole jsou odmítnutá.
-Odpovědi mají `private, no-store`. `LocalPipelineApi` nepřidává administrační
-cesty do veřejné dopravní gateway. Pouze autentizace admin entrypointu používá
-existující Auth databázi; dopravní gateway a pipeline klient zůstávají bez SQL.
-Nasazení vyžaduje i změnu `api/.htaccess`; žádná nová DB migrace není potřeba.
-
-Stejná chráněná administrace nabízí `GET/POST /transport-admin/online-planners`.
-GET vrací `{"enabled":true|false}`, POST přijímá pouze boolean `enabled` a vrací
-200. `LocalPipelineService` jej předává na pevný Cloudflare `/admin/online-planners`
-se stejnými serverovými credentials; PHP stav neukládá ani nevybírá plánovač.
-Globální stav udržuje Cloudflare Durable Object. Změna nezadává runner úlohu,
-nemění realtime či statické zdroje a není veřejnou dopravní mutací.
-
-Synchronizaci a grafy provozujte podle [Java služby OTP](../../../../../java-tram/OTP/README.md).
-PHP transportové cron/configure/build/serve skripty a provider presets byly
-odstraněny. Při nasazení odstraňte jejich staré cron/supervisor položky a obnovte
-PHP OPcache; Java služby a jejich soukromé API musí být dostupné před přepnutím.
-
-Gateway nevyžaduje žádné databázové schéma ani SQL credentials.
-Autentizace interním klíčem a výběr tenantu probíhají ze serverové konfigurace.
-SQL rate limiter byl pro tuto gateway odstraněn; Java `Retry-After` a HTTP
-backpressure se nadále předávají. Limity provozu patří Java API nebo vstupní proxy.
-Staré TRAM SQL schéma, seed a modulární migrace byly odstraněny z projektu.
-Gateway je nepotřebuje. Existující dopravní tabulky ani data tento refaktor nemaže.
-
-```sh
-bash scripts/test-java-gateway.sh
-bash scripts/test-http.sh
-composer lint
-git diff --check
-```
-
-Gateway test používá skutečný PHP HTTP entrypoint a fixture Java server,
-bez MySQL a bez vytváření schémat. Testovací autoloader zakazuje přístup k
-Database i SQL RateLimiteru; každá zaregistrovaná cesta musí fungovat bez nich.
-Ověřuje autentizaci, tenant, route allowlist, JSON, chyby a Java backpressure.
-Fixture neprokazuje živý Java graf; lokální konfigurace a vybrané skutečné cesty
-jsou samostatně v [INTERNATIONAL-LOCAL.md](../../../../../java-tram/OTP/INTERNATIONAL-LOCAL.md).
+Ruční pipeline endpointy, submit/status klient a jejich UI byly odstraněné.
+Obnova grafů a indexů běží na VPS každou sobotu ve 02:00 Europe/Prague.
+Doprava Astro → Java jde přímo; původní PHP veřejná gateway zůstává pouze
+pro kompatibilitu jiných explicitně nakonfigurovaných klientů, Astro ji nepoužívá.
+Viz [VPS provoz](../../../../../java-tram/deployment/vps/README.md).

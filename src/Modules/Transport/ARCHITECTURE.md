@@ -11,8 +11,8 @@ v [Java projektech](../../../../../java-tram/ARCHITECTURE.md).
 | `Gateway/JavaTransportApi.php` | Registrace povolených GET/POST cest a `no-store` odpovědi |
 | `Gateway/JavaTransportService.php` | Pevný upstream, soukromý Bearer, síťové limity a transparentní JSON předání |
 | `Gateway/JavaTransportException.php` | Bezpečné chyby konfigurace, cesty a upstream spojení |
-| `Admin/LocalPipelineService.php` | Serverový klient explicitní fronty lokálních sync_build/deploy operací a globálního online přepínače; bez veřejné route, ukládání stavu a dopravních výpočtů |
-| `api/transport-admin/index.php`, `Admin/LocalPipelineApi.php` | Oddělená administrační hranice s interním klíčem a společným Auth ověřením role admin a tenantu před zařazením úlohy |
+| `Admin/OnlinePlannerService.php` | Serverový klient pouze globálního online přepínače; bez veřejné route, ukládání stavu a dopravních výpočtů |
+| `api/transport-admin/index.php`, `Admin/OnlinePlannerApi.php` | Oddělená administrační hranice s interním klíčem a společným Auth ověřením role admin a tenantu před změnou online politiky |
 
 Gateway se k databázi vůbec nepřipojuje. Interní klíč a tenant ověřuje ze
 serverové konfigurace; SQL rate limiter se zde nepoužívá. Nemá dopravní
