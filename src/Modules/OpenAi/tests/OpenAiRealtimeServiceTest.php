@@ -41,7 +41,7 @@ assert_test('uses gpt-realtime', $captured['payload']['session']['model'] === 'g
 assert_test('requests text output', $captured['payload']['session']['output_modalities'] === ['text']);
 assert_test('requests PCM24 input', $captured['payload']['session']['audio']['input']['format']['rate'] === 24000);
 assert_test('requires every response to call a tool', $captured['payload']['session']['tool_choice'] === 'required');
-assert_test('allows enough output tokens for structured tool arguments', $captured['payload']['session']['max_output_tokens'] === 512);
+assert_test('allows enough output tokens for structured tool arguments', $captured['payload']['session']['max_output_tokens'] === 1024);
 assert_test(
     'stabilizes server VAD for continuous dialogue',
     $captured['payload']['session']['audio']['input']['turn_detection']['silence_duration_ms'] === 700
@@ -63,6 +63,7 @@ assert_test(
         'category',
         'price_intent',
         'replace_current_product',
+        'change_intent',
     ],
 );
 assert_test(
@@ -72,6 +73,7 @@ assert_test(
         'category',
         'price_intent',
         'replace_current_product',
+        'change_intent',
     ],
 );
 assert_test(
@@ -84,10 +86,14 @@ assert_test(
     $captured['payload']['session']['tools'][2]['parameters']['required'] === [
         'category',
         'price_intent',
+        'active_need',
+        'change_intent',
     ]
         && array_keys($captured['payload']['session']['tools'][2]['parameters']['properties']) === [
-            'category',
-            'price_intent',
+        'category',
+        'price_intent',
+        'active_need',
+        'change_intent',
         ],
 );
 assert_test(

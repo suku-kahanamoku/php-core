@@ -29,11 +29,16 @@ Token plati 60 sekund pro vytvoreni relace. Relace pouziva server VAD s delsim
 automatické `create_response`; Android po další 1,5sekundové tiché prodlevě
 řízeně vyžádá jedinou analýzu nad nahromaděným kontextem. Nová řeč nepřeruší
 právě generované argumenty function callu. Relace používá textový výstup a limit
-512 output tokenu pro bezpečné dokončení strukturovaných argumentů.
+1024 output tokenů pro bezpečné dokončení argumentů s úplným potvrzeným záměrem.
 Povinné volání nástroje dovoluje pouze `recommend_product`, `get_product` a lokální
 `continue_listening`; model proto nemůže místo výběru produktu vrátit volný text.
 `continue_listening` vždy nese aktuálně potvrzenou kategorii a cenový záměr;
 prázdný string označuje neznámou hodnotu a Android z něj aktualizuje checklist.
+`continue_listening` navíc vrací `active_need` s potvrzenými preferencemi,
+omezeními, použitím a příjemcem i před prvním doporučením. Oba analytické
+nástroje nesou `change_intent` (`maintain`, `update`, `replace`, `return`), aby
+Android zachoval požadavek na náhradu i přes výpadek. Jde o faktický nákupní
+stav, nikoli přepis konverzace.
 Katalogové nástroje mobil vykoná přes následující backendový endpoint.
 
 ```http
@@ -50,12 +55,19 @@ produkty podle požadavků a nevytváří vlastní pořadí kandidátů.
 
 `recommend_product` vyžaduje český `query`, konkrétní `category` a potvrzený
 `price_intent`; při bezprostřední náhradě může Android přidat aktuální
-`excluded_product_id`. PHP hodnoty pouze validuje a předá OpenAI Responses modelu. Ten
+`excluded_product_id`. Volitelné `current_product_id` modelu identifikuje
+aktuální kartu i tehdy, když Realtime neoznačí náhradu booleanem. `query`
+může mít až 3000 znaků. PHP hodnoty pouze validuje a předá OpenAI Responses modelu. Ten
 pomocí hostovaného `file_search` vyhledá dokumenty v tenantovém Vector Store,
 sám porovná názvy, popisy, kategorie, varianty, cenu, dostupnost a
 `selection_attributes` a vrátí konkrétní `product_id`, kvalitu `exact` nebo
 `nearest` a krátký český důvod nejbližší alternativy. PHP
 nepřijímá ani nevrací pořadí kandidátů.
+`file_search` má limit 50 výsledků na hledání. Před nejbližší alternativou má
+model provést další cílené hledání, celkem nejvýše tři přes `max_tool_calls`, a
+porovnat evidenci napříč výsledky. Nejde o kompletní průchod katalogu.
+Výstup zůstává striktní JSON s limitem 512 tokenů; model nesmí z pouhé
+chybějící první shody tvrdit, že produkt neexistuje v celém katalogu.
 
 `get_product` přijímá pouze `product_id`, které zvolil Responses model z
 `file_search` evidence. PHP vrátí aktuální publikovaný katalogový záznam, ale

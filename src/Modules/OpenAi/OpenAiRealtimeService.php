@@ -106,7 +106,7 @@ final class OpenAiRealtimeService
                 'model' => $this->model,
                 'output_modalities' => ['text'],
                 'instructions' => $this->instructions(),
-                'max_output_tokens' => 512,
+                'max_output_tokens' => 1024,
                 'tool_choice' => 'required',
                 'tools' => $this->toolDefinitions(),
                 'audio' => [
@@ -153,13 +153,14 @@ Handle negation, comparison, conditions, corrections, and uncertain references. 
 Separate explicit facts, unambiguous entailed meanings, hypotheses, and unknowns. Never use a hypothesis as a confirmed filter.
 Do not infer gender, age, income, social status, or a customer profile from fragrance preferences, budget, voice, accent, or speaking style.
 Every requirement used for selection must be traceable to customer evidence.
+Maintain a compact standalone active_need after every analyzed turn, including while category or price is still unknown. Include the active recipient and use, confirmed mandatory constraints, accepted preferences, narrow exclusions, budget evidence and latest correction or rejection. This is factual purchase state, never a transcript or sales text. Carry forward all still-valid facts; remove explicitly superseded facts. Reset unrelated facts when the customer starts a separate purchase need. Report this complete state in continue_listening.active_need and recommend_product.query.
 
 # Requirements and budget
 Internally separate mandatory requirements, positive preferences, mild negative preferences, and explicit exclusions while composing recommendation requests.
 The OpenAI Responses recommender decides eligibility and ranking with hosted file_search. PHP never evaluates conversation requirements and never chooses or ranks products.
 Use only supported catalog meanings; do not invent product attributes.
 Distinguish usual spending, a preferred current price, an explicit current maximum, and conditional willingness to pay more.
-Only an explicit maximum for the active purchase belongs in max_price. An exact match must not exceed it; a nearest fallback may exceed it only when no evidence-backed candidate satisfies it, and the returned Czech reason must say so.
+An explicit current maximum must remain in the complete active need. An exact match must not exceed it; a nearest fallback may exceed it only when no evidence-backed candidate satisfies it, and the returned Czech reason must say so.
 Do not optimize for margin, purchase probability, inferred wealth, or customer profiles.
 
 # Mandatory recommendation gate
@@ -169,6 +170,7 @@ Second, the selection context must contain either a confirmed price intent or a 
 Never invent or infer a normalized customer profile from ordinary conversation. This session currently has no profile catalog or profile tool, so unless trusted context explicitly supplies a normalized profile, the second condition can only be satisfied by confirmed price intent.
 If either condition is missing, call continue_listening without recommendation or text. Pass the current confirmed category and price_intent; use an empty string for each still-unknown value. Never ask for the missing value; keep listening until the conversation supplies it.
 On every continue_listening call, preserve previously confirmed values for the active need unless later explicit evidence corrects them. Never invent a checklist value.
+Use change_intent maintain for unchanged needs, update for corrected requirements, replace for rejecting the current card or asking for another, and return for a deliberate return. Keep an unfulfilled replace intent active until a different product has actually been loaded; merely starting a search does not fulfill it.
 
 # Product interpretation
 For fragrance, consider character, liked and rejected notes, projection, longevity, occasion, recipient, format, and budget. Keep projection and longevity separate and do not treat notes as verified ingredients.
@@ -184,6 +186,7 @@ Choose one action: LISTEN through continue_listening for background, unfinished 
 Call at most one tool per response.
 After recommend_product returns selected, immediately call get_product with exactly its product_id even when many preferences remain unknown. The result is either an exact match or a nearest alternative with a Czech reason. If get_product reports not_found, call recommend_product again with the same complete need and state that the stale ID must be replaced. Only a technical unavailable result may end in continue_listening without a product. After displaying a product, keep listening without producing text.
 Do not repeat an identical search without a relevant state or catalog change.
+Technical unavailable or superseded tool results are not completed recommendations. Retry a technically failed recommendation when the application requests another analysis; use the latest complete need. Never load an ID from a superseded result.
 
 # Verification and changes
 Before display, call get_product for exactly one product ID returned by the latest recommend_product result. The backend only loads the current published catalog record; it does not validate or rank the recommendation.
@@ -237,8 +240,9 @@ PROMPT;
                             'type' => 'boolean',
                             'description' => 'True after an explicit move-on, rejection, or a changed requirement while a product is displayed; false for the first recommendation or a deliberate return.',
                         ],
+                        'change_intent' => $this->changeIntentDefinition(),
                     ],
-                    'required' => ['query', 'category', 'price_intent', 'replace_current_product'],
+                    'required' => ['query', 'category', 'price_intent', 'replace_current_product', 'change_intent'],
                     'additionalProperties' => false,
                 ],
             ],
@@ -276,11 +280,27 @@ PROMPT;
                             'maxLength' => 240,
                             'description' => 'Current confirmed Czech price intent, or an empty string while it is unknown.',
                         ],
+                        'active_need' => [
+                            'type' => 'string',
+                            'maxLength' => 1800,
+                            'description' => 'Compact complete confirmed Czech purchase state, including constraints, preferences, recipient, use and corrections. Empty only before any purchase evidence; never a transcript.',
+                        ],
+                        'change_intent' => $this->changeIntentDefinition(),
                     ],
-                    'required' => ['category', 'price_intent'],
+                    'required' => ['category', 'price_intent', 'active_need', 'change_intent'],
                     'additionalProperties' => false,
                 ],
             ],
+        ];
+    }
+
+    /** @return array<string, mixed> Výslovný záměr změny bez lokálního odhadování významu řeči. */
+    private function changeIntentDefinition(): array
+    {
+        return [
+            'type' => 'string',
+            'enum' => ['maintain', 'update', 'replace', 'return'],
+            'description' => 'Latest confirmed intent for the active purchase: preserve it, update requirements, choose a different card, or deliberately return to an earlier item.',
         ];
     }
 

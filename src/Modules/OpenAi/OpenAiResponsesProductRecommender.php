@@ -13,7 +13,7 @@ final class OpenAiResponsesProductRecommender implements OpenAiProductRecommende
 {
     private const ENDPOINT = 'https://api.openai.com/v1/responses';
     private const DEFAULT_MODEL = 'gpt-5.6-terra';
-    private const MAX_RESULTS = 20;
+    private const MAX_RESULTS = 50;
 
     private Closure $transport;
     private string $apiKey;
@@ -37,7 +37,7 @@ final class OpenAiResponsesProductRecommender implements OpenAiProductRecommende
     }
 
     /** @inheritDoc */
-    public function recommend(string $query, string $category, string $priceIntent, ?int $excludedProductId = null): array
+    public function recommend(string $query, string $category, string $priceIntent, ?int $excludedProductId = null, ?int $currentProductId = null): array
     {
         if ($this->apiKey === '') {
             throw new OpenAiConfigurationException('OPENAI_API_KEY is not configured.');
@@ -54,6 +54,7 @@ final class OpenAiResponsesProductRecommender implements OpenAiProductRecommende
             $category,
             $priceIntent,
             $excludedProductId,
+            $currentProductId,
         ));
         $status = (int) ($result['status'] ?? 0);
         if ($status < 200 || $status >= 300) {
@@ -103,6 +104,7 @@ final class OpenAiResponsesProductRecommender implements OpenAiProductRecommende
         string $category,
         string $priceIntent,
         ?int $excludedProductId,
+        ?int $currentProductId,
     ): array {
         $fileSearchTool = [
             'type' => 'file_search',
@@ -123,6 +125,8 @@ final class OpenAiResponsesProductRecommender implements OpenAiProductRecommende
             'instructions' => <<<'PROMPT'
 You select exactly one catalog product for a passive Czech retail assistant.
 Use file_search as the only source of product facts. Evaluate every retrieved product yourself against the complete active need, concrete category, confirmed price intent, constraints, preferences, intended use and rejection reasons.
+Search for the complete need first. Before declaring nearest because of stock, price or attributes, run a second targeted search for the missing condition; broaden optional preferences if necessary. Compare evidence across your searches, not only the first returned document. Use at most three searches. Search snippets are not the entire catalog, so do not claim a catalog-wide absence without evidence; describe the selected product's specific deviation instead.
+current_product_id identifies the card currently on the salesperson display. If active_need requests another product or rejects this card, select a different evidence-backed ID even if excluded_product_id was omitted. Preserve all valid requirements. A deliberate request to return permits that earlier ID.
 Never optimize for margin, popularity or inferred customer traits. Never invent an ID or attribute. Previously shown products are not permanently excluded. When excluded_product_id is present, it is a mandatory one-request exclusion: never select that ID, while all older products remain eligible.
 Always return exactly one product_id present in the file_search evidence. Never return no_match after the mandatory category and price gate has been completed.
 Use match_quality exact only when the selected product satisfies the active category, confirmed price intent, explicit constraints and current in-stock requirement.
@@ -135,9 +139,11 @@ PROMPT,
                 'price_intent' => $priceIntent,
                 'active_need' => $query,
                 'excluded_product_id' => $excludedProductId,
+                'current_product_id' => $currentProductId,
             ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR),
             'tools' => [$fileSearchTool],
             'tool_choice' => 'required',
+            'max_tool_calls' => 3,
             'include' => ['file_search_call.results'],
             'text' => [
                 'format' => [
@@ -167,7 +173,7 @@ PROMPT,
                     ],
                 ],
             ],
-            'max_output_tokens' => 192,
+            'max_output_tokens' => 512,
         ];
     }
 

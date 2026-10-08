@@ -10,5 +10,5 @@ interface OpenAiProductRecommender
     /**
      * @return array{status:string,product_id:int|null,match_quality?:string,reason?:string}
      */
-    public function recommend(string $query, string $category, string $priceIntent, ?int $excludedProductId = null): array;
+    public function recommend(string $query, string $category, string $priceIntent, ?int $excludedProductId = null, ?int $currentProductId = null): array;
 }

@@ -15,7 +15,7 @@ final class OpenAiKnowledgeCatalogService
 {
     public const RECOMMEND_PRODUCT = 'recommend_product';
     public const GET_PRODUCT = 'get_product';
-    public const MAX_RECOMMENDATION_QUERY_LENGTH = 1000;
+    public const MAX_RECOMMENDATION_QUERY_LENGTH = 3000;
 
     /**
      * @param  OpenAiCatalogGateway         $catalog      Čtení aktuálního katalogu okurku.
@@ -56,7 +56,7 @@ final class OpenAiKnowledgeCatalogService
     {
         $query = trim((string) ($arguments['query'] ?? ''));
         if ($query === '' || mb_strlen($query) > self::MAX_RECOMMENDATION_QUERY_LENGTH) {
-            throw new \InvalidArgumentException('Recommendation query is required and must not exceed 1000 characters.');
+            throw new \InvalidArgumentException('Recommendation query is required and must not exceed 3000 characters.');
         }
         $category = trim((string) ($arguments['category'] ?? ''));
         $priceIntent = trim((string) ($arguments['price_intent'] ?? ''));
@@ -73,11 +73,18 @@ final class OpenAiKnowledgeCatalogService
                 throw new \InvalidArgumentException('excluded_product_id must be a positive integer.');
             }
         }
+        $currentProductId = null;
+        if (array_key_exists('current_product_id', $arguments)) {
+            $currentProductId = filter_var($arguments['current_product_id'], FILTER_VALIDATE_INT);
+            if ($currentProductId === false || $currentProductId < 1) {
+                throw new \InvalidArgumentException('current_product_id must be a positive integer.');
+            }
+        }
         if ($this->recommender === null) {
             return ['status' => 'unavailable', 'product_id' => null];
         }
         try {
-            return $this->recommender->recommend($query, $category, $priceIntent, $excludedProductId);
+            return $this->recommender->recommend($query, $category, $priceIntent, $excludedProductId, $currentProductId);
         } catch (OpenAiConfigurationException | OpenAiUpstreamException) {
             return ['status' => 'unavailable', 'product_id' => null];
         }

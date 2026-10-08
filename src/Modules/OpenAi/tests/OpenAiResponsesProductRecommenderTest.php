@@ -72,6 +72,7 @@ $result = $recommender->recommend(
     'parfém',
     'maximálně 2000 Kč',
     85,
+    85,
 );
 assert_test('returns a product selected by the Responses model', $result === [
     'status' => 'selected',
@@ -82,7 +83,7 @@ assert_test('returns a product selected by the Responses model', $result === [
 assert_test('uses hosted file_search against the tenant store', $captured['payload']['tools'] === [[
     'type' => 'file_search',
     'vector_store_ids' => ['vs_fun'],
-    'max_num_results' => 20,
+    'max_num_results' => 50,
     'filters' => [
         'type' => 'ne',
         'key' => 'product_id',
@@ -94,13 +95,19 @@ assert_test(
     json_decode($captured['payload']['input'], true, flags: JSON_THROW_ON_ERROR)['excluded_product_id'] === 85,
 );
 assert_test('requires a hosted tool call', $captured['payload']['tool_choice'] === 'required');
+assert_test('bounds hosted searches without a PHP ranking algorithm', $captured['payload']['max_tool_calls'] === 3);
 assert_test(
     'uses strict minimal structured output',
     $captured['payload']['text']['format']['type'] === 'json_schema'
         && $captured['payload']['text']['format']['strict'] === true
-        && $captured['payload']['max_output_tokens'] === 192,
+        && $captured['payload']['max_output_tokens'] === 512,
 );
 assert_test('does not expose the server key in the result', !str_contains(json_encode($result), 'sk-test'));
+assert_test('passes displayed card context even without relying on exclusion inference',
+    json_decode($captured['payload']['input'], true, flags: JSON_THROW_ON_ERROR)['current_product_id'] === 85);
+assert_test('requires targeted follow-up searches before a nearest result',
+    str_contains($captured['payload']['instructions'], 'run a second targeted search')
+        && str_contains($captured['payload']['instructions'], 'do not claim a catalog-wide absence'));
 
 $excludedCurrentRejected = false;
 try {

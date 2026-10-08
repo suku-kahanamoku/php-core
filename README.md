@@ -125,14 +125,22 @@ model uses hosted `file_search`, evaluates requirements, preferences and budget,
 and returns one evidence-backed product ID. It marks an exact match as `exact`; otherwise it returns the closest `nearest` product with a short Czech reason, so a completed gate never produces an empty business result. PHP neither filters nor ranks
 candidates and never chooses a recommended product. The model never asks clarification questions or
 generates sales, upsell or cross-sell arguments; while the gate is incomplete,
-the required `continue_listening` tool ends the turn without free text and updates only
-the salesperson checklist with the confirmed category and price intent. A move-on, rejection, or changed requirement sets `replace_current_product`;
+the required `continue_listening` tool ends the turn without free text and updates
+the salesperson checklist plus the complete confirmed `active_need`, including
+preferences and constraints before the first search. Explicit `change_intent`
+preserves replacement requests until a different card is displayed. A move-on,
+rejection, or changed requirement sets `replace_current_product`;
 Android converts it to the current `excluded_product_id`, and Responses file search
 applies a one-request `product_id != ID` metadata filter. Previously displayed
 products are not permanently excluded and may be selected again when the customer
 returns to them. After Responses chooses an ID
 from file-search evidence, Realtime calls `get_product`; PHP only loads its current published
-catalog detail for Android. `migrations/fann_seed.sql` contains the consolidated
+catalog detail for Android. Each hosted search returns up to 50 results; the
+Responses instructions require another targeted search before a nearest fallback.
+Android rejects obsolete results, loads only the latest selected ID and retries
+technical failures with bounded backoff. Empty or unavailable stores remain
+technical errors, with no SQL recommendation fallback.
+`migrations/fann_seed.sql` contains the consolidated
 FAnn demo catalogue and structured source metadata. Reapplying it preserves
 existing edited products.
 
