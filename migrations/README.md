@@ -75,9 +75,38 @@ fungovat. Skript sám synchronizaci nespouští.
 
 ## TRAM po přesunu do Javy
 
-TRAM SQL schéma, seed i modulární migrace byly odstraněny z PHP projektu.
-Gateway nepoužívá SQL ani rate-limit tabulky a žádné schéma nevyžaduje. Tento krok
-nespouští DROP ani nemění již existující tabulky či data aplikační databáze.
+Dopravní PHP gateway i historické schéma/seedy byly odstraněny. Pro již
+existující databáze je určen explicitní CLI úklid autorizovaný 9. 10. 2026:
+
+```sh
+php scripts/cleanup-tram.php
+php scripts/cleanup-tram.php --apply --expect-database=php_core --backup-dir=/private/tram-backups
+```
+
+První příkaz pouze přečte schéma a vypíše přesný plán. Při provedení nahraďte
+název DB skutečným názvem z plánu; produkce používá jiný název než lokální DB.
+Adresář záloh musí být absolutní, mít práva 0700 a být mimo webový checkout.
+CLI nemá HTTP rozhraní. Nejde o automatický krok běžných schema migrací.
+
+Úklid odstraní všech 17 známých `transport_*` tabulek, TRAM řádky `enumeration`
+a TRAM `api_rate_limit` kromě akcí `login`, `register`, `password-reset`,
+`password-reset-complete`. `user`, `role`, `user_token`, `oauth_identity`,
+`password_reset_token` a ostatní tenanty zachová. Žádné FK se nevypínají.
+
+Před změnou prohlédne všechny tenant tabulky, FK, views, triggers, routines
+a events. Neznámý dopravní objekt, cizí tenant v dopravní tabulce, externí
+FK nebo další neautentizační TRAM data zastaví práci a vyžadují doplnění auditu.
+Soukromá streamovaná gzip SQL záloha obsahuje všechna odstraňovaná data/schéma;
+neobsahuje zachovávaná hesla/tokeny. Zálohu lze obnovit do oddělené DB.
+Sdílené DELETE jsou transakční; MySQL DROP provádí implicitní commit, celý
+úklid tedy není atomický. Po případné chybě existuje záloha a lze po kontrole
+spustit příkaz znovu. Opakované úspěšné provedení je beze změn a bez další zálohy.
+
+Nejdříve nasaďte PHP omezení tenantu a odstranění gateway, potom spusťte úklid.
+Ověřte nulový počet transportních tabulek a neautentizačních TRAM řádků,
+zachování Auth a ostatních tenantů a živou autentizaci/autorizaci.
+`bash scripts/test-tram-cleanup.sh` ověřuje rozsah, zachování cizích dat,
+odmítnutí nebezpečného schématu, opakovatelnost a obnovu zálohy v disposable DB.
 
 ## Údržba a ověření
 
@@ -90,7 +119,7 @@ python3 scripts/build-schemas.py
 python3 scripts/build-schemas.py --check
 bash scripts/test-schema.sh
 bash scripts/test-etymolog.sh
-bash scripts/test-java-gateway.sh
+bash scripts/test-transport-auth.sh
 bash scripts/test-sry.sh
 ```
 

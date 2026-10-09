@@ -1,27 +1,20 @@
-# Transport: PHP gateway
+# TRAM: pouze přihlášení a autorizace v PHP
 
 Před změnou čti `README.md`, `ARCHITECTURE.md` a root `AGENTS.md`.
-Uživatel 3. 10. 2026 výslovně autorizoval odstranění PHP dopravní implementace.
+Uživatel 9. 10. 2026 výslovně požadoval odstranit veškeré TRAM SQL tabulky,
+data a PHP dopravu s výjimkou přihlášení a autorizace.
 
-1. PHP obsahuje pouze bezpečnostní/tenant hranici a transparentní gateway do Javy.
-   Nepřidávej sem adaptéry dopravců, katalogy, GTFS/OSM transformace, importy,
-   plánování, výpočty zpoždění, SQL fallback ani transportový WebSocket server.
-2. Dopravní změny patří do [Java projektů](../../../../../java-tram/AGENTS.md).
-   Nový zdroj/země vyžaduje doloženou licenci a všechny dostupné schopnosti;
-   částečné pokrytí se nesmí prezentovat jako kompletní. Ověř Java implementaci,
-   nikoli existenci presetu. Odstranění PHP nepotvrzuje plnou funkční paritu.
-3. Zachovej interní klíč a pevný tenant; SQL rate limiter zde nepoužívej. Java URL a token jsou
-   pouze serverové; konfiguraci nelze zvolit browserem. Nenakonfigurovaný tenant
-   vrací chybu, nesmí se připojit ke grafu jiného tenantu.
-4. Síť vede přes injektovaný `Http\Contracts\HttpClient` ze společného HttpModule.
-   Udržuj explicitní route/method/query allowlist a konečné časové/objemové limity.
-   Administrace, build a synchronizace Javy nejsou veřejné gateway endpointy.
-5. Dopravní JSON předávej beze změny, včetně plánovaných/očekávaných časů,
-   metadata, statusů a `Retry-After`. Neplatné upstream odpovědi nepublikuj surové.
-   Nepersistuj GPS uživatelů ani vozidel. Nastav `no-store`.
-6. Staré TRAM SQL skripty jsou odstraněné; existující DB data se nemažou.
-   Gateway nesmí používat SQL, Database ani SQL RateLimiter, ani pro počítadla.
-   Testy gateway běží bez DB a explicitně zakazují databázový přístup.
-7. Spusť `scripts/test-java-gateway.sh`, `scripts/test-http.sh`, PHP lint a diff check.
-   Testy gateway patří do `Gateway/tests`; rozliš fixture a skutečnou Java službu.
-   Dodržuj Graphify z root pravidel a aktualizuj dokumentaci kontraktu/nasazení.
+1. Dopravní komunikace Astro vede přímo do Javy. Neobnovuj PHP gateway,
+   adaptéry, GTFS/OSM, plánování, importy, cache, SQL fallback ani tracking.
+2. Zůstává Auth a admin oprávnění `GET/POST /transport-admin/online-planners`.
+   Zachovej interní klíč, pevný tenant, Bearer a role admin. Stav vlastní Java.
+3. TransportModule nemá SQL. Auth SQL slouží jen účtům/relacím/oprávněním;
+   neautentizační TRAM zápisy do obecných modulů blokuje middleware.
+4. Pevný Java admin klient používá injektovaný HttpClient, serverové URL/token,
+   konečné limity a `private, no-store`. Nezveřejňuj obecnou proxy ani sync/build.
+5. Historické DB čištění vlastní `Database/Maintenance/TramCleanupRepository`
+   a CLI `scripts/cleanup-tram.php`. Před DROP kontroluje celý rozsah a vytvoří
+   soukromou obnovitelnou zálohu mimo www. Zachovej data dalších tenantů.
+6. Spusť `scripts/test-transport-auth.sh`, `scripts/test-tram-cleanup.sh`,
+   `scripts/test-http.sh`, PHP lint a diff check. SQL testy jen v disposable DB.
+   Použij Graphify z root pravidel a aktualizuj kontrakt/návod nasazení.

@@ -32,6 +32,17 @@ final class InternalAuthMiddleware
             exit;
         }
 
+        // TRAM stores accounts only. Reject other modules before they can open PDO,
+        // including the dedicated Rokid-key exception below.
+        if ($request->franchiseCode === 'tram') {
+            $entry = realpath((string) ($_SERVER['SCRIPT_FILENAME'] ?? ''));
+            $root = dirname(__DIR__, 2);
+            if (!in_array($entry, [realpath($root . '/api/auth/index.php'),
+                realpath($root . '/api/transport-admin/index.php')], true)) {
+                Response::forbidden('This tenant only supports authentication and administrator authorization.');
+            }
+        }
+
         if ($this->isRokidEndpoint($request)) {
             $configured = trim((string) ($_ENV['ROKID_AI_CLIENT_KEY'] ?? ''));
             $provided = trim((string) $request->header('X-Rokid-Key', ''));

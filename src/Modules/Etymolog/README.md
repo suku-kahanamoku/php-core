@@ -328,7 +328,7 @@ se respektuje i při pětiminutovém spouštění skriptu.
 ```bash
 bash scripts/test-etymolog.sh
 bash scripts/test-http.sh
-bash scripts/test-transport.sh
+bash scripts/test-transport-auth.sh
 ```
 
 Etymolog test spouští samostatný MySQL na dočasném unix socketu se zakázanou sítí,

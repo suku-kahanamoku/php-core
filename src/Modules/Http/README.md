@@ -33,9 +33,8 @@ Neukládat tenantové klíče do globální konfigurace Guzzle.
   znamená bez těla. `multipart` přijímá části s `name`, `contents`, `filename`, `headers`.
 - `sink` zapisuje odpověď do soukromého lokálního souboru. `HttpResponse::body`
   je potom prázdné. Volající musí použít dočasný soubor a při chybě ho odstranit;
-  cílová cesta se při zahájení přenosu přepisuje. `FeedSyncService` tuto správu zajišťuje.
-- Výchozí limity: přenos 4 s, připojení 1,5 s, odpověď 4 MB. GTFS explicitně používá
-  180 s / 10 s / 500 MB a souborový sink. Limit počítá rozbalené bajty, takže platí
+  cílová cesta se při zahájení přenosu přepisuje.
+- Výchozí limity: přenos 4 s, připojení 1,5 s, odpověď 4 MB. Limit počítá rozbalené bajty, takže platí
   i pro gzip a odpovědi bez Content-Length.
 - TLS se ověřuje; cookies a přesměrování jsou vypnuté. FAnn výslovně povoluje nejvýše
   3 HTTPS přesměrování na stejný origin `www.fann.cz`, v rámci původního deadline.
@@ -57,7 +56,7 @@ PHP stream handler. Čekání na sockety obstarává knihovna; v modulech není 
 
 ## Integrace a další protokoly
 
-Přepojené: PHP gateway do Java Transport API, FAnn katalog, OpenAI Realtime
+Přepojené: autorizační admin klient Javy, FAnn katalog, OpenAI Realtime
 založení session, Responses, Vector Store upload, Cloudflare a Expo push outbox.
 Stejné rozhraní používají i pomocníci API testů.
 
@@ -100,11 +99,11 @@ Je potřeba PHP curl extension. Refaktor nevyžaduje databázovou migraci.
 ```bash
 composer install
 bash scripts/test-http.sh
-bash scripts/test-java-gateway.sh
+bash scripts/test-transport-auth.sh
 ```
 
 HTTP testy používají dva lokální fixture servery a Guzzle MockHandler; SMTP zprávy
-sestavují, ale neodesílají. Transport test má vlastní dočasnou MySQL. Aplikační ani
+sestavují, ale neodesílají. Test autorizace TRAM nepoužívá SQL; samostatný test čištění má jednorázovou MySQL. Aplikační ani
 produkční databáze se při těchto testech nepoužívá.
 
 ### Asynchronní HTTP a WebSocket gateway
@@ -118,7 +117,7 @@ objekty Workerman do domény. Továrna server pouze vytvoří, `run()` spouští
 životní cyklus. Jiný server lze zvolit v `HttpModule`; spotřebitelům se injektuje
 `Contracts\WebSocketServer`. Testovací implementace může uchovat callbacky a
 řízeně simulovat zprávy, heartbeat a uzavření bez portu nebo event loopu.
-Transport gateway test používá skutečný PHP HTTP entrypoint a fixture Java API.
+Test TRAM autorizace používá HTTP mock pro jedinou pevnou Java admin cestu.
 Původní PHP tracking hub a CLI byly odstraněny; lifecycle Java tracking služby
 popisuje `java-tram/OTP/API.md`. Sdílené WebSocket/async HTTP kontrakty a jejich
 infrastrukturní testy zůstávají součástí HttpModule.

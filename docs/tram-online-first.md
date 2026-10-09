@@ -1,22 +1,13 @@
-# TRAM: současné rozdělení odpovědností
+# TRAM po odstranění PHP dopravy
 
-Od 3. 10. 2026 byl na zadání uživatele odstraněn původní PHP online-first
-Transport a GTFS modul. PHP dnes pouze zabezpečuje a předává požadavky do
-Java API; synchronizaci, katalog a hledání zajišťují Java GTFS, OSM a OTP.
+Dopravní komunikace Astro vede přímo na Java API. PHP gateway, adaptéry,
+SQL doprava i tracking byly odstraněny. V PHP zůstává přihlášení a ověření
+oprávnění administrátora pro online přepínač; jeho stav ukládá Java.
 
-Aktuální Java režim používá vlastní aktivní GTFS/OSM graf. Katalog grafu se
-používá také při zdravém provozu; nejde o původní federaci online API se SQL
-zálohou pouze při výpadku. Java country router vybírá vlastní worker podle
-země. Nepropojuje automaticky Spojenku/Entur ani SQL snapshot. Tento dokument
-není pokynem k obnovení odstraněných PHP adaptérů.
+- [PHP autorizace](../src/Modules/Transport/README.md)
+- [Odstranění historické SQL databáze](../migrations/README.md#tram-po-přesunu-do-javy)
+- [Java API a realtime](../../../java-tram/OTP/API.md)
+- [Java VPS provoz](../../../java-tram/deployment/vps/README.md)
 
-- [PHP gateway a konfigurace](../src/Modules/Transport/README.md)
-- [Java architektura](../../../java-tram/ARCHITECTURE.md)
-- [Skutečné mezery oproti historickému PHP](../../../java-tram/PARITY.md)
-- [Lokální země a ověřené pokrytí](../../../java-tram/OTP/INTERNATIONAL-LOCAL.md)
-
-GTFS a OSM publikují statické verzované artefakty, OTP z nich sestavuje graf.
-Realtime zpoždění a GPS používají Java adaptéry v RAM; polohy uživatelů a
-vozidel nejsou trvale ukládány. Veřejné souřadnice zastávek jsou statická data.
-Staré TRAM SQL skripty byly odstraněny z projektu; existující DB data zůstávají.
-Původní PHP cron a graph/tracking procesy se již nespouštějí.
+Polohy lidí/vozidel se v PHP neukládají. Obnova grafů a indexů je Java/VPS
+úloha. PHP nemá sync/build/deploy endpoint ani dopravní cron/worker.

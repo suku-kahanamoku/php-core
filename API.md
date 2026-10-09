@@ -2090,48 +2090,23 @@ async function apiFetch(method, path, body = null) {
 
 ## Transport / TRAM
 
-PHP obsluhuje pouze autentizovanou gateway `/api/transport/v1/...` do Java
-`/transport/v1/...`. Dopravní adaptéry, SQL katalog/cache, GTFS/OSM import,
-plánování, graph CLI a PHP tracking server byly odstraněny 3. 10. 2026.
-Zůstává interní klíč a pevný tenant. Gateway neotevírá SQL připojení ani
-neukládá počítadla do `api_rate_limit`; statusy a limity Javy předává beze změny.
+Dopravní PHP gateway `/api/transport` byla odstraněna; původní Apache cesty
+vracejí 410. Astro volá Java `/transport/v1/...` přímo. PHP ukládá pouze
+TRAM účty, role, relace, OAuth/reset a bezpečnostní limity autentizace.
+Tenant `tram` má přístup pouze do `/api/auth` a oddělené autorizační hranice
+`/api/transport-admin/online-planners`, před vytvořením DB služeb.
+Obecné CRUD ani AI endpointy pro tento tenant nejsou dostupné (403).
 
-| Metoda | Cesta za `/api/transport/v1` |
-| --- | --- |
-| GET | `/coverage`, `/attributions` |
-| POST | `/cities/search`, `/places/search`, `/journeys/search` |
-| GET | `/journeys/:id`, `/journeys/:id/geometry` |
-| GET | `/stops/:id`, `/stops/:id/departures` |
-| GET | `/trips/:id`, `/trips/:id/realtime`, `/trips/:id/observation` |
-| POST | `/trips/:id/tracking` |
+Admin hranice vyžaduje interní klíč, pevný tenant a Bearer roli `admin`.
+GET vrací `{"enabled": boolean}`; POST přijímá pouze `{"enabled": boolean}`.
+PHP předá pevnou Java admin cestu, stav neukládá. Konfigurace:
+`TRANSPORT_JAVA_TENANT=tram`, `TRANSPORT_ONLINE_CONTROL_ENABLED=1`,
+`TRANSPORT_ONLINE_CONTROL_URL`, soukromý `TRANSPORT_ONLINE_CONTROL_TOKEN`.
+Chybějící konfigurace vrací 503; soukromé odpovědi mají `no-store`.
 
-Gateway předává JSON tělo, status a `Retry-After` bez dopravních transformací.
-`q`, `sort`, `projection`, `page`, `limit` pro list/search zpracuje Java.
-Našeptávač podporuje opt-in `kinds: ["stop","street","address"]` pro Java
-Places katalog. Nová veřejná pole `kind` a `city_source` se předávají beze změny;
-ulice/adresa je souřadnicový cíl, zastávka zachovává ID. PHP nepotřebuje SQL,
-Lucene knihovnu ani nové env. Viz [Places API](../../java-tram/Places/README.md).
-Povolené GET query názvy jsou `at`, `limit`, `stop_coordinates`; `/attributions`
-query nepřijímá. Upstream URL nelze zadat klientem. Java administrační/build/sync
-API není součástí tohoto whitelistu. Odpovědi mají `no-store`.
-
-Serverová konfigurace: `TRANSPORT_JAVA_ENABLED=1`, `TRANSPORT_JAVA_TENANT=tram`,
-privátní `TRANSPORT_JAVA_URL` bez cesty a serverový `TRANSPORT_JAVA_TOKEN`.
-Nevyhovující tenant/konfigurace nebo síťová nedostupnost vrací 503; chybná Java
-JSON obálka 502 bez raw těla. Žádný automatický návrat do původního PHP režimu.
-Statický detail nezávisí na tracking odběru. Okamžité observation se načítá při
-otevření dialogu; ticket připojí browser k Java WebSocketu. PHP polohu nepočítá.
-Pro spoje bez registrované služby polohy Java může vrátit `status: "estimated"`
-a `estimated_progress` s indexy zastávek, poměrem a vlastní expirací.
-Gateway jej předá beze změny, bez vytvoření GPS nebo nulového zpoždění.
-Výpadek existující služby tento backendový odhad nezapne.
-
-`coverage` a atribuce odpovídají skutečnému aktivnímu Java grafu/configuraci,
-nikoli registru starých PHP poskytovatelů. Atribuce obsahují licence a zdroje
-použitých GTFS/OSM vstupů; nesmějí obsahovat secrets ani interní URL.
-Úplný wire kontrakt a limity: [Java API](../../java-tram/OTP/API.md).
-[PHP konfigurace a testy](src/Modules/Transport/README.md),
-[skutečné rozdíly proti historickému PHP](../../java-tram/PARITY.md).
+[PHP autorizace](src/Modules/Transport/README.md),
+[čištění historické SQL](migrations/README.md#tram-po-přesunu-do-javy),
+[dopravní Java kontrakt](../../java-tram/OTP/API.md).
 
 ## Etymolog
 

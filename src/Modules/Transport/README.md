@@ -1,101 +1,47 @@
-# TRAM: PHP gateway do Javy
+# TRAM: přihlášení a autorizace administrátora
 
-Od 3. 10. 2026 obsahuje tento modul pouze autentizované předání API do Java služeb.
-Výpočty, katalogy, adaptéry, GTFS/OSM sběr a transformace, sestavení grafů,
-plánování a realtime zajišťují [Java projekty](../../../../../java-tram/README.md).
-PHP neimportuje jízdní řády, nepočítá přestupy ani zpoždění a neprovozuje
-transportový WebSocket server. Zdrojové implementace původního PHP Transport/Gtfs
-byly odstraněny na výslovné zadání uživatele; odstranění není potvrzením úplné
-funkční parity. Meze Javy popisuje [PARITY.md](../../../../../java-tram/PARITY.md).
+Astro dopravní API volá přímo Javu přes `CoreModule/server/java-tram.ts`.
+PHP dopravní gateway `/api/transport` byla odstraněna 9. 10. 2026 a Apache
+vrací pro původní cesty 410. Katalogy, GTFS/OSM, grafy, plánování, cache cest,
+realtime a tracking vlastní [Java služby](../../../../../java-tram/README.md).
 
-## Zapojení
+V PHP zůstávají společné Auth účty a jediná autorizační hranice:
+`GET/POST /api/transport-admin/online-planners`. Interní klíč, pevný tenant
+a Bearer role `admin` se ověří před voláním pevné Java `/admin/online-planners`
+cesty. Odpověď obsahuje pouze `enabled: boolean`; POST přijímá pouze toto pole.
+Stav ukládá Java, PHP nemá dopravní repository, cache ani čítače.
+Odpovědi mají `private, no-store`. Sync/build/deploy nejsou PHP endpointy.
 
-Frontend → Astro BFF → `/api/transport/v1/...` → Java `/transport/v1/...`.
-`api/transport/index.php` používá společný bootstrap, interní klíč, výběr tenantu
-z `FRANCHISE_CODES`. Gateway se nepřipojuje k SQL a nezapisuje ani počítadla požadavků.
-`TransportModule` sestaví gateway pouze pro explicitně nakonfigurovaný tenant.
-`JavaTransportApi` registruje pevný seznam cest; `JavaTransportService` předá
-JSON přes injektovaný `HttpModule::client()`. Dopravní obsah nemění.
-Veřejná zastávková pole `modes` a `transport_scope` z Java katalogu zachovává
-v našeptávači, detailech i zastávkách spojení; barvy a ikony řídí společná
-komponenta Astro. MHD/regionální zařazení se konfiguruje u Java feedu/linky
-podle [kontraktu metadat](../../../../../java-tram/OTP/API.md#dopravní-metadata-zastávek),
-PHP jej neodvozuje ani nepřekládá.
-
-Serverová konfigurace:
+Serverová konfigurace tohoto oprávnění:
 
 ```dotenv
-TRANSPORT_JAVA_ENABLED=1
 TRANSPORT_JAVA_TENANT=tram
-TRANSPORT_JAVA_URL=http://127.0.0.1:18095
-TRANSPORT_JAVA_TOKEN=<soukromy-serverovy-token-alespon-24-znaku>
+TRANSPORT_ONLINE_CONTROL_ENABLED=1
+TRANSPORT_ONLINE_CONTROL_URL=https://java-router.example
+TRANSPORT_ONLINE_CONTROL_TOKEN=<private-java-admin-token>
 ```
 
-URL je kořen privátního Java API, bez cesty, query a credentials. Token musí
-odpovídat Java API; nikdy nepatří do browseru. Adresa 18095 je lokální country
-router, nikoli povinný produkční port. Host TRAM musí být mapovaný v
-`FRANCHISE_CODES`; tato mapa vybírá tenant, nenahrazuje autentizaci.
-Chybějící konfigurace, vypnutí nebo jiný tenant vrátí 503. Původní PHP režim
-ani automatický SQL fallback již neexistují.
+`FRANCHISE_CODES` musí mapovat host na `tram`. URL a token pocházejí pouze
+ze serveru. Nenakonfigurovaný nebo jiný tenant vrací 503, role se ověřuje
+společným Auth. Síť vede přes `HttpModule::client()` s konečnými limity.
+`TRANSPORT_JAVA_ENABLED`, `TRANSPORT_JAVA_URL`, `TRANSPORT_JAVA_TOKEN` už PHP
+nepoužívá. Dopravní Java token si spravuje Astro ve své serverové konfiguraci.
 
-## API
+`InternalAuthMiddleware` omezuje tenant `tram` na Auth a tuto admin hranici
+před připojením k SQL. Obecné CRUD, mailer, soubory a AI API jsou pro něj
+zakázané i s platným interním klíčem nebo Rokid klíčem. Ostatní tenanty
+používají své stávající endpointy.
 
-| Metoda | Cesta za `/api/transport` | Účel v Javě |
-| --- | --- | --- |
-| GET | `/v1/coverage` | Skutečně zapojené země a schopnosti |
-| GET | `/v1/attributions` | Atribuce vstupů aktivního grafu |
-| POST | `/v1/cities/search` | Katalog měst |
-| POST | `/v1/places/search` | Hledání a okolní zastávky |
-| POST | `/v1/journeys/search` | Vyhledání spojení |
-| GET | `/v1/journeys/:id` | Detail uloženého výsledku |
-| GET | `/v1/journeys/:id/geometry` | Geometrie cesty |
-| GET | `/v1/stops/:id` | Detail zastávky |
-| GET | `/v1/stops/:id/departures` | Odjezdy |
-| GET | `/v1/trips/:id` | Statický detail a zastávky spoje |
-| GET | `/v1/trips/:id/realtime` | Aktuální provozní údaje |
-| GET | `/v1/trips/:id/observation` | Okamžité pozorování polohy/zpoždění |
-| POST | `/v1/trips/:id/tracking` | Ticket pro Java WebSocket |
+## Odstranění historické SQL databáze
 
-Vstupy a odpovědi určuje [Java API](../../../../../java-tram/OTP/API.md).
-List/search přijímá `q`, `sort`, `projection`, `page`, `limit` v JSON těle;
-našeptávání navíc volitelné `kinds` (`stop`, `street`, `address`, `city`). Java
-router volí samostatnou [Places službu](../../../../../java-tram/Places/README.md).
-Bez opt-in zůstává zastávkový kontrakt; ulice/adresa obsahuje statické souřadnice
-a `kind`, frontend ji do plánování předá jako bod. PHP nemá Lucene závislost,
-index ani další proměnné. Stávající `TRANSPORT_JAVA_*` zůstávají stejné.
-PHP je nepřekládá na SQL. GET query má omezené názvy `at`, `limit`,
-`stop_coordinates`; atribuce query nepřijímají. Administrace, synchronizace,
-build a libovolné proxy URL nejsou veřejné cesty gateway.
+[CLI čištění](../../../../scripts/cleanup-tram.php) standardně pouze vypíše
+plán. Provedení vyžaduje `--apply`, přesný název DB a soukromou zálohu mimo
+webový checkout. Viz [návod migrace](../../../../migrations/README.md#tram-po-přesunu-do-javy).
+Odstraní 17 známých `transport_*` tabulek, TRAM číselníky a neautentizační
+čítače. Zachová účty, role, relace, OAuth, reset hesla a autentizační limity.
+Neznámé TRAM záznamy, SQL objekty, cizí tenant v transportní tabulce nebo
+vnější FK čištění zastaví před první změnou. FK se při mazání nevypínají.
 
-Gateway zachová status, JSON obálku a `Retry-After` Javy, nastaví `no-store`.
-Síťové selhání vrací 503, neplatná upstream odpověď 502 bez surového těla.
-Limit hledání je 24 s, ostatních operací 9 s, připojení 3 s a odpovědi 16 MB.
-Serverový HTTP požadavek explicitně nabízí `Accept-Encoding: gzip`; společný
-HttpModule odpověď dekóduje před předáním JSON a kontroluje její velikost.
-Velké katalogy se tak mohou přenášet komprimovaně bez prodlužování deadline.
-Reálné pokrytí neznamená všechny dopravce země ani dostupnou GPS každého spoje.
-Gateway transparentně předává také Java `estimated_progress` pro spoje bez
-registrované služby polohy. Odhad podle jízdního řádu počítá realtime backend;
-PHP nevytváří polohu, zpoždění ani fallback při výpadku existující služby.
-
-## Provoz a kontroly
-
-Lokální Java sync/build a explicitní Cloudflare deploy ovládá nová serverová
-služba `TransportModule::localPipeline($tenant, $env, HttpModule::client())`.
-Po administrační autorizaci volej `submit('sync_build')`, `submit('deploy')`
-nebo `status()`. PHP jen zařazuje pevné úlohy; lokální Java runner je vyzvedává
-přes odchozí HTTPS a spouští `sync_build.sh`/`deploy.sh`. Není potřeba veřejný
-port na PC ani čekající PHP request. Zapnutí vyžaduje
-`TRANSPORT_ONLINE_CONTROL_ENABLED=1`, `TRANSPORT_JAVA_TENANT=tram`,
-`TRANSPORT_ONLINE_CONTROL_URL=https://194.163.136.34` a soukromý
-`TRANSPORT_ONLINE_CONTROL_TOKEN` (Java admin token) nastavují jedinou
-administrativní funkci: `GET/POST /transport-admin/online-planners`.
-`OnlinePlannerApi` ověřuje interní klíč a role/tenant přes Auth;
-`OnlinePlannerService` používá HttpModule a pevnou Java `/admin/online-planners`
-cestu. PHP neukládá politiku; Java ji drží v souboru vlastního routeru.
-
-Ruční pipeline endpointy, submit/status klient a jejich UI byly odstraněné.
-Obnova grafů a indexů běží na VPS každou sobotu ve 02:00 Europe/Prague.
-Doprava Astro → Java jde přímo; původní PHP veřejná gateway zůstává pouze
-pro kompatibilitu jiných explicitně nakonfigurovaných klientů, Astro ji nepoužívá.
-Viz [VPS provoz](../../../../../java-tram/deployment/vps/README.md).
+Kontroly: `bash scripts/test-transport-auth.sh`, `bash scripts/test-tram-cleanup.sh`,
+`bash scripts/test-http.sh`, PHP lint a `git diff --check`.
+Test migrace používá pouze jednorázovou MySQL; test autorizace používá HTTP mock.

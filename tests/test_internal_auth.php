@@ -23,7 +23,7 @@ $run = static function (string $label, array $options, int $expectedStatus, ?boo
     if (isset($options['rokid'])) $server['HTTP_X_ROKID_KEY'] = $options['rokid'];
     if (isset($options['bearer'])) $server['HTTP_AUTHORIZATION'] = 'Bearer ' . $options['bearer'];
     $env = [
-        'FRANCHISE_CODES' => 'tenant.test:tenant,second.test:second',
+        'FRANCHISE_CODES' => 'tenant.test:tenant,second.test:second,tram.test:tram',
         'INTERNAL_API_KEY' => $options['configuredInternal'] ?? 'internal-test-key',
         'ROKID_AI_CLIENT_KEY' => $options['configuredRokid'] ?? 'rokid-test-key',
         'APP_ENV' => 'production',
@@ -86,6 +86,18 @@ foreach (glob($root . '/api/*/index.php') as $entry) {
     $run("$module entrypoint rejects before PDO", ['module' => $module, 'path' => '/api/' . $module, 'entrypoint' => true], $module === 'sry' ? 403 : 401);
     $run("$module entrypoint preflight before PDO", ['module' => $module, 'path' => '/api/' . $module, 'entrypoint' => true, 'method' => 'OPTIONS'], 204);
 }
+// TRAM can never reach shared CRUD, mail or AI storage, even with valid credentials.
+foreach (glob($root . '/api/*/index.php') as $entry) {
+    $module = basename(dirname($entry));
+    if (in_array($module, ['auth', 'transport-admin', 'sry'], true)) continue;
+    $run("TRAM $module rejected before PDO", ['module' => $module, 'path' => '/api/' . $module,
+        'host' => 'tram.test', 'internal' => 'internal-test-key', 'entrypoint' => true], 403);
+}
+$run('TRAM auth allowed with internal key', ['module' => 'auth', 'path' => '/api/auth/me', 'host' => 'tram.test', 'internal' => 'internal-test-key'], 200, true);
+$run('TRAM admin allowed with internal key', ['module' => 'transport-admin', 'path' => '/api/transport-admin/online-planners', 'host' => 'tram.test', 'internal' => 'internal-test-key'], 200, true);
+$run('TRAM auth still rejects missing key', ['module' => 'auth', 'host' => 'tram.test'], 401);
+$run('TRAM admin still rejects missing key', ['module' => 'transport-admin', 'host' => 'tram.test'], 401);
+$run('TRAM Rokid exception rejected', ['module' => 'openai', 'method' => 'POST', 'path' => '/api/openai/tool', 'host' => 'tram.test', 'rokid' => 'rokid-test-key'], 403);
 $run('root entrypoint rejects missing key', ['module' => '', 'path' => '/api', 'entrypoint' => true], 401);
 echo "$count checks, $failures failures\n";
 if ($failures > 0) exit(1);

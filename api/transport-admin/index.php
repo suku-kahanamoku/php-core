@@ -10,7 +10,7 @@ use App\Modules\Database\Database;
 use App\Modules\Http\HttpModule;
 use App\Modules\Router\Response;
 use App\Modules\Transport\Admin\OnlinePlannerApi;
-use App\Modules\Transport\Gateway\JavaTransportException;
+use App\Modules\Transport\Admin\OnlinePlannerException;
 use App\Modules\Transport\TransportModule;
 
 try {
@@ -22,6 +22,6 @@ try {
         static fn(string $tenant) => TransportModule::onlinePlanners($tenant, $_ENV, HttpModule::client())
     );
     Response::success($api->execute($request), status: 200);
-} catch (JavaTransportException $error) {
+} catch (OnlinePlannerException $error) {
     Response::error($error->getMessage(), $error->status, ['code' => $error->reason]);
 }

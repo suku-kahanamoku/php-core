@@ -1,35 +1,13 @@
-# TRAM: realtime z Java služby
+# TRAM po odstranění PHP dopravy
 
-PHP transportové sledování, hub a serverový CLI proces byly odstraněny
-3. 10. 2026. PHP pouze předá autentizované REST požadavky přes HttpModule do
-Java API; Java vlastní realtime adaptéry, RAM pozorování, tickety a WebSocket.
+Dopravní komunikace Astro vede přímo na Java API. PHP gateway, adaptéry,
+SQL doprava i tracking byly odstraněny. V PHP zůstává přihlášení a ověření
+oprávnění administrátora pro online přepínač; jeho stav ukládá Java.
 
-1. Statický detail načte `GET /transport/v1/trips/:id` přes PHP gateway.
-2. Otevření dialogu souběžně požádá o
-   `GET /transport/v1/trips/:id/observation` pro okamžitou polohu a zpoždění.
-3. `POST /transport/v1/trips/:id/tracking` vydá Java ticket a adresu socketu.
-   Browser multiplexuje odběry přes jeden WebSocket; PHP není WS server.
-4. React aktualizuje malé živé části (badge, marker, riziko návaznosti).
-   Statické řádky, názvy, plánované časy a legendy zůstávají beze změn.
-   Badge se nezobrazuje pro nulové či neznámé zpoždění. Poslední jednoznačný
-   marker zůstává v paměti otevřeného dialogu, při chybě se nepřesouvá podle hodin.
+- [PHP autorizace](../src/Modules/Transport/README.md)
+- [Odstranění historické SQL databáze](../migrations/README.md#tram-po-přesunu-do-javy)
+- [Java API a realtime](../../../java-tram/OTP/API.md)
+- [Java VPS provoz](../../../java-tram/deployment/vps/README.md)
 
-Poloha a zpoždění jsou nezávislé údaje a mají původní čas měření a platnost.
-Pro spoj bez registrované služby polohy Java realtime backend poskytne
-`estimated_progress`: indexy zastávek, časový poměr a vlastní expiraci.
-Samostatný odhad má `status: "estimated"` a žádnou GPS ani domyšlené
-zpoždění. Frontend bod označí „Odhad podle jízdního řádu; nejde o skutečnou
-polohu vozidla.“ Při výpadku existující služby se takový odhad nezapíná.
-PHP beze změny předává veřejnou obálku; výpočet vlastní Java.
-Tracking není příslib GPS každého dopravce. Očekávané časy slouží Java plánování a
-posouzení návazností; frontend zobrazuje plánované časy a upozornění na riziko.
-Polohy lidí a vozidel se neukládají do SQL, souborů ani browser storage.
-
-Konfigurace a wire kontrakt:
-[Java API](../../../java-tram/OTP/API.md), [OTP README](../../../java-tram/OTP/README.md),
-[Java architektura](../../../java-tram/ARCHITECTURE.md) a
-[PHP gateway](../src/Modules/Transport/README.md).
-Java WS proxy, soukromý API token, upstream credentials a realtime role se
-konfigurují v Javě. Původní PHP `TRANSPORT_TRACKING_*` nastavení a
-`bin/transport-tracking.php` již neexistují; jejich supervisor/cron položky
-odstraňte při nasazení. R2/Cloudflare nasazení není tímto refaktorem provedeno.
+Polohy lidí/vozidel se v PHP neukládají. Obnova grafů a indexů je Java/VPS
+úloha. PHP nemá sync/build/deploy endpoint ani dopravní cron/worker.

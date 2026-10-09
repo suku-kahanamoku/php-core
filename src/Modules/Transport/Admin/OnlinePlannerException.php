@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Transport\Gateway;
+namespace App\Modules\Transport\Admin;
 
-/** Safe gateway configuration/network/protocol error; no transport domain decisions. */
-final class JavaTransportException extends \RuntimeException
+/** Safe error from the authenticated online planner authorization bridge. */
+final class OnlinePlannerException extends \RuntimeException
 {
     public function __construct(public readonly string $reason, string $message, public readonly int $status = 422)
     {

@@ -29,14 +29,16 @@
         "test:http": "bash scripts/test-http.sh",
         "test:etymolog": "bash scripts/test-etymolog.sh",
         "test:sry": "bash scripts/test-sry.sh",
-        "test:java-gateway": "bash scripts/test-java-gateway.sh",
+        "test:transport-auth": "bash scripts/test-transport-auth.sh",
+        "test:tram-cleanup": "bash scripts/test-tram-cleanup.sh",
         "test:schema": "bash scripts/test-schema.sh",
         "test:files": "bash scripts/test-file-list.sh",
         "test": [
             "@test:http",
             "@test:etymolog",
             "@test:sry",
-            "@test:java-gateway",
+            "@test:transport-auth",
+            "@test:tram-cleanup",
             "@test:schema",
             "@test:files"
         ]

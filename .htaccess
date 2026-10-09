@@ -1,6 +1,9 @@
 Options -Indexes
 RewriteEngine On
 
+# Retired transport API: Astro communicates directly with Java.
+RewriteRule ^api/transport(?:/|$) - [G,L]
+
 # Block hidden paths except .well-known
 RewriteRule (^|/)[.](?!well-known/) - [F,L]
 
