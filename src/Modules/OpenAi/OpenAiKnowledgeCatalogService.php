@@ -49,7 +49,7 @@ final class OpenAiKnowledgeCatalogService
      * PHP nenačítá produktový katalog, dokumenty neporovnává s rozhovorem a
      * nevybírá vítěze. Vrací pouze ID zvolené a doložené OpenAI Vector Store.
      *
-     * @param array<string, mixed> $arguments Dotaz, kategorie, cenový záměr a volitelné jednorázově vyloučené ID.
+     * @param array<string, mixed> $arguments Dotaz, kategorie, cenový záměr, volitelné vyloučené ID a hlavní ID pro doplněk bez dědění rozpočtu.
      * @return array{status:string,product_id:int|null,match_quality?:string,reason?:string}
      */
     private function recommendProduct(array $arguments): array
@@ -63,7 +63,14 @@ final class OpenAiKnowledgeCatalogService
         if ($category === '' || mb_strlen($category) > 120) {
             throw new \InvalidArgumentException('Concrete product category is required.');
         }
-        if ($priceIntent === '' || mb_strlen($priceIntent) > 240) {
+        $addonForProductId = null;
+        if (array_key_exists('addon_for_product_id', $arguments)) {
+            $addonForProductId = filter_var($arguments['addon_for_product_id'], FILTER_VALIDATE_INT);
+            if ($addonForProductId === false || $addonForProductId < 1) {
+                throw new \InvalidArgumentException('addon_for_product_id must be a positive integer.');
+            }
+        }
+        if (($priceIntent === '' && $addonForProductId === null) || mb_strlen($priceIntent) > 240) {
             throw new \InvalidArgumentException('Confirmed price intent is required.');
         }
         $excludedProductId = null;
@@ -84,7 +91,7 @@ final class OpenAiKnowledgeCatalogService
             return ['status' => 'unavailable', 'product_id' => null];
         }
         try {
-            return $this->recommender->recommend($query, $category, $priceIntent, $excludedProductId, $currentProductId);
+            return $this->recommender->recommend($query, $category, $priceIntent, $excludedProductId, $currentProductId, $addonForProductId);
         } catch (OpenAiConfigurationException | OpenAiUpstreamException) {
             return ['status' => 'unavailable', 'product_id' => null];
         }

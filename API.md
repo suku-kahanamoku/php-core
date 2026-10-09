@@ -1830,16 +1830,31 @@ unavailable, `503` missing server configuration.
 `POST /openai/tool` accepts `{ "name": string, "arguments": object }`. Realtime
 sessions expose `recommend_product` and `get_product`; the client-local
 `continue_listening` function is not accepted by this HTTP endpoint and
-produces no UI output.
+updates the confirmed checklist and compact purchase state locally without
+free conversational text.
 
 `recommend_product` accepts a required natural-language `query` of at most
-1000 characters, a concrete `category` and confirmed `price_intent`. PHP
+3000 characters, a concrete `category` and confirmed `price_intent`. Optional
+`excluded_product_id` and `current_product_id` identify the one-request
+exclusion and displayed card. PHP
 validates this narrow contract and calls OpenAI Responses with hosted
 `file_search` against the tenant Vector Store. The Responses model applies the
 conversation constraints and chooses one evidence-backed ID. PHP never ranks
 products, infers a profile or chooses a winner. The compact result is
-`{"status":"selected","product_id":123}`, `no_match`, or `unavailable`;
+`{"status":"selected","product_id":123,"match_quality":"exact","reason":""}`
+or a `nearest` match with a short Czech deviation reason, or `unavailable`;
 there is deliberately no database recommendation fallback.
+
+Optional positive `addon_for_product_id` enables a separate complementary
+offer after the customer's clear commitment to that primary catalog item.
+Include the confirmation, primary facts, relevant constraints and offer phase
+in `query`. Only in this mode may `price_intent` be empty (additional budget
+unknown, never copied from the primary budget). OpenAI selects a useful
+compatible in-stock complement and PHP excludes the primary ID as well as any
+explicitly excluded current card. This mode also permits
+`{"status":"no_match","product_id":null}` after hosted search; it must not
+force an unrelated optional item. Primary recommendations still cannot return
+`no_match`. The operation remains read-only and does not create an order.
 
 A generic product, cosmetics, or gift label is not a concrete category. A
 trusted normalized profile may replace price in a future contract; no such

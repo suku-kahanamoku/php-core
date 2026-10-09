@@ -140,6 +140,18 @@ Responses instructions require another targeted search before a nearest fallback
 Android rejects obsolete results, loads only the latest selected ID and retries
 technical failures with bounded backoff. Empty or unavailable stores remain
 technical errors, with no SQL recommendation fallback.
+After a clear customer decision to buy an identifiable primary product, a
+separate optional complementary offer is allowed through
+`recommend_product.addon_for_product_id`. Praise alone is not a purchase
+decision. OpenAI retains the primary decision and searches for one useful
+in-stock complement, not a pricier replacement. Additional budget is separate
+and may remain unknown; the primary gate and confirmed checklist are unchanged.
+PHP excludes the primary ID from add-on search results and allows `no_match`
+only in optional mode, keeping the existing card when no suitable complement
+is supported. The Android card is labelled as an add-on. Instructions prohibit
+automatic chains, repeated offers for the same decision and offers after
+"nothing else". No order is created, and curated SKU pairings or additional
+scraping are not implemented in this step.
 `migrations/fann_seed.sql` contains the consolidated
 FAnn demo catalogue and structured source metadata. Reapplying it preserves
 existing edited products.

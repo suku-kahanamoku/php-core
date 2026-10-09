@@ -72,6 +72,7 @@ assert_test(
         'query',
         'category',
         'price_intent',
+        'addon_for_product_id',
         'replace_current_product',
         'change_intent',
     ],
@@ -140,6 +141,39 @@ assert_test(
         && str_contains($captured['payload']['session']['instructions'], 'další produkt'),
 );
 assert_test('does not return server API key', !str_contains(json_encode($result), 'sk-test'));
+assert_test(
+    'replaces superseded budgets and handles relative prices without inventing amounts',
+    str_contains($captured['payload']['session']['instructions'], '# Budget and category corrections')
+        && str_contains($captured['payload']['session']['instructions'], 'use the new maximum of 2000 Kč, not both limits')
+        && str_contains($captured['payload']['session']['instructions'], 'remove the previous cap')
+        && str_contains($captured['payload']['session']['instructions'], 'never fabricate a numeric budget'),
+);
+assert_test(
+    'drops irrelevant category constraints and clears withdrawn gate evidence',
+    str_contains($captured['payload']['session']['instructions'], 'replace the category instead of searching for both')
+        && str_contains($captured['payload']['session']['instructions'], 'set that checklist field to an empty string')
+        && str_contains($captured['payload']['session']['instructions'], 'never restore the old value merely to pass the gate'),
+);
+assert_test(
+    'reassesses corrected needs without loading the old selection',
+    str_contains($captured['payload']['session']['instructions'], 'Use change_intent update and reassess')
+        && str_contains($captured['payload']['session']['instructions'], 'Never load a selection made for the old budget or category'),
+);
+assert_test(
+    'allows only one complementary offer after a clear purchase decision',
+    str_contains($captured['payload']['session']['instructions'], '# Purchase confirmation and one complementary offer')
+        && str_contains($captured['payload']['session']['instructions'], 'tenhle si vezmu')
+        && str_contains($captured['payload']['session']['instructions'], 'Repeated confirmation of the same primary product is not a new trigger')
+        && str_contains($captured['payload']['session']['instructions'], 'Do not start a chain of add-ons')
+        && str_contains($captured['payload']['session']['instructions'], 'Declining the add-on does not reject the primary product'),
+);
+assert_test(
+    'separates optional additional budget from confirmed primary checklist evidence',
+    $captured['payload']['session']['tools'][0]['parameters']['properties']['addon_for_product_id']['minimum'] === 1
+        && !isset($captured['payload']['session']['tools'][0]['parameters']['properties']['price_intent']['minLength'])
+        && str_contains($captured['payload']['session']['instructions'], 'never copy the primary item\'s budget')
+        && str_contains($captured['payload']['session']['instructions'], 'retain the confirmed PRIMARY checklist values'),
+);
 
 $customModelPayload = null;
 (new OpenAiRealtimeService(

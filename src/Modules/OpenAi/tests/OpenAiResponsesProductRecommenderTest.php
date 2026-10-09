@@ -108,6 +108,11 @@ assert_test('passes displayed card context even without relying on exclusion inf
 assert_test('requires targeted follow-up searches before a nearest result',
     str_contains($captured['payload']['instructions'], 'run a second targeted search')
         && str_contains($captured['payload']['instructions'], 'do not claim a catalog-wide absence'));
+assert_test('searches the revised need and verifies relative price evidence',
+    str_contains($captured['payload']['instructions'], 'Use the latest confirmed category and price_intent')
+        && str_contains($captured['payload']['instructions'], 'A corrected maximum replaces the old maximum')
+        && str_contains($captured['payload']['instructions'], 'unverifiable relative price condition cannot qualify as exact')
+        && str_contains($captured['payload']['instructions'], 'searching the new category'));
 
 $excludedCurrentRejected = false;
 try {
@@ -134,6 +139,53 @@ try {
     $excludedCurrentRejected = true;
 }
 assert_test('rejects the current product even if the model returns it', $excludedCurrentRejected);
+
+$recommender->recommend('Bere si líčení ID 85; vhodný odličovač.', 'odličovač', '', 86, 86, 85);
+assert_test('passes add-on anchor and excludes both primary and rejected optional card',
+    json_decode($captured['payload']['input'], true, flags: JSON_THROW_ON_ERROR)['addon_for_product_id'] === 85
+        && $captured['payload']['tools'][0]['filters'] === ['type' => 'and', 'filters' => [
+            ['type' => 'ne', 'key' => 'product_id', 'value' => 86],
+            ['type' => 'ne', 'key' => 'product_id', 'value' => 85],
+        ]]
+        && $captured['payload']['text']['format']['schema']['properties']['status']['enum'] === ['selected', 'no_match']);
+
+$optionalDecision = ['status' => 'no_match', 'product_id' => null, 'match_quality' => 'nearest', 'reason' => 'Hledání nedoložilo vhodný skladový doplněk.'];
+$optional = new OpenAiResponsesProductRecommender($store,
+    static function () use (&$optionalDecision): array {
+        return ['status' => 200, 'body' => json_encode(['status' => 'completed', 'output' => [
+            ['type' => 'file_search_call', 'results' => [['attributes' => ['product_id' => 85]]]],
+            ['type' => 'message', 'content' => [['type' => 'output_text', 'text' => json_encode($optionalDecision)]]],
+        ]], JSON_THROW_ON_ERROR)];
+    }, 'sk-test');
+assert_test('does not force an unsuitable optional product',
+    $optional->recommend('Bere si líčení ID 85; doplněk.', 'odličovač', '', null, 85, 85)
+        === ['status' => 'no_match', 'product_id' => null]);
+$primaryNoMatchRejected = false;
+try {
+    $optional->recommend('parfém do 2000 Kč', 'parfém', 'do 2000 Kč');
+} catch (OpenAiUpstreamException) {
+    $primaryNoMatchRejected = true;
+}
+assert_test('retains mandatory selected-product rule for primary mode', $primaryNoMatchRejected);
+$missingSearchRejected = false;
+try {
+    (new OpenAiResponsesProductRecommender($store, static function () use ($optionalDecision): array {
+        return ['status' => 200, 'body' => json_encode(['status' => 'completed', 'output' => [
+            ['type' => 'message', 'content' => [['type' => 'output_text', 'text' => json_encode($optionalDecision)]]],
+        ]], JSON_THROW_ON_ERROR)];
+    }, 'sk-test'))->recommend('Bere ID 85; doplněk.', 'odličovač', '', null, 85, 85);
+} catch (OpenAiUpstreamException) {
+    $missingSearchRejected = true;
+}
+assert_test('rejects optional no-match without a hosted search', $missingSearchRejected);
+$optionalDecision = ['status' => 'selected', 'product_id' => 85, 'match_quality' => 'exact', 'reason' => ''];
+$primaryAsAddonRejected = false;
+try {
+    $optional->recommend('Bere si líčení ID 85; doplněk.', 'odličovač', '', null, 85, 85);
+} catch (OpenAiUpstreamException) {
+    $primaryAsAddonRejected = true;
+}
+assert_test('rejects the primary product as its own add-on', $primaryAsAddonRejected);
 
 if (!isset($runnerMode)) {
     print_results();

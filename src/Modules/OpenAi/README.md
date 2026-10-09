@@ -94,7 +94,7 @@ atributová shoda neexistuje, vybere nejbližší produkt a popíše odchylku. T
 Realtime relace analyzuje celý rozhovor a neposílá volný text určený k
 zobrazení. Rozlišuje osobu a nákupní záměr, potvrzená fakta, jednoznačně
 vyjádřený význam, hypotézy a neznámé údaje. Nikdy nepokládá otázku a negeneruje
-prodejní argument, upsell ani cross-sell. Hledání začne až tehdy, když je známá
+prodejní argument. Primární hledání začne až tehdy, když je známá
 konkrétní kategorie produktu a současně cenový záměr nebo důvěryhodný
 normalizovaný profil. Obecné „produkt“, „kosmetika“ ani účel „dárek“ nejsou
 kategorií. Profilový kontext zatím Realtime relaci není zpřístupněný, takže v
@@ -106,6 +106,70 @@ aktuální `excluded_product_id` a Responses `file_search` jej přes metadatový
 `product_id != ID` pro tento jediný výběr povinně vyřadí. Žádné dříve zobrazené ID se trvale nevyloučí. Zákazník se k němu může později
 vrátit. „Lepší“ znamená přesnější shodu s doloženými požadavky, nikoli vyšší
 cenu, popularitu nebo marži.
+
+Odmítnutí nemusí být příkaz „další produkt“: jasné „je moc sladký, raději
+svěžejší“ nebo „ten krém je příliš hutný, chci lehčí“ má vyvolat nový výběr,
+jakmile zůstává splněná povinná brána. Realtime zachová kategorii, rozpočet
+a ostatní platné požadavky a předá důvod nespokojenosti i nově požadované
+atributy Responses modelu. Ten je použije při `file_search` i porovnání
+kandidátů; nestačí jen jiné ID se stejnou nežádoucí vlastností. Bez uvedeného
+důvodu se hledá jiná vhodná alternativa bez domýšlení parametrů. Nové parametry
+zůstávají součástí potřeby až do jejich opravy zákazníkem; vyloučení ID je
+naproti tomu jednorázové. Samotné mlčení, tón hlasu, hypotetická poznámka nebo
+návrh obchodníka nejsou potvrzené odmítnutí. Pokud neexistuje přesná doložená
+alternativa, pravidla vyžadují nejbližší jiný dostupný kandidát s důvodem
+odchylky; technický výpadek nebo chybějící jiný kandidát nelze vyřešit
+vymyšleným produktem.
+
+Změna rozpočtu nebo kategorie je nový signál i bez odmítnutí aktuální karty.
+Realtime musí přepsat `category`, `price_intent` i úplný nákupní záměr a
+předat `change_intent=update` (při současném odmítnutí `replace`). Například
+„původně do 1000, teď do 2000 Kč“ nahrazuje původní limit; „cena nerozhoduje“
+jej výslovně ruší. „Podobný, ale levnější“ zachová přijaté vlastnosti a doplní
+relativní cenu vůči produktu s doloženou cenou, měnou a variantou z katalogového
+výsledku, pokud jsou dostupné. Nevymýšlí částku; „dražší“ samo neruší potvrzený
+strop. Nedoložené relativní cenové porovnání Responses nesmí označit jako `exact`.
+Přechod z parfému na krém odstraní například vonné tóny a projekci, ale zachová
+požadavky, jejichž platnost pro novou kategorii vyplývá z rozhovoru. Samostatný
+nákup nebo nový příjemce nesmí zdědit nesouvisející požadavky. Odvolaný bod bez
+náhrady se v checklistu vyprázdní a relace opět čeká na splnění povinné brány.
+Pokud brána zůstává úplná, následuje nové hledání s aktuálními hodnotami a
+jednorázovou náhradou zobrazené karty; starý výsledek se nesmí načíst. Případný
+návrat ke staršímu produktu musí rovněž respektovat nové platné požadavky.
+
+### Doplněk po rozhodnutí o nákupu
+
+Po jasném zákaznickém „tenhle si vezmu“, vztahujícím se ke známému ID,
+instrukce dovolují jednu volitelnou doplňkovou kartu. Jde o cross-sell
+(produkt navíc), nikoli dražší náhradu původního produktu. Pochvala,
+neurčité „možná“ ani návrh obchodníka nestačí; nejde o důkaz objednávky či
+platby. Hlavní ID, relevantní atributy, potvrzení a stav nabídky zůstávají
+v `active_need`/`query`. Odmítnutí doplňku neodmítne hlavní produkt.
+
+`recommend_product` přijímá volitelné kladné `addon_for_product_id`.
+Android ověří, že jde o známou zobrazenou kartu. Pouze při jeho uvedení smí
+`price_intent` zůstat prázdný: znamená neznámý doplňkový rozpočet, nikoli
+neomezenou ochotu utrácet. Primární rozpočet se nepřenáší a jeho běžná brána
+se nemění. Případný dodatečný či celkový strop musí model respektovat a
+zbývající částku smí odvodit jen z doložených cen. Kategorie doplňku může být
+funkčně odvozená, ale v zákaznickém checklistu zůstávají hlavní potvrzené body.
+
+Responses vyhledá a vyhodnotí jeden vhodný skladový doplněk podle atributů
+ve Vector Store, například odstranění líčení vhodným odličovačem. Žádná
+pevná značka, SKU vazba ani nový scraper nejsou součástí tohoto kroku.
+PHP nepřidává rozhodovací skóre ani nečte katalog před výběrem. Metadatový
+filtr povinně vyřadí hlavní ID a případně odmítnutou aktuální doplňkovou
+kartu. Po výběru se přes běžný `get_product` načte přesný detail; Android
+přidá označení „Doplněk k: …“.
+
+Pouze doplňkový režim dovoluje `no_match` s `product_id=null`, pokud chybí
+doložený užitečný kompatibilní skladový produkt nebo potvrzení nákupu.
+Nenutí nesouvisející nejbližší produkt a současná karta zůstává viditelná.
+Primární režim stále vyžaduje `selected`. Pravidla neřetězí automatické nabídky,
+neopakují je při dalším potvrzení téhož nákupu, respektují vlastněný či
+nechtěný doplněk a „nic dalšího nechci“. Změna nebo odvolání hlavního
+rozhodnutí vrací model do primárního výběru. Jde o modelově řízené přechody,
+které vyžadují živé ověření; offline testy ověřují kontrakt a obranné kontroly.
 
 `migrations/fann_seed.sql` obsahuje sloučený FAnn katalog se zdrojovou URL,
 datem kontroly, variantami a výběrovými atributy. Doplňuje pouze chybějící řádky.

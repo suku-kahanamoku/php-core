@@ -49,9 +49,9 @@ $gateway = new class implements OpenAiCatalogGateway {
 $receivedNeed = (object) ['value' => null];
 $recommender = new class($receivedNeed) implements OpenAiProductRecommender {
     public function __construct(private object $receivedNeed) {}
-    public function recommend(string $query, string $category, string $priceIntent, ?int $excludedProductId = null, ?int $currentProductId = null): array
+    public function recommend(string $query, string $category, string $priceIntent, ?int $excludedProductId = null, ?int $currentProductId = null, ?int $addonForProductId = null): array
     {
-        $this->receivedNeed->value = [$query, $category, $priceIntent, $excludedProductId, $currentProductId];
+        $this->receivedNeed->value = [$query, $category, $priceIntent, $excludedProductId, $currentProductId, $addonForProductId];
         return ['status' => 'selected', 'product_id' => 90, 'match_quality' => 'exact', 'reason' => ''];
     }
 };
@@ -72,6 +72,7 @@ assert_test(
         'maximálně 2000 Kč',
         85,
         85,
+        null,
     ],
 );
 assert_test('returns the OpenAI-selected product decision', $recommendation === [
@@ -84,6 +85,16 @@ assert_test(
     'recommendation does not query the PHP product catalog',
     $gateway->publishedProductsCalls === 0 && $gateway->publishedProductCalls === 0,
 );
+
+$service->execute(OpenAiKnowledgeCatalogService::RECOMMEND_PRODUCT, [
+    'query' => 'Zákazník si bere líčení ID 85; jeden kompatibilní odličovač jako volitelný doplněk.',
+    'category' => 'odličovač',
+    'price_intent' => '',
+    'addon_for_product_id' => 85,
+]);
+assert_test('passes optional add-on without inventing an additional budget or reading the catalog',
+    $receivedNeed->value[2] === '' && $receivedNeed->value[5] === 85
+        && $gateway->publishedProductsCalls === 0 && $gateway->publishedProductCalls === 0);
 
 $detail = $service->execute(OpenAiKnowledgeCatalogService::GET_PRODUCT, ['product_id' => 90]);
 assert_test('loads the current product selected by OpenAI', $detail['product']['sku'] === 'FANN-P016');
@@ -110,6 +121,7 @@ foreach ([
     ['query' => 'vůně', 'category' => 'parfém', 'price_intent' => ''],
     ['query' => 'vůně', 'category' => 'parfém', 'price_intent' => 'bez omezení', 'excluded_product_id' => 0],
     ['query' => 'vůně', 'category' => 'parfém', 'price_intent' => 'bez omezení', 'current_product_id' => 0],
+    ['query' => 'doplněk', 'category' => 'odličovač', 'price_intent' => '', 'addon_for_product_id' => 0],
 ] as $invalidArguments) {
     $thrown = false;
     try {
