@@ -152,6 +152,15 @@ is supported. The Android card is labelled as an add-on. Instructions prohibit
 automatic chains, repeated offers for the same decision and offers after
 "nothing else". No order is created, and curated SKU pairings or additional
 scraping are not implemented in this step.
+Functional offer rules now live in the versioned
+`src/Modules/OpenAi/config/complementary-offers.json`. A shared prompt provider
+gives Realtime compact applicability rules and the optional Responses search
+their full evidence/suppression conditions. OpenAI must verify functional
+compatibility, stock, customer constraints and additional budget; PHP only
+validates configuration and forwards instructions. Unsupported pairings or
+missing mandatory evidence do not produce an automatic add-on. This is an
+instruction model, not fine-tuning or curated SKU data. Twelve synthetic
+evaluation scenarios are provided; their live model outcomes are unverified.
 `migrations/fann_seed.sql` contains the consolidated
 FAnn demo catalogue and structured source metadata. Reapplying it preserves
 existing edited products.

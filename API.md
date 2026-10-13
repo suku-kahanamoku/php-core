@@ -1855,6 +1855,11 @@ explicitly excluded current card. This mode also permits
 `{"status":"no_match","product_id":null}` after hosted search; it must not
 force an unrelated optional item. Primary recommendations still cannot return
 `no_match`. The operation remains read-only and does not create an order.
+The versioned complementary-offer rulebook is shared by Realtime and the
+optional Responses selection. `query` should preserve its version, applicable
+rule ID, primary purchase evidence, uncovered function and relevant constraints;
+Responses independently verifies the rule and required catalog evidence.
+The rulebook does not change these fields or introduce PHP product ranking.
 
 A generic product, cosmetics, or gift label is not a concrete category. A
 trusted normalized profile may replace price in a future contract; no such

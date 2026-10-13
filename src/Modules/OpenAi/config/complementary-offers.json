@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "eye_makeup_removal",
+      "primary_function": "Mascara, eyeliner or other eye makeup",
+      "complementary_function": "Eye makeup remover",
+      "when": ["The customer commits to eye makeup and has not declined or already selected suitable removal care."],
+      "evidence": ["The candidate is intended to remove eye makeup.", "For confirmed waterproof makeup, removal of waterproof makeup must be explicitly supported.", "Any confirmed sensitivity or formulation exclusion must be supported by the relevant catalog attributes; a generic gentle claim is not proof."],
+      "skip_when": ["The customer already owns suitable removal care or wants nothing else.", "Required removal capability or a mandatory formulation constraint is unknown or contradicted."]
+    },
+    {
+      "id": "face_makeup_removal",
+      "primary_function": "Foundation, concealer or non-eye face or lip makeup",
+      "complementary_function": "Makeup remover suitable for the relevant application area",
+      "when": ["The customer commits to makeup and suitable removal care is not already owned, selected or refused."],
+      "evidence": ["The candidate explicitly removes makeup, not merely cleanses or tones skin.", "Confirmed long-wear or waterproof removal requirements and application area must be supported.", "Stated skin needs and mandatory formulation exclusions must remain satisfied."],
+      "skip_when": ["Suitable makeup removal is already covered.", "The candidate is only a toner, a duplicate makeup item or has no evidence of the required removal function."]
+    },
+    {
+      "id": "nail_polish_removal",
+      "primary_function": "Nail polish",
+      "complementary_function": "Nail polish remover compatible with the confirmed polish system",
+      "when": ["The polish type and a compatible removal method are documented; do not confuse gel-effect polish with a UV-cured gel system."],
+      "evidence": ["The candidate explicitly removes the confirmed polish type.", "A customer requirement such as acetone-free must be verified, not inferred from a gentle label."],
+      "skip_when": ["The polish system or removal compatibility is unknown.", "The customer already owns suitable remover or refuses it."]
+    },
+    {
+      "id": "hair_conditioning",
+      "primary_function": "Shampoo",
+      "complementary_function": "Conditioner for the confirmed hair-care need",
+      "when": ["The customer commits to shampoo and conditioning or detangling is a relevant, uncovered routine function."],
+      "evidence": ["The candidate is a conditioner and supports the stated hair-care need.", "Confirmed hair type, color-care needs, application restrictions and formulation exclusions must be compatible."],
+      "skip_when": ["Conditioning is already covered or refused.", "The proposal duplicates shampoo or invents a scalp diagnosis or treatment need."]
+    },
+    {
+      "id": "body_moisturizing",
+      "primary_function": "Body wash or shower gel",
+      "complementary_function": "Body moisturizer",
+      "when": ["The conversation establishes a relevant, uncovered body-moisturizing need; body wash alone does not prove that need."],
+      "evidence": ["The candidate is intended for body moisturizing.", "Confirmed fragrance preferences, sensitivity and formulation exclusions must be supported."],
+      "skip_when": ["No body-moisturizing need is established.", "The customer already owns the needed care, declines it or the offer invents a medical condition."]
+    },
+    {
+      "id": "serum_routine_support",
+      "primary_function": "Facial serum",
+      "complementary_function": "Facial moisturizer for an explicitly uncovered routine step",
+      "when": ["The customer describes needing a moisturizer alongside the selected serum; a serum purchase alone does not authorize a full routine."],
+      "evidence": ["The candidate fulfills the confirmed moisturizing step and skin needs.", "Any required combination compatibility must be documented; do not invent active-ingredient synergy."],
+      "skip_when": ["The routine step is already covered or not established.", "The proposal requires an unsupported ingredient combination or a treatment claim."]
+    },
+    {
+      "id": "fragrance_body_care",
+      "primary_function": "Perfume or eau de parfum",
+      "complementary_function": "Body care with a documented matching fragrance",
+      "when": ["The customer expresses interest in matching body care or fragrance layering, and this function is not already covered."],
+      "evidence": ["The candidate is body care, not a second perfume.", "A matching fragrance or manufacturer-documented pairing is supported; sharing a brand or a note alone is insufficient."],
+      "skip_when": ["No interest in matching body care is established.", "Matching scent, customer formulation requirements or stock availability are unsupported."]
+    }
+  ]
+}

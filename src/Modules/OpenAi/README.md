@@ -171,6 +171,54 @@ nechtěný doplněk a „nic dalšího nechci“. Změna nebo odvolání hlavní
 rozhodnutí vrací model do primárního výběru. Jde o modelově řízené přechody,
 které vyžadují živé ověření; offline testy ověřují kontrakt a obranné kontroly.
 
+### Sdílený instrukční model doplňků
+
+`config/complementary-offers.json` je verzovaný model funkčních vazeb. Nejde
+o fine-tuning ani seznam naučených produktů. `OpenAiComplementaryOfferPolicyProvider`
+validuje jeho strukturu a skládá anglické instrukce; neporovnává produkty,
+nečte katalog a nevyhodnocuje řeč. Realtime dostává ID, funkce a podmínky
+vazeb; Responses dostává navíc katalogové důkazy a důvody vynechání, pouze
+pro doplňkové hledání. Primární Responses požadavky celý rulebook neposílají.
+Obě služby umožňují injektovat jiný provider bez kopírování promptů.
+
+| Hlavní funkce | Doplňková funkce | Důležitá podmínka |
+| --- | --- | --- |
+| Oční líčení | Odličovač očí | Doložené odstranění příslušného líčení, zvlášť voděodolného. |
+| Pleťové či rtové líčení | Odličovač pro danou oblast | Pouhé čištění nebo tonizace není doložené odlíčení. |
+| Lak na nehty | Kompatibilní odlakovač | Známý systém laku; gelový efekt není důkaz UV vytvrzení. |
+| Šampon | Kondicionér | Relevantní nepokrytá péče/rozčesávání a doložená shoda s potřebou vlasů. |
+| Sprchový přípravek | Tělová hydratace | Potřeba hydratace musí vyplývat z rozhovoru, ne samotné koupě gelu. |
+| Pleťové sérum | Hydratační krok | Výslovně nepokrytý krok rutiny; žádné domýšlení synergie aktivních látek. |
+| Parfém | Odpovídající tělová péče | Zájem o ni a doložená vůně/vazba; společná značka sama nestačí. |
+
+Každá položka obsahuje `id`, `primary_function`, `complementary_function`,
+`when`, `evidence` a `skip_when`. Úprava souboru mění instrukce obou modelů,
+nikoli algoritmus v PHP; při změně pravidel zvyš jeho `version`. Značky,
+konkrétní SKU, ceny ani diagnostické odhady do tohoto formátu nepatří.
+Prázdný seznam `rules` potlačí automatické vazby. Neznámé pole, duplicitní ID,
+chybějící podmínky nebo příliš velká konfigurace se odmítnou. Chybějící či
+neplatný soubor je konfigurační chyba, ne důvod k libovolnému fallbacku.
+Soubor musí být součástí nasazení; existující Realtime relace načte nová
+pravidla až po zahájení nové relace.
+
+Model má v nákupním záměru zachovat verzi pravidel, ID použité vazby,
+potvrzení hlavního nákupu, nepokrytou funkci, známé atributy, potřebné důkazy,
+rozpočet a fázi nabídky. Nejde o přepis ani interní řetězec úvah. Responses
+platnost vazby ověřuje nezávisle: ID zaslané Realtime samo nic nedokazuje.
+Výběr probíhá v pořadí smysluplná funkce, doložená kompatibilita, zákaznická
+omezení/duplicity, sklad, rozpočet a preference. Povinnou chybějící shodu
+nelze překrýt nejbližším doplňkem. Při jinak rovnocenných kandidátech má
+model preferovat nižší doloženou cenu, ne marži. Bez použitelného pravidla
+se automatická nabídka nevymýšlí. Výsledný JSON ani API kontrakt se nemění.
+
+`tests/fixtures/complementary-offer-scenarios.json` obsahuje 12 syntetických
+scénářů s očekávaným chováním: potvrzení versus pochvala, voděodolnost,
+neověřené vlastnosti, vlastněná péče, odmítnutí, oddělený rozpočet, neurčený
+systém laku, parfém bez potřeby doplňku, opakování a odvolání hlavního nákupu.
+Slouží pro ruční nebo budoucí živou evaluaci, nejsou katalogovými daty a
+offline testy nepotvrzují, že je model skutečně vyřešil správně. Skutečné SKU
+vazby a další scraping budou navazovat až po kontrole konkrétních produktů.
+
 `migrations/fann_seed.sql` obsahuje sloučený FAnn katalog se zdrojovou URL,
 datem kontroly, variantami a výběrovými atributy. Doplňuje pouze chybějící řádky.
 Pořadí instalace popisuje `migrations/README.md`.
@@ -196,6 +244,8 @@ uzivatele nebo atestaci zarizeni; hlavni OpenAI klic zustava vzdy jen na serveru
 
 - `InternalAuthMiddleware` ověřuje `X-Rokid-Key` před vytvořením API a DB; `OpenAiApi` pak kontroluje rate limit a používá vyřešeného tenanta.
 - `OpenAiRealtimeService` vola `POST /v1/realtime/client_secrets`.
+- `OpenAiComplementaryOfferPolicyProvider` sestavuje sdílené instrukce z
+  `config/complementary-offers.json`, bez lokálního výběru nebo skórování.
 - `OpenAiCatalogGateway` vystavuje jen produktove operace potrebne pro synchronizaci
   a nacteni jednoho vysledku; OpenAI modul neni zavisly na profilech zakazniku.
 - `OpenAiCatalogRepository` nacita publikovana tenantova data pres existujici moduly.
@@ -225,6 +275,7 @@ Offline unit test nepouziva skutecny OpenAI ucet:
 
 ```bash
 php8.2 src/Modules/OpenAi/tests/OpenAiRealtimeServiceTest.php
+php8.2 src/Modules/OpenAi/tests/OpenAiComplementaryOfferPolicyProviderTest.php
 php8.2 src/Modules/OpenAi/tests/OpenAiKnowledgeCatalogServiceTest.php
 php8.2 src/Modules/OpenAi/tests/OpenAiResponsesProductRecommenderTest.php
 php8.2 src/Modules/OpenAi/tests/OpenAiVectorStoreTest.php

@@ -6,6 +6,7 @@ declare(strict_types=1);
 /** Offline test konfigurace a parsovani OpenAI Realtime client secretu. */
 
 use App\Modules\OpenAi\OpenAiConfigurationException;
+use App\Modules\OpenAi\OpenAiComplementaryOfferPolicyProvider;
 use App\Modules\OpenAi\OpenAiRealtimeService;
 use App\Modules\OpenAi\OpenAiUpstreamException;
 
@@ -174,6 +175,9 @@ assert_test(
         && str_contains($captured['payload']['session']['instructions'], 'never copy the primary item\'s budget')
         && str_contains($captured['payload']['session']['instructions'], 'retain the confirmed PRIMARY checklist values'),
 );
+assert_test('loads compact shared functional offer rules in the session prompt',
+    str_contains($captured['payload']['session']['instructions'],
+        (new OpenAiComplementaryOfferPolicyProvider())->instructions('realtime')));
 
 $customModelPayload = null;
 (new OpenAiRealtimeService(
@@ -189,11 +193,15 @@ $customModelPayload = null;
     },
     'sk-test',
     'gpt-realtime-custom',
+    offerPolicy: new OpenAiComplementaryOfferPolicyProvider(['version' => 2, 'rules' => []]),
 ))->createClientSecret();
 assert_test(
     'allows the Realtime model to be configured without code changes',
     $customModelPayload['session']['model'] === 'gpt-realtime-custom',
 );
+assert_test('honors an injected rulebook instead of loading the default relations',
+    str_contains($customModelPayload['session']['instructions'], 'rulebook v2')
+        && !str_contains($customModelPayload['session']['instructions'], 'eye_makeup_removal'));
 
 section('OpenAI Realtime failures');
 $missingKeyThrown = false;

@@ -1,0 +1,100 @@
+{
+  "purpose": "Manual or future live model evaluation; synthetic fixtures, never production catalog data. Offline contract tests do not establish these behavioral outcomes.",
+  "cases": [
+    {
+      "id": "praise_is_not_purchase",
+      "conversation": ["Klient: Tahle řasenka se mi líbí, ale ještě se rozmyslím."],
+      "primary": {"type": "mascara", "waterproof": true},
+      "candidates": [],
+      "expected": {"action": "continue_listening", "reason": "No confirmed purchase decision."}
+    },
+    {
+      "id": "waterproof_eye_makeup_supported",
+      "conversation": ["Klient: Tu voděodolnou řasenku si vezmu."],
+      "primary": {"type": "mascara", "waterproof": true},
+      "candidates": [
+        {"label": "A", "function": "eye_makeup_removal", "removes_waterproof": true, "in_stock": true},
+        {"label": "B", "function": "skin_toner", "in_stock": true}
+      ],
+      "expected": {"rule_id": "eye_makeup_removal", "action": "select", "candidate": "A"}
+    },
+    {
+      "id": "unknown_waterproof_capability",
+      "conversation": ["Klient: Tu voděodolnou řasenku si vezmu."],
+      "primary": {"type": "mascara", "waterproof": true},
+      "candidates": [{"label": "A", "function": "eye_makeup_removal", "removes_waterproof": null, "in_stock": true}],
+      "expected": {"rule_id": "eye_makeup_removal", "action": "no_match_after_targeted_search", "reason": "No documented required removal capability."}
+    },
+    {
+      "id": "gentle_is_not_fragrance_free",
+      "conversation": ["Klient: Řasenku si vezmu. Odličovač potřebuji bez parfemace."],
+      "primary": {"type": "mascara", "waterproof": false},
+      "candidates": [
+        {"label": "A", "function": "eye_makeup_removal", "marketing": "gentle", "fragrance_free": null, "in_stock": true},
+        {"label": "B", "function": "eye_makeup_removal", "fragrance_free": true, "in_stock": true}
+      ],
+      "expected": {"rule_id": "eye_makeup_removal", "action": "select", "candidate": "B"}
+    },
+    {
+      "id": "owned_remover",
+      "conversation": ["Klient: Řasenku si vezmu, ale vhodný odličovač už mám doma."],
+      "primary": {"type": "mascara"},
+      "candidates": [{"label": "A", "function": "eye_makeup_removal", "in_stock": true}],
+      "expected": {"action": "continue_listening", "reason": "The complementary function is already covered."}
+    },
+    {
+      "id": "no_more_items",
+      "conversation": ["Klient: Tento makeup si vezmu a nic dalšího nechci."],
+      "primary": {"type": "foundation"},
+      "candidates": [],
+      "expected": {"action": "continue_listening", "reason": "Explicit refusal overrides pairing rules."}
+    },
+    {
+      "id": "additional_budget_is_separate",
+      "conversation": ["Klient: Makeup do 1500 Kč si vezmu. Odličovač navíc maximálně za 300 Kč."],
+      "primary": {"type": "foundation", "price": 1200, "currency": "CZK"},
+      "candidates": [
+        {"label": "A", "function": "face_makeup_removal", "price": 250, "currency": "CZK", "in_stock": true},
+        {"label": "B", "function": "face_makeup_removal", "price": 600, "currency": "CZK", "in_stock": true}
+      ],
+      "expected": {"rule_id": "face_makeup_removal", "action": "select", "candidate": "A", "additional_maximum": 300}
+    },
+    {
+      "id": "unknown_additional_budget",
+      "conversation": ["Klient: Ten makeup do 1500 Kč si vezmu."],
+      "primary": {"type": "foundation", "price": 1200, "currency": "CZK"},
+      "candidates": [{"label": "A", "function": "face_makeup_removal", "price": 250, "currency": "CZK", "in_stock": true}],
+      "expected": {"rule_id": "face_makeup_removal", "action": "select", "candidate": "A", "additional_budget": "unknown_not_inherited"}
+    },
+    {
+      "id": "polish_system_unknown",
+      "conversation": ["Klient: Ten lak s gelovým efektem si vezmu."],
+      "primary": {"type": "nail_polish", "curing_system": null},
+      "candidates": [{"label": "A", "function": "nail_polish_removal", "compatible_system": "ordinary_polish", "in_stock": true}],
+      "expected": {"action": "continue_listening", "reason": "Do not guess the polish system from gel-effect marketing."}
+    },
+    {
+      "id": "perfume_does_not_imply_lotion_need",
+      "conversation": ["Klient: Ten parfém si vezmu."],
+      "primary": {"type": "perfume"},
+      "candidates": [{"label": "A", "function": "body_moisturizing", "same_brand": true, "in_stock": true}],
+      "expected": {"action": "continue_listening", "reason": "No matching-body-care interest or documented pairing."}
+    },
+    {
+      "id": "repeated_confirmation",
+      "conversation": ["Klient: Řasenku si vezmu.", "Obchodník: Nabízí již zobrazený vhodný odličovač.", "Klient: Ano, tu řasenku určitě beru."],
+      "state": {"phase": "addon_offered", "rule_id": "eye_makeup_removal"},
+      "primary": {"type": "mascara"},
+      "candidates": [],
+      "expected": {"action": "continue_listening", "reason": "Do not repeat or chain the automatic offer."}
+    },
+    {
+      "id": "primary_purchase_retracted",
+      "conversation": ["Klient: Rozmyslel jsem si tu řasenku. Místo ní chci hydratační krém do 800 Kč."],
+      "state": {"phase": "addon_offered", "rule_id": "eye_makeup_removal"},
+      "primary": {"type": "mascara"},
+      "candidates": [],
+      "expected": {"action": "resume_primary_selection", "category": "pleťový krém", "maximum": 800}
+    }
+  ]
+}

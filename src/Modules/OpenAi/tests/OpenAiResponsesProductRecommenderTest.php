@@ -6,6 +6,7 @@ declare(strict_types=1);
 /** Offline test Responses file_search doporučování bez síťového spojení. */
 
 use App\Modules\OpenAi\OpenAiResponsesProductRecommender;
+use App\Modules\OpenAi\OpenAiComplementaryOfferPolicyProvider;
 use App\Modules\OpenAi\OpenAiUpstreamException;
 use App\Modules\OpenAi\OpenAiVectorStoreGateway;
 
@@ -113,6 +114,8 @@ assert_test('searches the revised need and verifies relative price evidence',
         && str_contains($captured['payload']['instructions'], 'A corrected maximum replaces the old maximum')
         && str_contains($captured['payload']['instructions'], 'unverifiable relative price condition cannot qualify as exact')
         && str_contains($captured['payload']['instructions'], 'searching the new category'));
+assert_test('does not add the full optional rulebook to primary searches',
+    !str_contains($captured['payload']['instructions'], '# Complementary offer rulebook'));
 
 $excludedCurrentRejected = false;
 try {
@@ -141,6 +144,9 @@ try {
 assert_test('rejects the current product even if the model returns it', $excludedCurrentRejected);
 
 $recommender->recommend('Bere si líčení ID 85; vhodný odličovač.', 'odličovač', '', 86, 86, 85);
+assert_test('uses the full shared evidence policy only for complementary selection',
+    str_contains($captured['payload']['instructions'],
+        (new OpenAiComplementaryOfferPolicyProvider())->instructions('responses')));
 assert_test('passes add-on anchor and excludes both primary and rejected optional card',
     json_decode($captured['payload']['input'], true, flags: JSON_THROW_ON_ERROR)['addon_for_product_id'] === 85
         && $captured['payload']['tools'][0]['filters'] === ['type' => 'and', 'filters' => [

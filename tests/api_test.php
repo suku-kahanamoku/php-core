@@ -90,8 +90,10 @@ $tests = [
     // File
     "{$modulesDir}/File/tests/FileApiTest.php",
     // OpenAI (offline transport; no live API call)
+    "{$modulesDir}/OpenAi/tests/OpenAiComplementaryOfferPolicyProviderTest.php",
     "{$modulesDir}/OpenAi/tests/OpenAiRealtimeServiceTest.php",
     "{$modulesDir}/OpenAi/tests/OpenAiKnowledgeCatalogServiceTest.php",
+    "{$modulesDir}/OpenAi/tests/OpenAiResponsesProductRecommenderTest.php",
 ];
 
 foreach ($tests as $file) {
