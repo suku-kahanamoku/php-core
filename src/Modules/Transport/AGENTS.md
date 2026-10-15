@@ -1,5 +1,10 @@
 # TRAM: pouze přihlášení a autorizace v PHP
 
+- Admin bridge musí respektovat `TRANSPORT_BACKEND_ENV`: `local` dovoluje
+  pouze lokální Java URL (včetně HTTP na loopbacku), `production` pouze
+  vzdálené HTTPS. Nikdy nepoužívej produkční URL/token jako fallback z lokálu.
+  Produkční výchozí režim zachovává existující hosting; místní `.env` je místní.
+
 Před změnou čti `README.md`, `ARCHITECTURE.md` a root `AGENTS.md`.
 Uživatel 9. 10. 2026 výslovně požadoval odstranit veškeré TRAM SQL tabulky,
 data a PHP dopravu s výjimkou přihlášení a autorizace.

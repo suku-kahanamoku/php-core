@@ -11,10 +11,15 @@ use App\Modules\Transport\Admin\OnlinePlannerException;
 /** Server-only fixed admin routes for global online planner policy. */
 final class OnlinePlannerService
 {
-    public function __construct(private readonly HttpClient $http, private readonly string $url, private readonly string $token)
+    public function __construct(private readonly HttpClient $http, private readonly string $url, private readonly string $token, string $environment = 'production')
     {
         $parts = parse_url($url);
-        if (!$parts || ($parts['scheme'] ?? '') !== 'https' || empty($parts['host'])
+        $host = strtolower((string)($parts['host'] ?? ''));
+        $local = in_array($host, ['localhost', '127.0.0.1', '[::1]'], true) || str_ends_with($host, '.localhost');
+        $validTarget = $environment === 'local'
+            ? $local && in_array($parts['scheme'] ?? '', ['http', 'https'], true)
+            : $environment === 'production' && !$local && ($parts['scheme'] ?? '') === 'https';
+        if (!$parts || !$validTarget || empty($parts['host'])
             || isset($parts['user']) || isset($parts['pass']) || isset($parts['query']) || isset($parts['fragment'])
             || !in_array($parts['path'] ?? '', ['', '/'], true) || strlen($token) < 24 || preg_match('/[\r\n]/', $token)) {
             throw new OnlinePlannerException('invalid_configuration', 'Invalid online planner admin configuration.', 503);

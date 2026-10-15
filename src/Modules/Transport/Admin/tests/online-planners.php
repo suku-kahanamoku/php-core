@@ -39,6 +39,12 @@ rejected(fn() => TransportModule::onlinePlanners('tram', array_replace($env, ['T
 $splitEnv = array_replace($env, ['TRANSPORT_JAVA_URL' => 'http://127.0.0.1:18095']);
 ensure(TransportModule::onlinePlanners('tram', $splitEnv, $http)->onlinePlanners()['enabled'] === true);
 $http->requests = [];
+rejected(fn() => TransportModule::onlinePlanners('tram', array_replace($env, ['TRANSPORT_BACKEND_ENV' => 'local']), $http));
+$localEnv = array_replace($env, ['TRANSPORT_BACKEND_ENV' => 'local', 'TRANSPORT_ONLINE_CONTROL_URL' => 'http://127.0.0.1:18095']);
+ensure(TransportModule::onlinePlanners('tram', $localEnv, $http)->onlinePlanners()['enabled'] === true);
+ensure(end($http->requests)->url === 'http://127.0.0.1:18095/admin/online-planners');
+rejected(fn() => TransportModule::onlinePlanners('tram', array_replace($localEnv, ['TRANSPORT_BACKEND_ENV' => 'production']), $http));
+$http->requests = [];
 $pipeline = TransportModule::onlinePlanners('tram', $env, $http);
 $authorized = false;
 $api = new OnlinePlannerApi(static function () use (&$authorized): void {

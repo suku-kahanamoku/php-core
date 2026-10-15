@@ -16,10 +16,17 @@ Serverová konfigurace tohoto oprávnění:
 
 ```dotenv
 TRANSPORT_JAVA_TENANT=tram
+TRANSPORT_BACKEND_ENV=production
 TRANSPORT_ONLINE_CONTROL_ENABLED=1
 TRANSPORT_ONLINE_CONTROL_URL=https://java-router.example
 TRANSPORT_ONLINE_CONTROL_TOKEN=<private-java-admin-token>
 ```
+
+Lokálně nastav `TRANSPORT_BACKEND_ENV=local` a
+`TRANSPORT_ONLINE_CONTROL_URL=http://127.0.0.1:18095` se skutečným lokálním
+admin tokenem routeru. Lokální režim odmítá vzdálené cíle před odesláním
+credentials; produkční režim odmítá loopback a vyžaduje HTTPS. Bez proměnné
+je zachovaná produkční politika. Nekopíruj lokální `.env` na produkci.
 
 `FRANCHISE_CODES` musí mapovat host na `tram`. URL a token pocházejí pouze
 ze serveru. Nenakonfigurovaný nebo jiný tenant vrací 503, role se ověřuje

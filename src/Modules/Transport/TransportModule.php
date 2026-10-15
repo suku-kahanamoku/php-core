@@ -19,6 +19,7 @@ final class TransportModule
         }
         return new Admin\OnlinePlannerService($http,
             (string)($env['TRANSPORT_ONLINE_CONTROL_URL'] ?? ''),
-            (string)($env['TRANSPORT_ONLINE_CONTROL_TOKEN'] ?? ''));
+            (string)($env['TRANSPORT_ONLINE_CONTROL_TOKEN'] ?? ''),
+            (string)($env['TRANSPORT_BACKEND_ENV'] ?? 'production'));
     }
 }
