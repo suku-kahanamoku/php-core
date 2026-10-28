@@ -19,6 +19,10 @@ Routes:
 
 Notes:
 - `POST /mailer` (contact form) and `/mailer/newsletter` are public, purpose-specific, validated, and rate-limited.
+- Each form has an independent tenant-scoped IP limit of five attempts per hour,
+  plus the original email/IP limit. IP comes only from `REMOTE_ADDR`; a BFF's
+  outbound IP can be shared by its users. Arbitrary forwarded headers do not
+  change this limit. These limits do not cover generic `/mailer/send`.
 - Generic `/mailer/send`, `/mailer/test`, and `/mailer/list` require the middleware-verified `X-Internal-Key`; `GET /mailer` returns 405.
 - This module is support-oriented and works with email templates under `emails/`.
 - It uses the franchise code to resolve template prefixes where needed.

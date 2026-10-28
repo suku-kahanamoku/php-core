@@ -167,7 +167,7 @@ class AuthService
     }
 
     /**
-     * Zmena hesla aktualne prihlaseneho uzivatele.
+     * Zmena hesla aktualne prihlaseneho uzivatele a odhlaseni vsech relaci.
      *
      * @param  string $currentPassword  Aktualni heslo pro overeni
      * @param  string $newPassword      Nove heslo (min. 8 znaku)
@@ -192,9 +192,13 @@ class AuthService
             Response::error('Current password is incorrect', 401);
         }
 
-        $this->_users->update($userId, [
-            'password' => password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 12]),
-        ]);
+        if (!$this->_users->changePasswordAndRevokeTokens(
+            $userId,
+            $hash,
+            password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 12]),
+        )) {
+            Response::error('Password or account changed. Please sign in again.', 409);
+        }
     }
 
     /** Creates a one-time reset link. The response never contains a password or token. */

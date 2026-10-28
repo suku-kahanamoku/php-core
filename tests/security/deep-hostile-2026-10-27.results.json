@@ -1,0 +1,199 @@
+{
+  "mode": "real_router_and_domain_code_with_memory_adapters",
+  "checks": [
+    {
+      "id": "mailer-guest-no-key",
+      "result": "PASS",
+      "evidence": {
+        "case": "mailer-guest-no-key",
+        "status": 401,
+        "auth_checks": 0,
+        "mail_calls": 0,
+        "attachment_count": 0,
+        "invoice_writes": 0
+      },
+      "stderr": ""
+    },
+    {
+      "id": "mailer-guest-send",
+      "result": "FAIL",
+      "evidence": {
+        "case": "mailer-guest-send",
+        "status": 200,
+        "auth_checks": 0,
+        "mail_calls": 1,
+        "attachment_count": 1,
+        "invoice_writes": 0
+      },
+      "stderr": ""
+    },
+    {
+      "id": "mailer-user-send",
+      "result": "FAIL",
+      "evidence": {
+        "case": "mailer-user-send",
+        "status": 200,
+        "auth_checks": 0,
+        "mail_calls": 1,
+        "attachment_count": 1,
+        "invoice_writes": 0
+      },
+      "stderr": ""
+    },
+    {
+      "id": "mailer-admin-send",
+      "result": "PASS",
+      "evidence": {
+        "case": "mailer-admin-send",
+        "status": 200,
+        "auth_checks": 0,
+        "mail_calls": 1,
+        "attachment_count": 1,
+        "invoice_writes": 0
+      },
+      "stderr": ""
+    },
+    {
+      "id": "mailer-guest-test",
+      "result": "FAIL",
+      "evidence": {
+        "case": "mailer-guest-test",
+        "status": 200,
+        "auth_checks": 0,
+        "mail_calls": 1,
+        "attachment_count": 0,
+        "invoice_writes": 0
+      },
+      "stderr": ""
+    },
+    {
+      "id": "invoice-guest-create",
+      "result": "FAIL",
+      "evidence": {
+        "case": "invoice-guest-create",
+        "effect_reached": true,
+        "status": 200,
+        "auth_checks": 0,
+        "mail_calls": 0,
+        "attachment_count": 0,
+        "invoice_writes": 1
+      },
+      "stderr": ""
+    },
+    {
+      "id": "invoice-user-foreign",
+      "result": "FAIL",
+      "evidence": {
+        "case": "invoice-user-foreign",
+        "effect_reached": true,
+        "status": 200,
+        "auth_checks": 0,
+        "mail_calls": 0,
+        "attachment_count": 0,
+        "invoice_writes": 1
+      },
+      "stderr": ""
+    },
+    {
+      "id": "invoice-admin-create",
+      "result": "PASS",
+      "evidence": {
+        "case": "invoice-admin-create",
+        "effect_reached": true,
+        "status": 200,
+        "auth_checks": 0,
+        "mail_calls": 0,
+        "attachment_count": 0,
+        "invoice_writes": 1
+      },
+      "stderr": ""
+    },
+    {
+      "id": "password-change",
+      "result": "FAIL",
+      "evidence": {
+        "case": "password-change",
+        "password_updates": 1,
+        "revocations": 0,
+        "old_session_accepted": true,
+        "status": 200,
+        "auth_checks": 1,
+        "mail_calls": 0,
+        "attachment_count": 0,
+        "invoice_writes": 0
+      },
+      "stderr": ""
+    },
+    {
+      "id": "user-self-mass-assignment",
+      "result": "PASS",
+      "evidence": {
+        "case": "user-self-mass-assignment",
+        "written_fields": [
+          "first_name"
+        ],
+        "response_has_password": false,
+        "status": 200,
+        "auth_checks": 1,
+        "mail_calls": 0,
+        "attachment_count": 0,
+        "invoice_writes": 0
+      },
+      "stderr": ""
+    },
+    {
+      "id": "user-foreign-read",
+      "result": "PASS",
+      "evidence": {
+        "case": "user-foreign-read",
+        "status": 404,
+        "auth_checks": 1,
+        "mail_calls": 0,
+        "attachment_count": 0,
+        "invoice_writes": 0
+      },
+      "stderr": ""
+    },
+    {
+      "id": "contact-same-email",
+      "result": "PASS",
+      "evidence": {
+        "case": "contact-same-email",
+        "status": 429,
+        "auth_checks": 0,
+        "mail_calls": 5,
+        "attachment_count": 0,
+        "invoice_writes": 0
+      },
+      "stderr": ""
+    },
+    {
+      "id": "contact-rotating-email",
+      "result": "FAIL",
+      "evidence": {
+        "case": "contact-rotating-email",
+        "rate_buckets": 6,
+        "status": 200,
+        "auth_checks": 0,
+        "mail_calls": 6,
+        "attachment_count": 0,
+        "invoice_writes": 0
+      },
+      "stderr": ""
+    },
+    {
+      "id": "token-at-rest",
+      "result": "FAIL",
+      "evidence": {
+        "case": "token-at-rest",
+        "raw_token_persisted": true,
+        "status": 200,
+        "auth_checks": 0,
+        "mail_calls": 0,
+        "attachment_count": 0,
+        "invoice_writes": 0
+      },
+      "stderr": ""
+    }
+  ]
+}

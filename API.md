@@ -598,6 +598,11 @@ Request:
 
 Response `200`: `{ "success": true, "message": "Password changed successfully", "data": null }`
 
+The password update and revocation of all existing Bearer tokens are committed
+in one transaction. This includes the caller's token: sign in again after a
+successful change before making further authenticated requests. A stale
+concurrent change returns `409` instead of overwriting the new password.
+
 ---
 
 #### `POST /auth/reset-password`
@@ -1777,6 +1782,14 @@ Generic mail accepts only a safe template name. Attachments are resolved from
 the current tenant's permanent file directory; arbitrary filesystem paths are
 ignored. Public forms choose their recipients and templates server-side and do
 not act as a general mail relay.
+
+Contact and newsletter each allow five attempts per hour per `REMOTE_ADDR`
+within the tenant, independently of the supplied email address, as well as the
+existing email/IP limit. `X-Forwarded-For` from the request is not trusted.
+Behind a server proxy/BFF this address may be shared by all users; client-IP
+restoration must be configured by trusted infrastructure, or the proxy must
+enforce its own client limits. This is a fixed-window limit, not a global SMTP
+concurrency limit. Generic `/mailer/send` is outside these public-form limits.
 
 ---
 

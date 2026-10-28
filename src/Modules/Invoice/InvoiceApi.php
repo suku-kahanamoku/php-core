@@ -77,7 +77,7 @@ class InvoiceApi
     }
 
     /**
-     * POST /invoices — Vystavi fakturu. Vyzaduje roli admin.
+     * POST /invoices — Vystavi fakturu. Interni serverovy klic overuje middleware.
      *
      * @param Request $request  body: order_id (required)
      * @return void

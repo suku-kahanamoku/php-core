@@ -484,6 +484,37 @@ class UserRepository extends BaseRepository
     }
 
     /**
+     * Atomicky zmeni overene heslo a zrusi vsechny Bearer relace uzivatele.
+     * Podminka na puvodni hash zabrani prepsani soubezne zmeneneho hesla.
+     * Pri chybe revokace zustane platne puvodni heslo i tokeny.
+     */
+    public function changePasswordAndRevokeTokens(int $id, string $currentHash, string $newHash): bool
+    {
+        $pdo = $this->_db->getPdo();
+        $pdo->beginTransaction();
+        try {
+            $updated = $this->_db->update(
+                'user',
+                ['password' => $newHash],
+                'id = ? AND franchise_code = ? AND password = ? AND deleted = 0 AND status = ?',
+                [$id, $this->_code, $currentHash, 'active'],
+            );
+            if ($updated !== 1) {
+                $pdo->rollBack();
+                return false;
+            }
+            $this->_db->delete('user_token', 'user_id = ?', [$id]);
+            $pdo->commit();
+            return true;
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+
+    /**
      * Vrati hash hesla uzivatele (pouziva se pro zmenu hesla).
      *
      * @param  int      $id

@@ -27,4 +27,7 @@ Notes:
 - OAuth is server-to-server only and requires `X-Internal-Key`; the identity is bound by provider and provider subject, not trusted by email alone.
 - Password reset creates a short-lived, one-time token; completion requires `token` and `new_password`.
 - Logout invalidates the current bearer token.
+- Changing a password atomically invalidates all of that user's Bearer tokens,
+  including the caller's. Clients must sign in again before further authenticated
+  requests; the response does not issue a replacement token.
 - Keep bearer token and franchise behavior aligned with `README.md` and `API.md`.

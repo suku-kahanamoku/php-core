@@ -17,9 +17,9 @@ use App\Utils\RateLimiter;
  * Routy:
  *   POST /mailer            kontaktní formulář (veřejné, omezené na IP)
  *   POST /mailer/newsletter přihlášení do newsletteru (veřejné, omezené na IP)
- *   POST /mailer/send       odeslání šablony (admin)
- *   GET  /mailer/test       testovací e-mail (admin)
- *   GET  /mailer/list       seznam šablon daného okurku (admin)
+ *   POST /mailer/send       odeslání šablony (interní serverový klíč)
+ *   GET  /mailer/test       testovací e-mail (interní serverový klíč)
+ *   GET  /mailer/list       seznam šablon daného okurku (interní serverový klíč)
  *
  * Přílohy se berou jen ze složky `files/<okrsek>/` daného okurku, takže nelze
  * přiložit soubor jiného okurku ani systémový soubor. Veřejné endpointy jsou
@@ -178,12 +178,7 @@ class MailerApi
         $message = trim((string) $request->get('message', ''));
         $phone   = trim((string) $request->get('phone', ''));
 
-        $this->_rateLimiter->hit(
-            'contact-mail',
-            strtolower($email) . '|' . (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown'),
-            5,
-            3600,
-        );
+        $this->limitPublicMail('contact-mail', $email);
 
         [
             'adminEmail' => $adminEmail,
@@ -265,12 +260,7 @@ class MailerApi
     {
         $email = trim((string) $request->get('email', ''));
 
-        $this->_rateLimiter->hit(
-            'newsletter-mail',
-            strtolower($email) . '|' . (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown'),
-            5,
-            3600,
-        );
+        $this->limitPublicMail('newsletter-mail', $email);
 
         VALIDATOR(['email' => $email])
             ->required(['email'])
@@ -326,6 +316,19 @@ class MailerApi
             ],
             'Newsletter emails sent.',
         );
+    }
+
+    /**
+     * Omezi kazdou verejnou akci i pri stridani e-mailu ze stejne IP.
+     * REMOTE_ADDR je adresa primeho spojeni; neprebirame libovolne X-Forwarded-For.
+     * Za BFF/proxy se limit sdili pro jeji adresu, pokud ji duveryhodny webserver
+     * neprepise na overenou klientskou IP.
+     */
+    private function limitPublicMail(string $action, string $email): void
+    {
+        $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
+        $this->_rateLimiter->hit($action . '-ip', $ip, 5, 3600);
+        $this->_rateLimiter->hit($action, strtolower($email) . '|' . $ip, 5, 3600);
     }
 
     /**

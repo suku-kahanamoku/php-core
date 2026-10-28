@@ -153,7 +153,8 @@ class InvoiceService extends BaseService
     }
 
     /**
-     * Vystavi fakturu. Vyzaduje prihlaseni; admin nebo majitel objednavky.
+     * Vystavi fakturu z objednavky vcetne hosta. HTTP volajici je duveryhodny
+     * server overeny internim klicem v middleware; tato cesta nevyzaduje Bearer.
      * Kazda objednavka muze mit nejvyse jednu fakturu (409 pri duplicite).
      * invoice_number je generovano automaticky. Vsechna data jsou ulozena jako snapshot.
      * Cela operace probiha v transakci.
